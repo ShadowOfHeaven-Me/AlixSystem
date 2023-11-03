@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/AlixSystem.iml" filepath="$PROJECT_DIR$/AlixSystem.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AlixSystemBungeeSupport/AlixSystemBungeeSupport.iml" filepath="$PROJECT_DIR$/AlixSystemBungeeSupport/AlixSystemBungeeSupport.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AlixSystemLoader/AlixSystemLoader.iml" filepath="$PROJECT_DIR$/AlixSystemLoader/AlixSystemLoader.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AlixSystemVelocitySupport/AlixSystemVelocitySupport.iml" filepath="$PROJECT_DIR$/AlixSystemVelocitySupport/AlixSystemVelocitySupport.iml" />
+    </modules>
+  </component>
+</project>

@@ -1,0 +1,273 @@
+package shadow.utils.users.offline;
+
+import alix.common.messages.Messages;
+import alix.common.scheduler.impl.AlixScheduler;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import shadow.Main;
+import shadow.systems.login.Verifications;
+import shadow.systems.login.captcha.Captcha;
+import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.main.AlixUtils;
+import shadow.utils.main.file.managers.OriginalLocationsManager;
+import shadow.utils.objects.filter.packet.types.PacketBlocker;
+import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.objects.savable.data.password.PasswordType;
+import shadow.utils.objects.savable.data.password.builders.BuilderType;
+import shadow.utils.objects.savable.data.password.builders.PasswordBuilder;
+import shadow.utils.objects.savable.data.password.builders.PasswordGui;
+import shadow.utils.users.UserManager;
+import shadow.utils.world.AlixWorld;
+
+import java.util.concurrent.TimeUnit;
+
+import static shadow.utils.main.AlixUtils.getVerificationReminderMessage;
+import static shadow.utils.main.AlixUtils.requireCaptchaVerification;
+
+public final class UnverifiedUser {
+
+    //private static final String registerSuccess = Messages.get("register-success");
+    private final Player player;
+    private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
+    private final Captcha captcha;
+    private final PacketBlocker blocker;
+    private final Location currentLocation;
+    private final GameMode originalGameMode;
+    private final String ipAddress, joinMessage;
+    private final boolean isGuiUser, captchaInitialized;
+    private final BuilderType passwordBuilderType;
+    private PasswordBuilder passwordBuilder;
+    private String verificationMessage;
+    private boolean isGUIInitialized, hasCompletedCaptcha;
+
+    public UnverifiedUser(Player player, PersistentUserData data, String ipAddress, String joinMessage) {
+        this.player = player;
+        this.data = data;
+        this.ipAddress = ipAddress;
+        this.joinMessage = joinMessage;
+
+        this.player.setCollidable(false); // <- excluding the player from the collision calculation to save a bit of cpu & to stop entity collision at verification
+
+        boolean hasAccount = hasAccount();//data != null
+        boolean registered = isRegistered(hasAccount);
+
+        this.hasCompletedCaptcha = hasAccount || !requireCaptchaVerification;//has an account or captcha is disabled
+        this.captchaInitialized = !hasCompletedCaptcha;//the captcha was initialized if the user is required to complete it
+
+        if (hasAccount)
+            this.passwordBuilderType = data.getPasswordType() == PasswordType.PIN ? BuilderType.PIN : AlixUtils.anvilPasswordGui ? BuilderType.ANVIL : null;
+        else
+            this.passwordBuilderType = AlixUtils.anvilPasswordGui ? BuilderType.ANVIL : AlixUtils.defaultPasswordType == PasswordType.PIN ? BuilderType.PIN : null;
+
+        this.isGuiUser = this.passwordBuilderType != null;
+        //this.isGuiUser = data != null ? data.getPasswordType() == PasswordType.PIN || AlixUtils.anvilPasswordGui : AlixUtils.anvilPasswordGui || AlixUtils.defaultPasswordType == PasswordType.PIN;
+
+        this.originalGameMode = player.getGameMode();
+        this.currentLocation = AlixWorld.TELEPORT_LOCATION; //The current location should be the captcha world (set by the OfflineExecutors for captcha unverified users and later in this constructor for not logged in players)
+
+        if (player.isDead()) player.spigot().respawn();
+
+        if (!this.hasCompletedCaptcha) {
+            this.captcha = Captcha.nextCaptcha(this); //Fast Captcha get
+            this.player.setPersistent(false); //Do not save the possibly bot player
+            this.player.setGameMode(GameMode.ADVENTURE); //Set the gamemode to adventure (on spectator the map is invisible and on creative the countdown is - also it prevents a possible accidental arm animation packet spam)
+        } else {
+            if (!player.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {
+                OriginalLocationsManager.add(player, player.getLocation());
+                this.player.teleport(AlixWorld.TELEPORT_LOCATION);
+            }
+            this.captcha = null;
+        }
+
+        if (isGuiUser && hasCompletedCaptcha)
+            this.passwordBuilder = PasswordGui.newBuilder(this, this.passwordBuilderType);
+        else {
+            this.verificationMessage = getVerificationReminderMessage(registered);
+            if (!AlixUtils.repeatedVerificationReminderMessages) player.sendRawMessage(this.verificationMessage);
+        }
+
+        this.blocker = PacketBlocker.getPacketBlocker(this, passwordBuilderType);
+        this.openPasswordBuilderGUI();
+
+        AlixScheduler.runLaterAsync(() -> {
+            ReflectionUtils.sendLoginEffectPackets(this.player.getEntityId(), this.blocker.getChannel());
+            if (captchaInitialized) this.captcha.sendPackets();
+        }, 750, TimeUnit.MILLISECONDS);
+    }
+
+    public void uninject() {//removes all that was ever assigned and related (but does not teleport back)
+        if (captchaInitialized) captcha.uninject();
+        else if (isGUIInitialized) player.closeInventory();
+        this.player.setCollidable(true); // <- including back the player in the collision calculation
+        //player.setGameMode(originalGameMode);//return the original gamemode for saved players (for now unnecessary)
+
+        //AlixWorld.teleportBack(this); // <- teleport back from the captcha world & refresh (as packets not being delivered to the server create an illusion of moving for the player)
+    }
+
+    public void disableActionBlockerAndUninject() {
+        this.blocker.stop();
+        this.uninject();
+    }
+
+    @NotNull
+    public final Player getPlayer() {
+        return player;
+    }
+
+    @NotNull
+    public final PacketBlocker getPacketBlocker() {
+        return blocker;
+    }
+
+    @Nullable
+    public final PersistentUserData getData() {
+        return data;
+    }
+
+    @NotNull
+    public final String getIPAddress() {
+        return ipAddress;
+    }
+
+    @NotNull
+    public final Location getCurrentLocation() {
+        return currentLocation;
+    }
+
+    public final boolean isCaptchaCorrect(String s) {
+        return this.captchaInitialized && this.captcha.isCorrect(s);
+    }
+
+    @Nullable
+    public final String getVerificationMessage() {
+        return verificationMessage;
+    }
+
+    @Nullable
+    public final PasswordBuilder getPasswordBuilder() {
+        return passwordBuilder;
+    }
+
+    public final boolean isGuiUser() {
+        return isGuiUser;
+    }
+
+    /*    public final World getOriginalWorld() {
+        return originalWorld;
+    }
+
+    public final Location getOriginalLocation() {
+        return originalLocation;
+    }*/
+
+/*    public void autoLogin() {
+        uninject();
+        logIn();
+    }*/
+
+    public final void completeCaptcha() {
+        //if (this.hasCompletedCaptcha) return;
+
+        this.verificationMessage = Messages.unregisteredUserMessage;
+        if (!AlixUtils.repeatedVerificationReminderMessages) this.player.sendRawMessage(this.verificationMessage);
+
+        this.blocker.startLoginKickTask();
+
+        this.hasCompletedCaptcha = true;
+
+        if (this.isGuiUser) {
+            this.passwordBuilder = PasswordGui.newBuilder(this, this.passwordBuilderType);
+            this.blocker.updateBuilder();
+            this.openPasswordBuilderGUI();
+        }
+    }
+
+/*    public Object getMapPacket() {
+        return ((MapCaptcha) captcha).
+    }*/
+
+    public final boolean isGUIInitialized() {
+        return isGUIInitialized;
+    }
+
+    public final void setGUIInitialized(boolean initialized) {
+        this.isGUIInitialized = initialized;
+    }
+
+    public final void openPasswordBuilderGUI() {
+        if (this.passwordBuilder != null) this.player.openInventory(this.passwordBuilder.getGUI());
+    }
+
+    public final boolean hasCompletedCaptcha() {
+        return hasCompletedCaptcha;
+    }
+
+    public void logIn() {
+        this.removeVerificationBecauseVerified();
+        UserManager.addOfflineUser(player, data, ipAddress);
+        AlixScheduler.async(() -> ReflectionUtils.resetLoginEffectPackets(this));
+        Location originalLoc = OriginalLocationsManager.remove(player);
+        if (originalLoc != null) this.player.teleport(originalLoc);//tp back 'n reset the illusion packet blocking made
+        else
+            Main.logWarning("original location was null at login! - The Player was in the captcha world unsupervised!");
+    }
+
+/*    public boolean synchronizedAutoRegister(Password password) {//this method is invoked when the register conditions is async
+        JavaScheduler.sync(() -> {
+            PersistentUserData data = UserManager.register(player, password);
+
+            data.setPasswordType(PasswordType.PASSWORD);
+
+            removeVerification();
+        });
+        return true;
+    }*/
+
+    public void register(String password) {
+        PersistentUserData data = UserManager.register(this.player, password, this.ipAddress);
+        data.setPasswordType(isGuiUser ? passwordBuilder.getType().toPasswordType() : PasswordType.PASSWORD);
+        this.removeVerificationBecauseVerified();
+
+        Location originalLoc = OriginalLocationsManager.remove(player);
+        if (originalLoc != null) this.player.teleport(originalLoc);//tp back 'n reset the illusion packet blocking made
+        else
+            Main.logWarning("original location was null at register! - The Player was in the captcha world unsupervised!");
+
+        if (captchaInitialized) {
+            this.player.setPersistent(true); //Start saving the player which was verified by captcha
+            this.player.setGameMode(this.originalGameMode); //Only set the original gamemode on registration, as non-persistent player's information are not saved
+            //this.player.kickPlayer(registerSuccess); //kick is necessary because of packet blocking visuals desynchronization (not anymore)
+            AlixScheduler.async(() -> {
+                ReflectionUtils.resetLoginEffectPackets(this);
+                AlixUtils.broadcastFast0(this.joinMessage);
+            });
+        } else {
+            AlixScheduler.async(() -> ReflectionUtils.resetLoginEffectPackets(this)); //ReflectionUtils.resetBlindnessEffectPackets(this.player.getEntityId(), this.blocker.getChannel()); //only reset the blindness at register whenever captcha verification is disabled, as the register's kick already does the job of resetting spoofed effect packets
+        }
+    }
+
+    private void removeVerificationBecauseVerified() {
+        Verifications.remove(player);
+        this.disableActionBlockerAndUninject();
+    }
+
+    public boolean isPasswordCorrect(String s) {
+        return data.getPassword().isCorrect(s);
+    }
+
+    public boolean hasAccount() {
+        return data != null;
+    }
+
+    public boolean isRegistered() {
+        return isRegistered(hasAccount());
+    }
+
+    private boolean isRegistered(boolean hasAccount) {
+        return hasAccount && data.getPassword().isSet();
+    }
+}

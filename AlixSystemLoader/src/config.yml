@@ -1,0 +1,165 @@
+#--------------------------------------------
+# This is the config.yml file for AlixSystem, divided by sections
+# If you're curious about certain parameters, you can join our discord server
+# at https://discord.gg/bWjmA7s3xV or visit the documentation section
+# of this plugin at spigot, available at https://www.spigotmc.org/resources/alixsystem.109144/field?field=documentation
+#--------------------------------------------
+
+
+#-----------------------------------------------#
+#                 PRE-REGISTER                  #
+#-----------------------------------------------#
+
+#Config used when an unregistered player has not joined the server yet, but is trying to
+
+#Highly recommended, as it's greatly optimized and prevents one-time connections for unregistered players (which are common in bot attacks)
+prevent-first-time-join: true
+#Used if the parameter above is set to true to define the maximum number of remembered connections - a connection will be forgotten only when this list's size amount of connections will be made (min of 3, max of 32767)
+connection-list-size: 48
+#Defines whether an unregistered player should be required to ping the server before joining (can stop primitive bot attacks, offline mode only)
+ping-before-join: true
+#Used if the parameter above is set to true to define the maximum number of remembered pings - a ping will be forgotten only when this list's size amount of connections will be made (min of 3, max of 32767)
+ping-list-size: 48
+#Defines how much accounts in total should be a player allowed to have (counted by their ip), set it to 0 or less if you want to disable it
+max-total-accounts: 1
+#Prevents unregistered players from logging in using a VPN (designed with the main purpose of preventing players bypassing the limit of 'max-total-accounts' by using VPNs, but may also work a bot counter-measurement)
+anti-vpn: true
+
+
+#----------------------------------------------#
+#                   CAPTCHA                    #
+#----------------------------------------------#
+
+#Config used when the player is completing the captcha verification (before he's given the ability to register his account)
+
+#Defines whether an unregistered player should be required to complete a captcha before registering (works as a safety measure against a bot attack, offline mode only)
+captcha: true
+#Defines the visual representation type of the captcha that will be shown to the tested player. Available:
+#map - (1.14+) Gives the player a map item with the given captcha (the safest one)
+#subtitle - Shows the captcha in a subtitle (mediocre in terms of safety)
+#message - Sends a message to the player with the given captcha (mediocre in terms of safety and can be missed by the user)
+captcha-visual-type: map
+#Available:
+#numeric - The captcha is a number between 0 and 9999 (referring to the default captcha length of 4)
+#text - The captcha is a four letter text (referring to the default captcha length of 4)
+captcha-type: text
+#Defines the range (in ASCII) of possible symbols in the text captcha (will not work for non-literal chars & ranges greater than the total of 32767)
+text-captcha-ascii-range: a-z, A-Z, 0-9
+#Defines the font used for character rendering in the map captcha (only works in a headful environment)
+map-captcha-font: Arial
+#Defines how big the drawn characters are
+map-captcha-font-size: 35
+#Defines (in degrees) the maximum random rotation of the letters on a captcha map (in both directions)
+map-captcha-font-max-random-rotation: 45
+#Defines the length of the captcha (min of 1, max of 5)
+captcha-length: 5
+#Defines whether captcha should be case-sensitive (not recommended, as whether the letters are capital can be sometimes hard to tell)
+captcha-case-sensitive: false
+#Defines whether the player should be kicked when the entered captcha is incorrect (setting it to false could be risky because of bot attacks)
+kick-on-incorrect-captcha: true
+#Defines (in seconds) how long should a player allowed to be on the server without completing the captcha test before being kicked out
+max-captcha-time: 30
+
+
+#----------------------------------------------#
+#                   LOGIN                      #
+#----------------------------------------------#
+
+#Config used when the player is in the login phase, either trying to login in or register
+
+#Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users)
+auto-login: true
+#Defines how long (in seconds) should be a player allowed to be on the server not logged in (but with the captcha test completed) (set it to zero or less if you want to disable it, max of 1638)
+max-login-time: 75
+#Defines whether, if the server is set to offline mode, the players should be required to log in using a set beforehand password
+offline-login-requirement: true
+#Defines whether the player should be kicked when the entered password is incorrect (setting it to false could be risky because of password crackers)
+kick-on-incorrect-password: true
+#Defines the way the passwords set by the users will be hashed in by default
+# 0 - No hash, not recommended in case of password leaks
+# 1 - Mixes hash, very fast but possibly repeatable, stored in a 32-bit integer
+# 2 - Uses uuid's bit generation & MD5 hashing, much less repeatable, but in exchange takes more computing time, stored in a 64-bit integer
+# 3 - Uses uuid's bit generation & SHA-256 hashing, almost never repeats (no idea if it even ever can repeat), most secure of all the options, but also the heaviest (~1ms of computing time), stored in a 64-bit integer
+password-hash-type: 1
+#Requires FastLogin, but allows premium users to join without the need of registering or logging in
+premium-auto-in: true
+#Defines (in milliseconds) the delay between each verification message sent (used for captcha, register and login message reminders, you can set it to 0 or less in order to make the message be sent only once)
+verification-reminder-message-delay: 5000
+
+
+#----------------------------------------------#
+#                     GUI                      #
+#----------------------------------------------#
+
+#Config used when the player is in the login phase, either trying to login in or register, but by using the PIN gui
+
+#Defines the default way the users have to register/log in. Available:
+# password - The user registers/logs in using the traditional password typed in the login command
+# anvil_password - The user registers/logs in using an anvil rename
+# pin - The user have to registers/logs in using a pin gui
+password-type: password
+#Defines whether the player should have his pin checked the moment he types the last digit, without the need of clicking the CONFIRM button
+pin-auto-confirm: true
+#Defines the item type used for the pin gui's digits. Available:
+# wooden_skull - The built-in default version of a wooden skull
+# chat_stone_skull - The built-in stone skull with a visible contrast between the background and the digit
+# <Material> - Any given valid material (e. g. red_wool, diamond_sword, dirt, oak_leaves etc.)
+pin-digit-item-type: wooden_skull
+#Defines the item amount for the pin digits
+# <Number> - Any given positive number, up to 64
+# digit_equivalent - The item amount will be the exact same as the pin digit
+pin-digit-item-amount: 1
+#Defines the item amount for the '0' digit in the pin login, as 'digit_equivalent' would result in no item
+pin-digit-zero-item-amount: 1
+
+
+#----------------------------------------------#
+#                    CHAT                      #
+#----------------------------------------------#
+
+#Config used for chat management
+
+#Defines (in milliseconds) the minimum delay between chat messages (set it to zero or less if you want to disable it)
+chat-delay: -1
+#Defines the chat format, where the first '%s' is the player's name, and the second '%s' is the message.
+chat-format: "%s&7: %s"
+#If you already have a chat plugin then you can disable AlixSystem's intervention by setting this parameter to false (works only for chat format, chat delay is unaffected)
+use-this-syntax: true
+
+
+#------------------------------------------------#
+#                   UTILITIES                    #
+#------------------------------------------------#
+
+#Config used for the overall set-up
+
+#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.txt file)
+language: en
+#Defines whether the /op and /deop commands should require a password (except when the console is executing it)
+restrict-op-command: false
+#Password required for /op and /deop commands if the parameter above is set to true
+op-command-password: ILikePie
+#Defines (in second) in what period of time should the teleportation request automatically expire (set it to 0 or less if you want to disable it)
+tpa-auto-expire: 120
+#Prefix of the messages sent by this plugin.
+prefix: "&c[System] > &7"
+#Defines whether the prefix should be appended to messages sent by this plugin
+append-prefix: true
+#As the name suggests, it will hide any failed join attempts (such as unlisted, banned players etc.) from the console in order to avoid spam
+hide-failed-join-attempts: true
+#Defines (in milliseconds) the teleportation delay for user teleports (such as /tpa, /spawn etc.)
+user-teleportation-delay: 5000
+
+
+#------------------------------------------------#
+#                   TECHNICAL                    #
+#------------------------------------------------#
+
+#Config used for the very technical features of this plugin
+
+#Checks the overall server set up (such as: Unnecessary Plugins, AntiCheat, Plugin Alternatives etc.) and gives feedback in the console right after enabling (Deprecated)
+check-compatibility: false
+#Defines whether debug messages should be sent (usually helps the developer in identifying the source of an error)
+debug: false
+#Defines whether all important data should be asynchronously saved every time a world is saved (if set to false the important data will be saved once the plugin or the server are disabled - This is however not recommended, because things such as server crashes may corrupt the saved data)
+auto-save: true

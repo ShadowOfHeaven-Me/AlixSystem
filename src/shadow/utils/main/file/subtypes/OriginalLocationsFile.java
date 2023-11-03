@@ -1,0 +1,34 @@
+package shadow.utils.main.file.subtypes;
+
+import org.bukkit.Location;
+import shadow.utils.main.file.FileManager;
+import shadow.utils.objects.savable.loc.SavableLocation;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class OriginalLocationsFile extends FileManager {
+
+    private final Map<UUID, Location> map;
+
+    public OriginalLocationsFile() {
+        super("original-locations.txt");
+        this.map = new HashMap<>();
+    }
+
+    @Override
+    protected void loadLine(String line) {
+        String[] a = line.split("\\|", 2);
+        this.map.put(UUID.fromString(a[0]), SavableLocation.fromString(a[1]));
+    }
+
+    public void save() throws IOException {
+        super.saveKeyAndVal(map, "|", SavableLocation::toSavableString);//l -> toSavableString(l)
+    }
+
+    public final Map<UUID, Location> getMap() {
+        return map;
+    }
+}

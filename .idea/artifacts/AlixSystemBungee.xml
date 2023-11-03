@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="AlixSystemBungee">
+    <output-path>$PROJECT_DIR$/out/artifacts/AlixSystemBungee</output-path>
+    <root id="archive" name="AlixSystemBungee.jarinjar">
+      <element id="module-output" name="AlixSystemBungeeSupport" />
+    </root>
+  </artifact>
+</component>

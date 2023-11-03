@@ -1,0 +1,24 @@
+package alix.common.scheduler.impl.proxy;
+
+import alix.common.scheduler.impl.AbstractAlixScheduler;
+import alix.common.scheduler.tasks.SchedulerTask;
+
+import java.util.concurrent.TimeUnit;
+
+public class VelocityAlixScheduler extends AbstractAlixScheduler {
+
+    @Override
+    public void sync(Runnable r) {
+        throw new UnsupportedOperationException("sync on Velocity is unsupported!");
+    }
+
+    @Override
+    public SchedulerTask runLaterSync(Runnable r, long d, TimeUnit u) {
+        throw new UnsupportedOperationException("runLaterSync on Velocity is unsupported!");
+    }
+
+    @Override
+    public SchedulerTask repeatSync(Runnable r, long d, TimeUnit u) {
+        throw new UnsupportedOperationException("repeatSync on Velocity is unsupported!");
+    }
+}

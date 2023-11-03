@@ -1,0 +1,43 @@
+as: alixsystem, alixs, systemalix, js
+fly: flying, latanie, lataj
+sudo: -
+rename: itemrename, nazwijprzedmiot, nazwaprzedmiotu, zmiennazweprzedmiotu
+speed: swiftness, szybkosc, predkosc
+heal: h, ulecz
+feed: f, najedz, nasyc
+enderchest: ec, invec, echest, enderc
+invsee: inventorylook, invlook, inventory, inv, inventoryview, inview, eq, zobaczeq, zobaczekwipunek, ekwipunek
+gamemode: gm, trybgry, gms, gmc, gma, gmsp, gm0, gm1, gm2, gm3
+list: -
+nickname: nick, nicknameplayer, name, nazwa, zmiennazwe
+register: reg, zarejestruj
+login: loguj, zaloguj
+changepassword: changepass, cpass, zmienhaslo, zhaslo
+captcha: -
+unban: -
+unbanip: pardonip, unban-ip
+tempban: -
+tempbanip: -
+op: -
+deop: -
+home: hometp, tphome
+sethome: -
+removehome: homeremove, delhome, deletehome, homedel, homedelete
+homelist: homes, homel
+tpa: -
+tpaccept: tpaaccept, tpacc
+tpadeny: tpdeny, tpd
+tpacancel: tpcancel, tpc
+tpaon: -
+tpaoff: -
+mute: wycisz
+unmute: odcisz
+warp: -
+addwarp: warpadd, createwarp, warpcreate, dodajwarp, stworzwarp, setwarp
+removewarp: warpremove, usunwarp
+setspawn: -
+spawn: -
+msg: message, tell
+reply: r, odpowiedz
+chat: chaton, chatoff, czat, czatoff, czaton
+chatclear: clearchat, cc

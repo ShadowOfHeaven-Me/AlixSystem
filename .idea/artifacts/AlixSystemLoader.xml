@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="AlixSystemLoader">
+    <output-path>$PROJECT_DIR$/../../../Server/plugins</output-path>
+    <root id="archive" name="AlixSystem 2.7.0 DEV-2.jar">
+      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/plugin.yml" />
+      <element id="module-output" name="AlixSystemLoader" />
+      <element id="artifact" artifact-name="AlixSystem" />
+    </root>
+  </artifact>
+</component>
