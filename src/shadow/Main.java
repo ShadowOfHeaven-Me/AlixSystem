@@ -41,6 +41,8 @@ public class Main implements LoaderBootstrap {
     //UPDATE:
     //[^] Fixed some common issues
     //[^] Passwords will now be hashed by default
+    //[^] Fixed the first hashing algorithm differently hashing on different java versions
+    //[+] Added 3 new variants to the pin gui heads appearance (changeable at 'pin-digit-item-type')
     //[+] Added AnvilLogin
     //[+] Added the possibility of a password reset using the /as rp <player>
     //[+] Reformatted verification command processing
@@ -51,11 +53,8 @@ public class Main implements LoaderBootstrap {
     //[+] Optimized GUIs
 
 
-    //todo: Filter out people's passwords from the console if hashed by default
     //todo: Add a custom data structure for unverified users
-    //TODO: maybe add hide-coordinates parameter to config
     //TODO: fix pin gui's location sounds bugs
-    //TODO: Maybe add a reminder before the actual captcha kick?
     //TODO: add book captcha possibility in config
 
 /*    #Defines whether the numerical digits generated on a captcha map item should be 'fancy'
@@ -69,7 +68,6 @@ public class Main implements LoaderBootstrap {
             login-restrict-base: packet*/
 
     //TODO: /blacklist, mute-ip (?), ban format customizable
-    //TODO: make /login & /register invisible to the console (but only when hashed)
     //TODO: ping check by Keep Alive packets or the CraftPlayer getPing method (?)
     //TODO: Check if delay that's zero or less can bug the scheduler (packet auto kick)
 
@@ -116,7 +114,6 @@ public class Main implements LoaderBootstrap {
         if (requireCaptchaVerification) Captcha.pregenerate();
         FileManager.loadFiles();
         AlixHandler.initExecutors(pm);
-        //JavaScheduler.async(() -> logConsoleInfo(AlixTranslator.translate("Cześć, jestem z Polski.")));
         FileCommandManager.initialize();
         //Dependencies.initAdditional();
         VerificationReminder.init();

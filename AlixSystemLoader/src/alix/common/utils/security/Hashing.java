@@ -46,8 +46,13 @@ public class Hashing {
     private static final class Hash1 implements HashingAlgorithm {
 
         @Override
-        public final String hash(String s) {
-            return String.valueOf(s.hashCode());//very fast, but repeatable
+        public final String hash(String s) {//pretty fast, but possibly repeatable
+            int hashCode = 0;
+            char[] a = s.toCharArray();
+
+            for (char c : a) hashCode = 31 * hashCode + c;
+
+            return Integer.toString(hashCode);
         }
     }
 

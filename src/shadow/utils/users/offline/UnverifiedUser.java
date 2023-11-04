@@ -209,7 +209,7 @@ public final class UnverifiedUser {
     public void logIn() {
         this.removeVerificationBecauseVerified();
         UserManager.addOfflineUser(player, data, ipAddress);
-        AlixScheduler.async(() -> ReflectionUtils.resetLoginEffectPackets(this));
+        AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
         Location originalLoc = OriginalLocationsManager.remove(player);
         if (originalLoc != null) this.player.teleport(originalLoc);//tp back 'n reset the illusion packet blocking made
         else
@@ -241,12 +241,12 @@ public final class UnverifiedUser {
             this.player.setPersistent(true); //Start saving the player which was verified by captcha
             this.player.setGameMode(this.originalGameMode); //Only set the original gamemode on registration, as non-persistent player's information are not saved
             //this.player.kickPlayer(registerSuccess); //kick is necessary because of packet blocking visuals desynchronization (not anymore)
-            AlixScheduler.async(() -> {
+            AlixScheduler.runLaterAsync(() -> {
                 ReflectionUtils.resetLoginEffectPackets(this);
                 AlixUtils.broadcastFast0(this.joinMessage);
-            });
+            }, 1, TimeUnit.SECONDS);
         } else {
-            AlixScheduler.async(() -> ReflectionUtils.resetLoginEffectPackets(this)); //ReflectionUtils.resetBlindnessEffectPackets(this.player.getEntityId(), this.blocker.getChannel()); //only reset the blindness at register whenever captcha verification is disabled, as the register's kick already does the job of resetting spoofed effect packets
+            AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS); //ReflectionUtils.resetBlindnessEffectPackets(this.player.getEntityId(), this.blocker.getChannel()); //only reset the blindness at register whenever captcha verification is disabled, as the register's kick already does the job of resetting spoofed effect packets
         }
     }
 

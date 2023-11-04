@@ -70,12 +70,10 @@ public final class OfflineExecutors extends UniversalExecutor {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSpawnLocInit(PlayerSpawnLocationEvent event) {
-        if (requireCaptchaVerification && !UserFileManager.hasName(event.getPlayer().getName())) {//the player has not completed the captcha verification
-
-            if (!event.getSpawnLocation().getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {//the join location is not in the captcha world
-                OriginalLocationsManager.add(event.getPlayer(), event.getSpawnLocation());//remember the original spawn location
-                event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world as the spawn location
-            }
+        if (requireCaptchaVerification && !event.getSpawnLocation().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && !UserFileManager.hasName(event.getPlayer().getName())) {//the player has not completed the captcha verification
+            //the join location is not in the captcha world
+            OriginalLocationsManager.add(event.getPlayer(), event.getSpawnLocation());//remember the original spawn location
+            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world as the spawn location
         }
         //event.setSpawnLocation(AlixHandler.handleOfflinePlayerJoin(event.getPlayer(), event.getSpawnLocation()));
     }
@@ -135,6 +133,7 @@ public final class OfflineExecutors extends UniversalExecutor {
 
                 if (verificationCommand.equals("captcha")) {
                     CommandManager.onCaptchaCommand(user, p, arg2);
+                    e.setCancelled(true);
                     return;
                 }
 
