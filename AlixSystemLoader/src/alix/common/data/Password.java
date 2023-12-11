@@ -12,30 +12,28 @@ public final class Password {
 
     private static final LoopCharIterator loopCharIterator;
     private String hashedPassword;
-    private HashingAlgorithm hashingAlgorithm;
+    private HashingAlgorithm hashing;
     private byte hashId;
 
     private Password() {
-        this.hashId = Hashing.CONFIG_HASH_ID;
-        this.hashingAlgorithm = Hashing.ofHashId(hashId);
     }
 
     private Password(String hashedPassword, byte hashId) {
         this.hashedPassword = hashedPassword;
         this.hashId = hashId;
-        this.hashingAlgorithm = Hashing.ofHashId(hashId);
+        this.hashing = Hashing.ofHashId(hashId);
     }
 
     public void setPassword(String unhashedPassword) {
         this.hashId = Hashing.CONFIG_HASH_ID;
-        this.hashingAlgorithm = Hashing.ofHashId(hashId);
-        this.hashedPassword = hashingAlgorithm.hash(unhashedPassword);
+        this.hashing = Hashing.ofHashId(hashId);
+        this.hashedPassword = hashing.hash(unhashedPassword);
     }
 
     public void setFrom(Password password) {
         this.hashedPassword = password.hashedPassword;
         this.hashId = password.hashId;
-        this.hashingAlgorithm = password.hashingAlgorithm;
+        this.hashing = password.hashing;
     }
 
     public String toSavable() {
@@ -43,7 +41,7 @@ public final class Password {
     }
 
     public boolean isCorrect(String unhashedPassword) {
-        return this.hashedPassword.equals(hashingAlgorithm.hash(unhashedPassword));
+        return this.hashedPassword.equals(hashing.hash(unhashedPassword));
     }
 
 /*    public boolean isCorrectLiteral(String hashedPassword) {
@@ -62,14 +60,14 @@ public final class Password {
         return hashedPassword != null;
     }
 
-    public HashingAlgorithm getHashingAlgorithm() {
-        return hashingAlgorithm;
-    }
+/*    public HashingAlgorithm getHashing() {
+        return hashing;
+    }*/
 
     public final void reset() {
         this.hashedPassword = null;
         this.hashId = Hashing.CONFIG_HASH_ID;
-        this.hashingAlgorithm = Hashing.ofHashId(hashId);
+        this.hashing = Hashing.ofHashId(hashId);
     }
 
     public static Password createRandomUnhashed() {

@@ -18,7 +18,7 @@ import java.nio.file.Path;
 
 @Plugin(id = "AlixSystem", name = "AlixSystem", version = "2.7.0", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
         authors = "ShadowOfHeaven", dependencies = @Dependency(id = "FastLogin", optional = true))
-public class VelocityAlixMain implements AlixLoggerProvider {
+public final class VelocityAlixMain implements AlixLoggerProvider {
 
     public static VelocityAlixMain instance;
     private static final String JAR_NAME = "AlixSystemVelocity.jarinjar";

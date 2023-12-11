@@ -4,7 +4,7 @@ import alix.loaders.bukkit.BukkitAlixMain;
 import alix.common.utils.config.ConfigProvider;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-public class BukkitConfigImpl implements ConfigProvider {
+public final class BukkitConfigImpl implements ConfigProvider {
 
     private final YamlConfiguration config = (YamlConfiguration) BukkitAlixMain.instance.getConfig();
 

@@ -27,13 +27,21 @@ public class AlixDeque<T> {
         this.size = 0;
     }
 
-/*    public final T peekFirst() {
+/*    public void setFirstNode0(Node<T> node) {
+
+    }*/
+
+    public final T firstElement0() {
+        return first.element;
+    }
+
+    public final T peekFirst() {
         return first != null ? first.element : null;
     }
 
     public final T peekLast() {
         return last != null ? last.element : null;
-    }*/
+    }
 
     public final boolean isEmpty() {
         return this.first == null;
@@ -71,7 +79,7 @@ public class AlixDeque<T> {
 
     public static final class Node<T> {
 
-        private final T element;
+        public final T element;
         private Node<T> next;
 
         private Node(T element) {

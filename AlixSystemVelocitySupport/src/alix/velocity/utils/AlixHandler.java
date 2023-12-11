@@ -1,10 +1,10 @@
 package alix.velocity.utils;
 
 import alix.common.antibot.connection.ConnectionFilter;
-import alix.common.antibot.connection.types.AntiVPN;
-import alix.common.antibot.connection.types.ConnectionManager;
-import alix.common.antibot.connection.types.GeoIPTracker;
-import alix.common.antibot.connection.types.ServerPingManager;
+import alix.common.antibot.connection.filters.AntiVPN;
+import alix.common.antibot.connection.filters.ConnectionManager;
+import alix.common.antibot.connection.filters.GeoIPTracker;
+import alix.common.antibot.connection.filters.ServerPingManager;
 
 import java.util.ArrayList;
 import java.util.List;

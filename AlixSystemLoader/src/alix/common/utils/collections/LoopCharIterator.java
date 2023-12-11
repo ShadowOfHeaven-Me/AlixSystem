@@ -1,6 +1,6 @@
 package alix.common.utils.collections;
 
-public class LoopCharIterator {
+public final class LoopCharIterator {
 
     private final char[] chars;
     private final short size;
@@ -15,8 +15,7 @@ public class LoopCharIterator {
     }
 
     private char next() {
-        if (++index == size) index = 0;
-        return chars[index];
+        return chars[++index == size ? index = 0 : index];
     }
 
     public char[] next(int length) {

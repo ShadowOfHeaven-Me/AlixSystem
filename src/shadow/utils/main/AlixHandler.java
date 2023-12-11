@@ -1,53 +1,56 @@
 package shadow.utils.main;
 
 import alix.common.antibot.connection.ConnectionFilter;
-import alix.common.antibot.connection.types.AntiVPN;
-import alix.common.antibot.connection.types.ConnectionManager;
-import alix.common.antibot.connection.types.GeoIPTracker;
-import alix.common.antibot.connection.types.ServerPingManager;
+import alix.common.antibot.connection.filters.AntiVPN;
+import alix.common.antibot.connection.filters.ConnectionManager;
+import alix.common.antibot.connection.filters.GeoIPTracker;
+import alix.common.antibot.connection.filters.ServerPingManager;
+import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
-import alix.common.messages.types.AlixMessage;
 import alix.common.scheduler.impl.AlixScheduler;
-import alix.common.utils.AlixConsoleFilter;
 import alix.common.utils.formatter.AlixFormatter;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import shadow.Main;
+import shadow.systems.dependencies.Dependencies;
 import shadow.systems.executors.OfflineExecutors;
 import shadow.systems.executors.OnlineExecutors;
 import shadow.systems.executors.ServerPingListener;
 import shadow.systems.executors.gui.GUIExecutors;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
+import shadow.systems.login.result.LoginInfo;
+import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.command.managers.ChatManager;
-import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.filter.packet.check.PacketAffirmator;
-import shadow.utils.objects.filter.packet.check.impl.MultiVersionPacketAffirmator;
-import shadow.utils.objects.filter.packet.check.impl.NewerVersionedPacketAffirmator;
-import shadow.utils.objects.filter.packet.injector.ChannelInjector;
-import shadow.utils.objects.filter.packet.injector.ChannelInjectorNMS;
-import shadow.utils.objects.filter.packet.injector.ChannelInjectorPacketEvents;
-import shadow.utils.objects.filter.packet.types.PacketBlocker;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.objects.AlixConsoleFilterHolder;
+import shadow.utils.objects.packet.check.PacketAffirmator;
+import shadow.utils.objects.packet.check.impl.MultiVersionPacketAffirmator;
+import shadow.utils.objects.packet.check.impl.NewerVersionedPacketAffirmator;
+import shadow.utils.objects.packet.injector.ChannelInjector;
+import shadow.utils.objects.packet.injector.ChannelInjectorNMS;
+import shadow.utils.objects.packet.injector.ChannelInjectorPacketEvents;
+import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static shadow.utils.main.AlixUtils.*;
 
-public class AlixHandler {
+public final class AlixHandler {
 
     private static final AlixMessage
             chatSetOff = Messages.getAsObject("chat-set-off"),
@@ -55,10 +58,13 @@ public class AlixHandler {
             playerWasDeopped = Messages.getAsObject("player-was-deopped"),
             playerWasOpped = Messages.getAsObject("player-was-opped");
 
-
     private static final long teleportDelay = Main.config.getLong("user-teleportation-delay");
     private static final boolean isTeleportDelayed = teleportDelay > 0;
     private static final String delayedTeleportMessage = Messages.getWithPrefix("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
+
+    public static void inject(Channel channel, String handlerName, ChannelHandler handler) {
+        channel.pipeline().addBefore("packet_handler", handlerName, handler);
+    }
 
     public static void delayedConfigTeleportExecute(Runnable r, Player p) {
         if (isTeleportDelayed) AlixScheduler.runLaterSync(r, teleportDelay, TimeUnit.MILLISECONDS);
@@ -92,12 +98,22 @@ public class AlixHandler {
     public static void initExecutors(PluginManager pm) {
         if (isOfflineExecutorRegistered) {
             pm.registerEvents(new OfflineExecutors(), Main.plugin);
+
+            /*if (Dependencies.isPacketEventsPresent) new PacketEventsListener();
+            else */
             pm.registerEvents(new GUIExecutors(), Main.plugin);
             /*if (anvilPasswordGui) {
                 pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
                 Main.logError("drftgyhjuik");
             }*/
             if (ServerPingManager.isRegistered()) pm.registerEvents(new ServerPingListener(), Main.plugin);
+            /*            if (requireCaptchaVerification) {
+             *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
+                    Main.logInfo("Enabling Async Tab Completion support.");
+                    pm.registerEvents(new PaperTabCompletionExecutors(), Main.plugin);
+                } else *//*
+                //pm.registerEvents(new BukkitTabCompletionExecutors(), Main.plugin);
+            }*/
 
             Listener listener = PremiumAutoIn.getAutoLoginListener();
 
@@ -107,8 +123,17 @@ public class AlixHandler {
         }
     }
 
-    public static void addConsoleFilter() {
-        ((Logger) LogManager.getRootLogger()).addFilter(new AlixConsoleFilter());
+    public static void updateConsoleFilter() {
+        Logger logger = ((Logger) LogManager.getRootLogger());
+        for (Iterator<Filter> it = logger.getFilters(); it.hasNext(); ) {
+            Filter filter = it.next();
+            if (filter instanceof AlixConsoleFilterHolder) {
+                ((AlixConsoleFilterHolder) filter).updateInstance();//updating the instance, since it's bytecode could've changed after a reload
+                return;
+            }
+        }
+        if (hideFailedJoinAttempts || alixJoinLog)
+            logger.addFilter(new AlixConsoleFilterHolder());
         Main.debug(isPluginLanguageEnglish ? "Successfully implemented AlixConsoleFilter to console!" :
                 "Poprawnie zaimplementowano AlixConsoleFilter dla konsoli! ");
     }
@@ -119,47 +144,33 @@ public class AlixHandler {
     }
 
     public static UnverifiedUser handleOfflinePlayerJoin(Player p, String joinMessage) {
-        String name = p.getName();
-
-        if (PremiumAutoIn.remove(name)) {//The given user is premium
-            //Main.logInfo("" + PremiumAutoIn.isPremium(p.getUniqueId()));
-            UserManager.addOnlineUser(p);
-            return null;
+        LoginInfo login = LoginVerdictManager.getExisting(p);
+        switch (login.getVerdict()) {
+            case DISALLOWED_NO_DATA:
+                GeoIPTracker.addTempIP(login.getIP());
+                return Verifications.add(p, login.getData(), login.getIP(), joinMessage);
+            case DISALLOWED_PASSWORD_RESET:
+            case DISALLOWED_LOGIN_REQUIRED:
+                return Verifications.add(p, login.getData(), login.getIP(), joinMessage);
+            case LOGIN_PREMIUM:
+                UserManager.addOnlineUser(p);
+                return null;
+            case LOGIN_IP_AUTO_LOGIN:
+                UserManager.addOfflineUser(p, login.getData(), login.getIP(), PacketBlocker.getChannel(p));
+                p.sendMessage(Messages.autoLoginMessage);
+                return null;
+            default:
+                throw new AssertionError("Invalid: " + login.getVerdict());
         }
-
-        //if (PremiumAutoIn.isPremium(p.getUniqueId())) return;
-
-        //if (UserManager.getNullableUserOnline(p) != null) return; //No fast login, no need to check this (way before time he FastLogin AuthPlugin used to add
-
-        PersistentUserData data = UserFileManager.get(name);
-
-        String address = p.getAddress().getAddress().getHostAddress();
-
-        if (data == null) {//not registered - no data
-            GeoIPTracker.addTempIP(address);
-            return Verifications.add(p, data, address, joinMessage);
-        }
-
-        if (!data.getPassword().isSet()) {//not registered - password was reset
-            return Verifications.add(p, data, address, joinMessage);
-        }
-
-        if (playerIPAutoLogin && data.getSavedIP().equals(address)) {//ip auto login
-            UserManager.addOfflineUser(p, data, address);
-            p.sendMessage(Messages.autoLoginMessage);
-            return null;
-        }
-
-        return Verifications.add(p, data, address, joinMessage); //not logged in
     }
 
     public static void handleOfflinePlayerQuit(Player p, PlayerQuitEvent event) {
         UnverifiedUser u = Verifications.remove(p);
 
         if (u != null) {//unregistered/not logged in user removal
-            u.uninject();//do not remove the netty channel blocker, as all netty channels are automatically disconnected upon player server quit
-            u.getPacketBlocker().cancelLoginKickTask();
-            if (!u.hasAccount()) {//quit after join with no account was made (the account could've been created later on, but that is no concern to us)
+            u.uninject(true);//do not remove the netty channel blocker, as all netty channels are automatically disconnected upon player server quit
+            //u.getPacketBlocker().cancelLoginKickTask();
+            if (!u.hasAccount()) {//quit after join with no account was made (the account couldn't have been created later on, as the Player is removed from the Verifications list when that happens)
                 GeoIPTracker.removeTempIP(u.getIPAddress());//removing the temporary ip
                 if (requireCaptchaVerification)
                     event.setQuitMessage(null);//removing the quit message whenever the join message was also removed
@@ -168,7 +179,7 @@ public class AlixHandler {
     }
 
     public static PacketAffirmator createPacketAffirmatorImpl() {
-        if (PacketBlocker.serverboundVersion) {
+        if (PacketBlocker.serverboundNameVersion) {
             Main.logInfo("Using the 1.17+ packet affirmator for packet processing.");
             return new NewerVersionedPacketAffirmator();
         }
@@ -177,12 +188,17 @@ public class AlixHandler {
     }
 
     public static ChannelInjector createChannelInjectorImpl() {
-        if (Main.pm.isPluginEnabled("packetevents")) {
+        if (Dependencies.isPacketEventsPresent) {
             Main.logInfo("Using PacketEvents for channel injecting (provided).");
             return new ChannelInjectorPacketEvents();
         }
-        Main.logInfo("Using NMS for channel injecting (built-in).");
-        return new ChannelInjectorNMS();
+        /*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
+            Main.logInfo("Using Paper for channel injecting (built-in).");
+            return new ChannelInjectorPaper();
+        }*/
+        ChannelInjector injector = new ChannelInjectorNMS();
+        Main.logInfo("Using " + injector.getProvider() + " for channel injecting (built-in).");
+        return injector;
     }
 
 /*    public static PingCheckFactory createPingCheckFactoryImpl() {
@@ -194,7 +210,7 @@ public class AlixHandler {
         return new MultiVersionPingCheckFactoryImpl();
     }*/
 
-    public static boolean borrowCommandExecutorIfRegistered(String commandLabel) {
+/*    public static boolean borrowCommandExecutorIfRegistered(String commandLabel) {
         for (Plugin p : Bukkit.getPluginManager().getPlugins()) {
             String name = p.getName();
 
@@ -212,7 +228,7 @@ public class AlixHandler {
             return true;
         }
         return false;
-    }
+    }*/
 
     public static void handleChatTurnOn(CommandSender sender) {
         if (ChatManager.isChatTurnedOn()) {
@@ -262,7 +278,7 @@ public class AlixHandler {
         sendMessage(sender, "&cCould not deop player " + arg1 + "! Please check if there are any errors in the console!");
     }
 
-    public static void handleOperatorSetPL(CommandSender sender, String arg1) {
+/*    public static void handleOperatorSetPL(CommandSender sender, String arg1) {
         boolean success = setOperator(arg1);
         if (success) {
             //sendMessage(sender, "Ustawianie operatora dla " + arg1 + " powiodło się!");
@@ -280,10 +296,13 @@ public class AlixHandler {
             return;
         }
         sendMessage(sender, "&cWystąpił błąd przy odbieraniu operatora dla " + arg1 + "! Proszę sprawdzić czy w konsoli ukazały się jakiekolwiek errory!");
-    }
+    }*/
 
     public static void kickAll(String reason) {
         String kickMessage = AlixFormatter.appendPrefix(reason);
         for (Player p : Bukkit.getOnlinePlayers()) p.kickPlayer(kickMessage);
+    }
+
+    private AlixHandler() {
     }
 }

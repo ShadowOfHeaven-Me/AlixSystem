@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 public final class AlixFormatter {
 
+    public static final String pluginPrefix = translateColors(ConfigProvider.config.getString("prefix"));
     private static final String messagePrefix;
     private static final boolean appendPrefix;
 
@@ -27,15 +28,10 @@ public final class AlixFormatter {
      * If you wish to reformat the same regex of {0} that has multiple
      * occurrences, then use the formatMultiple method.
      *
-     *
-     * @param  s The String that should be formatted
-     *
-     * @param  args The arguments used for formatting, as explained above
-     *
-     *
-     * @return  A String with regexes of the syntax {<digit>} replaced with
+     * @param s    The String that should be formatted
+     * @param args The arguments used for formatting, as explained above
+     * @return A String with regexes of the syntax {<digit>} replaced with
      * the formatting "args" of the same array index as the <digit>
-     *
      * @author ShadowOfHeaven
      */
 
@@ -55,15 +51,10 @@ public final class AlixFormatter {
      * is replaced with the "replacement" argument. Assumes there's
      * only one formatting regex.
      *
-     *
-     * @param  s The String that should be formatted
-     *
-     * @param  replacement The replacement used for the {0} regex
-     *
-     *
-     * @return  A String where the {0} regex was replaced
+     * @param s           The String that should be formatted
+     * @param replacement The replacement used for the {0} regex
+     * @return A String where the {0} regex was replaced
      * with the "replacement" argument
-     *
      * @author ShadowOfHeaven
      */
 
@@ -88,15 +79,10 @@ public final class AlixFormatter {
      * Returns a formatted String with the syntax {<digit>}, where
      * the digit is the array index of the "args" argument used for formatting
      *
-     *
-     * @param  s The String that should be formatted
-     *
-     * @param  args The arguments used for formatting, as explained above
-     *
-     *
-     * @return  A String with regexes of the syntax {<digit>} replaced with
+     * @param s    The String that should be formatted
+     * @param args The arguments used for formatting, as explained above
+     * @return A String with regexes of the syntax {<digit>} replaced with
      * the formatting "args" of the same array index as the <digit>
-     *
      * @author ShadowOfHeaven
      */
 
@@ -108,7 +94,8 @@ public final class AlixFormatter {
         final int lM2 = l - 2;
         for (int i = 0; i < l; i++) {
             char c = a[i];
-            if (i == lM2) return sb.append(a[lM2]).append(a[l - 1]).toString();//the text was not skipped and is 2 chars long, so we can skip the character test and simply return the current text + the 2 remaining characters
+            if (i == lM2)
+                return sb.append(a[lM2]).append(a[l - 1]).toString();//the text was not skipped and is 2 chars long, so we can skip the character test and simply return the current text + the 2 remaining characters
             if (c == '{' && a[i + 2] == '}') {
                 int index = a[i + 1] - 48;//48 is '0' in ascii
                 if (index < argsLength && index >= 0) {//the given index is valid
@@ -128,6 +115,9 @@ public final class AlixFormatter {
         for (int i = 0; i < c.length; i++)
             if (c[i] == '&') c[i] = '§';
         return new String(c);
+    }
+
+    private AlixFormatter() {
     }
 
 /*    public static char[] translateColors(char[] c) {

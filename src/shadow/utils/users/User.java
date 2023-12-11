@@ -1,44 +1,49 @@
 package shadow.utils.users;
 
+import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
+import shadow.utils.objects.packet.types.verified.AlixDuplexHandler;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.multi.HomeList;
 
 import java.util.UUID;
 
-public class User {// implements ObjectSerializable {
+public final class User {// implements ObjectSerializable {
 
     private final Player player;
     protected final UUID uuid;
+    protected final AlixDuplexHandler duplexHandler;
     private final PersistentUserData data;
     private final short maxHomes;
-    private long nextPossibleChatTime;
     private final boolean canBypassChatStatus, canSendColoredMessages;
+    private long nextPossibleChatTime;
     private boolean canReceiveTeleportRequests;
     /*    protected boolean isOwner;*/
 
     //name - password - ip - homes
-    protected User(Player player, PersistentUserData data) {
+    protected User(Player player, PersistentUserData data, Channel channel) {
         this.player = player;
         this.data = data;
         this.uuid = player.getUniqueId();
+        this.duplexHandler = AlixDuplexHandler.getHandler(this, channel);
+
         if (player.isOp()) {
-            maxHomes = 32767;
-            canBypassChatStatus = canSendColoredMessages = true;
-            canReceiveTeleportRequests = true;
+            this.maxHomes = 32767;
+            this.canBypassChatStatus = canSendColoredMessages = true;
+            this.canReceiveTeleportRequests = true;
             //canReceiveTeleportRequests = false;
             return;
         }
-        canBypassChatStatus = AlixUtils.hasChatBypass(player);
-        canSendColoredMessages = AlixUtils.canSendColoredChatMessages(player);
-        maxHomes = AlixUtils.getMaxHomes(player);
-        canReceiveTeleportRequests = true;
+        this.canBypassChatStatus = AlixUtils.hasChatBypass(player);
+        this.canSendColoredMessages = AlixUtils.canSendColoredChatMessages(player);
+        this.maxHomes = AlixUtils.getMaxHomes(player);
+        this.canReceiveTeleportRequests = true;
     }
 
     protected User(Player player) {
-        this(player, UserFileManager.getOrCreatePremiumInformation(player));
+        this(player, UserFileManager.getOrCreatePremiumInformation(player), null);
     }
 
     public Player getPlayer() {
@@ -59,8 +64,7 @@ public class User {// implements ObjectSerializable {
 
     @Override
     public boolean equals(Object o) {
-        //if (o instanceof Player) return ((Player) o).getUniqueId().equals(uuid);
-        return o instanceof User && ((User) o).uuid.equals(uuid);
+        return o != null && o.getClass() == User.class && ((User) o).uuid.equals(uuid);
     }
 
     @Override
@@ -135,11 +139,11 @@ public class User {// implements ObjectSerializable {
     }*/
 
     public boolean isMuted() {
-        return isMuted(System.currentTimeMillis());
+        return wasMutedAt(System.currentTimeMillis());
     }
 
-    public boolean isMuted(long now) {
-        return now < data.getMutedUntil();
+    public boolean wasMutedAt(long time) {
+        return time < data.getMutedUntil();
     }
 
 /*    private String getSavableHomes() {
@@ -175,6 +179,10 @@ public class User {// implements ObjectSerializable {
 
     public void sendMessage(String message) {
         AlixUtils.sendMessage(player, message);
+    }
+
+    public void quit() {
+        //if (duplexHandler != null) this.duplexHandler.stop();
     }
 
 /*    @Override

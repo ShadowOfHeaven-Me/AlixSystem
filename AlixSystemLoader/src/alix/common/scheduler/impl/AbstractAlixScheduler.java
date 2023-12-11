@@ -13,8 +13,8 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     protected final ScheduledThreadPoolExecutor poolExecutor;
 
     protected AbstractAlixScheduler() {
-        int parallelisms = Math.max(Runtime.getRuntime().availableProcessors() * 4, 8);
-        CommonAlixMain.logInfo("Allocated scheduler thread amount: " + parallelisms);
+        int parallelisms = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
+        CommonAlixMain.logInfo("Async scheduler parallelisms: " + parallelisms);
         this.forkJoinPool = new ForkJoinPool(parallelisms, ForkJoinPool.defaultForkJoinWorkerThreadFactory, (t, e) -> AlixCommonUtils.logException(e), false);
         this.poolExecutor = new ScheduledThreadPoolExecutor(1);
         this.poolExecutor.setRemoveOnCancelPolicy(true);
@@ -26,7 +26,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     }
 
     @Override
-    public <T> CompletableFuture<T> asyncFuture(Supplier<T> supplier) {
+    public <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier) {
         return CompletableFuture.supplyAsync(supplier, this.forkJoinPool);
     }
 

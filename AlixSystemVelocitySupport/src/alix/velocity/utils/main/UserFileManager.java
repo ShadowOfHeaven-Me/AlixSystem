@@ -1,3 +1,4 @@
+/*
 package alix.velocity.utils.main;
 
 import alix.common.data.AbstractPersistentUserData;
@@ -16,4 +17,4 @@ public class UserFileManager {
     public static AbstractPersistentUserData get(String name) {
         return map.get(name);
     }
-}
+}*/

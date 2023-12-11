@@ -10,7 +10,7 @@ import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.users.offline.UnverifiedUser;
 import shadow.utils.world.generator.AlixWorldGenerator;
 
-public class AlixWorld {
+public final class AlixWorld {
 
     private static final String worldName = "world_alix_captcha";
     private static final AlixWorld instance = !AlixUtils.isOnlineModeEnabled ? new AlixWorld() : null;
@@ -53,11 +53,9 @@ public class AlixWorld {
     }
 
     public static boolean preload() {
-        if (instance != null) {
-            instance.forceloadSpawnChunks();
-            return true;
-        }
-        return false;
+        boolean b = instance != null;
+        if (b) instance.forceloadSpawnChunks();
+        return b;
     }
 
 /*    public static Location getOriginalLocation(UnverifiedUser user, Location joinedWithLoc) {

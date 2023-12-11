@@ -4,6 +4,8 @@ import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import shadow.utils.holders.packet.constructors.OutMapPacketConstructor;
@@ -12,6 +14,7 @@ import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.offline.UnverifiedUser;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -19,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ReflectionUtils {
+public final class ReflectionUtils {
 
     //private static final String serverVersion = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
     public static final String serverVersion2 = getServerVersion();
@@ -48,13 +51,36 @@ public class ReflectionUtils {
     //public static final Object DISPLAY_NAME_UPDATE = packetPlayOutPlayerInfoClass$EnumPlayerInfoAction.getEnumConstants()[3];
     //public static final Constructor<?> packetPlayOutPlayerInfoConstructor = getConstructor(outPlayerInfoPacketClass, outPlayerInfoPacketClass$EnumPlayerInfoAction, Collection.class);
 
+    public static final Class<?> outPlayerInfoPacketClass = ReflectionUtils.nms2("network.protocol.game.PacketPlayOutPlayerInfo", "network.protocol.game.ClientboundPlayerInfoPacket", "network.protocol.game.ClientboundPlayerInfoUpdatePacket");
+    //public static final Method getPlayerInfoDataListMethod = getMethodByReturnType(outPlayerInfoPacketClass, List.class);
+    public static final Class<?> playerInfoDataClass;
+    public static final Method getProfileFromPlayerInfoDataMethod;
+
+    static {
+        Class<?> playerInfoDataClazz = null;
+        Method method = null;
+        for (Class<?> clazz : outPlayerInfoPacketClass.getClasses()) {
+            for (Method m : clazz.getMethods()) {
+                if (m.getReturnType() == GameProfile.class) {
+                    playerInfoDataClazz = clazz;
+                    method = m;
+                    break;
+                }
+            }
+        }
+        assert playerInfoDataClazz != null;
+        assert method != null;
+        playerInfoDataClass = playerInfoDataClazz;
+        getProfileFromPlayerInfoDataMethod = method;
+    }
+
     public static final Class<?> outHeldItemSlotPacketClass = nms2("network.protocol.game.PacketPlayOutHeldItemSlot");
 
-    public static final Class<?> inWindowClickPacketClass = nms2("network.protocol.game.PacketPlayInWindowClick");
-    public static final Field inWindowClickSlotField = getFieldFromTypeSafe(inWindowClickPacketClass, int.class, 1);
+    //public static final Class<?> inWindowClickPacketClass = nms2("network.protocol.game.PacketPlayInWindowClick");
+    //public static final Field inWindowClickSlotField = getFieldFromTypeSafe(inWindowClickPacketClass, int.class, 1);
 
     public static final Class<?> outWindowOpenPacketClass = nms2("network.protocol.game.PacketPlayOutOpenWindow");
-    public static final Method outWindowOpenIdMethod = getMethodByReturnType(outWindowOpenPacketClass, int.class);
+    //public static final Method outWindowOpenIdMethod = getMethodByReturnType(outWindowOpenPacketClass, int.class);
     //public static final Field outWindowOpenIdField = getFieldFromTypeSafe(outWindowOpenPacketClass, int.class);
 
     public static final Class<?> nonNullListClass = nms2("core.NonNullList");
@@ -63,17 +89,17 @@ public class ReflectionUtils {
     public static final Class<?> nmsItemStackClass = itemStackToNMSCopyMethod.getReturnType();
 
     public static final Class<?> outWindowItemsPacketClass = nms2("network.protocol.game.PacketPlayOutWindowItems");
-    public static final Method outWindowItemsIdMethod = getMethodByReturnType(outWindowItemsPacketClass, int.class);
+    //public static final Method outWindowItemsIdMethod = getMethodByReturnType(outWindowItemsPacketClass, int.class);
 
 
     public static final Class<?> inItemNamePacketClass = nms2("network.protocol.game.PacketPlayInItemName");
     public static final Method inItemNamePacketTextMethod = getMethodByReturnType(inItemNamePacketClass, String.class);
 
 
-    public static final Class<?> inKeepAlivePacketClass = nms2("network.protocol.game.PacketPlayInKeepAlive");
-    public static final Class<?> outKeepAlivePacketClass = nms2("network.protocol.game.PacketPlayOutKeepAlive");
-    public static final Method getKeepAliveMethod = getMethodByReturnType(inKeepAlivePacketClass, long.class);
-    public static final Constructor<?> outKeepAliveConstructor = getConstructor(outKeepAlivePacketClass, long.class);
+    public static final Class<?> inKeepAlivePacketClass = nms2("network.protocol.game.PacketPlayInKeepAlive", "network.protocol.common.ServerboundKeepAlivePacket");
+    //public static final Class<?> outKeepAlivePacketClass = nms2("network.protocol.game.PacketPlayOutKeepAlive");
+    //public static final Method getKeepAliveMethod = getMethodByReturnType(inKeepAlivePacketClass, long.class);
+    //public static final Constructor<?> outKeepAliveConstructor = getConstructor(outKeepAlivePacketClass, long.class);
 
 
     public static final Class<?> outExperiencePacketClass = nms2("network.protocol.game.PacketPlayOutExperience");
@@ -87,8 +113,8 @@ public class ReflectionUtils {
 
     public static final Class<?> mobEffectListClass = nmsClazz("net.minecraft.server.%s.MobEffectList", "net.minecraft.world.effect.MobEffectList");
     public static final Constructor<?> mobEffectConstructor = getConstructor(mobEffectClass, mobEffectListClass, int.class, int.class, boolean.class, boolean.class, boolean.class);
-    public static final Method mobEffectListFromIdMethod = getMethodByReturnType(mobEffectListClass, mobEffectListClass, int.class);
-    private static final Object BLINDNESS_MOB_EFFECT_LIST = invoke(mobEffectListFromIdMethod, null, 15);
+    public static final MobEffectSupplier mobEffectFromId = MobEffectLookup.getSupplier(() -> getMethodByReturnType(mobEffectListClass, mobEffectListClass, int.class));
+    private static final Object BLINDNESS_MOB_EFFECT_LIST = mobEffectFromId.toNMSEffectTypeFromId(15); //invoke(mobEffectListFromIdMethod, null, 15);
 
 
     public static final Class<?> outRemoveEntityEffectPacketClass = nms2("network.protocol.game.PacketPlayOutRemoveEntityEffect");
@@ -109,19 +135,16 @@ public class ReflectionUtils {
     public static final Class<?> networkManagerClass = nms2("network.NetworkManager");
     public static final Method getProfile = getMethodByReturnType(entityPlayerClass, GameProfile.class);
     public static final Method getHandle = getMethod(craftPlayerClass, "getHandle");
-    public static final Field getPlayerConnection = getFieldFromTypeSafe(entityPlayerClass, playerConnectionClass);
-    public static final Field getNetworkManager = getFieldFromTypeSafe(playerConnectionClass, networkManagerClass);
-    public static final Field getChannel = getFieldFromTypeSafe(networkManagerClass, Channel.class);
     public static final CommandMap commandMap = getCommandMap();
+    public static final YamlConfiguration serverConfiguration = getServerConfiguration();
 
 /*    public static void sendMap(Channel channel, byte[] toDrawPixels, int mapViewId) {
 
     }*/
 
-    public static Object createMaxedEffectPacket(int entityId, int effectId) {
+    public static Object createMaxedEffectPacket(int entityId, Object mobEffectList) {
         try {
-            Object mobEffectList = mobEffectListFromIdMethod.invoke(null, effectId); //mobEffectListClass.getDeclaredMethod("fromId", int.class).invoke(null, effectId);
-
+            //Object mobEffectList = mobEffectFromId.toNMSEffectTypeFromId(effectId); // mobEffectFromId.invoke(null, effectId); //mobEffectListClass.getDeclaredMethod("fromId", int.class).invoke(null, effectId);
             Object mobEffect = mobEffectConstructor.newInstance(mobEffectList, 999999999, 255, false, false, false);
 
             return outEntityEffectConstructor.newInstance(entityId, mobEffect);
@@ -190,21 +213,41 @@ public class ReflectionUtils {
 
         channel.writeAndFlush(jumpBoostPacket);*/
 
-
-        int blindnessEffectId = 15;
-
-        Object blindnessPacket = createMaxedEffectPacket(entityId, blindnessEffectId);
+        Object blindnessPacket = createMaxedEffectPacket(entityId, BLINDNESS_MOB_EFFECT_LIST);
 
         channel.writeAndFlush(blindnessPacket);
     }
 
     private static CommandMap getCommandMap() {
         Object s = Bukkit.getServer();
-        Field f = getFieldFromType(s.getClass(), CommandMap.class);
+        Field f = getFieldFromTypeAssignable(s.getClass(), CommandMap.class);
         try {
             return (CommandMap) f.get(s);
         } catch (Exception e) {
             throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private static YamlConfiguration getServerConfiguration() {
+        Object s = Bukkit.getServer();
+        try {
+            Field f = s.getClass().getDeclaredField("configuration");
+            f.setAccessible(true);
+            return (YamlConfiguration) f.get(s);
+        } catch (Exception e) {
+            throw new InternalError(e);
+        }
+    }
+
+    public static void setConnectionThrottle(long value) {
+        serverConfiguration.set("settings.connection-throttle", value);
+        Object s = Bukkit.getServer();
+        try {
+            Method method = s.getClass().getDeclaredMethod("saveConfig");
+            method.setAccessible(true);
+            method.invoke(s);
+        } catch (Exception e) {
+            throw new InternalError(e);
         }
     }
 
@@ -286,7 +329,7 @@ public class ReflectionUtils {
         }
     }
 
-    public static Field getFieldFromTypeSafe(Class<?> from, Class<?> fieldType, int fieldIndex) {
+    public static Field getFieldFromTypeDirect(Class<?> from, Class<?> fieldType, int fieldIndex) {
         Field field = from.getDeclaredFields()[fieldIndex];
         field.setAccessible(true);
         if (field.getType() == fieldType) return field;
@@ -295,21 +338,22 @@ public class ReflectionUtils {
                 + " had no declared fields!");
     }
 
-    public static Field getFieldFromTypeSafe(Class<?> from, Class<?> fieldType) {
+    public static Field getFieldFromTypeDirect(Class<?> from, Class<?> fieldType) {
         for (Field field : from.getDeclaredFields()) {
             field.setAccessible(true);
             if (field.getType() == fieldType) return field;
         }
-        throw new ExceptionInInitializerError("getField with class " + from.getSimpleName() + " and field type " + fieldType.getSimpleName()
+        throw new ExceptionInInitializerError("getFieldFromTypeSafe with class " + from.getSimpleName() + " and field type " + fieldType.getSimpleName()
                 + " had no declared fields!");
     }
 
-    public static Field getFieldFromType(Class<?> from, Class<?> fieldType) {
+    public static Field getFieldFromTypeAssignable(Class<?> from, Class<?> fieldType) {
         for (Field field : from.getDeclaredFields()) {
             field.setAccessible(true);
             if (fieldType.isAssignableFrom(field.getType())) return field;
         }
-        throw new ExceptionInInitializerError("getField with class " + from.getSimpleName() + " and field type " + fieldType.getSimpleName()
+        //AlixUtils.debug(from.getDeclaredFields());
+        throw new ExceptionInInitializerError("getFieldFromType with class " + from.getSimpleName() + " and field type " + fieldType.getSimpleName()
                 + " had no declared fields!");
     }
 
@@ -367,7 +411,7 @@ public class ReflectionUtils {
         return clazz;
     }*/
 
-    private static Class<?> obc(String name) {
+    public static Class<?> obc(String name) {
         return forName(String.format("org.bukkit.craftbukkit.%s.%s", serverVersion2, name));
     }
 
@@ -377,6 +421,17 @@ public class ReflectionUtils {
         } catch (ClassNotFoundException e) {
             throw new ExceptionInInitializerError(e);
         }
+    }
+
+    public static Class<?> forName(String... names) {
+        for (String s : names) {
+            try {
+                return Class.forName(s);
+            } catch (ClassNotFoundException ignored) {
+
+            }
+        }
+        throw new ExceptionInInitializerError("Not found: " + Arrays.toString(names));
     }
 
     private static Field getFieldByType(Class<?> instClass, Class<?> typeClass) {
@@ -413,6 +468,15 @@ public class ReflectionUtils {
         throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + instance));
     }
 
+    public static Method getMethodByReturnTypeAssignable(Class<?> instance, Class<?> returnType, Class<?>... parameterTypes) {
+        for (Method method : instance.getMethods()) {
+            if (returnType.isAssignableFrom(method.getReturnType()) && AlixUtils.equalsArrayCheck(parameterTypes, method.getParameterTypes()))
+                return method;
+        }
+        //AlixUtils.debug(instance.getDeclaredMethods());
+        throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + instance));
+    }
+
     public static Constructor<?> getConstructor(Class<?> instanceClass, Class<?>... parameterTypes) {
         try {
             return instanceClass.getConstructor(parameterTypes);
@@ -425,5 +489,8 @@ public class ReflectionUtils {
         OutMapPacketConstructor.init();
         OutWindowItemsPacketConstructor.init();
         OutPlayerInfoPacketConstructor.init();
+    }
+
+    private ReflectionUtils() {
     }
 }

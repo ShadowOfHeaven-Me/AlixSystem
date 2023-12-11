@@ -5,10 +5,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import shadow.Main;
 import alix.common.messages.Messages;
-import alix.common.messages.types.AlixMessage;
+import alix.common.messages.AlixMessage;
 import shadow.utils.users.User;
 
-public class ChatManager {
+public final class ChatManager {
 
     private static final AlixMessage
             chatClearFeedbackMessage = Messages.getAsObject("chat-clear"),
@@ -30,7 +30,7 @@ public class ChatManager {
         }
         long now = System.currentTimeMillis();
 
-        if (u.isMuted(now)) {
+        if (u.wasMutedAt(now)) {//equivalent of User#isMuted, but invoked like this to use the 'now' variable
             u.sendMessage(mutedSelf);
             return true;
         }
@@ -58,14 +58,14 @@ public class ChatManager {
     }
 
     public static void clearChat(CommandSender sender) {
-        String messageForAll = chatClearingMessage + '\n' + chatClearFeedbackMessage.format(sender.getName());
+        String messageForAll = chatClearingMessage + chatClearFeedbackMessage.format(sender.getName());
         for (Player p : Bukkit.getOnlinePlayers()) p.sendRawMessage(messageForAll);
     }
 
     static {
         StringBuilder sb = new StringBuilder(25000);
         for (int i = 0; i < sb.capacity(); i++) sb.append(' ');
-        chatClearingMessage = sb.toString();
+        chatClearingMessage = sb.toString() + '\n';
         delay = Main.config.getLong("chat-delay");
         delayCheck = delay > 0;
         isChatTurnedOn = true;

@@ -2,7 +2,6 @@ package shadow.utils.main.file.managers;
 
 import org.bukkit.entity.Player;
 import shadow.Main;
-import alix.common.scheduler.impl.AlixScheduler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.subtypes.UserFile;
 import shadow.utils.objects.savable.data.PersistentUserData;
@@ -12,7 +11,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserFileManager {
+public final class UserFileManager {
 
     private static final Map<String, PersistentUserData> map = new HashMap<>();
     private static final UserFile file = new UserFile();
@@ -22,14 +21,10 @@ public class UserFileManager {
         file.save(map);//The missing data is updated, thus saving the file prevents further errors
     }
 
-    public static void asyncSave() {
-        AlixScheduler.async(() -> {
+    public static void onAsyncSave() {
+        file.save(map);
 
-            file.save(map);
-
-            Main.debug(AlixUtils.isPluginLanguageEnglish ? "Successfully saved users.yml file!" : "Poprawnie zapisano plik users.yml!");
-
-        });
+        Main.debug(AlixUtils.isPluginLanguageEnglish ? "Successfully saved users.yml file!" : "Poprawnie zapisano plik users.yml!");
     }
 
     public static void fastSave() {

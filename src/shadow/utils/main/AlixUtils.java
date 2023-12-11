@@ -1,5 +1,6 @@
 package shadow.utils.main;
 
+import alix.common.data.PasswordType;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.formatter.AlixFormatter;
@@ -21,7 +22,7 @@ import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.objects.savable.data.PersistentUserData;
-import shadow.utils.objects.savable.data.password.PasswordType;
+import shadow.utils.world.AlixWorldHolder;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -30,9 +31,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
-public class AlixUtils {
+public final class AlixUtils {
 
     public static final Random random;
     //public static final PotionEffect vanishInvisibilityEffect;
@@ -47,14 +49,13 @@ public class AlixUtils {
     public static final PasswordType defaultPasswordType;
     public static final float doubledDefaultWalkSpeed, doubledDefaultFlySpeed;
     public static final long verificationReminderDelay;
-    public static final int bukkitVersion, maximumTotalAccounts, maxCaptchaTime;//, lowestTeleportableYLevel;
-    public static final short captchaTitleStayTime;
+    public static final int bukkitVersion, maximumTotalAccounts, maxCaptchaTime, maxLoginTime;//, lowestTeleportableYLevel;
     public static final byte captchaLength;
     public static final boolean isOperatorCommandRestricted, playerIPAutoLogin, isPluginLanguageEnglish, isOfflineExecutorRegistered,
-            isLoginRestrictPacketBased, kickOnIncorrectPassword, requireCaptchaVerification, kickOnIncorrectCaptcha,
+            kickOnIncorrectPassword, requireCaptchaVerification, kickOnIncorrectCaptcha,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, isCaptchaVerificationMapBased, repeatedVerificationReminderMessages,
-            anvilPasswordGui;//renderFancyCaptchaDigits
+            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog;//renderFancyCaptchaDigits
 
     private static final String
             tooLongMessage = Messages.get("password-invalid-too-long"),
@@ -73,7 +74,7 @@ public class AlixUtils {
                         language + "'! Switching to english, as default");
                 break;
         }
-        String restrictBase = config.getString("login-restrict-base", "packet").toLowerCase();
+/*        String restrictBase = config.getString("login-restrict-base", "packet").toLowerCase();
         switch (restrictBase) {
             case "packet":
                 break;
@@ -85,7 +86,7 @@ public class AlixUtils {
                 Main.logWarning("Invalid 'login-restrict-base' parameter type set in config! Available: packet & teleport (although 'teleport' is for now disabled), but instead got '" +
                         restrictBase + "'! Switching to 'packet' for safety reasons.");
                 break;
-        }
+        }*/
         String captchaVisualType = config.getString("captcha-visual-type").toLowerCase();
         switch (captchaVisualType) {
             case "map":
@@ -138,7 +139,6 @@ public class AlixUtils {
         }
         //pluginLanguage = getPluginLanguage(language);
         isPluginLanguageEnglish = !language.equals("pl");
-        isLoginRestrictPacketBased = !restrictBase.equals("teleport");
         defaultPasswordType = PasswordType.valueOf(passwordType.toUpperCase());
         anvilPasswordGui = anvilPasswordGui0;
         captchaVerificationType = CaptchaType.from(captchaType.toUpperCase());
@@ -185,13 +185,12 @@ public class AlixUtils {
         isOperatorCommandRestricted = config.getBoolean("restrict-op-command");
         operatorCommandPassword = config.getString("op-command-password");
         kickOnIncorrectCaptcha = config.getBoolean("kick-on-incorrect-captcha");
+        hideFailedJoinAttempts = config.getBoolean("hide-failed-join-attempts");
+        alixJoinLog = config.getBoolean("custom-join-log");
         //invalidNicknamesStart = config.getStringList("disallow-join-of").toArray(new String[0]);
         //spawn = Spawn.fromString(config.getString("spawn-location"));
-        short maxLoginTime = (short) Math.max(Math.min((short) config.getInt("max-login-time"), 1638), -1); //32767 / 20 = 1638.35 & also 1638 % 3 = 0
-        if (isLoginRestrictPacketBased) maxLoginTime *= 20;
-        else maxLoginTime /= 3;
-        //packetsBeforeNotLoggedInKick = maxLoginTime;
-        captchaTitleStayTime = isLoginRestrictPacketBased ? maxLoginTime : (short) (maxLoginTime * 60);
+
+        maxLoginTime = config.getInt("max-login-time"); // Deprecated comment -> "//32767 / 20 = 1638.35 & also 1638 % 3 = 0"
         //lowestTeleportableYLevel = getLowestTeleportableLevel();
         serverVersion = getServerVersion();
         bukkitVersion = getBukkitVersion();
@@ -205,7 +204,7 @@ public class AlixUtils {
         doubledDefaultWalkSpeed = 0.2F;
         doubledDefaultFlySpeed = 0.1F;
         if (config.getBoolean("ping-before-join")) AlixHandler.initializeServerPingManager();
-        if (config.getBoolean("hide-failed-join-attempts")) AlixHandler.addConsoleFilter();
+        AlixHandler.updateConsoleFilter();
     }
 
 /*    public static void change(Player player) {
@@ -348,6 +347,7 @@ public class AlixUtils {
         }
     }
 
+
     public static boolean commandExists(String command) {
         //return Bukkit.getPluginCommand(command) != null;
         return ReflectionUtils.commandMap.getCommand(command) != null;
@@ -457,6 +457,13 @@ public class AlixUtils {
         return correctData;
     }
 
+    public static char[] getCharsUntilCharOrSelfIfNone(char[] a, char breaker) {
+        for (int i = 0; i < a.length; i++)
+            if (a[i] == breaker)
+                return Arrays.copyOfRange(a, 0, i);
+        return a;
+    }
+
     public static Integer[] toObject(int... a) {
         int l = a.length;
         Integer[] b = new Integer[l];
@@ -491,9 +498,10 @@ public class AlixUtils {
         char[] b = text.toCharArray();
         for (char c : b) {
             switch (c) {
+                //case 32:
                 case 58:
                 case 59:
-                //case 124://<- not quite necessary but whatever
+                    //case 124://<- not quite necessary but whatever
                     return AlixFormatter.format(invalidCharacterMessage, c);
                 default:
                     if (c < 35 || c > 382 || c > 90 && !Character.isLetter(c)) {
@@ -510,6 +518,7 @@ public class AlixUtils {
         char[] b = text.toCharArray();
         for (char c : b) {
             switch (c) {
+                //case 32:
                 case 58:
                 case 59:
                     return true;
@@ -790,6 +799,8 @@ public class AlixUtils {
         return list.toArray(new String[0]);
     }
 
+    //A faster String#split implementation
+    //for non-complex Strings
     public static String[] split(String a, char b) {
         int l = a.length();
         char[] c = a.toCharArray();
@@ -1131,10 +1142,23 @@ public class AlixUtils {
         sendToAllPermittedPlayers(colorize(info));
     }
 
-    public static void debug(Object... message) {
+/*    public static void debug(Object... message) {
+        debug(message, ' ');
+    }*/
+
+    public static <T> void debug(T[] message, Function<T, String> formatting, char separator) {
         StringBuilder sb = new StringBuilder();
-        for (Object o : message) sb.append(o.toString()).append(" ");
-        sendToAllPlayers(sb.toString());
+        for (T o : message) sb.append(formatting.apply(o)).append(separator);
+        Main.logInfo(sb.toString());
+        //sendToAllPlayers(sb.toString());
+    }
+
+    public static <T> void debug(T[] message, Function<T, String> formatting) {
+        debug(message, formatting, '\n');
+    }
+
+    public static <T> void debug(T[] message) {
+        debug(message, T::toString, '\n');
     }
 
     public static void sendToAllPlayers(String message) {
@@ -1330,7 +1354,7 @@ public class AlixUtils {
     }
 
     private static int getLowestTeleportableLevel() {
-        return Bukkit.getWorlds().get(0).getMaxHeight() >= 319 ? -66 : -2;
+        return AlixWorldHolder.getMain().getMaxHeight() >= 319 ? -66 : -2;
     }
 
 /*    private static void implementConfig(FileConfiguration config) {
@@ -1447,5 +1471,8 @@ public class AlixUtils {
             default:
                 return 1000L;
         }
+    }
+
+    private AlixUtils() {
     }
 }

@@ -6,7 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import shadow.systems.login.autoin.PremiumAutoIn;
 
-public class FastLoginExecutors implements Listener {
+public final class FastLoginExecutors implements Listener {
 
 /*    @EventHandler
     public void onAutoLogin(BukkitFastLoginAutoLoginEvent e) {

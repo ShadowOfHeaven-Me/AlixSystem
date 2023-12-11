@@ -5,7 +5,7 @@ import alix.common.scheduler.tasks.SchedulerTask;
 
 import java.util.concurrent.TimeUnit;
 
-public class VelocityAlixScheduler extends AbstractAlixScheduler {
+public final class VelocityAlixScheduler extends AbstractAlixScheduler {
 
     @Override
     public void sync(Runnable r) {

@@ -3,6 +3,7 @@ package shadow.utils.objects.savable.loc;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import shadow.utils.world.AlixWorldHolder;
 
 import static shadow.utils.main.AlixUtils.*;
 
@@ -30,9 +31,8 @@ public class Spawn {
                 return new Spawn(w.getSpawnLocation());
             }
         }*/
-        World w = Bukkit.getWorlds().get(0);//The main world
         //Main.logInfo(isPluginLanguageEnglish ? "Could not find any normal-type worlds to set the default spawn! Improvising!" : "Nie znaleziono żadnych światów typu normalnego! Rozpoczęto improwizację!");
-        return new Spawn(w.getSpawnLocation());
+        return new Spawn(AlixWorldHolder.getMain().getSpawnLocation());
     }
 
     public static Spawn fromString(String a) {

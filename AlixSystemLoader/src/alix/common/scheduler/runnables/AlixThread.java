@@ -6,7 +6,7 @@ import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class AlixThread extends Thread {
+public final class AlixThread extends Thread {
 
     private static final AlixDeque<AlixThread> alixThreads = new ConcurrentAlixDeque<>();
     private final Runnable command;
@@ -32,12 +32,11 @@ public class AlixThread extends Thread {
             this.command.run();
 
             long elapsed = System.currentTimeMillis() - time;
-
             long diff = this.millisDelay - elapsed;
 
-            if (elapsed < this.millisDelay + 1) {//less time elapsed
+            if (diff > 0) {
                 try {
-                    Thread.sleep(this.millisDelay - elapsed);//non-zero sleep time
+                    Thread.sleep(diff);//non-zero sleep time
                 } catch (InterruptedException e) {
                     //ignore the interruption
                 }

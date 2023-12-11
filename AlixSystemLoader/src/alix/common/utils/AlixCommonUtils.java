@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 
-public class AlixCommonUtils {
+public final class AlixCommonUtils {
 
     public static final Random random = new Random();
     public static final boolean isGraphicEnvironmentHeadless;
@@ -96,5 +96,8 @@ public class AlixCommonUtils {
     public static void logException(Throwable e) {
         CommonAlixMain.logError("An AlixTask has thrown an exception - Report this immediately!");
         e.printStackTrace();
+    }
+
+    private AlixCommonUtils() {
     }
 }

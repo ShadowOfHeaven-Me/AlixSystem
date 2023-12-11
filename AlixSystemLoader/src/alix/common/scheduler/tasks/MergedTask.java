@@ -2,7 +2,7 @@ package alix.common.scheduler.tasks;
 
 import alix.common.scheduler.impl.AlixScheduler;
 
-public class MergedTask {
+public final class MergedTask {
 
     private Runnable task;
 

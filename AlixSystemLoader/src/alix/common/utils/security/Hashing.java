@@ -7,14 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class Hashing {
+public final class Hashing {
 
     public static final byte CONFIG_HASH_ID;
     private static final HashingAlgorithm hash0, hash1, hash2, hash3, configHash;//Maybe an array of these hashes types in the future?
-
-    public static void init() {
-
-    }
 
     public static HashingAlgorithm ofHashId(byte hashId) {
         switch (hashId) {
@@ -50,7 +46,7 @@ public class Hashing {
             int hashCode = 0;
             char[] a = s.toCharArray();
 
-            for (char c : a) hashCode = 31 * hashCode + c;
+            for (char c : a) hashCode = 31 * hashCode + c;//(hashCode << 5) - hashCode + c cannot be used since it could result in a little bit different generation
 
             return Integer.toString(hashCode);
         }
@@ -91,18 +87,21 @@ public class Hashing {
         }
     }
 
-//    private static final class Hash4 implements HashingAlgorithm {
-//
-//        @Override
-//        public final String hash(String s) {
-//            int seed = s.hashCode();
-//            long scramble = (seed ^ 25214903917L) & 281474976710655L;
-//            scramble ^= 3627065505421648153L;
-//
-//
-//
-//        }
-//    }
+/*    private static final class Hash4 implements HashingAlgorithm {
+
+        # 4 - Uses bit shifting, very fast and unlikely to repeat, stored in a 64-bit integer
+
+        @Override
+        public final String hash(String s) {
+            char[] a = s.toCharArray();
+            long hash = a.length;
+            for (int i = 0; i < a.length; i++) {
+                char c = a[i];
+                hash += (hash + c << 7) << (i + i & 1) + c >> 1;//just some random stuff I came up with
+            }
+            return Long.toString(hash);
+        }
+    }*/
 
     private static String uuidBitHash(byte[] hashedBytes) {
         //this is what UUID also does, but for the purpose of randomization and optimization I won't do that
@@ -114,7 +113,7 @@ public class Hashing {
         long mostSigBits = 0;
         long leastSigBits = 0;
 
-        assert hashedBytes.length == 16 : "Hashed bytes length is different from 16";
+        assert hashedBytes.length == 16 : "Hashed bytes length is different from 16 - " + hashedBytes.length;
 
         for (byte i = 0; i < 8; i++)
             mostSigBits = (mostSigBits << 8) | (hashedBytes[i] & 0xff);
@@ -150,5 +149,11 @@ public class Hashing {
 
         configHash = ofHashId(CONFIG_HASH_ID);
         //}
+    }
+
+    public static void init() {
+    }
+
+    private Hashing() {
     }
 }

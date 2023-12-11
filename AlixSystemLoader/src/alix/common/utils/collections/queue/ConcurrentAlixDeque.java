@@ -13,6 +13,10 @@ public final class ConcurrentAlixDeque<T> extends AlixDeque<T> {
         this.lock = internalLock ? new Object() : this;
     }
 
+    public ConcurrentAlixDeque(Object lock) {
+        this.lock = lock;
+    }
+
     @Override
     public void addNodeLast(Node<T> node) {//any node addition synchronized
         synchronized (lock) {//only this addition method is synchronized, as all the other point towards this one

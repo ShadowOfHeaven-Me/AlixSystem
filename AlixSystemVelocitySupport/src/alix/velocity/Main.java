@@ -6,10 +6,8 @@ import alix.velocity.systems.autoin.PremiumAutoIn;
 import alix.velocity.systems.events.Events;
 import com.velocitypowered.api.plugin.PluginManager;
 import com.velocitypowered.proxy.VelocityServer;
-import com.velocitypowered.proxy.connection.backend.VelocityServerConnection;
-import net.kyori.adventure.audience.ForwardingAudience;
 
-public class Main implements LoaderBootstrap {
+public final class Main implements LoaderBootstrap {
 
     public static VelocityAlixMain instance;
     public static PluginManager pm;

@@ -4,7 +4,7 @@ import shadow.utils.objects.savable.loc.NamedLocation;
 
 import static shadow.utils.main.AlixUtils.split;
 
-public class HomeList {
+public final class HomeList {
 
     private NamedLocation[] homes;
     private int currentIndex;
@@ -52,7 +52,7 @@ public class HomeList {
         NamedLocation[] array = new NamedLocation[currentIndex - 1];
         int h = 0;
         for (int i = 0; i < currentIndex; i++)
-            if(i != index) array[h++] = homes[i];
+            if (i != index) array[h++] = homes[i];
         this.homes = array;
         this.currentIndex--;
     }

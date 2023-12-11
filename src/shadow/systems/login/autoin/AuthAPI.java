@@ -5,7 +5,7 @@ import shadow.Main;
 import shadow.systems.executors.fastlogin.FastLoginExecutors;
 import shadow.systems.login.autoin.fastlogin.FastLoginAuth;
 
-public class AuthAPI {
+public final class AuthAPI {
 
     private final LoginAuthenticator authenticator;
     private final Listener listener;

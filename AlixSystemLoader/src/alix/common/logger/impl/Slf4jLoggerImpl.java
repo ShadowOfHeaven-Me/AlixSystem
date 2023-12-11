@@ -3,7 +3,7 @@ package alix.common.logger.impl;
 import alix.common.logger.LoggerAdapter;
 import org.slf4j.Logger;
 
-public class Slf4jLoggerImpl implements LoggerAdapter {
+public final class Slf4jLoggerImpl implements LoggerAdapter {
 
     private final Logger logger;
 

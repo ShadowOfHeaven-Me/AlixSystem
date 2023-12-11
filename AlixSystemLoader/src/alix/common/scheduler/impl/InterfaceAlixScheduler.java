@@ -13,8 +13,6 @@ public interface InterfaceAlixScheduler {
 
     void async(Runnable r);
 
-    <T> CompletableFuture<T> asyncFuture(Supplier<T> supplier);
-
     SchedulerTask runLaterSync(Runnable r, long d, TimeUnit u);
 
     SchedulerTask runLaterAsync(Runnable r, long d, TimeUnit u);
@@ -23,15 +21,11 @@ public interface InterfaceAlixScheduler {
 
     SchedulerTask repeatAsync(Runnable r, long i, TimeUnit u);
 
+    <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier);
+
     void shutdown();
 
     default AlixThread newAlixThread(Runnable cmd, long millisDelay, String name) {
         return new AlixThread(cmd, millisDelay, name);
     }
-
-/*    AlixScheduler instance = JavaHandler.createSchedulerImpl();
-
-    static AlixScheduler get() {
-        return instance;
-    }*/
 }

@@ -6,15 +6,15 @@ import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.EnumSet;
 
-public class OutPlayerInfoPacketConstructor {
+public final class OutPlayerInfoPacketConstructor {
 
     private static final Object ADD_PLAYER;
     private static final Constructor<?> constructor;
     //private static final boolean enumSetConstructor;
 
     static {
-        Class<?> packetClass = ReflectionUtils.nms2("network.protocol.game.PacketPlayOutPlayerInfo", "network.protocol.game.ClientboundPlayerInfoPacket", "network.protocol.game.ClientboundPlayerInfoUpdatePacket");
-        Class<?> playerInfoAction = null;
+        Class<?> packetClass = ReflectionUtils.outPlayerInfoPacketClass;
+        Class <?>playerInfoAction = null;
         for (Class<?> clazz : packetClass.getClasses()) {
             if (clazz.isEnum()) {
                 playerInfoAction = clazz;
@@ -68,6 +68,9 @@ public class OutPlayerInfoPacketConstructor {
 
 
     public static void init() {
+    }
+
+    private OutPlayerInfoPacketConstructor() {
     }
 
 }

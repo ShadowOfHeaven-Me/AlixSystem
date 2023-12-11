@@ -5,7 +5,7 @@ import alix.common.scheduler.tasks.SchedulerTask;
 
 import java.util.concurrent.TimeUnit;
 
-public class BungeeAlixScheduler extends AbstractAlixScheduler {
+public final class BungeeAlixScheduler extends AbstractAlixScheduler {
 
     //private final TaskScheduler scheduler = ProxyServer.getInstance().getScheduler();
 

@@ -1,26 +1,31 @@
 package shadow.utils.users;
 
+import alix.common.scheduler.impl.AlixScheduler;
+import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
-import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.utils.objects.savable.data.PersistentUserData;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class UserManager {
+import static shadow.utils.main.AlixUtils.isOfflineExecutorRegistered;
 
-    private static final Map<UUID, User> users = new HashMap<>();
+public final class UserManager {
+
+    private static final Map<UUID, User> users = new ConcurrentHashMap<>();
     //public static final List<User> users = new ArrayList<>();
     //public static final List<String> notVanishedUserNicknames = new ArrayList<>();
 
-    public static void addOfflineUser(Player p, PersistentUserData data, String ip) { //offline as of non-premium
-        if (data != null) add(new User(p, data.setIP(ip)));
-        else throw new RuntimeException("No verified user data was provided!"); //add(new User(p, PersistentUserData.createDefault(p.getName(), ip)));
+    public static void addOfflineUser(Player p, PersistentUserData data, String ip, Channel channel) { //offline as of non-premium
+        if (data != null) add0(new User(p, data.setIP(ip), channel));
+        else
+            throw new RuntimeException("No verified user data was provided!"); //add(new User(p, PersistentUserData.createDefault(p.getName(), ip)));
     }
 
     public static void addOnlineUser(Player p) { //online as of premium
-        add(new User(p));
+        add0(new User(p));
     }
 
 /*    public static PersistentUserData register(Player p, Password password) {
@@ -35,31 +40,35 @@ public class UserManager {
         return data;
     }*/
 
-    public static PersistentUserData register(Player p, String password, String ip) {
+    public static PersistentUserData register(Player p, String password, String ip, Channel channel) {
         //if (GeoIPTracker.disallowLogin(ip)) return false;
 
         PersistentUserData data = PersistentUserData.createDefault(p.getName(), ip);
         data.setPassword(password);
-        addOfflineUser(p, data, ip);
+        addOfflineUser(p, data, ip, channel);
 
         return data;
     }
 
-    private static void add(User u) {
+    private static void add0(User u) {
         users.put(u.uuid, u);
         //PremiumAutoIn.remove(u.getName());
     }
 
-/*    public static void disable() {
+    public static void disable() {
         if (isOfflineExecutorRegistered) {
-            for (User u : users.values()) {
-                u.quit();
-            }
+            users.values().forEach(User::quit);
+            users.clear();
         }
-    }*/
+    }
+
+    public static void sendPlayerInfoToAll(String name) {
+        //AlixScheduler.async(() -> users.forEach((i, u) -> u.duplexHandler.sendOf(name)));
+    }
 
     public static void remove(Player p) {
-        users.remove(p.getUniqueId());
+        User user = users.remove(p.getUniqueId());
+        if (user != null) user.quit();
     }
 
     public static User getVerifiedUser(Player p) {
@@ -74,5 +83,8 @@ public class UserManager {
 
     public static User getNullableUserOnline(UUID uuid) {
         return users.get(uuid);
+    }
+
+    private UserManager() {
     }
 }

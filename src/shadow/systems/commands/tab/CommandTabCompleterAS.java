@@ -3,8 +3,7 @@ package shadow.systems.commands.tab;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import shadow.utils.main.AlixUtils;
-import alix.common.antibot.connection.types.ServerPingManager;
+import alix.common.antibot.connection.filters.ServerPingManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;

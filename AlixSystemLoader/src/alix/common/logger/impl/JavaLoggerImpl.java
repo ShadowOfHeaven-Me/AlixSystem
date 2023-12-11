@@ -5,7 +5,7 @@ import alix.common.logger.LoggerAdapter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class JavaLoggerImpl implements LoggerAdapter {
+public final class JavaLoggerImpl implements LoggerAdapter {
 
     private final Logger logger;
 

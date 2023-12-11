@@ -10,7 +10,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 
 import java.io.IOException;
 
-public class BungeeAlixMain extends Plugin implements AlixLoggerProvider {
+public final class BungeeAlixMain extends Plugin implements AlixLoggerProvider {
 
     public static BungeeAlixMain instance;
     private static final String JAR_NAME = "AlixSystemBungee.jarinjar";

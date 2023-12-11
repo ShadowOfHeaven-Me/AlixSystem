@@ -1,8 +1,8 @@
 package shadow.systems.commands;
 
-import alix.common.antibot.connection.types.ServerPingManager;
+import alix.common.antibot.connection.filters.ServerPingManager;
 import alix.common.messages.Messages;
-import alix.common.messages.types.AlixMessage;
+import alix.common.messages.AlixMessage;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -11,17 +11,18 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
+import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;
-import shadow.utils.objects.savable.data.password.PasswordType;
+import alix.common.data.PasswordType;
 
 import java.util.Date;
 
 import static shadow.utils.main.AlixUtils.*;
 
-public class AdminAlixCommands implements CommandExecutor {
+public final class AdminAlixCommands implements CommandExecutor {
 
     private final String passwordResetMessage = Messages.get("password-reset-forcefully");
     private final AlixMessage playerDataNotFound = Messages.getAsObject("player-data-not-found");
@@ -88,7 +89,6 @@ public class AdminAlixCommands implements CommandExecutor {
                         sendMessage(sender, "&6Your identity is now: " + nickname);
                         break;
                     }*/
-
                     case "rp":
                     case "resetpassword": {
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -277,6 +277,12 @@ public class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as randommath/rmath &7- Gives you random, already solved mathematical operation. " +
                             "Example: &c" + AlixUtils.getRandomMathematicalOperation());
                     sendMessage(sender, "");
+                    break;
+                case "connection-setup":
+                case "c-s":
+                    long val = 500;
+                    ReflectionUtils.setConnectionThrottle(val);
+                    sendMessage(sender, "Set the connection-throttle to " + val + ".");
                     break;
                 case "m-e":
                 case "messages-extract":

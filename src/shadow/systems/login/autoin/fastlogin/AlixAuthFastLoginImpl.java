@@ -4,7 +4,11 @@ import com.github.games647.fastlogin.core.hooks.AuthPlugin;
 import org.bukkit.entity.Player;
 import shadow.utils.main.file.managers.UserFileManager;
 
-public class AlixAuthFastLoginImpl implements AuthPlugin<Player> {//the implementation is already present in the onJoin event
+//This implementation does nothing but show
+//to FastLogin that an authentication plugin is
+//present. The FastLogin support implementation itself
+//is present in the PremiumAutoIn class
+public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
 
     @Override
     public boolean forceLogin(Player player) {

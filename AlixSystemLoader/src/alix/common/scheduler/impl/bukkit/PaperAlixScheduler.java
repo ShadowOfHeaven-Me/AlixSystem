@@ -17,15 +17,15 @@ import java.util.concurrent.TimeUnit;
 public final class PaperAlixScheduler extends AbstractAlixScheduler {
 
     /**
-     * PaperAlixScheduler is a class that is used exclusively for Paper servers or it's forks.
+     * PaperAlixScheduler is a class that is used exclusively for Paper servers and it's forks.
      * It functions mainly thanks to the AlixTaskList class. For further information, see
      * the explanation below. It's faster at the cost of executing the given task
-     * always a tick (or two) later than when invoked. It also extends the AbstractAlixScheduler,
-     * which schedules the task using the ScheduledThreadPoolExecutor, which relies
-     * on the contract that each tick is 50 ms - This it not the case when the server
-     * is lagging. The tasks then will be scheduled faster. Thus, this implementation
-     * should not be used for tasks that rely on accurate tick delay and need
-     * to be executed synchronously.
+     * always at the end of a tick, making the changes only visible at the next tick.
+     * It also extends the AbstractAlixScheduler, which schedules the task using the
+     * ScheduledThreadPoolExecutor, which relies on the contract that each tick is 50 ms.
+     * This it not the case when the server is lagging - then the tasks will be scheduled
+     * faster. Thus, this implementation should not be used for tasks that rely on accurate
+     * tick delay and need to be executed synchronously.
      *
      * @author ShadowOfHeaven
      **/
@@ -65,22 +65,19 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
     private static final class AlixTaskList {
 
         /**
-         * Here's a thorough explanation of how this task list works.
-         * First we declare three LinkedAlixTask variables:
+         * Here's a thorough explanation of how this task list works:
+         * First we declare two LinkedAlixTask variables:
          * <p>
-         * firstTemp - is the temporary holder of the first task,
+         * first - The temporary holder of the first task,
          * having all the other task nodes linked to it;
          * <p>
-         * lastTemp - is the temporary holder responsible for linking
+         * last - The temporary holder responsible for linking
          * further task nodes;
-         * <p>
-         * nextRun - is the task node that will be run in
-         * the server next tick;
          *
          * </p>
          **/
 
-        private volatile LinkedAlixTask firstTemp, lastTemp, nextRun;
+        private volatile LinkedAlixTask first, last;
 
         /**
          * The 'synchronized' keyword is used instead of a ReentrantLock,
@@ -89,30 +86,31 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
          * very little time to finish
          **/
 
-        private synchronized void add(Runnable task) {
-            if (this.firstTemp == null) this.firstTemp = this.lastTemp = new LinkedAlixTask(task);
-            else this.lastTemp = this.lastTemp.next = new LinkedAlixTask(task);
+        private void add(Runnable task) {
+            synchronized (this) {
+                if (this.first == null) this.first = this.last = new LinkedAlixTask(task);
+                else this.last = this.last.next = new LinkedAlixTask(task);
+            }
         }
 
 
-        //not synchronized because the nextRun variable is only assigned in this method
-        private void executeAllAndClear() {
-            LinkedAlixTask task = this.nextRun;//get the current run
 
-            if (task != null) {//execute if there is a task
-                do {
-                    try {
-                        task.task.run();//execute the tasks synchronously
-                    } catch (Exception e) {
-                        AlixCommonUtils.logException(e);
-                    }
-                } while ((task = task.next) != null);
+        private void executeAllAndClear() {
+            LinkedAlixTask task = this.first;//get the current run
+
+            if (task == null) return;
+
+            synchronized (this) {//this is fine since the tasks are executed at the end of a tick and the operations are lightweight
+                this.first = this.last = null;
             }
 
-            this.nextRun = this.firstTemp;//assign the next run (possibly a null)
-
-            if (this.firstTemp != null && this.firstTemp == this.nextRun)
-                this.firstTemp = this.lastTemp = null;//only set it to null when it's not a null, and it's the very same task that was assigned moments before, in order to make sure that no tasks are ever missed
+            do {
+                try {
+                    task.task.run();//execute the tasks synchronously
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                }
+            } while ((task = task.next) != null);
         }
     }
 

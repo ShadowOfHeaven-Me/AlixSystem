@@ -12,7 +12,7 @@ public abstract class ArrayStorage<V> extends Storage {
 
     public ArrayStorage(String name) {
         super(name);
-        list = new ArrayList<>();
+        this.list = new ArrayList<>();
     }
 
     @Override

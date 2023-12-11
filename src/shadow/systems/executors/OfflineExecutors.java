@@ -1,37 +1,52 @@
 package shadow.systems.executors;
 
 import alix.common.antibot.connection.ConnectionFilter;
+import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
+import alix.common.scheduler.impl.AlixScheduler;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import org.spigotmc.event.player.PlayerSpawnLocationEvent;
+import shadow.Main;
 import shadow.systems.commands.CommandManager;
-import shadow.systems.commands.aliases.FileCommandManager;
+import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
+import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.filter.packet.types.PacketBlocker;
+import shadow.utils.objects.packet.types.unverified.PacketBlocker;
+import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.users.UserManager;
 import shadow.utils.users.offline.UnverifiedUser;
 import shadow.utils.world.AlixWorld;
+import shadow.utils.world.AlixWorldHolder;
+
+import java.util.Arrays;
 
 import static shadow.utils.main.AlixUtils.*;
 
-public final class OfflineExecutors extends UniversalExecutor {
+public final class OfflineExecutors extends UniversalExecutors {
 
     //private final LoginAuthenticator authenticator = PremiumAutoIn.support;
     private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
     private final String playerAlreadyOnlineMessage = Messages.get("player-already-online");
+    private final AlixMessage
+            joinCaptchaUnverified = Messages.getAsObject("log-player-join-captcha-unverified"),
+            joinUnverified = Messages.getAsObject("log-player-join-unverified"),
+            joinVerified = Messages.getAsObject("log-player-join-verified");
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
-        if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
-
         String name = e.getName();
+        String address = e.getAddress().getHostAddress();
+
+        //AlixScheduler.async(() -> ConnectionThreadManager.addJoinAttempt(name, address));
+        if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
 
         if (name.startsWith("MC_STORM") || name.startsWith("BOT_")) {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "AntiBot Protection");
@@ -43,48 +58,56 @@ public final class OfflineExecutors extends UniversalExecutor {
             return;
         }
 
-        if (UserFileManager.hasName(name)) return;
+        PersistentUserData data = UserFileManager.get(name);
 
-        if (PremiumAutoIn.contains(name)) {
-
-            String address = e.getAddress().getHostAddress();
-
-            for (ConnectionFilter filter : premiumFilters) {
-                if (filter.disallowJoin(address, name)) {
-                    e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
-                    break;
-                }
-            }
+        if (data != null) {//the account existing, but verification is necessary
+            LoginVerdictManager.addOffline(name, address, data);
             return;
         }
 
-        String address = e.getAddress().getHostAddress();
+        if (PremiumAutoIn.remove(name)) {
+            for (ConnectionFilter filter : premiumFilters) {
+                if (filter.disallowJoin(address, name)) {
+                    e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
+                    return;
+                }
+            }
+            LoginVerdictManager.addOnline(name);
+            return;
+        }
 
         for (ConnectionFilter filter : filters) {
             if (filter.disallowJoin(address, name)) {
                 e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
-                break;
+                return;
             }
         }
+        LoginVerdictManager.addOffline(name, address, data);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSpawnLocInit(PlayerSpawnLocationEvent event) {
-        if (requireCaptchaVerification && !event.getSpawnLocation().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && !UserFileManager.hasName(event.getPlayer().getName())) {//the player has not completed the captcha verification
-            //the join location is not in the captcha world
+        //the join location is not in the captcha world
+        if (!event.getSpawnLocation().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && !LoginVerdictManager.getExisting(event.getPlayer()).getVerdict().isAutoLogin()) {//the player needs to be verified
             OriginalLocationsManager.add(event.getPlayer(), event.getSpawnLocation());//remember the original spawn location
-            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world as the spawn location
+            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world location as the spawn location (a faster on join alternative)
         }
-        //event.setSpawnLocation(AlixHandler.handleOfflinePlayerJoin(event.getPlayer(), event.getSpawnLocation()));
     }
 
+    //add the channel handler after anyone else to prevent unnecessary packet processing
     @EventHandler(priority = EventPriority.MONITOR)
-    //add the channel handler after anyone else to remove unnecessary packet processing
     public void onJoin(PlayerJoinEvent e) {
-        UnverifiedUser user = AlixHandler.handleOfflinePlayerJoin(e.getPlayer(), e.getJoinMessage());//user can be null if the verification was not initialized - the user was premium or was auto-logged in by ip
+        UnverifiedUser user = AlixHandler.handleOfflinePlayerJoin(e.getPlayer(), e.getJoinMessage());//the user can be null if the verification was not initialized - the user was premium or was auto-logged in by ip
 
-        if (user != null && !user.hasCompletedCaptcha())
-            e.setJoinMessage(null);//take priority in removing the join message for captcha unverified users
+        if (user != null) {
+            if (!user.hasCompletedCaptcha()) {
+                e.setJoinMessage(null);//take priority in removing the join message for captcha unverified users
+                if (alixJoinLog)
+                    Main.logInfo(joinCaptchaUnverified.format(e.getPlayer().getName(), user.getIPAddress()));
+            } else if (alixJoinLog)
+                Main.logInfo(joinUnverified.format(e.getPlayer().getName(), user.getIPAddress()));
+        } else if (alixJoinLog)
+            Main.logInfo(joinVerified.format(e.getPlayer().getName(), e.getPlayer().getAddress().getAddress().getHostAddress()));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -92,80 +115,44 @@ public final class OfflineExecutors extends UniversalExecutor {
         AlixHandler.handleOfflinePlayerQuit(e.getPlayer(), e);
     }
 
-/*    @EventHandler
-    public void onTabComplete(TabCompleteEvent event) {
-        event.setCompletions(UserManager.notVanishedUserNicknames);
-    }*/
-
-    @EventHandler(priority = EventPriority.MONITOR)
+    //Cancel before anyone else to signal to
+    //other plugins to not process it themselves.
+    //Uncancelling an event is just bad writing, so
+    //it's not taken into account here
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onCommand(PlayerCommandPreprocessEvent e) {
-        if (e.isCancelled()) return;
-        Player p = e.getPlayer();
-        String cmd = e.getMessage().substring(1).toLowerCase();
-        UnverifiedUser user = Verifications.get(p);
+        Player player = e.getPlayer();
+        if (!PacketBlocker.serverboundNameVersion) {
+            UnverifiedUser user = Verifications.get(player);
+            char[] cmd = AlixCommandManager.getLowerCasedUnslashedCommand(e.getMessage());
 
-        if (user != null) {
-            if (user.isGUIInitialized()) {
+            if (user != null) {
                 e.setCancelled(true);
+                AlixCommandManager.handleVerificationCommand(cmd, user);
                 return;
             }
-            String[] split = split(cmd, ' ');
-            String split0 = split[0];
 
-            if (FileCommandManager.isLoginCommand(split0)) {
-                String verificationCommand = FileCommandManager.getCommand(split0).getCommand();
-                if (split.length == 1) {
-                    switch (verificationCommand) {
-                        case "login":
-                            sendMessage(p, CommandManager.formatLogin);
-                            break;
-                        case "register":
-                            sendMessage(p, CommandManager.formatRegister);
-                            break;
-                        case "captcha":
-                            sendMessage(p, CommandManager.formatCaptcha);
-                            break;
-                    }
-                    return;
-                }
+            String fullCommand = new String(cmd);
+            String[] spletCommand = split(fullCommand, ' ');
+            String commandLabel = spletCommand[0];
 
-                String arg2 = split[1];
-
-                if (verificationCommand.equals("captcha")) {
-                    CommandManager.onCaptchaCommand(user, p, arg2);
-                    e.setCancelled(true);
-                    return;
-                }
-
-/*                String hashedPassword;
-
-                if (data == null) hashedPassword = Hashing.getConfigHashingAlgorithm().hash(arg2);
-                else hashedPassword = data.getPassword().getHashingAlgorithm().hash(arg2);*/
-
-                if (verificationCommand.equals("login")) CommandManager.onLoginCommand(user, p, arg2);
-                else CommandManager.onRegisterCommand(user, p, arg2);
-                //e.setMessage("/" + split0 + " " + hashedPassword);
+            //The processing below is present in order to prevent
+            //the /changepassword command from being shown in the console
+            if (AlixCommandManager.isPasswordChangeCommand(commandLabel)) {
+                e.setCancelled(true);
+                CommandManager.onPasswordChangeCommand(UserManager.getNullableUserOnline(player), Arrays.copyOfRange(spletCommand, 1, spletCommand.length));
+                return;
             }
-            e.setCancelled(true);
-            return;
         }
-
-        if (!isOperatorCommandRestricted) return;
-        super.onCommand(e, cmd);
+        //ignore the cancellation up until this point
+        if (!e.isCancelled() && isOperatorCommandRestricted) super.onOperatorCommandCheck(e, e.getMessage().substring(1));
     }
-
-/*    @EventHandler
-    public void onReloadCommand(ServerCommandEvent e) {
-        String cmd = removeSlash(e.getCommand().toLowerCase());
-        if (e.isCancelled()) return;
-        handleReloadCommand(cmd);
-    }*/
 
     @Override
     @EventHandler(priority = EventPriority.MONITOR)
     public void onChat(AsyncPlayerChatEvent e) {
         if (e.isCancelled()) return;
-        if (!PacketBlocker.serverboundVersion && Verifications.has(e.getPlayer())) {
+        if (!PacketBlocker.serverboundNameVersion && Verifications.has(e.getPlayer())) {
             e.setCancelled(true);
             return;
         }
@@ -175,44 +162,11 @@ public final class OfflineExecutors extends UniversalExecutor {
     @EventHandler
     @Override
     public void onSave(WorldSaveEvent e) {
-        if (userDataAutoSave && mainWorldUUID.equals(e.getWorld().getUID())) {
-            UserFileManager.asyncSave();
-            OriginalLocationsManager.asyncSave();
+        if (userDataAutoSave && AlixWorldHolder.isMain(e.getWorld())) {
+            AlixScheduler.async(() -> {
+                UserFileManager.onAsyncSave();
+                OriginalLocationsManager.onAsyncSave();
+            });
         }
     }
-
-    /*    @EventHandler
-    public void onMove(PlayerMoveEvent e) {
-        if (getUser(e.getPlayer()).isNotLoggedIn()) e.setCancelled(true);
-    }*/
-
-/*    @EventHandler
-    public void onAttack(EntityDamageByEntityEvent e) {
-        Entity dam = e.getDamager();
-        Entity vic = e.getEntity();
-        if (dam instanceof Player && getUserOnline((Player) dam).isLoggedIn() || vic instanceof Player && getUserOnline((Player) vic).isLoggedIn())
-            e.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onInteract(PlayerInteractEvent e) {
-        if (!getUserOnline(e.getPlayer()).isLoggedIn()) e.setCancelled(true);
-    }*/
-
-/*    @EventHandler
-    public void onInv(InventoryInteractEvent e) {
-        HumanEntity en = e.getWhoClicked();
-        if (en instanceof Player && !getUserOnline((Player) en).isLoggedIn()) e.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onInv(InventoryClickEvent e) {
-        HumanEntity en = e.getWhoClicked();
-        if (en instanceof Player && !getUserOnline((Player) en).isLoggedIn()) e.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onDrop(PlayerDropItemEvent e) {
-        if (!getUserOnline(e.getPlayer()).isLoggedIn()) e.setCancelled(true);
-    }*/
 }

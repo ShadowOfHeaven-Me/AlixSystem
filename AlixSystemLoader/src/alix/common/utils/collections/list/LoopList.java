@@ -1,6 +1,6 @@
 package alix.common.utils.collections.list;
 
-public class LoopList<T> {
+public final class LoopList<T> {
 
     private final T[] values;
     private final short maxIndex;
@@ -9,14 +9,13 @@ public class LoopList<T> {
     public LoopList(T[] values) {
         this.values = values;
         int l = values.length;
-        if (l > 32767 || l < 0)
-            throw new RuntimeException("Invalid array size " + l + " with the max of 32767 and min of 0!");
+        if (l > 32767)
+            throw new RuntimeException("Invalid array size " + l + " with the max of 32767");
         this.maxIndex = (short) l;
     }
 
     public void setNext(T value) {
-        values[currentIndex++] = value;
-        if (currentIndex == maxIndex) currentIndex = 0;
+        this.values[this.nextIndex()] = value;
     }
 
     public void setValue(int i, T value) {
@@ -24,20 +23,20 @@ public class LoopList<T> {
     }
 
     public T next() {
-        if (currentIndex == maxIndex) currentIndex = 0;
-        return values[currentIndex++];
+        return this.values[this.nextIndex()];
     }
 
-    public boolean contains(T v) {
-        for (T t : values) {
-            if (t == null) break;
-            if (v.equals(t)) return true;
-        }
+    private int nextIndex() {
+        return currentIndex != maxIndex ? currentIndex++ : (currentIndex = 0);
+    }
+
+    public final boolean contains(T v) {
+        for (T t : values) if (v.equals(t)) return true;
         return false;
     }
 
-    public T get(byte i) {
-        return values[i];
+    public T get(short i) {
+        return this.values[i];
     }
 
     public T[] getValues() {

@@ -1,14 +1,10 @@
 package shadow.systems.login.captcha;
 
 import alix.common.utils.collections.queue.AlixDeque;
-import org.bukkit.entity.Player;
 import shadow.Main;
 import shadow.systems.login.captcha.manager.CaptchaGenerator;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
 import shadow.systems.login.captcha.manager.CaptchaThreadManager;
-import shadow.systems.login.captcha.subtypes.MapCaptcha;
-import shadow.systems.login.captcha.subtypes.MessageCaptcha;
-import shadow.systems.login.captcha.subtypes.SubtitleCaptcha;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.offline.UnverifiedUser;
 
@@ -16,8 +12,8 @@ import static shadow.utils.main.AlixUtils.captchaVerificationCaseSensitive;
 
 public abstract class Captcha {
 
-    private static final CaptchaPoolManager captchaPool = new CaptchaPoolManager();
-    private static boolean registered = true;
+    private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
+    //private static boolean registered = true;
     protected transient UnverifiedUser user;
     protected String captcha;
 
@@ -44,7 +40,6 @@ public abstract class Captcha {
     }*/
 
     public void sendPackets() {
-
     }
 
     public void regenerate() {
@@ -73,24 +68,24 @@ public abstract class Captcha {
         captchaPool.addNode(node);
     }
 
-    public static void unregister() {
+/*    public static void unregister() {
         registered = false;
         captchaPool.clear();
-    }
+    }*/
 
-    @Override
-    protected void finalize() throws Throwable {
+/*    @Override
+    protected final void finalize() throws Throwable {
         if (registered) captchaPool.add(copy(this));
         super.finalize();
-    }
+    }*/
 
-    private static Captcha copy(Captcha captcha) {
+/*    private static Captcha copy(Captcha captcha) {
         if (captcha instanceof MapCaptcha) return new MapCaptcha((MapCaptcha) captcha);
         if (captcha instanceof SubtitleCaptcha) return new SubtitleCaptcha(captcha);
         if (captcha instanceof MessageCaptcha) return new MessageCaptcha(captcha);
         registered = false;
         throw new InternalError("Unknown captcha class type: " + captcha.getClass().getSimpleName() + "!");
-    }
+    }*/
 
     /*    protected static int parse(String a) throws NumberFormatException {
         char[] b = a.toCharArray();

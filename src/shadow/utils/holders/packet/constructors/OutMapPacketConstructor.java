@@ -6,7 +6,7 @@ import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Collections;
 
-public class OutMapPacketConstructor {
+public final class OutMapPacketConstructor {
 
     private static final Class<?> packetClass = ReflectionUtils.outMapPacketClass;
     private static final Constructor<?> packetClassConstructor;
@@ -65,5 +65,8 @@ public class OutMapPacketConstructor {
     }
 
     public static void init() {
+    }
+
+    private OutMapPacketConstructor() {
     }
 }

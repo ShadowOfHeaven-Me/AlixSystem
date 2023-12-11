@@ -1,5 +1,8 @@
 package shadow.systems.commands;
 
+import alix.common.messages.Messages;
+import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.utils.formatter.AlixFormatter;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
@@ -8,12 +11,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import shadow.Main;
-import alix.common.messages.Messages;
-import shadow.systems.commands.aliases.AlixCommand;
-import shadow.systems.commands.aliases.FileCommandManager;
+import shadow.systems.commands.alix.AlixCommand;
+import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.commands.tab.CommandTabCompleterAS;
 import shadow.systems.commands.tab.subtypes.*;
-import shadow.systems.login.Verifications;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.command.managers.PersonalMessageManager;
 import shadow.utils.command.tpa.TpaManager;
@@ -24,7 +25,7 @@ import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
-import alix.common.utils.formatter.AlixFormatter;
+import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.loc.NamedLocation;
 import shadow.utils.users.User;
@@ -38,7 +39,7 @@ import java.util.List;
 import static shadow.utils.main.AlixUtils.*;
 import static shadow.utils.users.UserManager.getVerifiedUser;
 
-public class CommandManager {
+public final class CommandManager {
 
 /*    private static final Map<String, List<String>> polishCommandAliasesMap;
 
@@ -181,14 +182,14 @@ public class CommandManager {
             playerNotBanned = Messages.get("player-not-banned"),
             unbannedPlayer = Messages.get("unbanned-player"),
     //ipNotBanned = Messages.get("ip-not-banned"),
-            unbannedIp = Messages.get("unbanned-ip"),
+    unbannedIp = Messages.get("unbanned-ip"),
             alreadyLoggedIn = Messages.get("already-logged-in"),
             captchaAlreadyCompleted = Messages.get("captcha-already-completed"),
-            //captchaNotInitialized = Messages.get("captcha-not-initialized"),
-            captchaComplete = Messages.get("captcha-complete"),
+    //captchaNotInitialized = Messages.get("captcha-not-initialized"),
+    captchaComplete = Messages.get("captcha-complete"),
             incorrectCaptcha = Messages.get("incorrect-captcha"),
     //loginReminderCommand = Messages.get("login-reminder-command"),
-            registerReminderCommand = Messages.get("register-reminder-command"),
+    registerReminderCommand = Messages.get("register-reminder-command"),
             passwordChanged = Messages.get("password-changed"),
             alreadyLoggedInLoginCommand = Messages.get("already-logged-in-login-command"),
             captchaReminderCommand = Messages.get("captcha-reminder-command"),
@@ -230,7 +231,7 @@ public class CommandManager {
     }
 
     private static void registerCommand(String commandLabel, CommandExecutor executor, boolean forceRegister) throws RuntimeException {
-        AlixCommand alix = FileCommandManager.getCommand(commandLabel);
+        AlixCommand alix = AlixCommandManager.getCommand(commandLabel);
 
         if (alix == null)
             throw new RuntimeException("The given command " + commandLabel + " does not have an Alix implementation, and therefore cannot be registered!");
@@ -405,7 +406,7 @@ public class CommandManager {
         }
     }*/
 
-    private static class UniversalChatStatusSetCommand implements CommandExecutor {
+    private static final class UniversalChatStatusSetCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -441,7 +442,7 @@ public class CommandManager {
         }
     }
 
-    private static class UniversalChatClearCommand implements CommandExecutor {
+    private static final class UniversalChatClearCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -467,7 +468,7 @@ public class CommandManager {
         }
     }
 
-    private static class SudoCommand implements CommandExecutor {
+    private static final class SudoCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -503,7 +504,7 @@ public class CommandManager {
         }
     }
 
-    private static class ReplyCommand implements CommandExecutor {
+    private static final class ReplyCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -533,7 +534,7 @@ public class CommandManager {
         }
     }
 
-    private static class DirectMessageCommand implements CommandExecutor {
+    private static final class DirectMessageCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -563,7 +564,7 @@ public class CommandManager {
         }
     }
 
-    private static class SpawnTeleportCommand implements CommandExecutor {
+    private static final class SpawnTeleportCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -581,7 +582,7 @@ public class CommandManager {
         }
     }
 
-    private static class SpawnSetCommand implements CommandExecutor {
+    private static final class SpawnSetCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -597,7 +598,7 @@ public class CommandManager {
         }
     }
 
-    private static class UnmuteCommand implements CommandExecutor {
+    private static final class UnmuteCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -623,7 +624,7 @@ public class CommandManager {
         }
     }
 
-    private static class MuteCommand implements CommandExecutor {
+    private static final class MuteCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -670,7 +671,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportAskReceiveSetOffCommand implements CommandExecutor {
+    private static final class TeleportAskReceiveSetOffCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -681,7 +682,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportAskReceiveSetOnCommand implements CommandExecutor {
+    private static final class TeleportAskReceiveSetOnCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -692,7 +693,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportCancelCommand implements CommandExecutor {
+    private static final class TeleportCancelCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -713,7 +714,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportDenyCommand implements CommandExecutor {
+    private static final class TeleportDenyCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -742,7 +743,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportAcceptCommand implements CommandExecutor {
+    private static final class TeleportAcceptCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -771,7 +772,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportAskCommand implements CommandExecutor {
+    private static final class TeleportAskCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -804,7 +805,7 @@ public class CommandManager {
         }
     }
 
-    private static class WarpRemoveCommand implements CommandExecutor {
+    private static final class WarpRemoveCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -822,7 +823,7 @@ public class CommandManager {
         }
     }
 
-    private static class WaroCreateCommand implements CommandExecutor {
+    private static final class WaroCreateCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -846,7 +847,7 @@ public class CommandManager {
         }
     }
 
-    private static class WarpTeleportCommand implements CommandExecutor {
+    private static final class WarpTeleportCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -870,7 +871,7 @@ public class CommandManager {
         }
     }
 
-    private static class HomeListCommand implements CommandExecutor {
+    private static final class HomeListCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -893,7 +894,7 @@ public class CommandManager {
         }
     }
 
-    private static class HomeTeleportCommand implements CommandExecutor {
+    private static final class HomeTeleportCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -934,7 +935,7 @@ public class CommandManager {
         }
     }
 
-    private static class HomeRemoveCommand implements CommandExecutor {
+    private static final class HomeRemoveCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -957,7 +958,7 @@ public class CommandManager {
         }
     }
 
-    private static class HomeSetCommand implements CommandExecutor {
+    private static final class HomeSetCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1014,7 +1015,7 @@ public class CommandManager {
         }
     }
 
-    private static class OperatorUnsetCommand implements CommandExecutor {
+    private static final class OperatorUnsetCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1066,7 +1067,7 @@ public class CommandManager {
         }
     }
 
-    private static class OperatorSetCommand implements CommandExecutor {
+    private static final class OperatorSetCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1122,7 +1123,7 @@ public class CommandManager {
         }
     }
 
-    private static class TemporaryIPBanCommand implements CommandExecutor {
+    private static final class TemporaryIPBanCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1199,7 +1200,7 @@ public class CommandManager {
         }
     }
 
-    private static class TemporaryBanCommand implements CommandExecutor {
+    private static final class TemporaryBanCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1252,7 +1253,7 @@ public class CommandManager {
         }
     }
 
-    private static class UnbanCommand implements CommandExecutor {
+    private static final class UnbanCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1271,7 +1272,7 @@ public class CommandManager {
         }
     }
 
-    private static class UnbanIPCommand implements CommandExecutor {
+    private static final class UnbanIPCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1298,34 +1299,23 @@ public class CommandManager {
         }
     }
 
+    //private static final boolean authCmdAsyncInvoked = PacketBlocker.serverboundNameVersion;
 
-    public static boolean onCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
-/*            if (user == null) {
-                sendMessage(sender, alreadyLoggedIn);
-                return false;
-            }*/
-/*            if (user.hasCompletedCaptcha()) {
-                sendMessage(sender, captchaAlreadyCompleted);
-                return false;
-            }*/
-/*                if (!user.isCaptchaInitialized()) {
-                    sendMessage(sender, captchaNotInitialized);
-                    return false;
-                }*/
-            if (user.isCaptchaCorrect(captcha)) {
-                user.completeCaptcha();
-                sendMessage(sender, captchaComplete);
-                return true;
-            }
-            if (kickOnIncorrectCaptcha) {
-                sender.kickPlayer(incorrectCaptcha);
-                return false;
-            }
-            sendMessage(sender, incorrectCaptcha);
-            return false;
+    public static void onCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
+        if (user.isCaptchaCorrect(captcha)) {
+            user.completeCaptcha();
+            sendMessage(sender, captchaComplete);
+            return;
         }
+        if (kickOnIncorrectCaptcha) {
+            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(() -> sender.kickPlayer(incorrectCaptcha));
+            else sender.kickPlayer(incorrectCaptcha);
+            return;
+        }
+        sendMessage(sender, incorrectCaptcha);
+    }
 
-    private static class CaptchaVerifyCommand implements CommandExecutor {
+    private static final class CaptchaVerifyCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1334,15 +1324,16 @@ public class CommandManager {
         }
     }
 
-    private static class PasswordChangeCommand implements CommandExecutor {
+    public static void onPasswordChangeCommand(User user, String[] args) {
+        Player sender = user.getPlayer();
+        if (args.length != 1) {
+            sendMessage(sender, formatChangepassword);
+            return;
+        }
+        //if (isConsoleButPlayerRequired(sender)) return false;
 
-        @Override
-        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-            if (args.length == 1) {
-                if (isConsoleButPlayerRequired(sender)) return false;
-                Player p = (Player) sender;
-                User u = getVerifiedUser(p);
-/*                if (u == null) { The OfflineExecutors should handle cancelling this command
+
+/*                if (u == null) { The OfflineExecutors should handle these checks
                     sendMessage(sender, loginReminderCommand);
                     return false;
                 }
@@ -1350,47 +1341,52 @@ public class CommandManager {
                     sendMessage(sender, registerReminderCommand);
                     return false;
                 }*/
-                String arg1 = args[0];
-                String reason = getInvalidityReason(arg1, false);
-                if (reason == null) {
-                    u.changePassword(arg1);
-                    sendMessage(sender, passwordChanged);
-                    return true;
-                }
-                sendMessage(sender, reason);
-                return false;
-            }
-            sendMessage(sender, formatChangepassword);
+        String arg1 = args[0];
+        String reason = getInvalidityReason(arg1, false);
+
+        if (reason == null) {
+            user.changePassword(arg1);
+            sendMessage(sender, passwordChanged);
+            return;
+        }
+        sendMessage(sender, reason);
+    }
+
+    private static final class PasswordChangeCommand implements CommandExecutor {
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+            //The OfflineExecutors handle the processing of this command.
+            //Only the console could've made the code here executed
+            //or it was executed with /alixsystem:changepassword
+            sender.sendMessage(commandUnreachable);
             return false;
         }
     }
 
     public static void onLoginCommand(UnverifiedUser user, Player sender, String password) {
-/*            if (user == null) {
-                sendMessage(sender, alreadyLoggedInLoginCommand);
-                return;
-            }*/
-            if (!user.hasCompletedCaptcha()) {
-                sendMessage(sender, captchaReminderCommand);
-                return;
-            }
-            if (!user.isRegistered()) {
-                sendMessage(sender, registerReminderCommand);
-                return;
-            }
-            if (user.isPasswordCorrect(password)) {
-                user.logIn();
-                sendMessage(sender, loginSuccess);
-                return;
-            }
-            if (kickOnIncorrectPassword) {
-                sender.kickPlayer(incorrectPassword);
-                return;
-            }
-            sendMessage(sender, incorrectPassword);
+        if (!user.hasCompletedCaptcha()) {
+            sendMessage(sender, captchaReminderCommand);
+            return;
+        }
+        if (!user.isRegistered()) {
+            sendMessage(sender, registerReminderCommand);
+            return;
+        }
+        if (user.isPasswordCorrect(password)) {
+            user.logIn();
+            sendMessage(sender, loginSuccess);
+            return;
+        }
+        if (kickOnIncorrectPassword) {
+            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(() -> sender.kickPlayer(incorrectPassword));
+            else sender.kickPlayer(incorrectPassword);
+            return;
+        }
+        sendMessage(sender, incorrectPassword);
     }
 
-    private static class LoginCommand implements CommandExecutor {
+    private static final class LoginCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1400,24 +1396,25 @@ public class CommandManager {
     }
 
     public static void onRegisterCommand(UnverifiedUser user, Player sender, String password) {
-            if (!user.hasCompletedCaptcha()) {
-                sendMessage(sender, captchaReminderCommand);
-                return;
-            }
-            if (user == null || user.isRegistered()) {
-                sendMessage(sender, alreadyRegistered);
-                return;
-            }
-            String reason = getInvalidityReason(password, false);
-            if (reason == null) {
-                user.register(password);
-                sendMessage(sender, passwordRegister);
-                return;
-            }
-            sendMessage(sender, reason);
+        if (!user.hasCompletedCaptcha()) {
+            sendMessage(sender, captchaReminderCommand);
+            return;
+        }
+        if (user == null || user.isRegistered()) {
+            sendMessage(sender, alreadyRegistered);
+            return;
+        }
+        String reason = getInvalidityReason(password, false);
+        if (reason == null) {
+            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(() -> user.register(password));
+            else user.register(password);
+            sendMessage(sender, passwordRegister);
+            return;
+        }
+        sendMessage(sender, reason);
     }
 
-    private static class RegisterCommand implements CommandExecutor {
+    private static final class RegisterCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1426,7 +1423,7 @@ public class CommandManager {
         }
     }
 
-    private static class NickNameCommand implements CommandExecutor {
+    private static final class NickNameCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1470,7 +1467,7 @@ public class CommandManager {
         }
     }
 
-    private static class OnlinePlayersListCommand implements CommandExecutor {
+    private static final class OnlinePlayersListCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1485,7 +1482,7 @@ public class CommandManager {
         }
     }
 
-    private static class GamemodeSwitchCommand implements CommandExecutor {
+    private static final class GamemodeSwitchCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1625,7 +1622,7 @@ public class CommandManager {
         }
     }
 
-    private static class InventoryViewCommand implements CommandExecutor {
+    private static final class InventoryViewCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1646,7 +1643,7 @@ public class CommandManager {
         }
     }
 
-    private static class EnderChestCommand implements CommandExecutor {
+    private static final class EnderChestCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1678,7 +1675,7 @@ public class CommandManager {
         }
     }
 
-    private static class FeedCommand implements CommandExecutor {
+    private static final class FeedCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1711,7 +1708,7 @@ public class CommandManager {
         }
     }
 
-    /*private static class VanishCommand implements CommandExecutor {
+    /*private static final class VanishCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1757,7 +1754,7 @@ public class CommandManager {
         }
     }*/
 
-    private static class HealCommand implements CommandExecutor {
+    private static final class HealCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1799,7 +1796,7 @@ public class CommandManager {
         }
     }
 
-    private static class SpeedCommand implements CommandExecutor {
+    private static final class SpeedCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1881,7 +1878,7 @@ public class CommandManager {
         }
     }
 
-    private static class ItemRenameCommand implements CommandExecutor {
+    private static final class ItemRenameCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1914,7 +1911,7 @@ public class CommandManager {
         }
     }
 
-    private static class FlyCommand implements CommandExecutor {
+    private static final class FlyCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1963,7 +1960,7 @@ public class CommandManager {
     }
 
 
-    /*private static class OdpowiedzKomenda implements CommandExecutor {
+    /*private static final class OdpowiedzKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1993,7 +1990,7 @@ public class CommandManager {
         }
     }
 
-    private static class OsobistaWiadomoscKomenda implements CommandExecutor {
+    private static final class OsobistaWiadomoscKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2021,7 +2018,7 @@ public class CommandManager {
         }
     }
 
-    private static class SudoKomenda implements CommandExecutor {
+    private static final class SudoKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2057,7 +2054,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportacjaDoSpawnaKomenda implements CommandExecutor {
+    private static final class TeleportacjaDoSpawnaKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2073,7 +2070,7 @@ public class CommandManager {
         }
     }
 
-    private static class UstawienieSpawnaKomenda implements CommandExecutor {
+    private static final class UstawienieSpawnaKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2089,7 +2086,7 @@ public class CommandManager {
         }
     }
 
-    private static class OdciszenieKomenda implements CommandExecutor {
+    private static final class OdciszenieKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2115,7 +2112,7 @@ public class CommandManager {
         }
     }
 
-    private static class WyciszenieKomenda implements CommandExecutor {
+    private static final class WyciszenieKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2159,7 +2156,7 @@ public class CommandManager {
         }
     }
 
-    private static class UstawianieOffPrzyjomowaniaZapytanTeleportacji implements CommandExecutor {
+    private static final class UstawianieOffPrzyjomowaniaZapytanTeleportacji implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2170,7 +2167,7 @@ public class CommandManager {
         }
     }
 
-    private static class UstawianieOnPrzyjomowaniaZapytanTeleportacji implements CommandExecutor {
+    private static final class UstawianieOnPrzyjomowaniaZapytanTeleportacji implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2181,7 +2178,7 @@ public class CommandManager {
         }
     }
 
-    private static class CofniecieTeleportacjiKomenda implements CommandExecutor {
+    private static final class CofniecieTeleportacjiKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2202,7 +2199,7 @@ public class CommandManager {
         }
     }
 
-    private static class OdrzucenieTeleportacjiKomenda implements CommandExecutor {
+    private static final class OdrzucenieTeleportacjiKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2231,7 +2228,7 @@ public class CommandManager {
         }
     }
 
-    private static class AkceptacjaTeleportacjiKomenda implements CommandExecutor {
+    private static final class AkceptacjaTeleportacjiKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2260,7 +2257,7 @@ public class CommandManager {
         }
     }
 
-    private static class ZapytanieTeleportacjiKomenda implements CommandExecutor {
+    private static final class ZapytanieTeleportacjiKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2300,7 +2297,7 @@ public class CommandManager {
         }
     }
 
-    private static class ListaDomowKomenda implements CommandExecutor {
+    private static final class ListaDomowKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2323,7 +2320,7 @@ public class CommandManager {
         }
     }
 
-    private static class TeleportacjaDoDomuKomenda implements CommandExecutor {
+    private static final class TeleportacjaDoDomuKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2360,7 +2357,7 @@ public class CommandManager {
         }
     }
 
-    private static class WarpUsunKomenda implements CommandExecutor {
+    private static final class WarpUsunKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2378,7 +2375,7 @@ public class CommandManager {
         }
     }
 
-    private static class WarpStworzKomenda implements CommandExecutor {
+    private static final class WarpStworzKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2402,7 +2399,7 @@ public class CommandManager {
         }
     }
 
-    private static class WarpTeleportacjaKomenda implements CommandExecutor {
+    private static final class WarpTeleportacjaKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2424,7 +2421,7 @@ public class CommandManager {
         }
     }
 
-    private static class UsuniecieDomuKomenda implements CommandExecutor {
+    private static final class UsuniecieDomuKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2447,7 +2444,7 @@ public class CommandManager {
         }
     }
 
-    private static class UstawienieDomuKomenda implements CommandExecutor {
+    private static final class UstawienieDomuKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2503,7 +2500,7 @@ public class CommandManager {
         }
     }
 
-    private static class UsuniecieOperatoraKomenda implements CommandExecutor {
+    private static final class UsuniecieOperatoraKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2554,7 +2551,7 @@ public class CommandManager {
         }
     }
 
-    private static class UstawienieOperatoraKomenda implements CommandExecutor {
+    private static final class UstawienieOperatoraKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2608,7 +2605,7 @@ public class CommandManager {
         }
     }
 
-    private static class TymczasowyBanIPKomenda implements CommandExecutor {
+    private static final class TymczasowyBanIPKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2687,7 +2684,7 @@ public class CommandManager {
         }
     }
 
-    private static class WybaczenieKomenda implements CommandExecutor {
+    private static final class WybaczenieKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2707,7 +2704,7 @@ public class CommandManager {
         }
     }
 
-    private static class WybaczenieIPKomenda implements CommandExecutor {
+    private static final class WybaczenieIPKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2734,7 +2731,7 @@ public class CommandManager {
         }
     }
 
-    private static class TymczasowyBanKomenda implements CommandExecutor {
+    private static final class TymczasowyBanKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2789,7 +2786,7 @@ public class CommandManager {
     }
 
 
-    private static class UkonczCaptcheKomenda implements CommandExecutor {
+    private static final class UkonczCaptcheKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2822,7 +2819,7 @@ public class CommandManager {
         }
     }
 
-    private static class ZmianaHaslaKomenda implements CommandExecutor {
+    private static final class ZmianaHaslaKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2853,7 +2850,7 @@ public class CommandManager {
         }
     }
 
-    private static class LogowanieSieKomenda implements CommandExecutor {
+    private static final class LogowanieSieKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2887,7 +2884,7 @@ public class CommandManager {
         }
     }
 
-    private static class ZarajestrujSieKomenda implements CommandExecutor {
+    private static final class ZarajestrujSieKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2918,7 +2915,7 @@ public class CommandManager {
         }
     }
 
-    private static class ZmianaNazwyKomenda implements CommandExecutor {
+    private static final class ZmianaNazwyKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2962,7 +2959,7 @@ public class CommandManager {
         }
     }
 
-    private static class ListaGraczyOnlineKomenda implements CommandExecutor {
+    private static final class ListaGraczyOnlineKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -2978,7 +2975,7 @@ public class CommandManager {
         }
     }
 
-    private static class ZmianaTrybuGryKomenda implements CommandExecutor {
+    private static final class ZmianaTrybuGryKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3119,7 +3116,7 @@ public class CommandManager {
         }
     }
 
-    private static class ZobaczEkwipunekKomenda implements CommandExecutor {
+    private static final class ZobaczEkwipunekKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3140,7 +3137,7 @@ public class CommandManager {
         }
     }
 
-    private static class SkrzyniaKresuKomenda implements CommandExecutor {
+    private static final class SkrzyniaKresuKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3172,7 +3169,7 @@ public class CommandManager {
         }
     }
 
-    private static class NajedzKomenda implements CommandExecutor {
+    private static final class NajedzKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3205,7 +3202,7 @@ public class CommandManager {
         }
     }
 
-*//*    private static class ZniknijKomenda implements CommandExecutor {
+*//*    private static final class ZniknijKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3251,7 +3248,7 @@ public class CommandManager {
         }
     }*//*
 
-    private static class UleczKomenda implements CommandExecutor {
+    private static final class UleczKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3293,7 +3290,7 @@ public class CommandManager {
         }
     }
 
-    private static class PredkoscKomenda implements CommandExecutor {
+    private static final class PredkoscKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3381,7 +3378,7 @@ public class CommandManager {
         }
     }
 
-    private static class NazwijPrzedmiotKomenda implements CommandExecutor {
+    private static final class NazwijPrzedmiotKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -3414,7 +3411,7 @@ public class CommandManager {
         }
     }
 
-    private static class LatanieKomenda implements CommandExecutor {
+    private static final class LatanieKomenda implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {

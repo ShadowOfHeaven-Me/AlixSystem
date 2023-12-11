@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class OriginalLocationsFile extends FileManager {
+public final class OriginalLocationsFile extends FileManager {
 
     private final Map<UUID, Location> map;
 

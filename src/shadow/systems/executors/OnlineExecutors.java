@@ -9,7 +9,7 @@ import static shadow.utils.main.AlixUtils.isOperatorCommandRestricted;
 import static shadow.utils.users.UserManager.addOnlineUser;
 import static shadow.utils.users.UserManager.remove;
 
-public final class OnlineExecutors extends UniversalExecutor {
+public final class OnlineExecutors extends UniversalExecutors {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
@@ -45,7 +45,7 @@ public final class OnlineExecutors extends UniversalExecutor {
     public void onCommand(PlayerCommandPreprocessEvent e) {
         if (!isOperatorCommandRestricted || e.isCancelled()) return;
         String cmd = e.getMessage().substring(1).toLowerCase();
-        super.onCommand(e, cmd);
+        super.onOperatorCommandCheck(e, cmd);
     }
 
     @Override

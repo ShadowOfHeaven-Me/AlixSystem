@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-public class JarInJarClassLoader extends URLClassLoader {
+public final class JarInJarClassLoader extends URLClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -21,9 +21,9 @@ public class JarInJarClassLoader extends URLClassLoader {
      *
      * @param loaderClassLoader the loader plugin's classloader (setup and created by the platform)
      * @param jarResourcePath   the path to the jar-in-jar resource within the loader jar
-     * @throws LoadingException if something unexpectedly bad happens
+     * @throws AlixLoadingException if something unexpectedly bad happens
      */
-    public JarInJarClassLoader(ClassLoader loaderClassLoader, String jarResourcePath) throws LoadingException {
+    public JarInJarClassLoader(ClassLoader loaderClassLoader, String jarResourcePath) throws AlixLoadingException {
         super(new URL[]{extractJar(loaderClassLoader, jarResourcePath)}, loaderClassLoader);
     }
 
@@ -54,25 +54,25 @@ public class JarInJarClassLoader extends URLClassLoader {
      * @param <T>              the type of the loader plugin
      * @return the instantiated bootstrap plugin
      */
-    public <T> LoaderBootstrap instantiatePlugin(String bootstrapClass, Class<T> loaderPluginType, T loaderPlugin) throws LoadingException {
+    public <T> LoaderBootstrap instantiatePlugin(String bootstrapClass, Class<T> loaderPluginType, T loaderPlugin) throws AlixLoadingException {
         Class<? extends LoaderBootstrap> plugin;
         try {
             plugin = loadClass(bootstrapClass).asSubclass(LoaderBootstrap.class);
         } catch (ReflectiveOperationException e) {
-            throw new LoadingException("Unable to load bootstrap class", e);
+            throw new AlixLoadingException("Unable to load bootstrap class", e);
         }
 
         Constructor<? extends LoaderBootstrap> constructor;
         try {
             constructor = plugin.getConstructor(loaderPluginType);
         } catch (ReflectiveOperationException e) {
-            throw new LoadingException("Unable to get bootstrap constructor", e);
+            throw new AlixLoadingException("Unable to get bootstrap constructor", e);
         }
 
         try {
             return constructor.newInstance(loaderPlugin);
         } catch (ReflectiveOperationException e) {
-            throw new LoadingException("Unable to create bootstrap plugin instance", e);
+            throw new AlixLoadingException("Unable to create bootstrap plugin instance", e);
         }
     }
 
@@ -84,11 +84,11 @@ public class JarInJarClassLoader extends URLClassLoader {
      * @param jarResourcePath   the inner jar resource path
      * @return a URL to the extracted file
      */
-    private static URL extractJar(ClassLoader loaderClassLoader, String jarResourcePath) throws LoadingException {
+    private static URL extractJar(ClassLoader loaderClassLoader, String jarResourcePath) throws AlixLoadingException {
         // get the jar-in-jar resource
         URL jarInJar = loaderClassLoader.getResource(jarResourcePath);
         if (jarInJar == null) {
-            throw new LoadingException("Could not locate jar-in-jar");
+            throw new AlixLoadingException("Could not locate jar-in-jar");
         }
 
         // create a temporary file
@@ -97,7 +97,7 @@ public class JarInJarClassLoader extends URLClassLoader {
         try {
             path = Files.createTempFile("alixsystem", ".jar.tmp");
         } catch (IOException e) {
-            throw new LoadingException("Unable to create a temporary file", e);
+            throw new AlixLoadingException("Unable to create a temporary file", e);
         }
 
         // mark that the file should be deleted on exit
@@ -107,13 +107,13 @@ public class JarInJarClassLoader extends URLClassLoader {
         try (InputStream in = jarInJar.openStream()) {
             Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new LoadingException("Unable to copy jar-in-jar to temporary path", e);
+            throw new AlixLoadingException("Unable to copy jar-in-jar to temporary path", e);
         }
 
         try {
             return path.toUri().toURL();
         } catch (MalformedURLException e) {
-            throw new LoadingException("Unable to get URL from path", e);
+            throw new AlixLoadingException("Unable to get URL from path", e);
         }
     }
 }

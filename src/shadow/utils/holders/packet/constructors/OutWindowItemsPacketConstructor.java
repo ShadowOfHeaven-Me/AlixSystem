@@ -2,7 +2,6 @@ package shadow.utils.holders.packet.constructors;
 
 
 import org.bukkit.inventory.ItemStack;
-import shadow.Main;
 import shadow.utils.holders.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
@@ -10,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class OutWindowItemsPacketConstructor {
+public final class OutWindowItemsPacketConstructor {
 
     private static final boolean newerConstructor;
     private static final Constructor<?> clazzConstructor, listConstructor;
@@ -26,7 +25,7 @@ public class OutWindowItemsPacketConstructor {
         Constructor<?> clazzConstructor0 = null;
 
         Class<?> nmsItemStackClazz = ReflectionUtils.nmsItemStackClass;
-        Object nullNmsItemStack0 = ReflectionUtils.fieldGet(ReflectionUtils.getFieldFromTypeSafe(nmsItemStackClazz, nmsItemStackClazz), null);
+        Object nullNmsItemStack0 = ReflectionUtils.fieldGet(ReflectionUtils.getFieldFromTypeDirect(nmsItemStackClazz, nmsItemStackClazz), null);
 
 
         for (Constructor<?> constructor : packetClazz.getConstructors()) {
@@ -49,10 +48,6 @@ public class OutWindowItemsPacketConstructor {
         nullNmsItemStack = nullNmsItemStack0;
         newerConstructor = newerConstructor0;
         clazzConstructor = clazzConstructor0;
-    }
-
-    public static void init() {
-
     }
 
     public static Object construct(int windowId, int size, List<ItemStack> list) {
@@ -96,5 +91,11 @@ public class OutWindowItemsPacketConstructor {
 
     private static Object itemToNMS(ItemStack item) throws Exception {
         return ReflectionUtils.itemStackToNMSCopyMethod.invoke(null, item);
+    }
+
+    public static void init() {
+    }
+
+    private OutWindowItemsPacketConstructor() {
     }
 }

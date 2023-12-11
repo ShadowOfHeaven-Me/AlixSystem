@@ -5,8 +5,9 @@ import shadow.utils.holders.ReflectionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class OutHeldItemSlotPacketConstructor {
+public final class OutHeldItemSlotPacketConstructor {
 
+    //public static final Object SLOT_0 = construct(0);
     private static final Constructor<?> constructor;
 
     static {

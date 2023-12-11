@@ -10,7 +10,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
-public class HttpsHandler {
+public final class HttpsHandler {
 
     public static JsonElement readURL(String uri) throws IOException {
         JsonElement output = null;
@@ -118,5 +118,8 @@ public class HttpsHandler {
             e.printStackTrace();
         }
         throw new RuntimeException("IO");
+    }
+
+    private HttpsHandler() {
     }
 }

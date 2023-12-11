@@ -7,6 +7,7 @@ import shadow.utils.main.AlixUtils;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PremiumAutoIn {
 
@@ -22,7 +23,7 @@ public class PremiumAutoIn {
 
         initialized = auth != null;//whether the auth api was found (so auto auth system works)
 
-        premiumPlayers = initialized ? new HashSet<>() : null;//creates a set of players if the auth system works
+        premiumPlayers = initialized ? ConcurrentHashMap.newKeySet() : null;//creates a set of players if the auth system works
 
         if (configInit) {
             if (Main.pm.isPluginEnabled("FastLogin"))
@@ -38,11 +39,11 @@ public class PremiumAutoIn {
 
     public static boolean remove(String username) {
         return initialized && premiumPlayers.remove(username);
-    }
+    }/*
 
     public static boolean contains(String username) {
         return initialized && premiumPlayers.contains(username);
-    }
+    }*/
 
     public static void add(String username) {
         if (initialized) premiumPlayers.add(username);

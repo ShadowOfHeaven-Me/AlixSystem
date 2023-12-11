@@ -3,12 +3,11 @@ package alix.common.messages;
 import alix.common.CommonAlixMain;
 import alix.common.messages.file.MessagesFile;
 import alix.common.messages.file.extracted.ExtractedMessages;
-import alix.common.messages.types.AlixMessage;
 import alix.common.utils.formatter.AlixFormatter;
 
 import java.io.IOException;
 
-public class Messages {
+public final class Messages {
 
     private static final MessagesFile file = new MessagesFile();
     private static ExtractedMessages extractedMessages;
@@ -31,9 +30,6 @@ public class Messages {
         extractedMessages = ExtractedMessages.findFile();
     }
 
-    public static void init() {
-    }
-
     public static AlixMessage getAsObject(String s) {
         return new AlixMessage(get(s));
     }
@@ -44,7 +40,8 @@ public class Messages {
 
     public static String get(String s) {
         String m = file.getMap().get(s);
-        if (m == null) CommonAlixMain.logWarning("Message '" + s + "' was not found in the messages.txt file! Report this immediately!");
+        if (m == null)
+            CommonAlixMain.logWarning("Message '" + s + "' was not found in the messages.txt file! Report this immediately!");
         return m != null ? m : "&c<Message not found>!";
     }
 
@@ -73,5 +70,11 @@ public class Messages {
         extractedMessages.remove();
         extractedMessages = null;
         return true;
+    }
+
+    public static void init() {
+    }
+
+    private Messages() {
     }
 }

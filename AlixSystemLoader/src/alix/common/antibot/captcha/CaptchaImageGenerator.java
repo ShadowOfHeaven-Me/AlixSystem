@@ -1,25 +1,22 @@
 package alix.common.antibot.captcha;
 
-import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.other.ConcurrentRandom;
 import alix.common.utils.other.ByteArrayFunction;
 import alix.fonts.AlixFontManager;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.util.Random;
 
-public class CaptchaImageGenerator {
+public final class CaptchaImageGenerator {
 
     private static final Font font = AlixFontManager.getPluginFont();
-    private static final Random random = AlixCommonUtils.random;
+    private static final ConcurrentRandom random = ConcurrentRandom.getInstance();
 
     //Source code: https://github.com/InstantlyMoist/Captcha/blob/master/src/main/java/me/kyllian/captcha/spigot/captchas/TextCaptcha.java
 
     public static byte[] generatePixelsToDraw(String captcha, int maxRotation, ByteArrayFunction<Image> function) {
         Image image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-
-        String[] chars = captcha.split("");
 
         Canvas canvas = new Canvas();
         canvas.setSize(128, 128);
@@ -48,6 +45,8 @@ public class CaptchaImageGenerator {
         }
 
         graphics.setFont(font);
+
+        String[] chars = captcha.split("");
 
         for (int i = 0; i != chars.length; i++) {
             AffineTransform original = graphics.getTransform();

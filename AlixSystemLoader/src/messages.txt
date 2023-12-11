@@ -2,6 +2,10 @@ account-limit-reached: &cYou've reached the maximum amount of accounts ({0})
 already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
 already-logged-in: &cYou're already logged in!
 already-registered: &cYou're already registered!
+anti-bot-fail-console-name-to-ip: &cBanned IP {0} for exceeding the maximum amount of ip requests per name
+anti-bot-fail-console-requests: &cBanned IP {0} for exceeding the maximum amount of requests
+anti-bot-fail-name-to-ip: &cYour ip has been blocked - Name-IP exceeded
+anti-bot-fail-requests: &cYour ip has been blocked - Requests exceeded
 anti-vpn: &cDisable your VPN!
 auto-login: &aYour last ip was the same as before, so you've been automatically logged in! VPNs may be troublesome because of this
 ban-reason-absent: You've been banned!
@@ -101,6 +105,9 @@ ip-not-banned: &cERROR: IP {0} is not banned!
 item-absent-during-renaming: &cYou have to hold the item you want to rename!
 item-name-reset: &6Successfully reset last item name.
 list-of-homes: List of existing homes:
+log-player-join-captcha-unverified: Captcha unverified player {0} joined with the ip {1}
+log-player-join-unverified: Unverified player {0} joined with the ip {1}
+log-player-join-verified: Player {0} joined with the ip {1}
 login-reminder-command: &cLog in first!
 login-success: &aYou've successfully logged in!
 login-time-passed: &cYou took too long to log in!

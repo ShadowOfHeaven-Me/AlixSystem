@@ -6,7 +6,7 @@ import alix.common.utils.config.ConfigProvider;
 
 import java.awt.*;
 
-public class AlixFontManager {
+public final class AlixFontManager {
 
     private static final Font font;
 
@@ -33,7 +33,7 @@ public class AlixFontManager {
             //FontManagerFactory.getInstance().createFont2D(
         } else {
 
-            boolean valid = false;
+            boolean valid = configFontName.equals("Arial");
 
 
             GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -58,5 +58,8 @@ public class AlixFontManager {
 
     public static Font getPluginFont() {
         return font;
+    }
+
+    private AlixFontManager() {
     }
 }

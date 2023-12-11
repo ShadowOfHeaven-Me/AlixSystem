@@ -2,7 +2,7 @@ package shadow.systems.login.captcha.manager;
 
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.LoopCharIterator;
-import org.bukkit.Bukkit;
+import alix.common.utils.other.ConcurrentRandom;
 import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.captcha.subtypes.MapCaptcha;
@@ -11,8 +11,8 @@ import shadow.systems.login.captcha.subtypes.SubtitleCaptcha;
 import shadow.utils.main.AlixUtils;
 
 import java.util.Arrays;
-import java.util.Random;
 
+import static shadow.utils.main.AlixUtils.captchaVerificationType;
 import static shadow.utils.main.AlixUtils.captchaVerificationVisualType;
 
 public abstract class CaptchaGenerator {
@@ -43,18 +43,18 @@ public abstract class CaptchaGenerator {
             case MESSAGE:
                 return new MessageCaptchaGenerator();
             default:
-                throw new InternalError();
+                throw new InternalError(captchaVerificationVisualType.name());
         }
     }
 
     private static CaptchaTextGenerator getTextGenerator() {
-        switch (AlixUtils.captchaVerificationType) {
+        switch (captchaVerificationType) {
             case NUMERIC:
                 return new CaptchaNumericGenImpl();
             case TEXT:
                 return new CaptchaTextGenImpl();
             default:
-                throw new InternalError();
+                throw new InternalError(captchaVerificationType.name());
         }
     }
 
@@ -87,13 +87,13 @@ public abstract class CaptchaGenerator {
 
     private static final class CaptchaNumericGenImpl implements CaptchaTextGenerator {
 
-        private final Random random;
+        private final ConcurrentRandom random;
         private final int numericBoundary;
         private final byte length;
 
         private CaptchaNumericGenImpl() {
+            this.random = ConcurrentRandom.getInstance();
             this.length = AlixUtils.captchaLength;
-            this.random = AlixUtils.random;
             this.numericBoundary = AlixUtils.powerIntegers(10, length);
         }
 

@@ -8,25 +8,17 @@ import shadow.utils.main.AlixUtils;
 
 public final class CaptchaPoolManager {
 
-    private final AlixDeque<Captcha> deque = new AlixDeque<>();
-    private final int size;
+    private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();
 
     public CaptchaPoolManager() {
-        //generate a little bit more than the max player count in order to lower the chance of
+        //generate a little bit more than the max player count in order to lower the chance of the captchas ever running out at runtime, before they have the time to be re-generated
         int size = (int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.1, 1.2));// + 64 + AlixUtils.random.nextInt(64);
-        this.size = size;
-        //pre-generating
 
-        while (size-- != 0) {
+        //pre-generating
+        while (size-- != 0)
             this.add(CaptchaGenerator.generateCaptcha());
-        }
     }
 
-/*    public final void addAll(Captcha[] captchas) {
-
-    }*/
-
-    //TODO:
     public final Captcha next() {
         Captcha captcha = this.deque.pollFirst();
 
@@ -42,7 +34,7 @@ public final class CaptchaPoolManager {
     }
 
     public final int size() {
-        return size;
+        return this.deque.size();
     }
 
     public final void clear() {
