@@ -39,7 +39,7 @@ public final class SimplePinBuilder extends PasswordBuilderBase {
 
             return;
         }
-        if (performAction(slot, player)) super.onPasswordConfirmation();
+        if (performAction(slot, player)) super.onPINConfirmation();
     }
 
     @NotNull

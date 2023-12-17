@@ -5,6 +5,7 @@ import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.i18n.HttpsHandler;
+import alix.common.utils.other.annotation.AlixIntrinsified;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
@@ -18,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import shadow.Main;
+import shadow.systems.commands.ExecutableCommandList;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.holders.ReflectionUtils;
@@ -43,6 +45,7 @@ public final class AlixUtils {
     public static final SimpleDateFormat dateFormatter, timeFormatter;
     //public static final String[] invalidNicknamesStart;
     //public static final Language pluginLanguage;
+    public static final ExecutableCommandList registerCommandList, loginCommandList;
     public static final String serverVersion, operatorCommandPassword, chatFormat;//, banFormat;
     public static final CaptchaType captchaVerificationType;
     public static final CaptchaVisualType captchaVerificationVisualType;
@@ -55,7 +58,7 @@ public final class AlixUtils {
             kickOnIncorrectPassword, requireCaptchaVerification, kickOnIncorrectCaptcha,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, isCaptchaVerificationMapBased, repeatedVerificationReminderMessages,
-            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog;//renderFancyCaptchaDigits
+            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands;//renderFancyCaptchaDigits
 
     private static final String
             tooLongMessage = Messages.get("password-invalid-too-long"),
@@ -157,6 +160,8 @@ public final class AlixUtils {
             captchaLength0 = 5;
         }
         //}
+        registerCommandList = new ExecutableCommandList(config.getStringList("after-register-commands"));
+        loginCommandList = new ExecutableCommandList(config.getStringList("after-login-commands"));
         captchaLength = captchaLength0;
         captchaVerificationCaseSensitive = config.getBoolean("captcha-case-sensitive");
         verificationReminderDelay = config.getLong("verification-reminder-message-delay");
@@ -167,6 +172,7 @@ public final class AlixUtils {
         playerIPAutoLogin = config.getBoolean("auto-login");
         isDebugEnabled = config.getBoolean("debug");
         userDataAutoSave = config.getBoolean("auto-save");
+        overrideExistingCommands = config.getBoolean("override-existing-commands");
         chatFormat = translateColors(config.getString("chat-format"));
         //banFormat = translateColors(config.getString("ban-format"));
 
@@ -190,7 +196,7 @@ public final class AlixUtils {
         //invalidNicknamesStart = config.getStringList("disallow-join-of").toArray(new String[0]);
         //spawn = Spawn.fromString(config.getString("spawn-location"));
 
-        maxLoginTime = config.getInt("max-login-time"); // Deprecated comment -> "//32767 / 20 = 1638.35 & also 1638 % 3 = 0"
+        maxLoginTime = config.getInt("max-login-time");
         //lowestTeleportableYLevel = getLowestTeleportableLevel();
         serverVersion = getServerVersion();
         bukkitVersion = getBukkitVersion();
@@ -551,8 +557,9 @@ public final class AlixUtils {
     }
 
     public static void sendMessage(CommandSender p, String message) {
-        if (p instanceof Conversable) ((Conversable) p).sendRawMessage(colorize(message));
-        else p.sendMessage(colorize(message));
+        /*if (p instanceof Conversable) ((Conversable) p).sendRawMessage(colorize(message));
+        else */
+        p.sendMessage(colorize(message));
     }
 
     public static void setName(Player p, String name) {
@@ -574,10 +581,12 @@ public final class AlixUtils {
         if (!p.hasPermission("alixsystem.home")) return 0;
         String a = getPermissionWithCertainStart(p, "alixsystem.maxhomes");
         if (a == null) return 0;
-        String b = split(a, '.')[2];
+        String[] b = split(a, '.');
+        if (b.length < 3) return 0;
+        String c = b[2];
         int i;
         try {
-            i = parseInteger(b);
+            i = parseInteger(c);
         } catch (NumberFormatException e) {
             Main.logError(isPluginLanguageEnglish ? "Invalid permission 'alixsystem.maxhomes.<number>' - instead of a number got: '" + a + "'!" :
                     "Nieprawidłowa permisja 'alixsystem.maxhomes.<liczba>' - zamiast liczby otrzymano: '" + a + "'!");
@@ -763,6 +772,7 @@ public final class AlixUtils {
         return null;
     }
 
+    @AlixIntrinsified
     public static String[] split(String text, String regex) {
         int regexLength = regex.length();
         switch (regexLength) {
@@ -801,6 +811,7 @@ public final class AlixUtils {
 
     //A faster String#split implementation
     //for non-complex Strings
+    @AlixIntrinsified
     public static String[] split(String a, char b) {
         int l = a.length();
         char[] c = a.toCharArray();
@@ -831,6 +842,7 @@ public final class AlixUtils {
         return split(data, '|');
     }
 
+    @AlixIntrinsified
     public static boolean contains(char[] a, String regex) {
         final char[] b = regex.toCharArray();
         final int l = b.length;
@@ -852,6 +864,7 @@ public final class AlixUtils {
         return random.nextDouble() * (to - from) + from;
     }
 
+    @AlixIntrinsified
     public static int parseInteger(String a) throws NumberFormatException {
         if (a.charAt(0) == 45) return -parseInteger(a.substring(1));
         char[] b = a.toCharArray();
@@ -897,7 +910,7 @@ public final class AlixUtils {
             else numbersOnly.append(d);
         }
         //The Given Time * Unit + The Current Moment
-        return parsePureLong(numbersOnly.toString()) * getTimeUnitMultiplier(lettersOnly.toString()) + now();
+        return parsePureLong(numbersOnly.toString()) * getTimeUnitMultiplier(lettersOnly.toString()) + System.currentTimeMillis();
     }
 
 /*    public static String getTextWithNumbersOnly(String a) {
@@ -949,6 +962,7 @@ public final class AlixUtils {
         return sb.toString();
     }
 
+    @AlixIntrinsified
     public static String mergeWithSpacesAndSkip(String[] a, int toSkip) {
         StringBuilder sb = new StringBuilder();
         int l = a.length;
@@ -1032,10 +1046,6 @@ public final class AlixUtils {
         return c;
     }
 
-    public static long now() {
-        return System.currentTimeMillis();
-    }
-
     public static String getListOfAllOnlinePlayers(Collection<? extends Player> onlines) {
         int l = onlines.size();
         Player[] players = onlines.toArray(new Player[l]);
@@ -1101,19 +1111,8 @@ public final class AlixUtils {
         return texts;
     }
 
-    public static String classicalTranslateColors(String text) {
-        return ChatColor.translateAlternateColorCodes('&', text);
-    }
-
-    public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
-/*        if (text == null) {
-            //Main.logError(Reflection.getCallerClass().getName());
-            return "";
-        }*/
-        char[] c = text.toCharArray();
-        for (int i = 0; i < c.length; i++)
-            if (c[i] == '&') c[i] = '§';
-        return new String(c);
+    public static String translateColors(String text) {
+        return AlixFormatter.translateColors(text);//The default delegation to AlixFormatter
     }
 
 /*    public static String formatIfNeeded(String text) {

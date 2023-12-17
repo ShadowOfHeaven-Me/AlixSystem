@@ -1,22 +1,20 @@
 package alix.common.data;
 
 
+import alix.common.data.security.Hashing;
+import alix.common.data.security.HashingAlgorithm;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.LoopCharIterator;
-import alix.common.utils.security.Hashing;
-import alix.common.utils.security.HashingAlgorithm;
 
 import java.util.Random;
 
 public final class Password {
 
     private static final LoopCharIterator loopCharIterator;
-    private String hashedPassword;
-    private HashingAlgorithm hashing;
-    private byte hashId;
-
-    private Password() {
-    }
+    private final String hashedPassword;
+    private final HashingAlgorithm hashing;
+    private final byte hashId;
+    //private final String savablePassword;
 
     private Password(String hashedPassword, byte hashId) {
         this.hashedPassword = hashedPassword;
@@ -24,16 +22,10 @@ public final class Password {
         this.hashing = Hashing.ofHashId(hashId);
     }
 
-    public void setPassword(String unhashedPassword) {
-        this.hashId = Hashing.CONFIG_HASH_ID;
-        this.hashing = Hashing.ofHashId(hashId);
-        this.hashedPassword = hashing.hash(unhashedPassword);
-    }
-
-    public void setFrom(Password password) {
-        this.hashedPassword = password.hashedPassword;
-        this.hashId = password.hashId;
-        this.hashing = password.hashing;
+    private Password(String hashedPassword, byte hashId, HashingAlgorithm hashing) {
+        this.hashedPassword = hashedPassword;
+        this.hashId = hashId;
+        this.hashing = hashing;
     }
 
     public String toSavable() {
@@ -64,18 +56,12 @@ public final class Password {
         return hashing;
     }*/
 
-    public final void reset() {
-        this.hashedPassword = null;
-        this.hashId = Hashing.CONFIG_HASH_ID;
-        this.hashing = Hashing.ofHashId(hashId);
-    }
-
-    public static Password createRandomUnhashed() {
+    public static Password createRandom() {
         Random r = AlixCommonUtils.random;
 
-        int length = 5 + r.nextInt(8);//min char length + 8 because 2^n results in a faster generation
+        int length = 8 + r.nextInt(8);//min char length + 3 + 8 because 2^n results in a faster generation
 
-        return new Password(new String(loopCharIterator.next(length)), (byte) 0);
+        return fromUnhashed(new String(loopCharIterator.next(length)));
     }
 
 /*    public static Password generatePseudoRandom(String generationBase) {
@@ -83,18 +69,24 @@ public final class Password {
         return new Password(ofHashId(hashId).hash(generationBase), hashId);
     }*/
 
-    public static Password newEmpty() {
-        return new Password();
+    private static final Password SHARED_EMPTY = new Password(null, (byte) 0);
+
+    public static Password empty() {
+        return SHARED_EMPTY;
+    }
+
+    public static Password fromUnhashed(String unhashedPassword) {
+        HashingAlgorithm algorithm = Hashing.ofHashId(Hashing.CONFIG_HASH_ID);
+        String hashed = algorithm.hash(unhashedPassword);
+        return new Password(hashed, Hashing.CONFIG_HASH_ID, algorithm);
     }
 
     public static Password readFromSaved(String savablePassword) {
         String[] s = savablePassword.split(":");
-
         String password = s[0];
 
         if (password.equals("null")) password = null;
-
-        if (s.length == 1) return new Password(password, Hashing.CONFIG_HASH_ID);
+        if (s.length == 1) return new Password(password, (byte) 0);
 
         return new Password(password, Byte.parseByte(s[1]));
     }

@@ -6,8 +6,9 @@ import alix.common.messages.Messages;
 import com.google.gson.JsonElement;
 
 
-public class AntiVPN implements ConnectionFilter {
+public final class AntiVPN implements ConnectionFilter {
 
+    public static final AntiVPN INSTANCE = new AntiVPN();
     private final String s = Messages.get("anti-vpn");
 
     @Override

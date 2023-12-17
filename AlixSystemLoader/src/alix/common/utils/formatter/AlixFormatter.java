@@ -1,6 +1,7 @@
 package alix.common.utils.formatter;
 
 import alix.common.utils.config.ConfigProvider;
+import alix.common.utils.other.annotation.AlixIntrinsified;
 
 import java.util.Arrays;
 
@@ -53,7 +54,7 @@ public final class AlixFormatter {
      *
      * @param s           The String that should be formatted
      * @param replacement The replacement used for the {0} regex
-     * @return A String where the {0} regex was replaced
+     * @return A String where the "{0}" regex was replaced
      * with the "replacement" argument
      * @author ShadowOfHeaven
      */
@@ -76,7 +77,7 @@ public final class AlixFormatter {
     }
 
     /**
-     * Returns a formatted String with the syntax {<digit>}, where
+     * Returns a formatted String with regexes {<digit>}, where
      * the digit is the array index of the "args" argument used for formatting
      *
      * @param s    The String that should be formatted
@@ -110,10 +111,15 @@ public final class AlixFormatter {
         return sb.toString();
     }
 
-    public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes, but disallows the usage of the '&' symbol
-        char[] c = text.toCharArray();
-        for (int i = 0; i < c.length; i++)
-            if (c[i] == '&') c[i] = '§';
+    @AlixIntrinsified
+    public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
+        final char[] c = text.toCharArray();
+        final int l = c.length - 1;
+        for (int i = 0; i < l; i++)
+            if (c[i] == '&') {
+                char d = c[++i];
+                if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9') c[i - 1] = '§';
+            }
         return new String(c);
     }
 

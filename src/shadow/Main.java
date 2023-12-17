@@ -1,9 +1,9 @@
 package shadow;
 
+import alix.common.data.security.Hashing;
 import alix.common.scheduler.impl.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.update.UpdateChecker;
-import alix.common.utils.security.Hashing;
 import alix.pluginloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -40,24 +40,9 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added 1.20.2 support
-    //[+] Not logged in users will now also have an xp countdown
-    //[+] Enhanced verification command processing speed
-    //[+] Added colors to the console prefix
-    //[+] Added custom join console logs, with the possibility of disabling them at "custom-join-log" in the config file
-    //[*] Fixed the error thrown after disabling captcha
-    //[*] Fixed players not being teleported to the captcha world when captcha was disabled
-    //[*] Fixed console filters adding up after reloads
-    //[*] The commands /captcha, /register, /login & /changepassword will no longer be visible in the console
-    //[*] The PaperAixScheduler will now have it's one tick task delay removed in exchange for a fast synchronization
-    //[*] "use-this-syntax" for chat formatting intervention will now be false by default
-    //[*] "ping-before-join" will now be false by default
-    //[*] Now whenever a user tries to create a command-written password with spaces, he will be told that spaces cannot be used for passwords, instead of just accepting the first inputted argument
-    //[*] Halved the amount of thread assigned to the async scheduler
-    //[*] Stabilized captcha regeneration logic
-    //[*] Both pre-register lists will now be the size of 500 by default
-    //[*] Undeprecated, redesigned and made true by default "check-compatibility", and renamed it to "check-server-compatibility"
 
+
+    //TODO: Check for packets instead of relaying on fixed scheduler delay on captcha map sending
 
     //todo: Add a custom data structure for unverified users
     //TODO: fix pin gui's location sounds bugs
@@ -111,7 +96,6 @@ public final class Main implements LoaderBootstrap {
         config = (YamlConfiguration) plugin.getConfig();
         pm = Bukkit.getPluginManager();
         AlixHandler.kickAll("Reload");
-        //AlixTranslator.init();
     }
 
     @Override
@@ -143,13 +127,13 @@ public final class Main implements LoaderBootstrap {
         logConsoleInfo(en ? "AlixSystem has been disabled." : "AlixSystem zostało wyłączone.");
     }
 
-    public static void disable() {
+/*    public static void disable() {
         pm.disablePlugin(plugin);
     }
 
     public static boolean isAccessible() {
         return plugin != null;
-    }
+    }*/
 
     public static void logInfo(String info) {
         plugin.getLogger().info(info);
@@ -173,7 +157,7 @@ public final class Main implements LoaderBootstrap {
         //AlixHandler.kickAll("Reload");
         UpdateChecker.checkForUpdates();
         PremiumAutoIn.checkForInit();
-        CommandManager.register(plugin);
+        CommandManager.register();
         if (requireCaptchaVerification) Captcha.sendInitMessage();
         PacketBlocker.init(); //load the class and send the init message
         //ConfigUpdater.checkForUpdates(config);
@@ -188,6 +172,8 @@ public final class Main implements LoaderBootstrap {
             }
             //logConsoleInfo(en ? "Done!" : "Ukończono!");
         }
+        String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
+        logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");
     }
 

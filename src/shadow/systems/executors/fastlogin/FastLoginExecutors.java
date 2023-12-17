@@ -1,7 +1,7 @@
 package shadow.systems.executors.fastlogin;
 
 import com.github.games647.fastlogin.bukkit.event.BukkitFastLoginPreLoginEvent;
-import net.minecraft.network.protocol.game.ServerboundPongPacket;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import shadow.systems.login.autoin.PremiumAutoIn;

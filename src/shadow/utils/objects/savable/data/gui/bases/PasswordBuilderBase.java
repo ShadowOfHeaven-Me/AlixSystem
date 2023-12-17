@@ -20,19 +20,18 @@ public abstract class PasswordBuilderBase implements AlixGui {
         this.user = user;
     }
 
-
-    public void onPasswordConfirmation() {
+    public void onPINConfirmation() {
         String pin = this.getPasswordBuilt();
 
         if (user.isRegistered()) {
             if (user.isPasswordCorrect(pin)) {
-                user.logIn();
+                user.logInSync();
                 sendMessage(user.getPlayer(), loginSuccess);
                 return;
             } else if (kickOnIncorrectPassword) user.getPlayer().kickPlayer(incorrectPassword);
             return;
         }
-        user.register(pin);
+        user.registerSync(pin);
         user.getPlayer().sendTitle(pinRegister, pinRegisterBottomLine.format(pin), 0, 100, 50);
     }
 }

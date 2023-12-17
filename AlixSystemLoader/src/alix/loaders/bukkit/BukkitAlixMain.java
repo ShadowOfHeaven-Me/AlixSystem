@@ -2,7 +2,7 @@ package alix.loaders.bukkit;
 
 import alix.common.CommonAlixMain;
 import alix.common.logger.AlixLoggerProvider;
-import alix.common.logger.plugin.AlixPluginLogger;
+import alix.common.logger.plugin.AlixPaperLogger;
 import alix.common.logger.LoggerAdapter;
 import alix.common.update.FileUpdater;
 import alix.pluginloader.JarInJarClassLoader;
@@ -13,8 +13,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvider {
@@ -25,7 +23,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     private final LoaderBootstrap plugin;
     private final JarInJarClassLoader loader;
     private final LoggerAdapter loggerAdapter;
-    private final AlixPluginLogger logger;
+    private final Logger logger;
     //private final AlixPluginLogger alixLogger;
 
     public BukkitAlixMain() {
@@ -35,7 +33,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
         this.plugin = loader.instantiatePlugin(BOOTSTRAP_CLASS, JavaPlugin.class, this);
         //this.alixLogger = new AlixPluginLogger();
-        this.logger = new AlixPluginLogger(this.getServer().getLogger());
+        this.logger = AlixLoggerProvider.createServerAdequateLogger();
         this.loggerAdapter = LoggerAdapter.createAdapter(this.getLogger());
 
         CommonAlixMain.plugin = this.plugin;

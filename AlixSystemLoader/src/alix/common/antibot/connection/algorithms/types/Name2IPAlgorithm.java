@@ -1,4 +1,3 @@
-/*
 package alix.common.antibot.connection.algorithms.types;
 
 import alix.common.CommonAlixMain;
@@ -8,25 +7,27 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.impl.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
-public final class NameToIPAlgorithm implements ConnectionAlgorithm {
+public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
     private final Map<String, NameMap> ipMap = new ConcurrentHashMap<>();//<ip, Name to join attempt map>
 
     @Override
     public void onJoinAttempt(String name, String ip) {
-        this.ipMap.computeIfAbsent(ip, NameMap::new).add(name);
+        if (this.ipMap.computeIfAbsent(ip, NameMap::new).add(name)) this.ipMap.remove(ip);
     }
 
     @Override
     public void onThreadRepeat() {
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         this.ipMap.forEach((ip, map) -> {
-            if (map.removalTime > now) map.decrement(now);
-            else this.ipMap.remove(ip);
+            if (map.removalTime.get() < now) this.ipMap.remove(ip);
         });
     }
 
@@ -34,45 +35,39 @@ public final class NameToIPAlgorithm implements ConnectionAlgorithm {
 
         private static final String userMessage = Messages.get("anti-bot-fail-name-to-ip");
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-name-to-ip");
-        private final Map<String, Long> nameMap; //<name, removal time of this particular name>
+        private final Set<String> names;
         private final String ip;
         private final AtomicInteger vl;
-        private volatile long removalTime;
+        private final AtomicLong removalTime;
 
         private NameMap(String address) {
-            this.nameMap = new ConcurrentHashMap<>();
+            this.names = new HashSet<>();
             this.ip = address;
             this.vl = new AtomicInteger();
+            this.removalTime = new AtomicLong(System.currentTimeMillis() + 20000);
         }
 
-        private void add(String name) {
+        private boolean add(String name) {
             CommonAlixMain.logInfo("IP: " + ip + " Name To IP: " + vl.get());
 
-            this.removalTime = System.currentTimeMillis() + 30000;//the removal time of this NameMap object after inactivity
+            if (this.names.add(name)) {
+                this.vl.getAndAdd(8);
+                this.removalTime.getAndAdd(15000);
+            } else {
+                this.vl.getAndIncrement();
+                this.removalTime.getAndAdd(2000);
+            }
 
-            this.nameMap.compute(name, (n, removalTime) -> {
-                if (removalTime == null) {//a new account tried to join
-                    this.vl.getAndAdd(3);//add more violations (anticheat terminology)
-                    return System.currentTimeMillis() + 30000;//the time on which this name will be forgotten if no more join attempts are made
-                }
-                this.vl.getAndIncrement();//increment if the account tried to join before
-                return removalTime;//keep it the same
-            });
 
             if (this.vl.get() > 50) {
                 AlixScheduler.sync(() -> ipBanList.addBan(ip, userMessage, null, AlixFormatter.pluginPrefix));
                 CommonAlixMain.logInfo(consoleMessage.format(ip));
+                return true;
             }
-        }
-
-        private void decrement(long now) {
-            this.nameMap.forEach((name, count) -> this.nameMap.compute(name, (n, removalTime) -> removalTime < now ? null : removalTime));
-
-            if (vl.get() > 0) vl.getAndAdd(-1);
+            return false;
         }
     }
 
-*/
 /*    private static final class CheckFunction implements BiFunction<String, Integer, Integer> {
         private final String ip;
 
@@ -86,6 +81,5 @@ public final class NameToIPAlgorithm implements ConnectionAlgorithm {
 
             return vl + 1;
         }
-    }*//*
-
-}*/
+    }*/
+}

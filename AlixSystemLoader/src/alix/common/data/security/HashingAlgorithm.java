@@ -1,4 +1,4 @@
-package alix.common.utils.security;
+package alix.common.data.security;
 
 public interface HashingAlgorithm {
 

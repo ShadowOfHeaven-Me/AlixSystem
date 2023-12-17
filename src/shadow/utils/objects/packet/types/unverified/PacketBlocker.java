@@ -47,11 +47,9 @@ public class PacketBlocker extends ChannelDuplexHandler {
     }
 
     private static Method getCmd(Class<?> clazz) {
-        for (Method m : clazz.getMethods()) {
-            if (!m.getName().equals("toString") && m.getReturnType() == String.class) {
+        for (Method m : clazz.getMethods())
+            if (!m.getName().equals("toString") && m.getReturnType() == String.class)
                 return m;
-            }
-        }
         throw new Error("Class: " + clazz);
     }
 

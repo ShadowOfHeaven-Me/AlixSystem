@@ -63,7 +63,7 @@ public final class MobEffectLookup {
     protected static MobEffectSupplier getSupplier(Supplier<Method> supplier) {
         try {
             return new MethodEffectSupplier_Old(supplier.get());
-        } catch (Throwable e) {
+        } catch (Throwable e) {//The Supplier#get may throw an error that the method was not found
             return get_1_20_2();
         }
     }

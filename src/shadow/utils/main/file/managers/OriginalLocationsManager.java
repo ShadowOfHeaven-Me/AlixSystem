@@ -17,6 +17,13 @@ public final class OriginalLocationsManager {
         return file.getMap().compute(uuid, (id, loc) -> loc != null ? loc : player.getLocation());
     }*/
 
+    public static void teleportBack(Player player, boolean warningIfAbsent) {
+        Location originalLoc = OriginalLocationsManager.remove(player);
+        if (originalLoc != null) player.teleport(originalLoc);
+        else if (warningIfAbsent)
+            Main.logWarning("Original location was null! - The Player was in the captcha world unsupervised!");
+    }
+
     public static void add(Player player, Location originalLocation) {
         file.getMap().put(player.getUniqueId(), originalLocation);
     }

@@ -72,7 +72,7 @@ public interface AlixGui {
                     if (user.isRegistered()) {
                         if (user.isPasswordCorrect(password)) {
                             sendMessage(user.getPlayer(), loginSuccess);
-                            user.logIn();
+                            user.logInSync();
                             return;
                         } else if (kickOnIncorrectPassword) user.getPlayer().kickPlayer(incorrectPassword);
                         return;
@@ -84,7 +84,7 @@ public interface AlixGui {
                         return;
                     }
                     sendMessage(user.getPlayer(), CommandManager.passwordRegister);
-                    user.register(password);
+                    user.registerSync(password);
                     return;
             }
             return;
@@ -106,7 +106,7 @@ public interface AlixGui {
                     if (user.isRegistered()) {
                         if (user.isPasswordCorrect(password)) {
                             sendMessage(user.getPlayer(), loginSuccess);
-                            AlixScheduler.sync(user::logIn);
+                            user.logInAsync();
                             return;
                         } else if (kickOnIncorrectPassword) AlixScheduler.sync(() -> user.getPlayer().kickPlayer(incorrectPassword));
                         return;
@@ -118,7 +118,7 @@ public interface AlixGui {
                         return;
                     }
                     sendMessage(user.getPlayer(), CommandManager.passwordRegister);
-                    AlixScheduler.sync(() -> user.register(password));
+                    user.registerAsync(password);
                     return;
             }
             return;

@@ -13,6 +13,7 @@ import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
+import shadow.systems.executors.fastlogin.FastLoginExecutors;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.result.LoginVerdictManager;
@@ -39,12 +40,16 @@ public final class OfflineExecutors extends UniversalExecutors {
             joinCaptchaUnverified = Messages.getAsObject("log-player-join-captcha-unverified"),
             joinUnverified = Messages.getAsObject("log-player-join-unverified"),
             joinVerified = Messages.getAsObject("log-player-join-verified");
+    //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
+        //Bukkit.broadcastMessage(e.getLoginResult().name());
+        if (e.getLoginResult() == AsyncPlayerPreLoginEvent.Result.KICK_BANNED) return;
         String name = e.getName();
         String address = e.getAddress().getHostAddress();
 
+        //ConnectionThreadManager.addJoinAttempt(name, address);
         //AlixScheduler.async(() -> ConnectionThreadManager.addJoinAttempt(name, address));
         if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
 
@@ -60,8 +65,9 @@ public final class OfflineExecutors extends UniversalExecutors {
 
         PersistentUserData data = UserFileManager.get(name);
 
-        if (data != null) {//the account existing, but verification is necessary
-            LoginVerdictManager.addOffline(name, address, data);
+        if (data != null) {//the account exists
+            if (PremiumAutoIn.remove(name)) LoginVerdictManager.addOnline(name, address, data);
+            else LoginVerdictManager.addOffline(name, address, data);
             return;
         }
 
@@ -72,7 +78,7 @@ public final class OfflineExecutors extends UniversalExecutors {
                     return;
                 }
             }
-            LoginVerdictManager.addOnline(name);
+            LoginVerdictManager.addOnline(name, address, PersistentUserData.createFromPremiumInfo(name, address));
             return;
         }
 
@@ -94,7 +100,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
     }
 
-    //add the channel handler after anyone else to prevent unnecessary packet processing
+    //add the first in line channel handler interceptor after anyone else to prevent unnecessary packet processing
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent e) {
         UnverifiedUser user = AlixHandler.handleOfflinePlayerJoin(e.getPlayer(), e.getJoinMessage());//the user can be null if the verification was not initialized - the user was premium or was auto-logged in by ip
@@ -145,7 +151,8 @@ public final class OfflineExecutors extends UniversalExecutors {
             }
         }
         //ignore the cancellation up until this point
-        if (!e.isCancelled() && isOperatorCommandRestricted) super.onOperatorCommandCheck(e, e.getMessage().substring(1));
+        if (!e.isCancelled() && isOperatorCommandRestricted)
+            super.onOperatorCommandCheck(e, e.getMessage().substring(1));
     }
 
     @Override

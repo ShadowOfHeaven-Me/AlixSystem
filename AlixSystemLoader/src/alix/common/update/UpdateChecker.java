@@ -8,7 +8,7 @@ import java.net.URL;
 import java.util.Scanner;
 import java.util.function.Consumer;
 
-public class UpdateChecker {
+public final class UpdateChecker {
 
     public static void checkForUpdates() {
         getVersion(newestVersion -> {

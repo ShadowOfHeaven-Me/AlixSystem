@@ -9,7 +9,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import shadow.Main;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.captcha.Captcha;
 import shadow.utils.holders.ReflectionUtils;
@@ -212,48 +211,59 @@ public final class UnverifiedUser {
         return hasCompletedCaptcha;
     }
 
-    public void logIn() {
-        this.removeVerificationBecauseVerified();
-        UserManager.addOfflineUser(player, data, ipAddress, this.blocker.getChannel());
-        AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
-        Location originalLoc = OriginalLocationsManager.remove(player);
-        if (originalLoc != null) this.player.teleport(originalLoc);//tp back 'n reset the illusion packet blocking made
-        else
-            Main.logWarning("original location was null at login! - The Player was in the captcha world unsupervised!");
+    public void logInSync() {//invoked sync
+        this.logIn0();
+        OriginalLocationsManager.teleportBack(player, true);//tp back 'n reset the illusion packet blocking made
+        AlixUtils.loginCommandList.invoke(player);
     }
 
-/*    public boolean synchronizedAutoRegister(Password password) {//this method is invoked when the register conditions is async
-        JavaScheduler.sync(() -> {
-            PersistentUserData data = UserManager.register(player, password);
+    public void logInAsync() {//invoked async
+        this.logIn0();
+        AlixScheduler.sync(() -> {
+            OriginalLocationsManager.teleportBack(player, true);
+            AlixUtils.loginCommandList.invoke(player);
+        });//tp back 'n reset the illusion packet blocking made
+    }
 
-            data.setPasswordType(PasswordType.PASSWORD);
+    private void logIn0() {//the common part
+        this.removeVerificationBecauseVerified();
+        UserManager.addOfflineUser(player, data, ipAddress, this.blocker.getChannel());
+        AlixScheduler.async(() -> ReflectionUtils.resetLoginEffectPackets(this));
+        //AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
+    }
 
-            removeVerification();
-        });
-        return true;
-    }*/
+    public void registerSync(String password) {//invoked sync
+        this.register0(password);
+        if (captchaInitialized) this.player.setGameMode(this.originalGameMode);
+        OriginalLocationsManager.teleportBack(player, true);//tp back 'n reset the illusion packet blocking made
+        AlixUtils.registerCommandList.invoke(player);
+    }
 
-    public void register(String password) {
+    public void registerAsync(String password) {//invoked async
+        this.register0(password);
+        AlixScheduler.sync(() -> {
+            if (captchaInitialized) this.player.setGameMode(this.originalGameMode);
+            OriginalLocationsManager.teleportBack(player, true);
+            AlixUtils.registerCommandList.invoke(player);
+        });//tp back 'n reset the illusion packet blocking made
+    }
+
+    private void register0(String password) {//the common part
         PersistentUserData data = UserManager.register(this.player, password, this.ipAddress, this.blocker.getChannel());
         data.setPasswordType(isGuiUser ? alixGui.getType().toPasswordType() : PasswordType.PASSWORD);
         this.removeVerificationBecauseVerified();
 
-        Location originalLoc = OriginalLocationsManager.remove(player);
-        if (originalLoc != null) this.player.teleport(originalLoc);//tp back 'n reset the illusion packet blocking made
-        else
-            Main.logWarning("original location was null at register! - The Player was in the captcha world unsupervised!");
-
         if (captchaInitialized) {
             this.player.setPersistent(true); //Start saving the player which was verified by captcha
-            this.player.setGameMode(this.originalGameMode); //Only set the original gamemode on registration, as non-persistent player's information are not saved
-            //this.player.kickPlayer(registerSuccess); //kick is necessary because of packet blocking visuals desynchronization (not anymore)
+            //Only set the original gamemode on registration, as non-persistent player's information are not saved
             AlixScheduler.runLaterAsync(() -> {
                 ReflectionUtils.resetLoginEffectPackets(this);
-                AlixUtils.broadcastFast0(this.joinMessage);
+                if (joinMessage != null)
+                    AlixUtils.broadcastFast0(this.joinMessage);//only send the join message if it wasn't removed by someone else
                 UserManager.sendPlayerInfoToAll(this.player.getName());
             }, 1, TimeUnit.SECONDS);
         } else {
-            AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS); //ReflectionUtils.resetBlindnessEffectPackets(this.player.getEntityId(), this.blocker.getChannel()); //only reset the blindness at register whenever captcha verification is disabled, as the register's kick already does the job of resetting spoofed effect packets
+            AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
         }
     }
 

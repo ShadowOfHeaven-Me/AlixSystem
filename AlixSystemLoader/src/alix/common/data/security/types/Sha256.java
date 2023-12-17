@@ -1,4 +1,4 @@
-package alix.common.utils.security.types;
+package alix.common.data.security.types;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;

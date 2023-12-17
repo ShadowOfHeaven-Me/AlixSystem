@@ -1,45 +1,49 @@
 package alix.common.update;
 
-import alix.loaders.bukkit.BukkitAlixMain;
 import alix.common.utils.file.FileManager;
+import alix.loaders.bukkit.BukkitAlixMain;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 
-public class FileUpdater {
+public final class FileUpdater {
 
     private static final char DEFAULT_SPLITERATOR = ':';
 
     public static void updateFiles() {
-
         //messages.txt
 
         File messagesFile = updateFile("messages.txt");
-
         MessagesFileUpdater.updateFormatting(messagesFile);
 
         //commands.txt
 
-        updateFile("commands.txt");
+        updateFile("commands.txt", true);
 
         //config.yml
 
         updateFile("config.yml");
+    }
 
+    private static File updateFile(String name) {
+        return updateFile(name, false);
     }
 
     /**
      * Updates the file - Adds the missing lines and removes the outdated ones, by comparing it to the file compiled with the plugin
      *
-     * @param name The plugin's file name
-     *
-     *
-     *             Returns:
+     * @param name                 The plugin's file name
+     * @param validateHashtagLines Determines whether lines starting with a hashtag ('#') should be considered
+     *                             as fully valid and not missing
+     *                             <p>
+     *                             Returns: The update file's version
      */
 
-    private static File updateFile(String name) {
+    private static File updateFile(String name, boolean validateHashtagLines) {
         String[] splitName = name.split("\\.");
 
         if (splitName.length != 2)
@@ -61,7 +65,7 @@ public class FileUpdater {
 
         File newestFile = getWithJarCompiledFile(tempFile, name);//temp file is the exact same thing as the 'newest file'
 
-        ensureUpdated(file, newestFile, DEFAULT_SPLITERATOR);
+        ensureUpdated(file, newestFile, DEFAULT_SPLITERATOR, validateHashtagLines);
 
         tempFile.delete();
         return file;
@@ -160,7 +164,7 @@ public class FileUpdater {
      *                     is customizable by the user (usually it's ':', like in the config.yml file)
      */
 
-    public static void ensureUpdated(File existingFile, File newestFile, char spliterator) {
+    public static void ensureUpdated(File existingFile, File newestFile, char spliterator, boolean isHashtagStartValid) {
         List<String> existingLines = FileManager.getLines(existingFile);
         List<String> newestLines = FileManager.getLines(newestFile);
 
@@ -175,12 +179,11 @@ public class FileUpdater {
                 if (existingLine == null || existingLine.isEmpty()) continue;// || existingLine.startsWith("#")
 
                 String existingLineStart = existingLine.split(String.valueOf(spliterator))[0];
-
                 String newestLineStart = newestLine.split(String.valueOf(spliterator))[0];
 
-                if ( existingLineStart.equals(newestLineStart)) {//the line exists, so we copy it's config
-                    newestLines.set(i, existingLine);
-                    //Main.debug("Config copied from '" + newestLine + "' to '" + existingLineStart);
+                if (isHashtagStartValid && removeHashtagStart(existingLineStart).equals(removeHashtagStart(newestLineStart))//the line exists with hashtag start ignore config
+                        || existingLineStart.equals(newestLineStart)) {//the line exists
+                    newestLines.set(i, existingLine);//we copy the line's config after confirming it's existence
                     break;
                 }
             }
@@ -191,6 +194,10 @@ public class FileUpdater {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static String removeHashtagStart(String s) {
+        return s.length() != 0 && s.charAt(0) == '#' ? s.substring(1) : s;
     }
 
     /*        List<String> existingLines = FileManager.getLines(existingFile);

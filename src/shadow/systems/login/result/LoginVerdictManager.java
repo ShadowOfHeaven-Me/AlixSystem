@@ -17,8 +17,8 @@ public final class LoginVerdictManager {
         map.put(name, createInfo(ip, data));
     }
 
-    public static void addOnline(String name) {
-        map.put(name, LoginInfo.PREMIUM_LOGIN);
+    public static void addOnline(String name, String ip, PersistentUserData data) {
+        map.put(name, new LoginInfo(LoginVerdict.LOGIN_PREMIUM, ip, data));
     }
 
     private static LoginInfo createInfo(String ip, PersistentUserData data) {
@@ -36,6 +36,15 @@ public final class LoginVerdictManager {
 
     public static LoginInfo remove(String name) {
         return map.remove(name);
+    }
+
+    public static LoginInfo removeExisting(Player p) {
+        LoginInfo l = remove(p.getName());
+        if (l == null) {
+            p.kickPlayer("§cNo Login Verdict was found!");
+            throw new RuntimeException("No Login Verdict was found for the player " + p.getName() + "! Report this as an error immediately!");
+        }
+        return l;
     }
 
     public static LoginInfo getNullable(String name) {

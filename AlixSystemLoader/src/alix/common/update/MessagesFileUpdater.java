@@ -1,13 +1,12 @@
 package alix.common.update;
 
 import alix.common.utils.file.FileManager;
-import alix.common.utils.formatter.AlixFormatter;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-public class MessagesFileUpdater {
+public final class MessagesFileUpdater {
 
     //Replaces the old formatting (%s<number>) with the universally known one ({<number>})
 
@@ -26,5 +25,8 @@ public class MessagesFileUpdater {
 
     private static String reformat(String s) {
         return s.replaceAll("%s0", "{0}").replaceAll("%s1", "{1}").replaceAll("%s2", "{2}").replaceAll("%s3", "{3}").replaceAll("%s4", "{4}");
+    }
+
+    private MessagesFileUpdater() {
     }
 }

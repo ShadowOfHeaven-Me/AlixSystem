@@ -1,16 +1,19 @@
 package shadow.systems.commands.alix;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public final class AlixCommand {
+public final class AlixCommandInfo {
 
     private final String command;
     private final String[] aliases;
+    private final boolean registered;
 
-    public AlixCommand(String command, String[] aliases) {
+    public AlixCommandInfo(String command, String[] aliases, boolean registered) {
         this.command = command;
         this.aliases = aliases;
+        this.registered = registered;
     }
 
     public String getCommand() {
@@ -22,11 +25,15 @@ public final class AlixCommand {
     }
 
     public List<String> createAliasesList() {
-        return Arrays.asList(aliases);
+        return this.hasAliases() ? new ArrayList<>(Arrays.asList(aliases)) : new ArrayList<>();
     }
 
     public boolean hasAliases() {
         return aliases != null;
+    }
+
+    public boolean isRegistered() {
+        return registered;
     }
 
     /*    public static class Builder {

@@ -5,6 +5,7 @@ import shadow.utils.holders.ReflectionUtils;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.UUID;
 
 public final class OutPlayerInfoPacketConstructor {
 
@@ -14,10 +15,10 @@ public final class OutPlayerInfoPacketConstructor {
 
     static {
         Class<?> packetClass = ReflectionUtils.outPlayerInfoPacketClass;
-        Class <?>playerInfoAction = null;
+        Class<? extends Enum> playerInfoAction = null;
         for (Class<?> clazz : packetClass.getClasses()) {
             if (clazz.isEnum()) {
-                playerInfoAction = clazz;
+                playerInfoAction = (Class<? extends Enum>) clazz;
                 break;
             }
         }
@@ -32,11 +33,11 @@ public final class OutPlayerInfoPacketConstructor {
                 constructor0 = ReflectionUtils.getConstructor(packetClass, playerInfoAction, Iterable.class);
             } catch (Throwable ex) {
                 constructor0 = ReflectionUtils.getConstructor(packetClass, EnumSet.class, Collection.class);
-                Enum UPDATE_LIST = (Enum) playerInfoAction.getEnumConstants()[3];
-                //noinspection unchecked
-                ADD_PLAYER0 = EnumSet.of((Enum) ADD_PLAYER0, UPDATE_LIST);//it's overriden to be an EnumSet
+                Enum UPDATE_LIST = playerInfoAction.getEnumConstants()[3];
+                Enum UPDATE_DISPLAY_NAME = playerInfoAction.getEnumConstants()[5];
+                //ClientboundPlayerInfoUpdatePacket
+                ADD_PLAYER0 = EnumSet.of((Enum) ADD_PLAYER0, UPDATE_LIST, UPDATE_DISPLAY_NAME);//it's overriden to be an EnumSet
             }
-
         }
         constructor = constructor0;
         ADD_PLAYER = ADD_PLAYER0;

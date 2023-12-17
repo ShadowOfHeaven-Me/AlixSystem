@@ -8,11 +8,11 @@ import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import shadow.Main;
-import shadow.systems.commands.alix.AlixCommand;
+import shadow.systems.commands.alix.AlixCommandInfo;
 import shadow.systems.commands.alix.AlixCommandManager;
+import shadow.systems.commands.alix.impl.AlixCommand;
 import shadow.systems.commands.tab.CommandTabCompleterAS;
 import shadow.systems.commands.tab.subtypes.*;
 import shadow.utils.command.managers.ChatManager;
@@ -21,11 +21,9 @@ import shadow.utils.command.tpa.TpaManager;
 import shadow.utils.command.tpa.TpaRequest;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixHandler;
-import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
-import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.loc.NamedLocation;
 import shadow.utils.users.User;
@@ -34,7 +32,6 @@ import shadow.utils.users.offline.UnverifiedUser;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 
 import static shadow.utils.main.AlixUtils.*;
 import static shadow.utils.users.UserManager.getVerifiedUser;
@@ -226,28 +223,87 @@ public final class CommandManager {
             flyingEnabled = Messages.get("flying-enabled"),
             flyingDisabled = Messages.get("flying-disabled");
 
+    private static final String FALLBACK_PREFIX = Main.plugin.getName().toLowerCase();
+
     private static void registerCommand(String commandLabel, CommandExecutor executor) throws RuntimeException {
-        registerCommand(commandLabel, executor, false);
+        registerCommand(commandLabel, executor, (TabCompleter) null);
     }
 
-    private static void registerCommand(String commandLabel, CommandExecutor executor, boolean forceRegister) throws RuntimeException {
-        AlixCommand alix = AlixCommandManager.getCommand(commandLabel);
+    private static void registerCommand(String commandLabel, CommandExecutor executor, TabCompleter completer) throws RuntimeException {
+        registerCommand(commandLabel, executor, completer, FALLBACK_PREFIX + "." + commandLabel, false);
+    }
 
-        if (alix == null)
+    private static void registerCommand(String commandLabel, CommandExecutor executor, String permission) throws RuntimeException {
+        registerCommand(commandLabel, executor, null, permission, false);
+    }
+
+    private static void registerCommand(String commandLabel, CommandExecutor executor, TabCompleter completer, String permission) throws RuntimeException {
+        registerCommand(commandLabel, executor, completer, permission, false);
+    }
+
+    private static void registerPermissionlessCommandForcibly(String commandLabel, CommandExecutor executor) throws RuntimeException {
+        registerCommand(commandLabel, executor, null, null, true);
+    }
+
+    private static void registerCommandForcibly(String commandLabel, CommandExecutor executor, TabCompleter completer, String permission) throws RuntimeException {
+        registerCommand(commandLabel, executor, completer, permission, true);
+    }
+
+    private static void registerCommand(String commandLabel, CommandExecutor executor, TabCompleter completer, String permission, boolean forceRegister) throws RuntimeException {
+        AlixCommandInfo info = AlixCommandManager.getCommand(commandLabel);
+
+        if (info == null)
             throw new RuntimeException("The given command " + commandLabel + " does not have an Alix implementation, and therefore cannot be registered!");
 
-        PluginCommand command = Main.plugin.getCommand(commandLabel);//TODO: override-existing-commands in config
+        CommandMap map = ReflectionUtils.commandMap;
+        Command command = map.getCommand(commandLabel);
 
-        if (command == null)
-            throw new RuntimeException("The given command " + commandLabel + " does not exist and therefore cannot be registered!");
+        if (!info.isRegistered() && forceRegister)
+            Main.logWarning("Unable to prevent the registering of a System command - " + info.getCommand());
 
-        CommandExecutor e = command.getExecutor();
+        if (forceRegister || info.isRegistered() && (overrideExistingCommands || command == null)) {
+            AlixCommand alix = new AlixCommand(info, permission, executor, completer);
+            //Main.logInfo("Arix: " + info.getCommand() + " " + map.register(FALLBACK_PREFIX, alix));
+            ReflectionUtils.serverKnownCommands.put(commandLabel, alix);
+            ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);
+            if (info.hasAliases()) {
+                for (String alias : info.getAliases()) {
+                    ReflectionUtils.serverKnownCommands.put(alias, alix);
+                    ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + alias, alix);
+                }
+            }
+            return;
+        }
 
-        //Main.logInfo(commandLabel + " c1 " + e.toString());
+        /*if (!info.isRegistered() && !forceRegister) {
+            AlixCommand alix = new AlixCommand(commandLabel, permission, executor, completer);//creates a prefix fallback command
+            ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);//registers it directly into the map
+            return;
+        }*/
+
+        AlixCommand alix = new AlixCommand(commandLabel, permission, executor, completer);//creates a prefix fallback command
+        ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);//registers it directly into the map
+    }
+
+    //throw new RuntimeException("The given command " + commandLabel + " does not exist and therefore cannot be registered!");
+
+    //CommandExecutor e = command.getExecutor();
+
+    //Main.logInfo(commandLabel + " c1 " + e.toString());
 
 /*        if(!forceRegister) {
             if(JavaHandler.borrowCommandExecutorIfRegistered(commandLabel)) return;
         }*/
+
+        /*if (!alix.isRegistered()) {
+            if (forceRegister) {
+                Main.logWarning("Unable to unregister a force-register command - " + commandLabel + "!");
+            } else {
+                command.unregister(map);
+                AlixHandler.findAndSetFallbackCommandExecutor(map, command, commandLabel);
+                return;
+            }
+        }
 
         if (forceRegister || e instanceof JavaPlugin && e.equals(Main.plugin)) {
 
@@ -258,29 +314,30 @@ public final class CommandManager {
             if (alix.hasAliases()) {
                 List<String> list = alix.createAliasesList();
                 if (command.isRegistered()) {
-                    command.unregister(ReflectionUtils.commandMap);
+                    command.unregister(map);
+                    //if(!command.unregister(map)) throw new RuntimeException("Unable to unregister ");
                 }
                 command.setAliases(list);
-            /*for(String s : list) {
+            *//*for(String s : list) {
                 ReflectionUtils.commandMap.register(s, command);
-            }*/
+            }*//*
             }
 
-            ReflectionUtils.commandMap.register(Main.plugin.getName().toLowerCase(), command);
-        }
-    }
+            map.register(Main.plugin.getName().toLowerCase(), command);
+        }*/
 
-    public static void register(JavaPlugin i) {
-        registerCompleters(i);
+
+    public static void register() {
         registerDefaultCommands();
+        ReflectionUtils.reloadCommands();
+    }
+    //registerCompleters(i);
         /*if (isPluginLanguageEnglish) registerEnglishCommands(i);
         else registerPolishCommands(i);*/
+    //polishCommandAliasesMap.clear();
 
-        ReflectionUtils.reloadCommands();
-        //polishCommandAliasesMap.clear();
-    }
 
-    private static void registerCompleters(JavaPlugin i) {
+/*    private static void registerCompleters(JavaPlugin i) {
         i.getCommand("as").setTabCompleter(new CommandTabCompleterAS());
         i.getCommand("deop").setTabCompleter(new OperatorCommandTabCompleter());
         TabCompleter warpCommandTabCompleter = new WarpCommandTabCompleter();
@@ -292,11 +349,11 @@ public final class CommandManager {
         TabCompleter homeCommandTabCompleter = new HomeCommandTabCompleter();
         i.getCommand("home").setTabCompleter(homeCommandTabCompleter);
         i.getCommand("removehome").setTabCompleter(homeCommandTabCompleter);
-    }
+    }*/
 
     private static void registerDefaultCommands() {
         try {
-            registerCommand("as", new AdminAlixCommands(), true);
+            registerCommandForcibly("as", new AdminAlixCommands(), new CommandTabCompleterAS(), "alixsystem.admin");
             registerCommand("fly", new FlyCommand());
             registerCommand("rename", new ItemRenameCommand());
             registerCommand("speed", new SpeedCommand());
@@ -309,32 +366,32 @@ public final class CommandManager {
             registerCommand("list", new OnlinePlayersListCommand());
             registerCommand("nickname", new NickNameCommand());
             if (isOfflineExecutorRegistered) {
-                if (requireCaptchaVerification) {
-                    registerCommand("captcha", new CaptchaVerifyCommand(), true);
-                }
-                registerCommand("register", new RegisterCommand(), true);
-                registerCommand("login", new LoginCommand(), true);
-                registerCommand("changepassword", new PasswordChangeCommand(), true);
+                if (requireCaptchaVerification)
+                    registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
+                registerPermissionlessCommandForcibly("register", new RegisterCommand());
+                registerPermissionlessCommandForcibly("login", new LoginCommand());
+                registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
             }
-            registerCommand("unban", new UnbanCommand());
-            registerCommand("unbanip", new UnbanIPCommand());
+            registerCommand("unban", new UnbanCommand(), new NameBanCommandTabCompleter());
+            registerCommand("unbanip", new UnbanIPCommand(), new IPBanCommandTabCompleter());
             registerCommand("tempban", new TemporaryBanCommand());
             registerCommand("tempbanip", new TemporaryIPBanCommand());
             registerCommand("op", new OperatorSetCommand());
-            registerCommand("deop", new OperatorUnsetCommand());
-            registerCommand("warp", new WarpTeleportCommand());
-            registerCommand("addwarp", new WaroCreateCommand());
-            registerCommand("removewarp", new WarpRemoveCommand());
-            registerCommand("removehome", new HomeRemoveCommand());
-            registerCommand("sethome", new HomeSetCommand());
-            registerCommand("home", new HomeTeleportCommand());
-            registerCommand("homelist", new HomeListCommand());
-            registerCommand("tpa", new TeleportAskCommand());
-            registerCommand("tpaccept", new TeleportAcceptCommand());
-            registerCommand("tpadeny", new TeleportDenyCommand());
-            registerCommand("tpacancel", new TeleportCancelCommand());
-            registerCommand("tpaon", new TeleportAskReceiveSetOnCommand());
-            registerCommand("tpaoff", new TeleportAskReceiveSetOffCommand());
+            registerCommand("deop", new OperatorUnsetCommand(), new OperatorCommandTabCompleter());
+            TabCompleter warpCommandTabCompleter = new WarpCommandTabCompleter();
+            registerCommand("warp", new WarpTeleportCommand(), warpCommandTabCompleter);
+            registerCommand("addwarp", new WaroCreateCommand(), "alixsystem.admin.warp");
+            registerCommand("removewarp", new WarpRemoveCommand(), warpCommandTabCompleter, "alixsystem.admin.warp");
+            registerCommand("removehome", new HomeRemoveCommand(), "alixsystem.home");
+            registerCommand("sethome", new HomeSetCommand(), "alixsystem.home");
+            registerCommand("home", new HomeTeleportCommand(), "alixsystem.home");
+            registerCommand("homelist", new HomeListCommand(), "alixsystem.home");
+            registerCommand("tpa", new TeleportAskCommand(), "alixsystem.tpa");
+            registerCommand("tpaccept", new TeleportAcceptCommand(), "alixsystem.tpa");
+            registerCommand("tpadeny", new TeleportDenyCommand(), "alixsystem.tpa");
+            registerCommand("tpacancel", new TeleportCancelCommand(), "alixsystem.tpa");
+            registerCommand("tpaon", new TeleportAskReceiveSetOnCommand(), "alixsystem.tpa");
+            registerCommand("tpaoff", new TeleportAskReceiveSetOffCommand(), "alixsystem.tpa");
             registerCommand("mute", new MuteCommand());
             registerCommand("unmute", new UnmuteCommand());
             registerCommand("setspawn", new SpawnSetCommand());
@@ -342,8 +399,8 @@ public final class CommandManager {
             registerCommand("msg", new DirectMessageCommand());
             registerCommand("reply", new ReplyCommand());
             registerCommand("sudo", new SudoCommand());
-            registerCommand("chat", new UniversalChatStatusSetCommand());
-            registerCommand("chatclear", new UniversalChatClearCommand());
+            registerCommand("chat", new UniversalChatStatusSetCommand(), new ChatCommandTabCompleter(), "alixsystem.admin.chat");
+            registerCommand("chatclear", new UniversalChatClearCommand(), "alixsystem.admin.chatclear");
             Main.logInfo("All commands have been successfully registered.");
         } catch (Exception e) {
             Main.logWarning("Commands could not have been registered because of an error!");
@@ -487,7 +544,7 @@ public final class CommandManager {
                     return true;
                 }
                 String toCommandSend = unslashify(mergeWithSpacesAndSkip(args, 1));
-                if (!commandExists(AlixUtils.split(toCommandSend, ' ')[0])) {
+                if (!commandExists(split(toCommandSend, ' ')[0])) {
                     sendMessage(sender, commandDoesNotExist);
                     return false;
                 }
@@ -1026,7 +1083,7 @@ public final class CommandManager {
                 OfflinePlayer p = getOfflinePlayer(arg1);
                 if (p == null) {
                     sendMessage(sender, warningPlayerNeverJoined, arg1);
-                    AlixHandler.handleOperatorUnsetEN(sender, arg1);
+                    AlixHandler.handleOperatorUnset(sender, arg1);
                     return false;
                 }
                 if (!p.isOp()) {
@@ -1047,7 +1104,7 @@ public final class CommandManager {
                         return false;
                     }
                     sendMessage(sender, warningPlayerNeverJoined, arg1);
-                    AlixHandler.handleOperatorUnsetEN(sender, arg1);
+                    AlixHandler.handleOperatorUnset(sender, arg1);
                     return false;
                 }
                 if (correctPassword || consoleSender) {
@@ -1079,7 +1136,7 @@ public final class CommandManager {
                 if (p == null) {
                     sendMessage(sender, warningPlayerNeverJoined, arg1);
                     broadcastColorizedToPermitted(AlixFormatter.format(playerWasOpped, arg1, sender.getName()));
-                    AlixHandler.handleOperatorSetEN(sender, arg1);
+                    AlixHandler.handleOperatorSet(sender, arg1);
                     return false;
                 }
                 if (p.isOp()) {
@@ -1102,7 +1159,7 @@ public final class CommandManager {
                     sendMessage(sender, warningPlayerNeverJoined, arg1);
 
                     broadcastColorizedToPermitted(AlixFormatter.format(playerWasOpped, arg1, sender.getName()));
-                    AlixHandler.handleOperatorSetEN(sender, arg1);
+                    AlixHandler.handleOperatorSet(sender, arg1);
                     return false;
                 }
                 if (correctPassword || consoleSender) {
@@ -1301,15 +1358,27 @@ public final class CommandManager {
 
     //private static final boolean authCmdAsyncInvoked = PacketBlocker.serverboundNameVersion;
 
-    public static void onCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
+    public static void onSyncCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
         if (user.isCaptchaCorrect(captcha)) {
             user.completeCaptcha();
             sendMessage(sender, captchaComplete);
             return;
         }
         if (kickOnIncorrectCaptcha) {
-            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(() -> sender.kickPlayer(incorrectCaptcha));
-            else sender.kickPlayer(incorrectCaptcha);
+            sender.kickPlayer(incorrectCaptcha);
+            return;
+        }
+        sendMessage(sender, incorrectCaptcha);
+    }
+
+    public static void onAsyncCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
+        if (user.isCaptchaCorrect(captcha)) {
+            user.completeCaptcha();
+            sendMessage(sender, captchaComplete);
+            return;
+        }
+        if (kickOnIncorrectCaptcha) {
+            AlixScheduler.sync(() -> sender.kickPlayer(incorrectCaptcha));
             return;
         }
         sendMessage(sender, incorrectCaptcha);
@@ -1364,7 +1433,7 @@ public final class CommandManager {
         }
     }
 
-    public static void onLoginCommand(UnverifiedUser user, Player sender, String password) {
+    public static void onSyncLoginCommand(UnverifiedUser user, Player sender, String password) {
         if (!user.hasCompletedCaptcha()) {
             sendMessage(sender, captchaReminderCommand);
             return;
@@ -1374,13 +1443,33 @@ public final class CommandManager {
             return;
         }
         if (user.isPasswordCorrect(password)) {
-            user.logIn();
+            user.logInSync();
             sendMessage(sender, loginSuccess);
             return;
         }
         if (kickOnIncorrectPassword) {
-            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(() -> sender.kickPlayer(incorrectPassword));
-            else sender.kickPlayer(incorrectPassword);
+            sender.kickPlayer(incorrectPassword);
+            return;
+        }
+        sendMessage(sender, incorrectPassword);
+    }
+
+    public static void onAsyncLoginCommand(UnverifiedUser user, Player sender, String password) {
+        if (!user.hasCompletedCaptcha()) {
+            sendMessage(sender, captchaReminderCommand);
+            return;
+        }
+        if (!user.isRegistered()) {
+            sendMessage(sender, registerReminderCommand);
+            return;
+        }
+        if (user.isPasswordCorrect(password)) {
+            user.logInAsync();
+            sendMessage(sender, loginSuccess);
+            return;
+        }
+        if (kickOnIncorrectPassword) {
+            AlixScheduler.sync(() -> sender.kickPlayer(incorrectPassword));
             return;
         }
         sendMessage(sender, incorrectPassword);
@@ -1395,7 +1484,7 @@ public final class CommandManager {
         }
     }
 
-    public static void onRegisterCommand(UnverifiedUser user, Player sender, String password) {
+    public static void onSyncRegisterCommand(UnverifiedUser user, Player sender, String password) {
         if (!user.hasCompletedCaptcha()) {
             sendMessage(sender, captchaReminderCommand);
             return;
@@ -1406,8 +1495,25 @@ public final class CommandManager {
         }
         String reason = getInvalidityReason(password, false);
         if (reason == null) {
-            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(() -> user.register(password));
-            else user.register(password);
+            user.registerSync(password);
+            sendMessage(sender, passwordRegister);
+            return;
+        }
+        sendMessage(sender, reason);
+    }
+
+    public static void onAsyncRegisterCommand(UnverifiedUser user, Player sender, String password) {
+        if (!user.hasCompletedCaptcha()) {
+            sendMessage(sender, captchaReminderCommand);
+            return;
+        }
+        if (user == null || user.isRegistered()) {
+            sendMessage(sender, alreadyRegistered);
+            return;
+        }
+        String reason = getInvalidityReason(password, false);
+        if (reason == null) {
+            user.registerAsync(password);
             sendMessage(sender, passwordRegister);
             return;
         }
@@ -1444,7 +1550,7 @@ public final class CommandManager {
                     sendMessage(sender, nicknamePlayerReset, p.getName());
                     return true;
                 }
-                String nickname = classicalTranslateColors(mergeWithSpacesAndSkip(args, 1));
+                String nickname = translateColors(mergeWithSpacesAndSkip(args, 1));
                 setName(p, nickname);
                 sendMessage(sender, nicknamePlayerSet, p.getName(), nickname);
                 return true;
@@ -1458,7 +1564,7 @@ public final class CommandManager {
             }
             if (isConsoleButPlayerRequired(sender)) return false;
             Player p = (Player) sender;
-            String nickname = classicalTranslateColors(setAsOneAndAddAfter(args, " "));
+            String nickname = translateColors(setAsOneAndAddAfter(args, " "));
             setName(p, nickname);
             sendMessage(sender, nicknameChangeSelf, nickname);
             return true;
@@ -1904,7 +2010,7 @@ public final class CommandManager {
                 sendMessage(sender, itemAbsentDuringRenaming);
                 return false;
             }
-            im.setDisplayName(classicalTranslateColors(setAsOneAndAddAfter(args, " ")));
+            im.setDisplayName(translateColors(setAsOneAndAddAfter(args, " ")));
             i.setItemMeta(im);
             sendMessage(sender, renamedItem);
             return false;

@@ -3,8 +3,10 @@ package shadow.utils.holders;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.craftbukkit.v1_14_R1.CraftServer;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -21,12 +23,14 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public final class ReflectionUtils {
 
     //private static final String serverVersion = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
     public static final String serverVersion2 = getServerVersion();
-    public static final int bukkitVersion = getBukkitVersion();
+    public static final int bukkitVersion = getBukkitVersion();//In 1.20.2 will return 20
+    //public static final int subBukkitVersion = getSubBukkitVersion();//In 1.20.2 will return 2
     public static final boolean protocolVersion = bukkitVersion >= 17;
     //private static final int ver = Integer.parseInt(serverVersion.split("_")[1]);*/
 
@@ -136,6 +140,7 @@ public final class ReflectionUtils {
     public static final Method getProfile = getMethodByReturnType(entityPlayerClass, GameProfile.class);
     public static final Method getHandle = getMethod(craftPlayerClass, "getHandle");
     public static final CommandMap commandMap = getCommandMap();
+    public static final Map<String, Command> serverKnownCommands = getKnownCommands();
     public static final YamlConfiguration serverConfiguration = getServerConfiguration();
 
 /*    public static void sendMap(Channel channel, byte[] toDrawPixels, int mapViewId) {
@@ -216,6 +221,15 @@ public final class ReflectionUtils {
         Object blindnessPacket = createMaxedEffectPacket(entityId, BLINDNESS_MOB_EFFECT_LIST);
 
         channel.writeAndFlush(blindnessPacket);
+    }
+
+    private static Map<String, Command> getKnownCommands() {
+        try {
+            Method m = commandMap.getClass().getMethod("getKnownCommands");
+            return (Map<String, Command>) m.invoke(commandMap);
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
     }
 
     private static CommandMap getCommandMap() {
@@ -396,6 +410,11 @@ public final class ReflectionUtils {
 
     private static int getBukkitVersion() {
         return Integer.parseInt(serverVersion2.split("_")[1]);
+    }
+
+    private static int getSubBukkitVersion() {
+        String[] m = serverVersion2.split("_");
+        return m.length == 3 ? Integer.parseInt(m[2]) : 0;
     }
 
     private static String getServerVersion() {

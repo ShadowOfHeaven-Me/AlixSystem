@@ -21,7 +21,7 @@ public final class AlixCommandManager {
         return commandsFile.getCommandNames().contains(cmd);
     }*/
 
-    public static AlixCommand getCommand(String cmd) {
+    public static AlixCommandInfo getCommand(String cmd) {
         return commandsFile.getAlixCommands().get(cmd);
     }
 
@@ -43,7 +43,7 @@ public final class AlixCommandManager {
     }
 
     public static boolean isPasswordChangeCommand(String s) {
-        AlixCommand cmd = getCommand(removeFallbackPrefix(s));
+        AlixCommandInfo cmd = getCommand(removeFallbackPrefix(s));
         return cmd != null && cmd.getCommand().equals("changepassword");
     }
 
@@ -117,7 +117,7 @@ public final class AlixCommandManager {
         VerificationCommand login = VerificationCommand.OF_LOGIN;
 
         for (String commandAlias : commandsFile.getLoginCommands()) {
-            AlixCommand alix = getCommand(commandAlias);
+            AlixCommandInfo alix = getCommand(commandAlias);
             if (alix == null)
                 throw new ExceptionInInitializerError("Invalid verification command: '" + commandAlias + "'!");
             String command = alix.getCommand();

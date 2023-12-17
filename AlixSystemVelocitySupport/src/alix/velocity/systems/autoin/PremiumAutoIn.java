@@ -3,7 +3,7 @@ package alix.velocity.systems.autoin;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PremiumAutoIn {
+public final class PremiumAutoIn {
 
     private static final AuthAPI auth;
     private static final boolean initialized;

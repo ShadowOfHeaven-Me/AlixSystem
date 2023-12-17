@@ -1,7 +1,7 @@
-package alix.common.utils.security;
+package alix.common.data.security;
 
 import alix.common.utils.config.ConfigProvider;
-import alix.common.utils.security.types.Sha256;
+import alix.common.data.security.types.Sha256;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -27,9 +27,9 @@ public final class Hashing {
         }
     }
 
-    public static HashingAlgorithm getConfigHashingAlgorithm() {
+/*    public static HashingAlgorithm getConfigHashingAlgorithm() {
         return configHash;
-    }
+    }*/
 
     private static final class Hash0 implements HashingAlgorithm {
 

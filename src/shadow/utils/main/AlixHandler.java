@@ -32,6 +32,7 @@ import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.result.LoginInfo;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.command.managers.ChatManager;
+import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.objects.packet.check.PacketAffirmator;
 import shadow.utils.objects.packet.check.impl.MultiVersionPacketAffirmator;
@@ -42,6 +43,7 @@ import shadow.utils.objects.packet.injector.ChannelInjectorPacketEvents;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.world.AlixWorld;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -84,14 +86,14 @@ public final class AlixHandler {
         if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.instance);
         if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
         if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.instance);
-        if (Main.config.getBoolean("anti-vpn")) filters.add(new AntiVPN());
+        if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
         return filters.toArray(new ConnectionFilter[0]);
     }
 
     public static ConnectionFilter[] getPremiumConnectionFilters() {//set up in the most efficient way
         List<ConnectionFilter> filters = new ArrayList<>();
         if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.instance);
-        if (Main.config.getBoolean("anti-vpn")) filters.add(new AntiVPN());
+        if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
         return filters.toArray(new ConnectionFilter[0]);
     }
 
@@ -144,7 +146,7 @@ public final class AlixHandler {
     }
 
     public static UnverifiedUser handleOfflinePlayerJoin(Player p, String joinMessage) {
-        LoginInfo login = LoginVerdictManager.getExisting(p);
+        LoginInfo login = LoginVerdictManager.removeExisting(p);
         switch (login.getVerdict()) {
             case DISALLOWED_NO_DATA:
                 GeoIPTracker.addTempIP(login.getIP());
@@ -153,7 +155,9 @@ public final class AlixHandler {
             case DISALLOWED_LOGIN_REQUIRED:
                 return Verifications.add(p, login.getData(), login.getIP(), joinMessage);
             case LOGIN_PREMIUM:
-                UserManager.addOnlineUser(p);
+                UserManager.addOnlineUser(p, login);
+                if (p.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) //tp back if there was an issue with the teleportation beforehand
+                    OriginalLocationsManager.teleportBack(p, true);
                 return null;
             case LOGIN_IP_AUTO_LOGIN:
                 UserManager.addOfflineUser(p, login.getData(), login.getIP(), PacketBlocker.getChannel(p));
@@ -230,6 +234,25 @@ public final class AlixHandler {
         return false;
     }*/
 
+/*    public static void findAndSetFallbackCommandExecutor(CommandMap map, Command cmd, String label) {
+        Command primary = map.getCommand("minecraft:" + label);
+        String fallbackPrefix = "minecraft";
+        //CommandExecutor executor = primary.
+        if (primary == null) {
+            for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+                if (plugin.equals(Main.plugin)) continue;
+                String f2 = plugin.getName().toLowerCase();
+                Command c2 = map.getCommand(f2 + ":" + label);
+                if (c2 != null) {
+                    primary = c2;
+                    fallbackPrefix = f2;
+                }
+            }
+        }
+        if (primary == null) return;
+        map.register(label, fallbackPrefix, primary);
+    }*/
+
     public static void handleChatTurnOn(CommandSender sender) {
         if (ChatManager.isChatTurnedOn()) {
             sendMessage(sender, Messages.chatAlreadyOn);
@@ -258,7 +281,7 @@ public final class AlixHandler {
         return dispatchServerCommand("minecraft:deop " + who);
     }
 
-    public static void handleOperatorSetEN(CommandSender sender, String arg1) {
+    public static void handleOperatorSet(CommandSender sender, String arg1) {
         boolean success = setOperator(arg1);
         if (success) {
             //sendMessage(sender, "Successfully opped " + arg1 + "!");
@@ -268,7 +291,7 @@ public final class AlixHandler {
         sendMessage(sender, "&cCould not op player " + arg1 + "! Please check if there are any errors in the console!");
     }
 
-    public static void handleOperatorUnsetEN(CommandSender sender, String arg1) {
+    public static void handleOperatorUnset(CommandSender sender, String arg1) {
         boolean success = unsetOperator(arg1);
         if (success) {
             //sendMessage(sender, "Successfully deopped " + arg1 + "!");

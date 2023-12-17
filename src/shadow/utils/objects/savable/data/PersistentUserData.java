@@ -12,8 +12,8 @@ public final class PersistentUserData {
 
     public static final int CURRENT_DATA_LENGTH = 6;
     private final HomeList homes;
-    private final Password password;
     private final String name;
+    private Password password;
     private PasswordType passwordType;
     private String ip;
     private long mutedUntil;
@@ -34,7 +34,7 @@ public final class PersistentUserData {
     private PersistentUserData(String name, String ip) {
         this.name = name;
         this.ip = ip;
-        this.password = Password.newEmpty();
+        this.password = Password.empty();
         this.homes = new HomeList();
         this.passwordType = AlixUtils.defaultPasswordType;
         //storageManager = null;
@@ -55,9 +55,13 @@ public final class PersistentUserData {
     }
 
     public static PersistentUserData createFromPremiumPlayer(Player p) {
-        PersistentUserData data = new PersistentUserData(p.getName(), p.getAddress().getAddress().getHostAddress());
+        return createFromPremiumInfo(p.getName(), p.getAddress().getAddress().getHostAddress());
+    }
 
-        data.getPassword().setFrom(Password.createRandomUnhashed()); //ensure the account cannot be stolen in case the server suddenly ever switches to offline mode, and does not use FastLogin
+    public static PersistentUserData createFromPremiumInfo(String name, String ip) {
+        PersistentUserData data = new PersistentUserData(name, ip);
+
+        data.setPassword(Password.createRandom()); //ensure the account cannot be stolen in case the server suddenly ever switches to offline mode, and does not use FastLogin
         data.setPasswordType(PasswordType.PASSWORD);
 
         return data;
@@ -105,7 +109,15 @@ public final class PersistentUserData {
     }
 
     public void setPassword(String password) {
-        this.password.setPassword(password);
+        this.password = Password.fromUnhashed(password);
+    }
+
+    public void setPassword(Password password) {
+        this.password = password;
+    }
+
+    public void resetPassword() {
+        this.password = Password.empty();
     }
 
     public PersistentUserData setIP(String ip) {

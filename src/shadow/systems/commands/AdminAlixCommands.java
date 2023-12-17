@@ -98,7 +98,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             return false;
                         }
 
-                        data.getPassword().reset();
+                        data.resetPassword();
 
                         Player p = Bukkit.getPlayerExact(data.getName());
                         if (p != null) p.kickPlayer(passwordResetMessage);
@@ -183,10 +183,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                         OfflinePlayer p = getOfflinePlayer(arg1);
                         if (p == null || p.getName() == null) {
                             sendMessage(sender, "&eWARNING: Player " + arg1 + " has never joined this server before!");
-                            AlixHandler.handleOperatorSetEN(sender, arg1);
+                            AlixHandler.handleOperatorSet(sender, arg1);
                             return false;
                         }
-                        AlixHandler.handleOperatorSetEN(sender, p.getName());
+                        AlixHandler.handleOperatorSet(sender, p.getName());
                         break;
                     }
                     case "forcedeop": {
@@ -197,10 +197,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                         OfflinePlayer p = getOfflinePlayer(arg1);
                         if (p == null || p.getName() == null) {
                             sendMessage(sender, "&eWARNING: Player " + arg1 + " has never joined this server before!");
-                            AlixHandler.handleOperatorUnsetEN(sender, arg1);
+                            AlixHandler.handleOperatorUnset(sender, arg1);
                             return false;
                         }
-                        AlixHandler.handleOperatorUnsetEN(sender, p.getName());
+                        AlixHandler.handleOperatorUnset(sender, p.getName());
                         break;
                     }
 /*                    case "median":

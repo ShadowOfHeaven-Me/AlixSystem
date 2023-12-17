@@ -1,13 +1,14 @@
-#--------------------------------------------
-# This is the config.yml file for AlixSystem, divided by sections
-# If you're curious about certain parameters, you can join our discord server
-# at https://discord.gg/bWjmA7s3xV or visit the documentation section
-# of this plugin at spigot, available at https://www.spigotmc.org/resources/alixsystem.109144/field?field=documentation
-#--------------------------------------------
+#------------------------------------------------------------------------------------#
+#             This is the config.yml file for AlixSystem, divided by sections.       #
+#     If you're curious about certain parameters, you can join our discord server    #
+#          at https://discord.gg/bWjmA7s3xV or visit the spigot documentation        #
+#                            of this plugin available at                             #
+#    https://www.spigotmc.org/resources/alixsystem.109144/field?field=documentation  #
+#------------------------------------------------------------------------------------#
 
 
 #-----------------------------------------------#
-#                 PRE-REGISTER                  #
+#                  PRE-REGISTER                 #
 #-----------------------------------------------#
 
 #Config used when an unregistered player has not joined the server yet, but is trying to
@@ -62,14 +63,14 @@ max-captcha-time: 30
 
 
 #----------------------------------------------#
-#                   LOGIN                      #
+#                    LOGIN                     #
 #----------------------------------------------#
 
 #Config used when the player is in the login phase, either trying to login in or register
 
 #Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users)
 auto-login: true
-#Defines how long (in seconds) should be a player allowed to be on the server not logged in (but with the captcha test completed) (set it to zero or less if you want to disable it, max of 1638)
+#Defines how long (in seconds) should be a player allowed to be on the server not logged in (but with the captcha test completed, setting it to 0 or less doesn't work for now)
 max-login-time: 75
 #Defines whether, if the server is set to offline mode, the players should be required to log in using a set beforehand password
 offline-login-requirement: true
@@ -85,6 +86,12 @@ password-hash-type: 1
 premium-auto-in: true
 #Defines (in milliseconds) the delay between each verification message sent (used for captcha, register and login message reminders, you can set it to 0 or less in order to make the message be sent only once)
 verification-reminder-message-delay: 5000
+#Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
+after-register-commands:
+  -
+#Works exactly the same as the parameter above with the sole difference of being invoked after a successful login
+after-login-commands:
+  -
 
 
 #----------------------------------------------#
@@ -137,11 +144,11 @@ use-this-syntax: false
 
 #Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.txt file)
 language: en
-#Defines whether the /op and /deop commands should require a password (except when the console is executing it)
-restrict-op-command: false
-#Password required for /op and /deop commands if the parameter above is set to true
-op-command-password: ILikePie
-#Defines (in second) in what period of time should the teleportation request automatically expire (set it to 0 or less if you want to disable it)
+#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
+custom-join-log: true
+#Defines whether Alix should override other commands with it's own implementation (if set to true, you can disable the ones you don't want in the commands.txt file)
+override-existing-commands: true
+#Defines (in seconds) in what period of time should the teleportation request automatically expire (set it to 0 or less if you want to disable it)
 tpa-auto-expire: 120
 #Prefix of the messages sent by this plugin.
 prefix: "&c[System] > &7"
@@ -151,8 +158,10 @@ append-prefix: true
 hide-failed-join-attempts: true
 #Defines (in milliseconds) the teleportation delay for user teleports (such as /tpa, /spawn etc.)
 user-teleportation-delay: 5000
-#Defines, whether instead of the normal console join log, an alix one should be used instead
-custom-join-log: true
+#Defines whether the /op and /deop commands should require a password (except when the console is executing it)
+restrict-op-command: false
+#Password required for /op and /deop commands if the parameter above is set to true
+op-command-password: ILikePie
 
 #------------------------------------------------#
 #                   TECHNICAL                    #

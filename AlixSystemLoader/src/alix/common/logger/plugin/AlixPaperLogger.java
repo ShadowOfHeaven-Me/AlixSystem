@@ -1,16 +1,18 @@
 package alix.common.logger.plugin;
 
+import alix.common.logger.AlixLoggerProvider;
+import alix.loaders.bukkit.BukkitAlixMain;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class AlixPluginLogger extends Logger {
+public final class AlixPaperLogger extends Logger {
 
-    private static final String LOGGER_NAME = "\u001B[1;31m" + "AlixSystem" + "\u001B[0m";
     //private final String prefix;
 
-    public AlixPluginLogger(Logger serverLogger) {
-        super(LOGGER_NAME, null);
-        this.setParent(serverLogger);
+    public AlixPaperLogger() {
+        super(AlixLoggerProvider.LOGGER_NAME_BRANCHLESS, null);
+        this.setParent(BukkitAlixMain.instance.getServer().getLogger());
         this.setLevel(Level.ALL);
     }
 

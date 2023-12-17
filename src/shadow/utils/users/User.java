@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
+import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.packet.types.verified.AlixDuplexHandler;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.multi.HomeList;
@@ -43,7 +44,7 @@ public final class User {// implements ObjectSerializable {
     }
 
     protected User(Player player) {
-        this(player, UserFileManager.getOrCreatePremiumInformation(player), null);
+        this(player, UserFileManager.getOrCreatePremiumInformation(player), PacketBlocker.getChannel(player));
     }
 
     public Player getPlayer() {

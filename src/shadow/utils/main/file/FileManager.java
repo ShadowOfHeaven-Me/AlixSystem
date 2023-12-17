@@ -1,8 +1,8 @@
 package shadow.utils.main.file;
 
+import alix.common.messages.Messages;
 import alix.loaders.bukkit.BukkitAlixMain;
 import shadow.Main;
-import alix.common.messages.Messages;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.SpawnFileManager;
@@ -11,6 +11,7 @@ import shadow.utils.main.file.managers.WarpFileManager;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,18 +23,28 @@ public abstract class FileManager {
 
     private final File file;
 
+    protected static final File INTERNAL_FOLDER;
+
+    static {
+        INTERNAL_FOLDER = new File(Main.plugin.getDataFolder().getAbsolutePath() + File.separator + "internal");
+        INTERNAL_FOLDER.mkdir();
+    }
+
     protected FileManager(File file) {//existing file
         this.file = file;
-        file.toPath();
+        file.toPath();//buffer the path object
     }
 
     protected FileManager(String fileName) {
-        this(fileName, true);
+        this(fileName, true, true);
     }
 
-    protected FileManager(String fileName, boolean init) {
-        this.file = init ? initializeFile(fileName) : getPluginFile(fileName);
-        file.toPath();
+    protected FileManager(String fileName, boolean internal) {
+        this(fileName, true, internal);
+    }
+
+    protected FileManager(String fileName, boolean init, boolean internal) {
+        this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
     }
 
     public static void write(File file, Collection<?> values) throws IOException {
@@ -49,9 +60,9 @@ public abstract class FileManager {
         stream.close();
     }
 
-    public static File getWithJarCompiledFile(String s) {
+    public static File getWithJarCompiledFile(String s, boolean internal) {
         //tmpdir - tf is this
-        File f = getPluginFile(s);
+        File f = getPluginFile(s, internal);
         try (InputStream in = BukkitAlixMain.class.getClassLoader().getResourceAsStream(s)) {
             Files.copy(in, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return f;
@@ -70,8 +81,8 @@ public abstract class FileManager {
         }
     }
 
-    public static File createPluginFile(String s) {
-        return createFileIfAbsent(getWithJarCompiledFile(s));
+    public static File createPluginFile(String s, boolean internal) {
+        return createFileIfAbsent(getWithJarCompiledFile(s, internal));
     }
 
     public static void createNewFile(File file) {
@@ -132,16 +143,33 @@ public abstract class FileManager {
         return f.file.delete();
     }
 
-    public static File getPluginFile(String fileName) {
+    public static File getPluginFile(String fileName, boolean internal) {
         String path = Main.plugin.getDataFolder().getAbsolutePath();
 
-        new File(path).mkdirs(); //Creating the folder if absent
+        if (internal) {
+            File oldFile = new File(path + File.separator + fileName);
+            File newFile = new File(INTERNAL_FOLDER.getAbsolutePath() + File.separator + fileName);
+            if (oldFile.exists()) {
+                try {
 
-        return new File(path + File.separator + fileName);
+                    Files.copy(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    oldFile.delete();
+                    return newFile;
+                } catch (IOException e) {
+                    throw new ExceptionInInitializerError(e);
+                }
+            } else {
+                return newFile;
+            }
+        }
+
+        //new File(path).mkdirs(); //Creating the folder if absent
+
+        return new File(path + File.separator + fileName);//return the default file path if the file is not an internal one
     }
 
-    private static File initializeFile(String fileName) {
-        File file = getPluginFile(fileName);
+    private static File initializeFile(String fileName, boolean internal) {
+        File file = getPluginFile(fileName, internal);
         return createFileIfAbsent(file);
     }
 
