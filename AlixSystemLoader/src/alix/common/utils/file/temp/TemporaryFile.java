@@ -30,14 +30,14 @@ public abstract class TemporaryFile extends FileManager {
         }
     }
 
-    @Override
+    /*@Override
     public void save(Map<?, ?> map) {
         try {
             super.save(map);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     @Override
     public void save0(Collection<?> values) {

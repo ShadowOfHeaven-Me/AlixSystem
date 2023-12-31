@@ -1,6 +1,6 @@
 package alix.common.scheduler.impl;
 
-import alix.common.CommonAlixMain;
+import alix.common.AlixCommonMain;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonUtils;
 
@@ -13,8 +13,8 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     protected final ScheduledThreadPoolExecutor poolExecutor;
 
     protected AbstractAlixScheduler() {
-        int parallelisms = Math.max(Runtime.getRuntime().availableProcessors() * 2, 4);
-        CommonAlixMain.logInfo("Async scheduler parallelisms: " + parallelisms);
+        int parallelisms = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+        AlixCommonMain.logInfo("Async scheduler parallelisms: " + parallelisms);
         this.forkJoinPool = new ForkJoinPool(parallelisms, ForkJoinPool.defaultForkJoinWorkerThreadFactory, (t, e) -> AlixCommonUtils.logException(e), false);
         this.poolExecutor = new ScheduledThreadPoolExecutor(1);
         this.poolExecutor.setRemoveOnCancelPolicy(true);

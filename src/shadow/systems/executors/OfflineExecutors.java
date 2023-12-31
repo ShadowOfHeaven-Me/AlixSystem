@@ -1,9 +1,11 @@
 package shadow.systems.executors;
 
 import alix.common.antibot.connection.ConnectionFilter;
+import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.multiengine.ban.BukkitBanList;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -13,9 +15,9 @@ import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
-import shadow.systems.executors.fastlogin.FastLoginExecutors;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
+import shadow.systems.login.result.ConnectionThreadManager;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
@@ -44,13 +46,15 @@ public final class OfflineExecutors extends UniversalExecutors {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
-        //Bukkit.broadcastMessage(e.getLoginResult().name());
-        if (e.getLoginResult() == AsyncPlayerPreLoginEvent.Result.KICK_BANNED) return;
         String name = e.getName();
         String address = e.getAddress().getHostAddress();
-
-        //ConnectionThreadManager.addJoinAttempt(name, address);
-        //AlixScheduler.async(() -> ConnectionThreadManager.addJoinAttempt(name, address));
+        //The FireWall Protection should handle unnecessary connections from being processed
+        if (antibotService) ConnectionThreadManager.addJoinAttempt(name, address);
+        //Intentional concurrent check, as the ban Maps are overridden to their
+        //concurrent equivalent in ReflectionUtils.replaceBansToConcurrent
+        //Also, do not change the login result to let the server show the actual ban message
+        //This logic might be changed in the future
+        if (BukkitBanList.IP.isBanned(address) || BukkitBanList.NAME.isBanned(name)) return;//prevent further processing, since #getLoginResult returns ALLOWED unless changed by another plugin
         if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
 
         if (name.startsWith("MC_STORM") || name.startsWith("BOT_")) {
@@ -96,11 +100,11 @@ public final class OfflineExecutors extends UniversalExecutors {
         //the join location is not in the captcha world
         if (!event.getSpawnLocation().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && !LoginVerdictManager.getExisting(event.getPlayer()).getVerdict().isAutoLogin()) {//the player needs to be verified
             OriginalLocationsManager.add(event.getPlayer(), event.getSpawnLocation());//remember the original spawn location
-            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world location as the spawn location (a faster on join alternative)
+            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world location as the spawn location (a faster onJoin teleport alternative)
         }
     }
 
-    //add the first in line channel handler interceptor after anyone else to prevent unnecessary packet processing
+    //add the first in processing, channel handler interceptor after anyone else to prevent unnecessary packet processing
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent e) {
         UnverifiedUser user = AlixHandler.handleOfflinePlayerJoin(e.getPlayer(), e.getJoinMessage());//the user can be null if the verification was not initialized - the user was premium or was auto-logged in by ip
@@ -142,8 +146,6 @@ public final class OfflineExecutors extends UniversalExecutors {
             String[] spletCommand = split(fullCommand, ' ');
             String commandLabel = spletCommand[0];
 
-            //The processing below is present in order to prevent
-            //the /changepassword command from being shown in the console
             if (AlixCommandManager.isPasswordChangeCommand(commandLabel)) {
                 e.setCancelled(true);
                 CommandManager.onPasswordChangeCommand(UserManager.getNullableUserOnline(player), Arrays.copyOfRange(spletCommand, 1, spletCommand.length));
@@ -173,6 +175,7 @@ public final class OfflineExecutors extends UniversalExecutors {
             AlixScheduler.async(() -> {
                 UserFileManager.onAsyncSave();
                 OriginalLocationsManager.onAsyncSave();
+                FireWallManager.onAsyncSave();
             });
         }
     }

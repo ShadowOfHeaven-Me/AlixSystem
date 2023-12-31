@@ -1,16 +1,22 @@
 package alix.common.data.security;
 
-import alix.common.utils.config.ConfigProvider;
 import alix.common.data.security.types.Sha256;
+import alix.common.utils.config.ConfigProvider;
+import alix.common.utils.other.throwable.AlixException;
+import org.bukkit.Chunk;
+import org.bukkit.block.Biome;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 
 public final class Hashing {
 
     public static final byte CONFIG_HASH_ID;
-    private static final HashingAlgorithm hash0, hash1, hash2, hash3, configHash;//Maybe an array of these hashes types in the future?
+    private static final HashingAlgorithm hash0, hash1, hash2, hash3, hash4, configHash;//Maybe an array of these hashes types in the future?
 
     public static HashingAlgorithm ofHashId(byte hashId) {
         switch (hashId) {
@@ -27,9 +33,9 @@ public final class Hashing {
         }
     }
 
-/*    public static HashingAlgorithm getConfigHashingAlgorithm() {
+    public static HashingAlgorithm getConfigHashingAlgorithm() {
         return configHash;
-    }*/
+    }
 
     private static final class Hash0 implements HashingAlgorithm {
 
@@ -46,7 +52,8 @@ public final class Hashing {
             int hashCode = 0;
             char[] a = s.toCharArray();
 
-            for (char c : a) hashCode = 31 * hashCode + c;//(hashCode << 5) - hashCode + c cannot be used since it could result in a little bit different generation
+            for (char c : a)
+                hashCode = 31 * hashCode + c;//(hashCode << 5) - hashCode + c cannot be used since it could result in a little bit different generation
 
             return Integer.toString(hashCode);
         }
@@ -54,16 +61,7 @@ public final class Hashing {
 
     private static final class Hash2 implements HashingAlgorithm {
 
-        private final MessageDigest md5;
-
-        public Hash2() {
-            //only get the hashing instance in a cracked server, no need for getting the algorithm in a premium server
-            try {
-                this.md5 = MessageDigest.getInstance("MD5");
-            } catch (NoSuchAlgorithmException e) {
-                throw new InternalError("Unable to find the MD5 hashing algorithm.", e);// Please change the 'password-hash-type' parameter in the config,yml file!", e);
-            }
-        }
+        private final MessageDigest md5 = getDigest("MD5");
 
         @Override
         public final String hash(String s) {//md5 encryption into an uuid
@@ -84,6 +82,28 @@ public final class Hashing {
             byte[] hashedBytes = sha256.hash(bytes);
 
             return uuidBitHash(hashedBytes);
+        }
+    }
+
+    private static final class Hash4 implements HashingAlgorithm {
+
+        @Override
+        public final String hash(String s) {
+            byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+            int mask = bytes.length - 1;
+            byte[] bytesToHash = new byte[16];
+
+            for (byte i = 0; i < 16; i++) bytesToHash[i] = bytes[i & mask];
+
+            return uuidBitHash(bytesToHash);
+        }
+    }
+
+    private static MessageDigest getDigest(String algorithm) {
+        try {
+            return MessageDigest.getInstance(algorithm);
+        } catch (NoSuchAlgorithmException e) {
+            throw new AlixException(e, "The algorithm " + algorithm + " is not available on your server instance!");// Please change the parameter 'password-hash-type' in your config.yml file to 1");
         }
     }
 
@@ -128,7 +148,7 @@ public final class Hashing {
         return ((int)(hilo >> 32)) ^ (int) hilo
         */
 
-        return String.valueOf(mostSigBits + leastSigBits + hashCodeIn64Bits);
+        return Long.toString(mostSigBits + leastSigBits + hashCodeIn64Bits);
     }
 
     static {
@@ -146,6 +166,7 @@ public final class Hashing {
         hash1 = new Hash1();
         hash2 = new Hash2();
         hash3 = new Hash3();
+        hash4 = new Hash4();
 
         configHash = ofHashId(CONFIG_HASH_ID);
         //}

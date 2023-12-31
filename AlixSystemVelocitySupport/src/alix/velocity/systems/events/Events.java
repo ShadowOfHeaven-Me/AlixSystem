@@ -1,22 +1,28 @@
 package alix.velocity.systems.events;
 
 import alix.common.antibot.connection.ConnectionFilter;
-import alix.common.scheduler.impl.AlixScheduler;
 import alix.velocity.utils.AlixHandler;
+import alix.velocity.utils.users.UnverifiedUser;
 import com.velocitypowered.api.event.PostOrder;
-import com.velocitypowered.api.event.ResultedEvent;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.LoginEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
-import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.event.player.ServerPreConnectEvent;
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import net.kyori.adventure.text.Component;
 
-public class Events {
+public final class Events {
 
     private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
     //private final ResultedEvent.ComponentResult DENIED = ResultedEvent.ComponentResult.denied(Component.text(""));
 
-    @Subscribe
+
+    @Subscribe(order = PostOrder.LAST)
+    public void onPreConnect(ServerPreConnectEvent event) {
+
+    }
+
+    @Subscribe(order = PostOrder.LAST)
     public void onPreLogin(PreLoginEvent event) {
         if (!event.getResult().isAllowed()) return;
 
@@ -33,7 +39,6 @@ public class Events {
 
     @Subscribe(order = PostOrder.LAST)
     public void onJoin(LoginEvent event) {
-
+        UnverifiedUser user = AlixHandler.handleOfflineUserJoin((ConnectedPlayer) event.getPlayer());
     }
-
 }

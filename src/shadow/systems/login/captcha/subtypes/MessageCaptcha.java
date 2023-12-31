@@ -14,7 +14,7 @@ public final class MessageCaptcha extends Captcha {
     }
 
     @Override
-    public Captcha inject(UnverifiedUser user) {
+    protected Captcha inject(UnverifiedUser user) {
         user.getPlayer().sendRawMessage("\n Captcha: §c" + captcha + "\n");
         return super.inject(user);
     }

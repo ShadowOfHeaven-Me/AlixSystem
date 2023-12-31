@@ -9,7 +9,7 @@ import shadow.Main;
 import shadow.systems.executors.captcha.CaptchaRespawnExecutors;
 import shadow.utils.world.generator.chunk.AlixChunkGenerator;
 
-public class AlixWorldGenerator extends WorldCreator {
+public final class AlixWorldGenerator extends WorldCreator {
 
     public AlixWorldGenerator(String name) {
         super(name);
@@ -45,9 +45,6 @@ public class AlixWorldGenerator extends WorldCreator {
         initCorrectRespawn(world);
     }
 
-    /**
-     * @noinspection unchecked
-     */
     private static void initCorrectRespawn(World world) {
         GameRule rule = GameRule.getByName("doImmediateRespawn");
         if (rule != null) world.setGameRule((GameRule<Boolean>) rule, true);

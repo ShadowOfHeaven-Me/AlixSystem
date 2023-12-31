@@ -2,7 +2,7 @@ package shadow.utils.objects.savable.data.gui.builders;
 
 import shadow.utils.objects.savable.data.gui.AlixGui;
 import alix.common.data.GuiType;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryType;

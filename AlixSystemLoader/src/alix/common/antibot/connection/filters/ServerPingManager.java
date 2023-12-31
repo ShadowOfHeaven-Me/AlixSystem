@@ -14,7 +14,7 @@ public final class ServerPingManager implements ConnectionFilter {
 
     public ServerPingManager() {
         short pingListSize = (short) Math.max(Math.min((short) ConfigProvider.config.getInt("ping-list-size"), 32767), 3);
-        this.list = new LoopList<>(new String[pingListSize]);
+        this.list = LoopList.newConcurrent(new String[pingListSize]);
         //Main.debug("Initializing ServerPingManager...");
     }
 
@@ -39,13 +39,13 @@ public final class ServerPingManager implements ConnectionFilter {
     }
 
     public String[] getCosmeticPings() {
-        short till = tillNull();
+        int till = tillNull();
         String[] existingPings = new String[till];
         System.arraycopy(list.getValues(), 0, existingPings, 0, till);
         return existingPings;
     }
 
-    private short tillNull() {
+    private int tillNull() {
         for (byte i = 0; i < list.size(); i++) if (list.get(i) == null) return i;
         return list.size();
     }

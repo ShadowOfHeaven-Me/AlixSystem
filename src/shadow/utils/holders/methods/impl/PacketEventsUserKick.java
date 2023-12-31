@@ -7,7 +7,7 @@ import shadow.utils.users.offline.UnverifiedUser;
 final class PacketEventsUserKick implements UserKickMethod {
 
     @Override
-    public void kickPlayerAsyncInvoked(UnverifiedUser user, String message) {
+    public void kickAsync(UnverifiedUser user, String message) {
         Channel channel = user.getPacketBlocker().getChannel();
         channel.close();
     }

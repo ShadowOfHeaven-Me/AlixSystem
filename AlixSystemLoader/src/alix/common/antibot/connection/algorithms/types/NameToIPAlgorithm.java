@@ -5,7 +5,7 @@ import alix.common.CommonAlixMain;
 import alix.common.antibot.connection.algorithms.ConnectionAlgorithm;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 
 import java.util.Map;

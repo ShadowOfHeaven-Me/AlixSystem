@@ -10,7 +10,7 @@ public interface VerificationCommand {
 
     void onCommand(UnverifiedUser user, Player player, String arg1);
 
-    VerificationCommand OF_CAPTCHA = PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncCaptchaCommand : CommandManager::onSyncCaptchaCommand;
+    VerificationCommand OF_CAPTCHA = CommandManager::onAsyncCaptchaCommand; //PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncCaptchaCommand : CommandManager::onSyncCaptchaCommand;
     VerificationCommand OF_REGISTER = PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncRegisterCommand : CommandManager::onSyncRegisterCommand;
     VerificationCommand OF_LOGIN = PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncLoginCommand : CommandManager::onSyncLoginCommand;
 }

@@ -2,21 +2,21 @@ package shadow.utils.holders;
 
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
+import net.minecraft.server.v1_14_R1.PacketPlayOutOpenBook;
+import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_14_R1.CraftServer;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import shadow.utils.holders.packet.constructors.OutMapPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.main.file.FileManager;
 import shadow.utils.users.offline.UnverifiedUser;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ReflectionUtils {
 
@@ -78,6 +79,8 @@ public final class ReflectionUtils {
         getProfileFromPlayerInfoDataMethod = method;
     }
 
+
+
     public static final Class<?> outHeldItemSlotPacketClass = nms2("network.protocol.game.PacketPlayOutHeldItemSlot");
 
     //public static final Class<?> inWindowClickPacketClass = nms2("network.protocol.game.PacketPlayInWindowClick");
@@ -127,6 +130,23 @@ public final class ReflectionUtils {
 
     public static final Class<?> outMapPacketClass = nms2("network.protocol.game.PacketPlayOutMap");
 
+
+
+    public static final Class<?> craftChatMessageClass = obc("util.CraftChatMessage");
+    public static final Method IChatComponentArrayFromStringMethod = getMethod(craftChatMessageClass, "fromString", String.class);
+    public static final Class<?> chatComponentTextClass = IChatComponentArrayFromStringMethod.getReturnType().getComponentType();
+
+    public static final Class<?> loginInStartPacketClass = nms2("network.protocol.login.PacketLoginInStart","network.protocol.login.ServerboundHelloPacket");
+
+    public static final Class<?> disconnectKickPlayPhasePacketClass = nms2("network.protocol.game.PacketPlayOutKickDisconnect", "network.protocol.common.ClientboundDisconnectPacket");
+    public static final Class<?> disconnectLoginPhasePacketClass = nms2("network.protocol.login.PacketLoginOutDisconnect", "network.protocol.login.ClientboundLoginDisconnectPacket");
+
+
+    /*public static final Class<?> enumHandClass = nms2("world.InteractionHand", "EnumHand");
+    public static final Enum<?> enumMainHand = (Enum<?>) enumHandClass.getEnumConstants()[0];
+    public static final Class<?> openBookPacketClass = nms2("network.protocol.game.ClientboundOpenBookPacket","network.protocol.game.PacketPlayOutOpenBook");//the 2nd one isn't an actual packet class name, it's just used for the nms2 method to work properly
+    public static final Constructor<?> bookPacketConstructor = getConstructor(openBookPacketClass, enumHandClass);*/
+
     /*
     public static final Class<?> outDestroyEntityPacketClass = nms2("network.protocol.game.PacketPlayOutEntityDestroy");
     public static final Constructor<?> outDestroyEntityConstructor = getConstructor(outDestroyEntityPacketClass, int[].class);
@@ -143,9 +163,30 @@ public final class ReflectionUtils {
     public static final Map<String, Command> serverKnownCommands = getKnownCommands();
     public static final YamlConfiguration serverConfiguration = getServerConfiguration();
 
-/*    public static void sendMap(Channel channel, byte[] toDrawPixels, int mapViewId) {
+    public static void replaceBansToConcurrent() {
+        replaceToConcurrent0(Bukkit.getBanList(BanList.Type.NAME));
+        replaceToConcurrent0(Bukkit.getBanList(BanList.Type.IP));
+    }
 
-    }*/
+    private static void replaceToConcurrent0(BanList bukkitList) {
+        try {
+            Field f = bukkitList.getClass().getDeclaredField("list");
+            f.setAccessible(true);
+            Object nmsList = f.get(bukkitList);
+            Class<?> nmsListClazz = nms2("server.players.JsonList");
+            for (Field f2 : nmsListClazz.getDeclaredFields()) {
+                if (Map.class.isAssignableFrom(f2.getType())) {
+                    f2.setAccessible(true);
+                    Map<?, ?> hashMap = (Map<?, ?>) f2.get(nmsList);
+                    f2.set(nmsList, new ConcurrentHashMap<>(hashMap));
+                    return;
+                }
+            }
+            throw new RuntimeException("Not found: " + Arrays.toString(nmsListClazz.getDeclaredFields()));
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     public static Object createMaxedEffectPacket(int entityId, Object mobEffectList) {
         try {
@@ -204,7 +245,7 @@ public final class ReflectionUtils {
         }
     }
 
-    public static void sendLoginEffectPackets(int entityId, Channel channel) {
+    public static void sendLoginEffectPacket(int entityId, Channel channel) {
 /*        int slownessEffectId = 2;
 
         Object slownessPacket = createMaxedEffectPacket(entityId, slownessEffectId);
@@ -400,11 +441,10 @@ public final class ReflectionUtils {
     }
 
     public static Class<?> nms2(String name) {
-        if (protocolVersion) {
-            return forName(String.format("net.minecraft.%s", name));
-        } else {
-            String[] splitName = name.split("\\.");
-            return forName(String.format("net.minecraft.server.%s.%s", serverVersion2, splitName[splitName.length - 1]));
+        try {
+            return nms2WithThrowable(name);
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError(e);
         }
     }
 

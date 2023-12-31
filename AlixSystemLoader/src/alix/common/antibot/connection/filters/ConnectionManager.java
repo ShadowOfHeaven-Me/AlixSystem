@@ -4,7 +4,6 @@ import alix.common.antibot.connection.ConnectionFilter;
 import alix.common.messages.Messages;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.collections.list.LoopList;
-import com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent;
 
 public final class ConnectionManager implements ConnectionFilter {
 
@@ -13,7 +12,7 @@ public final class ConnectionManager implements ConnectionFilter {
 
     public ConnectionManager() {
         short maxSize = (short) Math.max(Math.min((short) ConfigProvider.config.getInt("connection-list-size"), 32767), 3);
-        this.list = new LoopList<>(new String[maxSize]);
+        this.list = LoopList.newConcurrent(new String[maxSize]);
     }
 
     @Override

@@ -5,6 +5,7 @@ import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.i18n.HttpsHandler;
+import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -58,7 +59,7 @@ public final class AlixUtils {
             kickOnIncorrectPassword, requireCaptchaVerification, kickOnIncorrectCaptcha,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, isCaptchaVerificationMapBased, repeatedVerificationReminderMessages,
-            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands;//renderFancyCaptchaDigits
+            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
 
     private static final String
             tooLongMessage = Messages.get("password-invalid-too-long"),
@@ -167,6 +168,7 @@ public final class AlixUtils {
         verificationReminderDelay = config.getLong("verification-reminder-message-delay");
         repeatedVerificationReminderMessages = verificationReminderDelay > 0;
         isOnlineModeEnabled = Bukkit.getServer().getOnlineMode();
+        antibotService = config.getBoolean("antibot-service");
         isOfflineExecutorRegistered = config.getBoolean("offline-login-requirement") && !isOnlineModeEnabled;
         kickOnIncorrectPassword = config.getBoolean("kick-on-incorrect-password");
         playerIPAutoLogin = config.getBoolean("auto-login");
@@ -504,18 +506,15 @@ public final class AlixUtils {
         char[] b = text.toCharArray();
         for (char c : b) {
             switch (c) {
-                //case 32:
                 case 58:
                 case 59:
-                    //case 124://<- not quite necessary but whatever
                     return AlixFormatter.format(invalidCharacterMessage, c);
                 default:
-                    if (c < 35 || c > 382 || c > 90 && !Character.isLetter(c)) {
+                    if (c < 35 || c > 382 || c > 90 && !Character.isLetter(c))
                         return AlixFormatter.format(invalidCharacterMessage, c);
-                    }
             }
         }
-        return null; //Text is valid
+        return null; //The given text is valid
     }
 
     public static boolean isPasswordInvalid(String text) {
@@ -529,12 +528,11 @@ public final class AlixUtils {
                 case 59:
                     return true;
                 default:
-                    if (c < 35 || c > 382 || c > 90 && !Character.isLetter(c)) {
+                    if (c < 35 || c > 382 || c > 90 && !Character.isLetter(c))
                         return true;
-                    }
             }
         }
-        return false; //Text is valid
+        return false; //The given text is valid
     }
 
     public static <T> boolean contains(List<T> list, T value) {
@@ -641,14 +639,15 @@ public final class AlixUtils {
 
     public static void ban(String nameOrIp, String reason, Date date, boolean ip, String byWho) {
         reason = translateColors(reason);
-        Bukkit.getBanList(ip ? BanList.Type.IP : BanList.Type.NAME).addBan(nameOrIp, reason, date, byWho);
+
+        BukkitBanList.get(ip).ban(nameOrIp, reason, date, byWho);
         if (ip) return;
         Player p = Bukkit.getPlayer(nameOrIp);
         if (p != null) p.kickPlayer(reason);
     }
 
     public static void unban(String name, boolean ip) {
-        Bukkit.getBanList(ip ? BanList.Type.IP : BanList.Type.NAME).pardon(name);
+        BukkitBanList.get(ip).unban(name);
     }
 
     public static boolean isAlreadyOnline(String name) {
@@ -844,12 +843,11 @@ public final class AlixUtils {
 
     @AlixIntrinsified
     public static boolean contains(char[] a, String regex) {
-        final char[] b = regex.toCharArray();
-        final int l = b.length;
+        char[] b = regex.toCharArray();
         int i = 0;
         for (char c : a) {
             if (c == b[i++]) {
-                if (i == l) return true;
+                if (i == b.length) return true;
             } else i = 0;
         }
         return false;

@@ -4,14 +4,14 @@ import alix.common.messages.Messages;
 import alix.common.utils.formatter.AlixFormatter;
 import org.bukkit.entity.Player;
 import shadow.Main;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.tasks.SchedulerTask;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 
 import java.util.concurrent.TimeUnit;
 
-public class TpaRequest { //extends AlixIdentifiable {
+public final class TpaRequest { //extends AlixIdentifiable {
 
     public static final long tpaAutoExpire = Main.config.getLong("tpa-auto-expire");
     private static final boolean runAutoExpireTimer = tpaAutoExpire > 0;

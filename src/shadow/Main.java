@@ -1,12 +1,17 @@
 package shadow;
 
+import alix.common.antibot.firewall.netty.NettyFireWallInitializer;
 import alix.common.data.security.Hashing;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.environment.ServerEnvironment;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.update.UpdateChecker;
 import alix.pluginloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Hex;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import shadow.systems.commands.CommandManager;
@@ -17,14 +22,18 @@ import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.systems.metrics.Metrics;
 import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
+import shadow.utils.main.file.managers.OriginalLocationsManager;
+import shadow.utils.main.paper.PaperAccess;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
 import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static shadow.utils.main.AlixUtils.anvilPasswordGui;
@@ -40,6 +49,20 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
+    //[+] Added bot attack detection algorithms
+    //[+] Added a fast-blocking firewall system
+    //[+] Added a big warning message if the firewall cannot be initialized
+    //[+] Improved the AlixConsoleFilter
+    //[+] Now commands can also have their fallback prefix disabled by putting 2 Hashtags ("##") in front of their line
+    //[*] Fixed players not being teleported to their original location at ip autologin
+    //[*] "override-existing-commands" will now be false by default
+    //[*] Fixed commands not registering or unregistering
+    //[*] Halved the amount of the async scheduler parallelisms
+    //[+] Added the forgotten custom quit console messages
+    //[*] Fixed temporary IPs not being removed correctly
+    //[*] Fixed captcha sometimes not being shown
+    //[*] Made kicks fully asynchronous
+    //[*] Due to various complications, the original location will no longer be removed at a successful teleport back
 
 
     //TODO: Check for packets instead of relaying on fixed scheduler delay on captcha map sending
@@ -95,6 +118,8 @@ public final class Main implements LoaderBootstrap {
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
         config = (YamlConfiguration) plugin.getConfig();
         pm = Bukkit.getPluginManager();
+        ReflectionUtils.replaceBansToConcurrent();
+        //NettyFireWallInitializer.initialize();
         AlixHandler.kickAll("Reload");
     }
 
@@ -104,14 +129,13 @@ public final class Main implements LoaderBootstrap {
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
         //AlixWorld.init();
-        Captcha.pregenerate();
+        Captcha.pregenerate();//will not pregenerate the captcha itself if disabled, but needs to be invoked for the CountdownTask values to pregenerate
         FileManager.loadFiles();
-        AlixHandler.initExecutors(pm);
         AlixCommandManager.init();
         //Dependencies.initAdditional();
         VerificationReminder.init();
         if (anvilPasswordGui) AnvilPasswordBuilder.init();
-        AlixScheduler.sync(this::setUp);
+        AlixScheduler.runLaterSync(this::setUp, 0, TimeUnit.MILLISECONDS);
         this.metrics = Metrics.createMetrics();
     }
 
@@ -124,6 +148,7 @@ public final class Main implements LoaderBootstrap {
         AlixScheduler.shutdown();
         if (this.metrics != null) this.metrics.shutdown();
         AlixThread.shutdownAllAlixThreads();
+        if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
         logConsoleInfo(en ? "AlixSystem has been disabled." : "AlixSystem zostało wyłączone.");
     }
 
@@ -155,9 +180,9 @@ public final class Main implements LoaderBootstrap {
         en = AlixUtils.isPluginLanguageEnglish;
         mainServerThread = Thread.currentThread();
         //AlixHandler.kickAll("Reload");
-        UpdateChecker.checkForUpdates();
         PremiumAutoIn.checkForInit();
         CommandManager.register();
+        UpdateChecker.checkForUpdates();
         if (requireCaptchaVerification) Captcha.sendInitMessage();
         PacketBlocker.init(); //load the class and send the init message
         //ConfigUpdater.checkForUpdates(config);
@@ -174,6 +199,7 @@ public final class Main implements LoaderBootstrap {
         }
         String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
+        AlixHandler.initExecutors(pm);
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");
     }
 

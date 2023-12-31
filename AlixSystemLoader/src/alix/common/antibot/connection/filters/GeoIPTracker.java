@@ -1,6 +1,5 @@
 package alix.common.antibot.connection.filters;
 
-import alix.common.CommonAlixMain;
 import alix.common.antibot.connection.ConnectionFilter;
 import alix.common.messages.Messages;
 import alix.common.utils.config.ConfigParams;

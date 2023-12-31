@@ -1,6 +1,7 @@
 package shadow.utils.world;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.lang.ref.Reference;

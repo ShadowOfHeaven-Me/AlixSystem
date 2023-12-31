@@ -1,8 +1,8 @@
 package shadow.systems.commands;
 
 import alix.common.messages.Messages;
-import alix.common.scheduler.impl.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
+import alix.common.utils.multiengine.ban.BukkitBanList;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
@@ -20,6 +20,8 @@ import shadow.utils.command.managers.PersonalMessageManager;
 import shadow.utils.command.tpa.TpaManager;
 import shadow.utils.command.tpa.TpaRequest;
 import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.holders.methods.MethodProvider;
+import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.main.file.managers.UserFileManager;
@@ -281,8 +283,10 @@ public final class CommandManager {
             return;
         }*/
 
-        AlixCommand alix = new AlixCommand(commandLabel, permission, executor, completer);//creates a prefix fallback command
-        ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);//registers it directly into the map
+        if (info.isFallbackRegistered()) {
+            AlixCommand alix = new AlixCommand(commandLabel, permission, executor, completer);//creates a prefix fallback command
+            ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);//registers it directly into the map
+        }
     }
 
     //throw new RuntimeException("The given command " + commandLabel + " does not exist and therefore cannot be registered!");
@@ -380,7 +384,7 @@ public final class CommandManager {
             registerCommand("deop", new OperatorUnsetCommand(), new OperatorCommandTabCompleter());
             TabCompleter warpCommandTabCompleter = new WarpCommandTabCompleter();
             registerCommand("warp", new WarpTeleportCommand(), warpCommandTabCompleter);
-            registerCommand("addwarp", new WaroCreateCommand(), "alixsystem.admin.warp");
+            registerCommand("addwarp", new WarpCreateCommand(), "alixsystem.admin.warp");
             registerCommand("removewarp", new WarpRemoveCommand(), warpCommandTabCompleter, "alixsystem.admin.warp");
             registerCommand("removehome", new HomeRemoveCommand(), "alixsystem.home");
             registerCommand("sethome", new HomeSetCommand(), "alixsystem.home");
@@ -880,7 +884,7 @@ public final class CommandManager {
         }
     }
 
-    private static final class WaroCreateCommand implements CommandExecutor {
+    private static final class WarpCreateCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -1316,7 +1320,7 @@ public final class CommandManager {
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             if (args.length == 1) {
                 String arg1 = args[0];
-                if (!Bukkit.getBanList(BanList.Type.NAME).isBanned(arg1)) {
+                if (!BukkitBanList.NAME.isBanned(arg1)) {
                     sendMessage(sender, playerNotBanned, arg1);
                     return false;
                 }
@@ -1357,19 +1361,21 @@ public final class CommandManager {
     }
 
     //private static final boolean authCmdAsyncInvoked = PacketBlocker.serverboundNameVersion;
+    private static final Object incorrectCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(incorrectCaptcha);
 
-    public static void onSyncCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
+    /*public static void onSyncCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
         if (user.isCaptchaCorrect(captcha)) {
             user.completeCaptcha();
             sendMessage(sender, captchaComplete);
             return;
         }
         if (kickOnIncorrectCaptcha) {
-            sender.kickPlayer(incorrectCaptcha);
+            MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
+            //sender.kickPlayer(incorrectCaptcha);
             return;
         }
         sendMessage(sender, incorrectCaptcha);
-    }
+    }*/
 
     public static void onAsyncCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
         if (user.isCaptchaCorrect(captcha)) {
@@ -1378,7 +1384,8 @@ public final class CommandManager {
             return;
         }
         if (kickOnIncorrectCaptcha) {
-            AlixScheduler.sync(() -> sender.kickPlayer(incorrectCaptcha));
+            MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
+            //AlixScheduler.sync(() -> sender.kickPlayer(incorrectCaptcha));
             return;
         }
         sendMessage(sender, incorrectCaptcha);
@@ -1425,13 +1432,14 @@ public final class CommandManager {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-            //The OfflineExecutors handle the processing of this command.
+            //The AlixDuplexHandler handle the processing of this command.
             //Only the console could've made the code here executed
-            //or it was executed with /alixsystem:changepassword
             sender.sendMessage(commandUnreachable);
             return false;
         }
     }
+
+    public static final Object incorrectPasswordKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(incorrectPassword);
 
     public static void onSyncLoginCommand(UnverifiedUser user, Player sender, String password) {
         if (!user.hasCompletedCaptcha()) {
@@ -1448,7 +1456,8 @@ public final class CommandManager {
             return;
         }
         if (kickOnIncorrectPassword) {
-            sender.kickPlayer(incorrectPassword);
+            MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
+            //sender.kickPlayer(incorrectPassword);
             return;
         }
         sendMessage(sender, incorrectPassword);
@@ -1469,7 +1478,8 @@ public final class CommandManager {
             return;
         }
         if (kickOnIncorrectPassword) {
-            AlixScheduler.sync(() -> sender.kickPlayer(incorrectPassword));
+            MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
+            //AlixScheduler.sync(() -> sender.kickPlayer(incorrectPassword));
             return;
         }
         sendMessage(sender, incorrectPassword);

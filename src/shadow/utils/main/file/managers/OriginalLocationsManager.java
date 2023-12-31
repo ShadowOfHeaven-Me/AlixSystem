@@ -18,19 +18,18 @@ public final class OriginalLocationsManager {
     }*/
 
     public static void teleportBack(Player player, boolean warningIfAbsent) {
-        Location originalLoc = OriginalLocationsManager.remove(player);
+        Location originalLoc = file.getMap().get(player.getUniqueId());
         if (originalLoc != null) player.teleport(originalLoc);
-        else if (warningIfAbsent)
-            Main.logWarning("Original location was null! - The Player was in the captcha world unsupervised!");
+        else if (warningIfAbsent) Main.logWarning("Original location was null! - The Player was in the captcha world at verification!");
     }
 
     public static void add(Player player, Location originalLocation) {
         file.getMap().put(player.getUniqueId(), originalLocation);
     }
 
-    public static Location remove(Player player) {
+/*    public static Location remove(Player player) {
         return file.getMap().remove(player.getUniqueId());
-    }
+    }*/
 
     public static void initialize() throws IOException {
         file.load();

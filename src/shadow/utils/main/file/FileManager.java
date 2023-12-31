@@ -3,6 +3,7 @@ package shadow.utils.main.file;
 import alix.common.messages.Messages;
 import alix.loaders.bukkit.BukkitAlixMain;
 import shadow.Main;
+import alix.common.antibot.firewall.FireWallManager;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.SpawnFileManager;
@@ -11,7 +12,6 @@ import shadow.utils.main.file.managers.WarpFileManager;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,9 +117,10 @@ public abstract class FileManager {
         try {
             Messages.init();
             UserFileManager.initialize();
+            OriginalLocationsManager.initialize();
+            FireWallManager.initialize();
             WarpFileManager.initialize();
             SpawnFileManager.initialize();
-            OriginalLocationsManager.initialize();
             Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded!" : "Poprawnie wczytano wszystkie pliki!");
         } catch (IOException e) {
             Main.logError(AlixUtils.isPluginLanguageEnglish ? "An error occurred whilst trying to load the " + e.getMessage() + " file!"
@@ -131,6 +132,7 @@ public abstract class FileManager {
     public static void saveFiles() {
         UserFileManager.fastSave();
         OriginalLocationsManager.fastSave();
+        FireWallManager.fastSave();
         WarpFileManager.save();
         SpawnFileManager.save();
     }

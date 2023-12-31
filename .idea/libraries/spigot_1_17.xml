@@ -6,6 +6,8 @@
     <JAVADOC />
     <SOURCES>
       <root url="jar://$USER_HOME$/Downloads/spigot 1.17.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/spigot 1.17.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/spigot 1.17.jar!/" />
     </SOURCES>
   </library>
 </component>

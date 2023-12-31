@@ -23,8 +23,10 @@ public final class CommandsFile extends FileManager {
 
         String cmd = a[0];
         boolean registered = cmd.charAt(0) != '#';
-
         if (!registered) cmd = cmd.substring(1);
+
+        boolean fallbackRegistered = cmd.length() != 0 && cmd.charAt(0) != '#';
+        if (!fallbackRegistered) cmd = cmd.substring(1);
 
         String aliasLine = a[1];
         String[] aliases = aliasLine.equals("-") ? null : aliasLine.split(",");
@@ -36,7 +38,7 @@ public final class CommandsFile extends FileManager {
                 if (aliases != null) this.loginCommands.addAll(Arrays.asList(aliases));
         }
 
-        AlixCommandInfo alix = new AlixCommandInfo(cmd, aliases, registered);
+        AlixCommandInfo alix = new AlixCommandInfo(cmd, aliases, registered, fallbackRegistered);
         this.alixCommands.put(cmd, alix);
 
         if (aliases != null)

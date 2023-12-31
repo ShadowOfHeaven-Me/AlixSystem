@@ -27,8 +27,8 @@ public final class AlixConsoleFilterHolder implements Filter {
 
     private static final class ConsoleFilter {
 
-        private final char[] joinRegex = "logged in with entity id".toCharArray();
-        private final char[] joinRegex2 = " lost connection".toCharArray();
+        private final char[] regex = "logged in with entity id".toCharArray();
+        private final char[] regex2 = "lost connection".toCharArray();
 
         private Result filter(LogEvent e) {
             String message = e.getMessage().getFormattedMessage();
@@ -37,23 +37,23 @@ public final class AlixConsoleFilterHolder implements Filter {
                 return Result.ACCEPT;
             }*/
             if (AlixUtils.hideFailedJoinAttempts && (AlixUtils.startsWith(message, "UUID of player",
-                    "Disconnecting com.mojang.authlib.GameProfile", "com.mojang.authlib.GameProfile", "Disconnecting") || this.isLostCon0(message)))
+                    "Disconnecting com.mojang.authlib.GameProfile", "com.mojang.authlib.GameProfile", "Disconnecting","handleDisconnection()") || this.isLostCon0(message)))
                 return Result.DENY;
             if (AlixUtils.alixJoinLog && Thread.currentThread() == Main.mainServerThread) {
                 char[] msg = message.toCharArray();
                 //AlixScheduler.async(() -> Main.logError("mmmmm '" + new String(msg) + "' - " + Main.mainServerThread.getName()));
                 for (int i = 0; i < msg.length; i++)
-                    if (msg[i] == ' ') return isRegexPresent(msg, joinRegex, i) ? Result.DENY : Result.NEUTRAL;
+                    if (msg[i] == ' ') return isRegexPresent(msg, regex, i) ? Result.DENY : Result.NEUTRAL;
             }
             return Result.NEUTRAL;
         }
 
-        //Checks for the left message
+        //Checks for the connection lost messages
         //_ShadowOfHeaven_ (/IP) lost connection: We're analysing your connection. You may now join the server.
         private boolean isLostCon0(String message) {
             char[] chars = message.toCharArray();
             for (int i = 0; i < chars.length; i++)
-                if (chars[i] == ')') return isRegexPresent(chars, joinRegex2, i);
+                if (chars[i] == ' ') return isRegexPresent(chars, regex2, i);
             return false;
         }
 
@@ -64,7 +64,7 @@ public final class AlixConsoleFilterHolder implements Filter {
         private boolean isRegexPresent(char[] msg, char[] regex, int i) {
             if (msg.length - i < regex.length)
                 return false;//the message left is shorter than the regex - abort
-            i++;//adding 1 to the message index to get the possible start of the regex, since the current index is the space character
+            i++;//adding 1 to the message index to get the possible start of the regex, since the current index is the character before the regex
             for (int j = 0; j < regex.length; j++)
                 if (msg[i + j] != regex[j])
                     return false;//at least one of the characters was different that the regex - abort

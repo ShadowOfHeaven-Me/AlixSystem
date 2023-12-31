@@ -55,6 +55,10 @@ public final class User {// implements ObjectSerializable {
         return data.getName();
     }
 
+/*    public PersistentUserData getData() {
+        return data;
+    }*/
+
     public final boolean canBypassChatStatus() {
         return canBypassChatStatus;
     }
@@ -184,6 +188,10 @@ public final class User {// implements ObjectSerializable {
 
     public void quit() {
         //if (duplexHandler != null) this.duplexHandler.stop();
+    }
+
+    public String getIPAddress() {
+        return data.getSavedIP();
     }
 
 /*    @Override

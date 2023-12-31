@@ -1,8 +1,7 @@
 package alix.loaders.bukkit;
 
-import alix.common.CommonAlixMain;
+import alix.common.AlixMain;
 import alix.common.logger.AlixLoggerProvider;
-import alix.common.logger.plugin.AlixPaperLogger;
 import alix.common.logger.LoggerAdapter;
 import alix.common.update.FileUpdater;
 import alix.pluginloader.JarInJarClassLoader;
@@ -13,14 +12,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.logging.Logger;
 
-public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvider {
+public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvider, AlixMain {
 
     public static BukkitAlixMain instance;
     private static final String JAR_NAME = "AlixSystem.jarinjar";
     private static final String BOOTSTRAP_CLASS = "shadow.Main";
-    private final LoaderBootstrap plugin;
+    private final LoaderBootstrap bootstrap;
     private final JarInJarClassLoader loader;
     private final LoggerAdapter loggerAdapter;
     private final Logger logger;
@@ -28,15 +28,15 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
 
     public BukkitAlixMain() {
         instance = this;
-        CommonAlixMain.loggerManager = this;
+        //CommonAlixMain.loggerManager = this;
 
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
-        this.plugin = loader.instantiatePlugin(BOOTSTRAP_CLASS, JavaPlugin.class, this);
+        this.bootstrap = loader.instantiatePlugin(BOOTSTRAP_CLASS, JavaPlugin.class, this);
         //this.alixLogger = new AlixPluginLogger();
         this.logger = AlixLoggerProvider.createServerAdequateLogger();
         this.loggerAdapter = LoggerAdapter.createAdapter(this.getLogger());
 
-        CommonAlixMain.plugin = this.plugin;
+        //CommonAlixMain.bootstrap = this.plugin;
 
         saveDefaultConfig();
 
@@ -99,18 +99,18 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
 
     @Override
     public void onLoad() {
-        this.plugin.onLoad();
+        this.bootstrap.onLoad();
     }
 
     @Override
     public void onEnable() {
-        this.plugin.onEnable();
+        this.bootstrap.onEnable();
     }
 
     @Override
     public void onDisable() {
         try {
-            this.plugin.onDisable();
+            this.bootstrap.onDisable();
         } finally {
             try {
                 this.loader.close();
@@ -135,6 +135,16 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     @Override
     public Logger getLogger() {
         return this.logger;
+    }
+
+    @Override
+    public Path getDataFolderPath() {
+        return getDataFolder().toPath();
+    }
+
+    @Override
+    public LoaderBootstrap getBootstrap() {
+        return bootstrap;
     }
 
     /*    private static final class AlixPluginLogger extends PluginLogger {

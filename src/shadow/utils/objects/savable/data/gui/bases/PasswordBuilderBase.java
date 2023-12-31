@@ -1,5 +1,7 @@
 package shadow.utils.objects.savable.data.gui.bases;
 
+import shadow.systems.commands.CommandManager;
+import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.objects.savable.data.gui.AlixGui;
 import alix.common.messages.Messages;
 import alix.common.messages.AlixMessage;
@@ -28,7 +30,7 @@ public abstract class PasswordBuilderBase implements AlixGui {
                 user.logInSync();
                 sendMessage(user.getPlayer(), loginSuccess);
                 return;
-            } else if (kickOnIncorrectPassword) user.getPlayer().kickPlayer(incorrectPassword);
+            } else if (kickOnIncorrectPassword) MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
             return;
         }
         user.registerSync(pin);

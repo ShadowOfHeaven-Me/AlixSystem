@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 import shadow.Main;
+import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.bases.PasswordBuilderBase;
 import shadow.utils.users.offline.UnverifiedUser;
@@ -75,7 +76,8 @@ public final class SimplePinBuilder extends PasswordBuilderBase {
         }
 
         if (slot == ACTION_LEAVE) {
-            player.kickPlayer(pinLeaveFeedback);
+            MethodProvider.kickAsync(user, pinLeaveFeedbackKickPacket);
+            //player.kickPlayer(pinLeaveFeedback);
             return false;
         }
 

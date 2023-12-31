@@ -4,7 +4,7 @@ import alix.common.messages.Messages;
 import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import shadow.Main;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import shadow.utils.objects.packet.check.ping.PingCheck;
 
 import java.util.concurrent.TimeUnit;

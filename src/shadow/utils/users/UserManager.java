@@ -1,5 +1,6 @@
 package shadow.utils.users;
 
+import alix.common.antibot.connection.filters.GeoIPTracker;
 import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import shadow.systems.login.result.LoginInfo;
@@ -72,14 +73,18 @@ public final class UserManager {
         }
     }
 
-    public static void sendPlayerInfoToAll(String name) {
+/*    public static void sendPlayerInfoToAll(String name) {
         //AlixScheduler.async(() -> users.forEach((i, u) -> u.duplexHandler.sendOf(name)));
+    }*/
+
+    public static User remove(Player p) {
+        return users.remove(p.getUniqueId());
     }
 
-    public static void remove(Player p) {
+/*    public static void remove(Player p) {
         User user = users.remove(p.getUniqueId());
         if (user != null) user.quit();
-    }
+    }*/
 
     public static User getVerifiedUser(Player p) {
         User u = getNullableUserOnline(p);

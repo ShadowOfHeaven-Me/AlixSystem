@@ -1,6 +1,6 @@
 package alix.common.utils.config;
 
-import alix.common.utils.config.bukkit.BukkitConfigImpl;
+import alix.common.utils.AlixCommonHandler;
 
 public interface ConfigProvider {
 
@@ -10,6 +10,6 @@ public interface ConfigProvider {
 
     String getString(String s);
 
-    ConfigProvider config = new BukkitConfigImpl();
 
+    ConfigProvider config = AlixCommonHandler.createConfigProviderImpl();
 }

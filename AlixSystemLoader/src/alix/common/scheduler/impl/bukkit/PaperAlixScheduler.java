@@ -93,14 +93,12 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
             }
         }
 
-
-
         private void executeAllAndClear() {
             LinkedAlixTask task = this.first;//get the current run
 
             if (task == null) return;
 
-            synchronized (this) {//this is fine since the tasks are executed at the end of a tick and the operations are lightweight
+            synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are lightweight
                 this.first = this.last = null;
             }
 

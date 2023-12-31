@@ -1,5 +1,7 @@
 package alix.common.update;
 
+import alix.common.AlixCommonMain;
+import alix.common.environment.ServerEnvironment;
 import alix.common.utils.file.FileManager;
 import alix.loaders.bukkit.BukkitAlixMain;
 
@@ -8,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.List;
 
 public final class FileUpdater {
@@ -15,35 +18,43 @@ public final class FileUpdater {
     private static final char DEFAULT_SPLITERATOR = ':';
 
     public static void updateFiles() {
-        //messages.txt
+        switch (ServerEnvironment.getEnvironment()) {
+            case SPIGOT:
+            case PAPER:
+                //messages.txt
 
-        File messagesFile = updateFile("messages.txt");
-        MessagesFileUpdater.updateFormatting(messagesFile);
+                File messagesFile = updateFile("messages.txt");
+                MessagesFileUpdater.updateFormatting(messagesFile);
 
-        //commands.txt
+                //commands.txt
 
-        updateFile("commands.txt", true);
+                updateFile("commands.txt", Collections.singletonList(Validation.VALIDATE_HASHTAG_START));
 
-        //config.yml
+                //config.yml
 
-        updateFile("config.yml");
+                updateFile("config.yml", Collections.singletonList(Validation.VALIDATE_TRIMMED_DASH_START));
+                break;
+            case VELOCITY:
+                updateFile("config.yml");//, Collections.singletonList(Validation.VALIDATE_TRIMMED_DASH_START));
+                break;
+        }
     }
 
     private static File updateFile(String name) {
-        return updateFile(name, false);
+        return updateFile(name, Collections.EMPTY_LIST);
     }
 
     /**
      * Updates the file - Adds the missing lines and removes the outdated ones, by comparing it to the file compiled with the plugin
      *
-     * @param name                 The plugin's file name
-     * @param validateHashtagLines Determines whether lines starting with a hashtag ('#') should be considered
-     *                             as fully valid and not missing
-     *                             <p>
-     *                             Returns: The update file's version
+     * @param name     The plugin's file name
+     * @param validate Determines when the lines should still be considered valid,
+     *                 and not outdated, thus suggesting a config and not being overridden
+     *                 <p>
+     *                 Returns: The update file's version
      */
 
-    private static File updateFile(String name, boolean validateHashtagLines) {
+    private static File updateFile(String name, List<Validation> validate) {
         String[] splitName = name.split("\\.");
 
         if (splitName.length != 2)
@@ -65,7 +76,7 @@ public final class FileUpdater {
 
         File newestFile = getWithJarCompiledFile(tempFile, name);//temp file is the exact same thing as the 'newest file'
 
-        ensureUpdated(file, newestFile, DEFAULT_SPLITERATOR, validateHashtagLines);
+        ensureUpdated(file, newestFile, DEFAULT_SPLITERATOR, validate);
 
         tempFile.delete();
         return file;
@@ -73,7 +84,7 @@ public final class FileUpdater {
 
     private static File getWithJarCompiledFile(File copyInto, String s) {
         //tmpdir - tf is this
-        try (InputStream in = BukkitAlixMain.class.getClassLoader().getResourceAsStream(s)) {
+        try (InputStream in = AlixCommonMain.MAIN_CLASS_INSTANCE.getClass().getClassLoader().getResourceAsStream(s)) {
             Files.copy(in, copyInto.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return copyInto;
         } catch (IOException e) {
@@ -81,12 +92,18 @@ public final class FileUpdater {
         }
     }
 
-    private static File getPluginFile(String fileName) {
+/*    private static File getPluginFile(String fileName) {
         String path = BukkitAlixMain.instance.getDataFolder().getAbsolutePath();
 
         new File(path).mkdirs(); //Creating the folder if absent
 
         return new File(path + File.separator + fileName);
+    }*/
+
+    private enum Validation {
+
+        VALIDATE_HASHTAG_START, VALIDATE_TRIMMED_DASH_START
+
     }
 
     /*
@@ -164,9 +181,12 @@ public final class FileUpdater {
      *                     is customizable by the user (usually it's ':', like in the config.yml file)
      */
 
-    public static void ensureUpdated(File existingFile, File newestFile, char spliterator, boolean isHashtagStartValid) {
+    public static void ensureUpdated(File existingFile, File newestFile, char spliterator, List<Validation> validate) {
         List<String> existingLines = FileManager.getLines(existingFile);
         List<String> newestLines = FileManager.getLines(newestFile);
+
+        boolean isHashtagStartValid = validate.contains(Validation.VALIDATE_HASHTAG_START);
+        boolean isTrimmedDashStartValid = validate.contains(Validation.VALIDATE_TRIMMED_DASH_START);
 
         //Main.logInfo("Size 1: " + existingLines.size() + " Size 2: " + newestLines.size());
 
@@ -181,6 +201,13 @@ public final class FileUpdater {
                 String existingLineStart = existingLine.split(String.valueOf(spliterator))[0];
                 String newestLineStart = newestLine.split(String.valueOf(spliterator))[0];
 
+                /*if (isTrimmedDashStartValid && existingLineStart.trim().startsWith("-")) {
+                    if (newestLineStart.trim().startsWith("-"))
+                        newestLines.set(i, existingLine);
+                    else newestLines.set(i, existingLine);
+                    break;
+                }*/
+
                 if (isHashtagStartValid && removeHashtagStart(existingLineStart).equals(removeHashtagStart(newestLineStart))//the line exists with hashtag start ignore config
                         || existingLineStart.equals(newestLineStart)) {//the line exists
                     newestLines.set(i, existingLine);//we copy the line's config after confirming it's existence
@@ -189,15 +216,18 @@ public final class FileUpdater {
             }
         }
 
+        //CommonAlixMain.logInfo(
+
         try {
-            FileManager.write(existingFile, newestLines);
+            if (!existingLines.equals(newestLines)) FileManager.write(existingFile, newestLines);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private static String removeHashtagStart(String s) {
-        return s.length() != 0 && s.charAt(0) == '#' ? s.substring(1) : s;
+        while (s.length() != 0 && s.charAt(0) == '#') s = s.substring(1);//lazy writing
+        return s;
     }
 
     /*        List<String> existingLines = FileManager.getLines(existingFile);

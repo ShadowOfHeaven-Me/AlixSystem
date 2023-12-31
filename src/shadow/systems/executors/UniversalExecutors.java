@@ -1,7 +1,7 @@
 package shadow.systems.executors;
 
 import alix.common.antibot.connection.ConnectionFilter;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

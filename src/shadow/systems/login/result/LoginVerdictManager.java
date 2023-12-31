@@ -1,5 +1,6 @@
 package shadow.systems.login.result;
 
+import alix.common.utils.other.annotation.AlixIntrinsified;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import shadow.utils.objects.savable.data.PersistentUserData;
@@ -39,12 +40,7 @@ public final class LoginVerdictManager {
     }
 
     public static LoginInfo removeExisting(Player p) {
-        LoginInfo l = remove(p.getName());
-        if (l == null) {
-            p.kickPlayer("§cNo Login Verdict was found!");
-            throw new RuntimeException("No Login Verdict was found for the player " + p.getName() + "! Report this as an error immediately!");
-        }
-        return l;
+        return ensureExists(p, remove(p.getName()));
     }
 
     public static LoginInfo getNullable(String name) {
@@ -52,12 +48,15 @@ public final class LoginVerdictManager {
     }
 
     public static LoginInfo getExisting(Player p) {
-        LoginInfo l = getNullable(p.getName());
-        if (l == null) {
-            p.kickPlayer("§cNo Login Verdict was found!");
-            throw new RuntimeException("No Login Verdict was found for the player " + p.getName() + "! Report this as an error immediately!");
+        return ensureExists(p, getNullable(p.getName()));
+    }
+
+    private static LoginInfo ensureExists(Player player, LoginInfo info) {
+        if (info == null) {
+            player.kickPlayer("§cNo Login Verdict was found!");
+            throw new RuntimeException("No Login Verdict was found for the player " + player.getName() + "! Report this as an error immediately!");
         }
-        return l;
+        return info;
     }
 
     private LoginVerdictManager() {

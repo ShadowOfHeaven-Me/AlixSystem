@@ -1,6 +1,6 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import shadow.utils.holders.ReflectionUtils;
@@ -82,7 +82,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
         }
     }*/
 
-/*    private static Integer getWindowItemsID(Object packet) {
+/*    public static Integer getWindowItemsID(Object packet) {
         try {
             return (Integer) ReflectionUtils.outWindowItemsIdMethod.invoke(packet);
         } catch (Exception e) {
@@ -90,8 +90,10 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
         }
     }*/
 
+
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        //if (spoofedWindowItems(msg)) return;
         if (user.hasCompletedCaptcha() && msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
             super.writeNotOverridden(ctx, msg, promise);
             this.builder.updateWindowID();
@@ -99,7 +101,10 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             return;
         }
 
-/*        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {//Items
+        super.write(ctx, msg, promise);//super call on purpose
+    }
+
+    /*        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {//Items
             Integer id = getWindowItemsID(msg);
 
             if (WINDOW_IDS.contains(id)) {
@@ -111,9 +116,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             return;
         }*/
 
-        //Main.logInfo(msg.getClass().getSimpleName());
-        super.write(ctx, msg, promise);//super call on purpose
-    }
+    //Main.logInfo(msg.getClass().getSimpleName());
 
     //WindowClick \/
     /*                    int slot = getSlot(msg);

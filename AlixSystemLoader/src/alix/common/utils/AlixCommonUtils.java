@@ -1,6 +1,6 @@
 package alix.common.utils;
 
-import alix.common.CommonAlixMain;
+import alix.common.AlixCommonMain;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -94,7 +94,7 @@ public final class AlixCommonUtils {
     }
 
     public static void logException(Throwable e) {
-        CommonAlixMain.logError("An AlixTask has thrown an exception - Report this immediately!");
+        AlixCommonMain.logError("An AlixTask has thrown an exception - Report this immediately!");
         e.printStackTrace();
     }
 

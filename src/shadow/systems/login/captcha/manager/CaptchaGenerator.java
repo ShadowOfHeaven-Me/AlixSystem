@@ -21,7 +21,7 @@ public abstract class CaptchaGenerator {
     private final CaptchaTextGenerator textGenerator;
 
     private CaptchaGenerator() {
-        this.textGenerator = getTextGenerator();
+        this.textGenerator = createTextGenerator();
     }
 
     protected abstract Captcha generate();
@@ -47,7 +47,7 @@ public abstract class CaptchaGenerator {
         }
     }
 
-    private static CaptchaTextGenerator getTextGenerator() {
+    private static CaptchaTextGenerator createTextGenerator() {
         switch (captchaVerificationType) {
             case NUMERIC:
                 return new CaptchaNumericGenImpl();
@@ -99,11 +99,11 @@ public abstract class CaptchaGenerator {
 
         private String format(int i) {
             String s = Integer.toString(i);
-            int l = length - s.length();
+            int d = this.length - s.length();
 
-            if (l == 0) return s;
+            if (d == 0) return s;
 
-            char[] c = new char[l];
+            char[] c = new char[d];
             Arrays.fill(c, '0');
 
             return new String(c) + s; //new StringBuilder(JavaUtils.captchaLength).append(c).append(s).toString();

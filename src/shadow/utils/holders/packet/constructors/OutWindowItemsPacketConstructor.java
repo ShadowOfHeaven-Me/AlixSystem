@@ -50,8 +50,8 @@ public final class OutWindowItemsPacketConstructor {
         clazzConstructor = clazzConstructor0;
     }
 
-    public static Object construct(int windowId, int size, List<ItemStack> list) {
-        return construct0(windowId, size, createNMSItemList(list));
+    public static Object construct(int windowId, List<ItemStack> list) {
+        return construct0(windowId, list.size(), createNMSItemList(list));
     }
 
     public static Object construct0(int windowId, int size, Object nmsList) {

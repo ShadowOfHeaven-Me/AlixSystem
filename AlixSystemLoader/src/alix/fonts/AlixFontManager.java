@@ -1,6 +1,6 @@
 package alix.fonts;
 
-import alix.common.CommonAlixMain;
+import alix.common.AlixCommonMain;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigProvider;
 
@@ -47,7 +47,7 @@ public final class AlixFontManager {
             }
 
             if (!valid) {
-                CommonAlixMain.logWarning("Your set font " + configFontName + " is not supported! Arial will be used instead.");
+                AlixCommonMain.logWarning("Your set font " + configFontName + " is not supported! Arial will be used instead.");
                 configFontName = "Arial"; //the default
             }
 

@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TpaManager {
+public final class TpaManager {
 
     private static final Map<String, TpaRequest> map = new HashMap<>();
 

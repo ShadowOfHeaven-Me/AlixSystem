@@ -1,15 +1,16 @@
 package shadow.utils.objects.savable.data.gui;
 
 import alix.common.data.GuiType;
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import org.bukkit.Sound;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
+import shadow.utils.holders.methods.MethodProvider;
+import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.offline.UnverifiedUser;
 
-import static shadow.systems.commands.CommandManager.incorrectPassword;
 import static shadow.systems.commands.CommandManager.loginSuccess;
 import static shadow.utils.main.AlixUtils.kickOnIncorrectPassword;
 import static shadow.utils.main.AlixUtils.sendMessage;
@@ -58,13 +59,16 @@ public interface AlixGui {
     @NotNull
     String getPasswordBuilt();
 
+    Object pinLeaveFeedbackKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(PasswordGui.pinLeaveFeedback);
+
     static void onSyncClick(UnverifiedUser user, int slot) {
         AlixGui builder = user.getPasswordBuilder();
 
         if (builder.getType() == GuiType.ANVIL) {
             switch (slot) {
                 case 1:
-                    user.getPlayer().kickPlayer(PasswordGui.pinLeaveFeedback);
+                    MethodProvider.kickAsync(user, pinLeaveFeedbackKickPacket);
+                    //user.getPlayer().kickPlayer(PasswordGui.pinLeaveFeedback);
                     break;
                 case 2:
                     String password = builder.getPasswordBuilt();
@@ -74,7 +78,8 @@ public interface AlixGui {
                             sendMessage(user.getPlayer(), loginSuccess);
                             user.logInSync();
                             return;
-                        } else if (kickOnIncorrectPassword) user.getPlayer().kickPlayer(incorrectPassword);
+                        } else if (kickOnIncorrectPassword)
+                            MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
                         return;
                     }
                     String reason = AlixUtils.getInvalidityReason(password, false);
@@ -98,7 +103,8 @@ public interface AlixGui {
         if (builder.getType() == GuiType.ANVIL) {
             switch (slot) {
                 case 1:
-                    AlixScheduler.sync(() -> user.getPlayer().kickPlayer(PasswordGui.pinLeaveFeedback));
+                    MethodProvider.kickAsync(user, pinLeaveFeedbackKickPacket);
+                    //AlixScheduler.sync(() -> user.getPlayer().kickPlayer(PasswordGui.pinLeaveFeedback));
                     break;
                 case 2:
                     String password = builder.getPasswordBuilt();
@@ -108,7 +114,8 @@ public interface AlixGui {
                             sendMessage(user.getPlayer(), loginSuccess);
                             user.logInAsync();
                             return;
-                        } else if (kickOnIncorrectPassword) AlixScheduler.sync(() -> user.getPlayer().kickPlayer(incorrectPassword));
+                        } else if (kickOnIncorrectPassword)
+                            MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
                         return;
                     }
                     String reason = AlixUtils.getInvalidityReason(password, false);

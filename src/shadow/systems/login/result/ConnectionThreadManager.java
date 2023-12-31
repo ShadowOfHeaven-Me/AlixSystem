@@ -3,54 +3,53 @@ package shadow.systems.login.result;
 import alix.common.antibot.connection.algorithms.ConnectionAlgorithm;
 import alix.common.antibot.connection.algorithms.types.Name2IPAlgorithm;
 import alix.common.antibot.connection.algorithms.types.RequestAmountAlgorithm;
-import alix.common.scheduler.impl.AlixScheduler;
-import alix.common.utils.collections.queue.AlixDeque;
-import alix.common.utils.collections.queue.ConcurrentAlixDeque;
-
-import java.util.Map;
+import alix.common.scheduler.AlixScheduler;
+import shadow.utils.main.AlixUtils;
 
 public final class ConnectionThreadManager {
 
     private static final ConnectionThreadRunnable runnable = new ConnectionThreadRunnable();
-    private static long nextCollection;
+    //private static long nextCollection;
 
     static {
-        //AlixScheduler.newAlixThread(runnable, 3000, "Connection Thread");
+        if (AlixUtils.antibotService) AlixScheduler.newAlixThread(runnable, 3000, "Connection Thread");
     }
 
     public static void addJoinAttempt(String name, String address) {
-        runnable.joins.offerLast(new JoinAttempt(name, address));
-        //for (ConnectionAlgorithm a : runnable.algorithms) a.onJoinAttempt(name, address);
+        for (ConnectionAlgorithm algorithm : runnable.algorithms) algorithm.onJoinAttempt(name, address);
     }
+    //runnable.joins.offerLast(new JoinAttempt(name, address));
+    //for (ConnectionAlgorithm a : runnable.algorithms) a.onJoinAttempt(name, address);
+
 
     private static final class ConnectionThreadRunnable implements Runnable {
 
         private final ConnectionAlgorithm[] algorithms;
-        private final AlixDeque<JoinAttempt> joins = new ConcurrentAlixDeque<>();
+        //private final AlixDeque<JoinAttempt> joins = new ConcurrentAlixDeque<>();
         //private final ConnectionListManager list = new ConnectionListManager();
 
 
         @Override
         public void run() {
-            if (!joins.isEmpty()) {
+            for (ConnectionAlgorithm a : algorithms) a.onThreadRepeat();
+        }
+
+            /*if (!joins.isEmpty()) {
                 AlixDeque.Node<JoinAttempt> first = joins.firstNode();
                 joins.clear();
                 AlixDeque.forEach(this::algorithmsJoinAttempt, first);
-            }
-            for (ConnectionAlgorithm a : algorithms) a.onThreadRepeat();
-
-            /*long now = System.currentTimeMillis();
+            }*/
+        /*long now = System.currentTimeMillis();
             if (now < nextCollection) return;
 
             Map<String, LoginInfo> map = LoginVerdictManager.map;
             map.forEach((n, l) -> map.compute(n, (name, login) -> login.removalTime < now ? null : login));
 
             nextCollection = now + 70000;*/
-        }
 
-        private void algorithmsJoinAttempt(JoinAttempt attempt) {
+        /*private void algorithmsJoinAttempt(JoinAttempt attempt) {
             for (ConnectionAlgorithm algorithm : algorithms) algorithm.onJoinAttempt(attempt.name, attempt.ip);
-        }
+        }*/
 
         private ConnectionThreadRunnable() {
             this.algorithms = new ConnectionAlgorithm[]{
@@ -60,7 +59,7 @@ public final class ConnectionThreadManager {
         }
     }
 
-    private static final class JoinAttempt {
+    /*private static final class JoinAttempt {
 
         private final String name, ip;
 
@@ -68,7 +67,7 @@ public final class ConnectionThreadManager {
             this.name = name;
             this.ip = ip;
         }
-    }
+    }*/
 
     private ConnectionThreadManager() {
     }

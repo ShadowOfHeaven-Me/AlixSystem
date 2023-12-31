@@ -1,13 +1,16 @@
 package shadow.utils.world.generator.chunk;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.generator.ChunkGenerator;
+import shadow.utils.main.file.managers.SpawnFileManager;
+import shadow.utils.world.AlixWorld;
 
 import java.util.Random;
 
-public class AlixChunkGenerator extends ChunkGenerator {
+public final class AlixChunkGenerator extends ChunkGenerator {
 
     @Override
     public ChunkData generateChunkData(World world, Random random, int x, int z, BiomeGrid biome) {
@@ -16,7 +19,7 @@ public class AlixChunkGenerator extends ChunkGenerator {
 
 /*    @Override
     public Location getFixedSpawnLocation(World world, Random random) {
-        return SpawnFileManager.file.getSpawn().getLocation();
+        return AlixWorld.TELEPORT_LOCATION; //SpawnFileManager.file.getSpawn().getLocation();
     }*/
 
     private static ChunkData createEmptyChunkData(World world) {

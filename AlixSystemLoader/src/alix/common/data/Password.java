@@ -76,7 +76,7 @@ public final class Password {
     }
 
     public static Password fromUnhashed(String unhashedPassword) {
-        HashingAlgorithm algorithm = Hashing.ofHashId(Hashing.CONFIG_HASH_ID);
+        HashingAlgorithm algorithm = Hashing.getConfigHashingAlgorithm();
         String hashed = algorithm.hash(unhashedPassword);
         return new Password(hashed, Hashing.CONFIG_HASH_ID, algorithm);
     }

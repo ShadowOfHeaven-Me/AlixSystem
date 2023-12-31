@@ -1,6 +1,5 @@
 package alix.loaders.bungee;
 
-import alix.common.CommonAlixMain;
 import alix.common.logger.LoggerAdapter;
 import alix.common.update.FileUpdater;
 import alix.common.logger.AlixLoggerProvider;
@@ -21,14 +20,13 @@ public final class BungeeAlixMain extends Plugin implements AlixLoggerProvider {
 
     public BungeeAlixMain() {
         instance = this;
-        CommonAlixMain.loggerManager = this;
+        //CommonAlixMain.loggerManager = this;
 
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
         this.plugin = loader.instantiatePlugin(BOOTSTRAP_CLASS, Plugin.class, this);
         this.logger = LoggerAdapter.createAdapter(super.getLogger());
 
-
-        CommonAlixMain.plugin = this.plugin;
+        //CommonAlixMain.bootstrap = this.plugin;
 
         FileUpdater.updateFiles();
     }

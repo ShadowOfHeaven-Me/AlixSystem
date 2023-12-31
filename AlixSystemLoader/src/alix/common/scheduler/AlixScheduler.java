@@ -1,5 +1,6 @@
-package alix.common.scheduler.impl;
+package alix.common.scheduler;
 
+import alix.common.scheduler.impl.InterfaceAlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonHandler;
@@ -11,44 +12,44 @@ import java.util.function.Supplier;
 
 public final class AlixScheduler {
 
-    private static final InterfaceAlixScheduler scheduler = AlixCommonHandler.createSchedulerImpl();
+    private static final InterfaceAlixScheduler impl = AlixCommonHandler.createSchedulerImpl();
 
     public static void sync(Runnable r) {
-        scheduler.sync(r);
+        impl.sync(r);
     }
 
     public static void async(Runnable r) {
-        scheduler.async(r);
+        impl.async(r);
     }
 
     public static <T> CompletableFuture<T> supplyAsync(Supplier<T> r) {
-        return scheduler.supplyAsync(r);
+        return impl.supplyAsync(r);
     }
 
     public static SchedulerTask runLaterSync(Runnable r, long d, TimeUnit u) {
-        return scheduler.runLaterSync(r, d, u);
+        return impl.runLaterSync(r, d, u);
     }
 
     public static SchedulerTask runLaterAsync(Runnable r, long d, TimeUnit u) {
-        return scheduler.runLaterAsync(r, d, u);
+        return impl.runLaterAsync(r, d, u);
     }
 
     public static SchedulerTask repeatSync(Runnable r, long i, TimeUnit u) {
-        return scheduler.repeatSync(r, i, u);
+        return impl.repeatSync(r, i, u);
     }
 
     @CanIgnoreReturnValue
     public static SchedulerTask repeatAsync(Runnable r, long i, TimeUnit u) {
-        return scheduler.repeatAsync(r, i, u);
+        return impl.repeatAsync(r, i, u);
     }
 
     public static void shutdown() {
-        scheduler.shutdown();
+        impl.shutdown();
     }
 
     @CanIgnoreReturnValue
     public static AlixThread newAlixThread(Runnable cmd, long millisDelay, String name) {
-        return scheduler.newAlixThread(cmd, millisDelay, name);
+        return impl.newAlixThread(cmd, millisDelay, name);
     }
 
     private AlixScheduler() {

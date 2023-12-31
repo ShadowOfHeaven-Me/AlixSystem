@@ -1,6 +1,6 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import shadow.utils.users.offline.UnverifiedUser;
@@ -33,6 +33,7 @@ public class GUIPacketBlocker extends PacketBlocker {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        //if (spoofedWindowItems(msg)) return;
         if (user.hasCompletedCaptcha()) {
             switch (msg.getClass().getSimpleName()) {
                 case "PacketPlayOutRelEntityMove":

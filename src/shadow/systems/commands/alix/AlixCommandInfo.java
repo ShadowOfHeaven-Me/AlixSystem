@@ -8,12 +8,13 @@ public final class AlixCommandInfo {
 
     private final String command;
     private final String[] aliases;
-    private final boolean registered;
+    private final boolean registered, fallbackRegistered;
 
-    public AlixCommandInfo(String command, String[] aliases, boolean registered) {
+    public AlixCommandInfo(String command, String[] aliases, boolean registered, boolean fallbackRegistered) {
         this.command = command;
         this.aliases = aliases;
         this.registered = registered;
+        this.fallbackRegistered = fallbackRegistered;
     }
 
     public String getCommand() {
@@ -34,6 +35,10 @@ public final class AlixCommandInfo {
 
     public boolean isRegistered() {
         return registered;
+    }
+
+    public boolean isFallbackRegistered() {
+        return fallbackRegistered;
     }
 
     /*    public static class Builder {

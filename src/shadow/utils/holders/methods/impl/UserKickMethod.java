@@ -6,7 +6,7 @@ import shadow.utils.users.offline.UnverifiedUser;
 
 public interface UserKickMethod {
 
-    void kickPlayerAsyncInvoked(UnverifiedUser user, String message);
+    void kickAsync(UnverifiedUser user, String message);
 
     static UserKickMethod createImpl() {
         return Dependencies.isPacketEventsPresent ? new PacketEventsUserKick() : new BukkitUserKick();

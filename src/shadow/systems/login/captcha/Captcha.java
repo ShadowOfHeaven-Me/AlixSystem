@@ -18,7 +18,7 @@ public abstract class Captcha {
     protected String captcha;
 
     protected Captcha() {
-        this.captcha = CaptchaGenerator.generateTextCaptcha(); //this::regenerate cannot be used because of class initialization issues
+        this.captcha = CaptchaGenerator.generateTextCaptcha(); //this::regenerate cannot be used because of initialization issues
     }
 
     protected Captcha(Captcha captcha) {

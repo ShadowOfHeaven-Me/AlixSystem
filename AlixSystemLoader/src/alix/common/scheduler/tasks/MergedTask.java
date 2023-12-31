@@ -1,6 +1,6 @@
 package alix.common.scheduler.tasks;
 
-import alix.common.scheduler.impl.AlixScheduler;
+import alix.common.scheduler.AlixScheduler;
 
 public final class MergedTask {
 

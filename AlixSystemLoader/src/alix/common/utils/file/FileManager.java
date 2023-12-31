@@ -1,7 +1,8 @@
 package alix.common.utils.file;
 
+
+import alix.common.AlixCommonMain;
 import alix.loaders.bukkit.BukkitAlixMain;
-import alix.common.CommonAlixMain;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -10,23 +11,34 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public abstract class FileManager {
 
     private final File file;
 
+    protected static final File INTERNAL_FOLDER;
+
+    static {
+        INTERNAL_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath() + File.separator + "internal");
+        INTERNAL_FOLDER.mkdir();
+    }
+
     protected FileManager(File file) {//existing file
         this.file = file;
-        file.toPath();//buffer the path
+        file.toPath();//buffer the path object
     }
 
     protected FileManager(String fileName) {
-        this(fileName, true);
+        this(fileName, true, true);
     }
 
-    protected FileManager(String fileName, boolean init) {
-        this.file = init ? initializeFile(fileName) : getPluginFile(fileName);
-        file.toPath();//buffer the path
+    protected FileManager(String fileName, boolean internal) {
+        this(fileName, true, internal);
+    }
+
+    protected FileManager(String fileName, boolean init, boolean internal) {
+        this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
     }
 
     public static void write(File file, Collection<?> values) throws IOException {
@@ -42,20 +54,13 @@ public abstract class FileManager {
         stream.close();
     }
 
-    public static File getWithJarCompiledFile(String s) {
-        //tmpdir - tf is this
-        File f = getPluginFile(s);
-        try (InputStream in = CommonAlixMain.class.getClassLoader().getResourceAsStream(s)) {
-            Files.copy(in, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            return f;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public static File getWithJarCompiledFile(String s, boolean internal) {
+        return getWithJarCompiledFile(getPluginFile(s, internal), s);
     }
 
     public static File getWithJarCompiledFile(File copyInto, String s) {
         //tmpdir - tf is this
-        try (InputStream in = CommonAlixMain.class.getClassLoader().getResourceAsStream(s)) {
+        try (InputStream in = BukkitAlixMain.class.getClassLoader().getResourceAsStream(s)) {
             Files.copy(in, copyInto.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return copyInto;
         } catch (IOException e) {
@@ -64,7 +69,11 @@ public abstract class FileManager {
     }
 
     public static File createPluginFile(String s) {
-        return createFileIfAbsent(getWithJarCompiledFile(s));
+        return createPluginFile(s, false);
+    }
+
+    public static File createPluginFile(String s, boolean internal) {
+        return createFileIfAbsent(getWithJarCompiledFile(s, internal));
     }
 
     public static void createNewFile(File file) {
@@ -95,25 +104,36 @@ public abstract class FileManager {
         }
     }
 
-
-    public static void createFile(FileManager f) {
-        createFileIfAbsent(f.file);
-    }
-
-    public static boolean remove(FileManager f) {
-        return f.file.delete();
-    }
-
     public static File getPluginFile(String fileName) {
-        String path = BukkitAlixMain.instance.getDataFolder().getAbsolutePath();
-
-        new File(path).mkdirs(); //Creating the folder if absent
-
-        return new File(path + File.separator + fileName);
+        return getPluginFile(fileName, false);
     }
 
-    private static File initializeFile(String fileName) {
-        File file = getPluginFile(fileName);
+    public static File getPluginFile(String fileName, boolean internal) {
+        String path = AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath().toString();
+
+        if (internal) {
+            File oldFile = new File(path + File.separator + fileName);
+            File newFile = new File(INTERNAL_FOLDER.getAbsolutePath() + File.separator + fileName);
+            if (oldFile.exists()) {
+                try {
+                    Files.copy(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    oldFile.delete();
+                    return newFile;
+                } catch (IOException e) {
+                    throw new ExceptionInInitializerError(e);
+                }
+            } else {
+                return newFile;
+            }
+        }
+
+        //new File(path).mkdirs(); //Creating the folder if absent
+
+        return new File(path + File.separator + fileName);//return the default file path if the file is not an internal one
+    }
+
+    private static File initializeFile(String fileName, boolean internal) {
+        File file = getPluginFile(fileName, internal);
         return createFileIfAbsent(file);
     }
 
@@ -186,6 +206,12 @@ public abstract class FileManager {
         }
     }
 
+    public <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Function<V, String> valueFormatter) throws IOException {
+        List<String> list = new ArrayList<>(map.size());
+        for (Map.Entry<K, V> e : map.entrySet()) list.add(e.getKey() + separator + valueFormatter.apply(e.getValue()));
+        save0(list);
+    }
+
     public void saveKeyAndVal(Map<?, ?> map, String separator) throws IOException {
         List<String> list = new ArrayList<>(map.size());
         for (Map.Entry<?, ?> e : map.entrySet()) list.add(e.getKey() + separator + e.getValue());
@@ -208,6 +234,5 @@ public abstract class FileManager {
 
         writer.close();
         stream.close();
-
     }
 }

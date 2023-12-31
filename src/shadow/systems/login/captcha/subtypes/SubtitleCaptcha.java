@@ -9,7 +9,7 @@ import static shadow.utils.main.AlixUtils.maxLoginTime;
 public final class SubtitleCaptcha extends Captcha {
 
     public SubtitleCaptcha() {
-
+        super();
     }
 
     public SubtitleCaptcha(Captcha captcha) {
@@ -17,7 +17,7 @@ public final class SubtitleCaptcha extends Captcha {
     }
 
     @Override
-    public Captcha inject(UnverifiedUser user) {
+    protected Captcha inject(UnverifiedUser user) {
         user.getPlayer().sendTitle("Captcha: ", "§c" + captcha, 0, maxCaptchaTime * 20, 0);
         return super.inject(user);
     }
