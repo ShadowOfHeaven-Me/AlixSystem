@@ -1,6 +1,7 @@
 package shadow.systems.commands.alix;
 
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.file.CommandsFile;
@@ -64,7 +65,7 @@ public final class AlixCommandManager {
 
     //This is a custom verification command handling implementation
     //I've deemed to be the fastest so far
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "CommandExecutor#onCommand")
     public static void handleVerificationCommand(char[] cmd, UnverifiedUser user) {
         Player p = user.getPlayer();
         cmd = removeFallbackPrefix(cmd);
@@ -105,7 +106,7 @@ public final class AlixCommandManager {
         //This if fine due to checks performed later on, like AlixUtils.getInvalidityReason
         //used in the register command, which is aware of the space symbol being invalid
         String arg2 = new String(Arrays.copyOfRange(cmd, lastIndex, cmd.length));
-        consumer.onCommand(user, p, arg2);
+        consumer.onCommand(user, arg2);
     }
 
     static {

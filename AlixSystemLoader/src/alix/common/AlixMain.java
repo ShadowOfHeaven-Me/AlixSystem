@@ -1,6 +1,6 @@
 package alix.common;
 
-import alix.pluginloader.LoaderBootstrap;
+import alix.loaders.classloader.LoaderBootstrap;
 
 import java.nio.file.Path;
 

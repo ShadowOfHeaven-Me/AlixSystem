@@ -42,7 +42,7 @@ public final class OutMapPacketConstructor {
         }
     }
 
-    public static Object createPacket(int viewId, byte[] toDrawBytes) {
+    public static Object construct(int viewId, byte[] toDrawBytes) {
         return newerConstructor ? construct_1_17(viewId, toDrawBytes) : construct_old(viewId, toDrawBytes);
     }
 

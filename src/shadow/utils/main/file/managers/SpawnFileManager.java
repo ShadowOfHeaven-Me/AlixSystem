@@ -8,7 +8,7 @@ import shadow.utils.objects.savable.loc.Spawn;
 
 import java.io.IOException;
 
-public class SpawnFileManager {
+public final class SpawnFileManager {
 
     private static final SpawnFile file = new SpawnFile();
 

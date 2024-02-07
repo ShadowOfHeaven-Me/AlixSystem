@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.SpawnFileManager;
 
@@ -53,6 +54,6 @@ public class NamedLocation {//extends SavableLocation {
     }
 
     public void teleport(Player p) {
-        p.teleport(loc);
+        MethodProvider.teleportAsync(p, loc);
     }
 }

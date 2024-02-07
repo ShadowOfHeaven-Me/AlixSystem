@@ -11,6 +11,7 @@ public interface NmsChannelGetter {
 
     static NmsChannelGetter createImpl() {
         try {
+            //Unnecessary checks below
             //getFieldFromTypeDirect(entityPlayerClass, playerConnectionClass);
             //--getMethodByReturnTypeAssignable(playerConnectionClass, networkManagerClass);
             //getFieldFromTypeAssignable(playerConnectionClass, networkManagerClass);

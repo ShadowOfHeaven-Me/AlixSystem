@@ -12,12 +12,12 @@ public final class FireWallManager {
     private static final FireWallFile file = new FireWallFile();
     private static final Map<String, FireWallEntry> map = new ConcurrentHashMap<>();
 
-    public static void add(String ip, String algorithmId) {
-        add0(ip, new FireWallEntry(algorithmId));
+    public static boolean add(String ip, String algorithmId) {
+        return add0(ip, new FireWallEntry(algorithmId)) == null;
     }
 
-    static void add0(String ip, FireWallEntry entry) {
-        map.put(ip, entry);
+    static FireWallEntry add0(String ip, FireWallEntry entry) {
+        return map.put(ip, entry);
     }
 
     public static boolean isBlocked(InetSocketAddress address) {

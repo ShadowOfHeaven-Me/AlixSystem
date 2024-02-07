@@ -35,7 +35,7 @@ public final class Messages {
     }
 
     public static String getWithPrefix(String s, Object... toFormatWith) {
-        return AlixFormatter.format(AlixFormatter.appendPrefix(get(s)), toFormatWith);
+        return AlixFormatter.appendPrefix(AlixFormatter.format(get(s), toFormatWith));
     }
 
     public static String get(String s) {

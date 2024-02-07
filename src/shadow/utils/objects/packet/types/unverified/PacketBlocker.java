@@ -1,25 +1,29 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import alix.common.data.GuiType;
+import alix.common.data.LoginType;
 import alix.common.messages.Messages;
+import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.collections.queue.AlixDeque;
+import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.bukkit.entity.Player;
+import net.minecraft.network.protocol.game.PacketPlayOutWindowItems;
 import org.jetbrains.annotations.NotNull;
+import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.login.captcha.manager.CountdownTask;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
-import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.packet.injector.ChannelInjector;
+import shadow.utils.objects.packet.PacketInterceptor;
+import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import java.lang.reflect.Method;
 
-public class PacketBlocker extends ChannelDuplexHandler {
+public class PacketBlocker extends PacketProcessor {
 
     //private static final boolean pingCheck = false;//Main.config.getBoolean("ping-check");
     //public static boolean optimizedPacketBlocker = ReflectionUtils.checkValid("net.minecraft.network.protocol.game.PacketPlayInKeepAlive");
@@ -31,7 +35,7 @@ public class PacketBlocker extends ChannelDuplexHandler {
     private static final Object
             movementForbiddenCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(Messages.get("movement-forbidden-captcha")),
             packetLimitReachedKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(Messages.get("packet-limit-reached-verification")),
-            uncaughtExceptionKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(AlixUtils.isDebugEnabled ? "§cUncaught exception: Check the console for errors!" : "§cUncaught exception: Enable 'debug' in config.yml to see the error in the console!");
+            uncaughtExceptionKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(AlixUtils.isDebugEnabled ? "§cUncaught exception: Check the console for errors!" : "§cUncaught exception: Enable 'debug' in config.yml if you want to see the error in the console!");
 
     //loginTimePassed = Messages.get("login-time-passed"),
 
@@ -70,30 +74,24 @@ public class PacketBlocker extends ChannelDuplexHandler {
     //private static final boolean initPingCheck = AlixUtils.requirePingCheckVerification;
 
     //private final PingCheck pingCheck;//null only if "initPingCheck" is false
-    private static final ChannelInjector channelInjector = AlixHandler.createChannelInjectorImpl();
-    public static final String packetHandlerName = "alixsystem_unv_handler";
     private final Channel channel;
     protected final UnverifiedUser user;
     private final CountdownTask countdownTask;
+    protected final AlixDeque<Object> blockedChatPackets;
     //private SchedulerTask loginKickTask;
     private long lastMovementPacket;
     private int movementPacketsUntilKick, totalPacketsUntilKick;
-    private byte captchaWaitPackets;
-    private boolean captchaPacketsSent;
+    protected static final byte WAIT_PACKETS_INCREASE = 3;
+    protected byte waitPackets;
+    protected boolean packetsSent;
 
-    protected PacketBlocker(UnverifiedUser user) {
+    protected PacketBlocker(UnverifiedUser user, PacketInterceptor handler) {
+        super(handler);
         this.user = user;
-        this.channel = channelInjector.inject(user.getPlayer(), this, packetHandlerName);
-        this.countdownTask = new CountdownTask(this.channel, !initCaptchaTask || user.hasCompletedCaptcha());
-        this.captchaPacketsSent = user.hasCompletedCaptcha();
-    }
-
-    public static Channel getChannel(Player player) {
-        try {
-            return channelInjector.getChannel(player);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        //this.channel = channelInjector.inject(user.getPlayer(), handler, packetHandlerName);
+        this.channel = handler.getChannel();
+        this.countdownTask = new CountdownTask(user, !initCaptchaTask || user.hasCompletedCaptcha());
+        this.blockedChatPackets = new AlixDeque<>();
     }
 
     public void startLoginKickTask() {
@@ -104,12 +102,24 @@ public class PacketBlocker extends ChannelDuplexHandler {
 
     //public abstract PingCheck getPingCheck();
 
+    protected final void trySpoofPackets() {
+        if (!this.packetsSent && ++this.waitPackets >= 8 && (this.packetsSent = true))//8 - at least 5 move packets and one out respawn packet from the server
+            this.user.spoofVerificationPackets();//setting the boolean in a branchless if statement for a slight performance boost
+        //Main.logError("wwwwww " + waitPackets);
+    }
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (user.hasCompletedCaptcha()) {//during login/register, the captcha verification was passed so we lift the packet limitations
             switch (msg.getClass().getSimpleName()) {
+                case "PacketPlayInPosition"://most common packets
+                case "PacketPlayInPositionLook":
+                case "PacketPlayInLook":
+                case "d":
+                    this.trySpoofPackets();
+                    return;
                 case "PacketPlayInKeepAlive": //The player will time out without this one
-                case "ServerboundKeepAlivePacket"://another possible name of this packet on 1.17+
+                case "ServerboundKeepAlivePacket"://another possible name of this packet on 1.20.2+
                     super.channelRead(ctx, msg);
                     return;
                 case "ServerboundChatCommandPacket"://The command packet on 1.17+
@@ -118,26 +128,30 @@ public class PacketBlocker extends ChannelDuplexHandler {
                 case "PacketPlayInChat":
                     if (!serverboundNameVersion) super.channelRead(ctx, msg);
                     return;
+                default:
+                    return;
             }
-            return;
         }
 
         //during the captcha verification
         //Main.logInfo("CLIENT: " + msg.getClass().getSimpleName());
-        this.captchaVerification(ctx, msg);
+        this.onReadCaptchaVerification(ctx, msg);
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        //if (spoofedWindowItems(ctx, msg, promise)) return;
-        /*Main.logInfo("SERVER: " + msg.getClass().getSimpleName());
-        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {
-            Main.logInfo("WINDOW ID: " + AnvilGUIPacketBlocker.getWindowItemsID(msg));
-            return;
-        }*/
-
+        //Main.logInfo("SERVER: " + msg.getClass().getSimpleName());
         if (user.hasCompletedCaptcha()) {
             switch (msg.getClass().getSimpleName()) {
+                case "PacketPlayOutChat":
+                case "ClientboundSystemChatPacket":
+                    this.blockedChatPackets.offerLast(msg);
+                    return;
+                case "PacketPlayOutRespawn":
+                case "ClientboundRespawnPacket":
+                    this.waitPackets += WAIT_PACKETS_INCREASE;
+                    break;
+                case "PacketPlayOutGameStateChange":
                 case "PacketPlayOutRelEntityMove":
                 case "PacketPlayOutNamedEntitySpawn":
                 case "PacketPlayOutSpawnEntityLiving":
@@ -159,8 +173,42 @@ public class PacketBlocker extends ChannelDuplexHandler {
             super.write(ctx, msg, promise);
             return;
         }
+        this.onWriteCaptchaVerification(ctx, msg, promise);
+    }
 
+/*    protected final boolean spoofedWindowItems(ChannelHandlerContext context, Object msg, ChannelPromise promise) throws Exception {
+        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {
+            if (promise.getClass() == AlixVoidPromise.class) {
+                super.write(context, msg, channel.voidPromise());
+                return true;
+            }
+            if (!this.captchaPacketsSent) {
+                this.captchaPacketsSent = true;
+                Main.logInfo("SEEEEEEEEEEEENT");
+                AlixScheduler.async(user::spoofPackets);// this.user.spoofPackets();
+                return true;
+            }
+            return true;
+        }
+        return false;
+    }*/
+
+    protected final void writeNotOverridden(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        super.write(ctx, msg, promise);
+    }
+
+    protected final void onWriteCaptchaVerification(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         switch (msg.getClass().getSimpleName()) {
+            case "PacketPlayOutChat":
+            case "ClientboundSystemChatPacket":
+                this.blockedChatPackets.offerLast(msg);
+                return;
+            case "PacketPlayOutRespawn":
+            case "ClientboundRespawnPacket":
+                this.waitPackets += WAIT_PACKETS_INCREASE;
+                break;
+            case "PacketPlayOutGameStateChange":
+            case "PacketPlayOutWindowItems":
             case "PacketPlayOutRelEntityMove":
             case "PacketPlayOutNamedEntitySpawn":
             case "PacketPlayOutSpawnEntityLiving":
@@ -185,38 +233,13 @@ public class PacketBlocker extends ChannelDuplexHandler {
         super.write(ctx, msg, promise);
     }
 
-/*    protected final boolean spoofedWindowItems(ChannelHandlerContext context, Object msg, ChannelPromise promise) throws Exception {
-        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {
-            if (promise.getClass() == AlixVoidPromise.class) {
-                super.write(context, msg, channel.voidPromise());
-                return true;
-            }
-            if (!this.captchaPacketsSent) {
-                this.captchaPacketsSent = true;
-                Main.logInfo("SEEEEEEEEEEEENT");
-                AlixScheduler.async(user::spoofPackets);// this.user.spoofPackets();
-                return true;
-            }
-            return true;
-        }
-        return false;
-    }*/
-
-    protected final void writeNotOverridden(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        super.write(ctx, msg, promise);
-    }
-
-/*    if (serverboundNameVersion) captcha_1_17_ver(ctx, msg);
-        else captcha_old_ver(ctx, msg);*/
-
-    protected final void captchaVerification(ChannelHandlerContext ctx, Object msg) throws Exception {
+    protected final void onReadCaptchaVerification(ChannelHandlerContext ctx, Object msg) throws Exception {
         switch (msg.getClass().getSimpleName()) {
             case "PacketPlayInPosition"://most common packets
             case "PacketPlayInPositionLook":
             case "PacketPlayInLook":
             case "d":
-                if (!this.captchaPacketsSent && ++this.captchaWaitPackets == 2 && (this.captchaPacketsSent = true))
-                    this.user.spoofVerificationPackets();//setting the boolean in a branchless if statement for a slight performance boost
+                this.trySpoofPackets();
 
                 long now = System.currentTimeMillis();
 
@@ -279,13 +302,22 @@ public class PacketBlocker extends ChannelDuplexHandler {
         if (++totalPacketsUntilKick == maxTotalPackets) syncedKick(packetLimitReached);
     }*/
 
-    private void processCommand(Object packet) throws Exception {
-        String cmd = (String) getStringFromCommandPacketMethod.invoke(packet);
-        AlixCommandManager.handleVerificationCommand(cmd.toCharArray(), this.user);
+    //we execute it async because the password hashing
+    //algorithms could be somewhat heavy
+    private void processCommand(Object packet) {
+        AlixScheduler.async(() -> AlixCommandManager.handleVerificationCommand(getCmd(packet).toCharArray(), this.user));
+    }
+
+    private static String getCmd(Object packet) {
+        try {
+            return (String) getStringFromCommandPacketMethod.invoke(packet);
+        } catch (Exception e) {
+            throw new AlixException(e);
+        }
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {//ignoring the possibly client-caused exception
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         MethodProvider.kickAsync(this.channel, uncaughtExceptionKickPacket);
         if (AlixUtils.isDebugEnabled) cause.printStackTrace();
     }
@@ -294,21 +326,17 @@ public class PacketBlocker extends ChannelDuplexHandler {
         super.channelRead(ctx, msg);
     }
 
-    public static PacketBlocker getPacketBlocker(UnverifiedUser user, GuiType type) {
-        if (type == null) return new PacketBlocker(user);
+    public static PacketBlocker getPacketBlocker(UnverifiedUser user, LoginType type, PacketInterceptor handler) {
         switch (type) {
+            case COMMAND:
+                return new PacketBlocker(user, handler);
             case PIN:
-                return new GUIPacketBlocker(user);
+                return new GUIPacketBlocker(user, handler);
             case ANVIL:
-                return new AnvilGUIPacketBlocker(user);
+                return new AnvilGUIPacketBlocker(user, handler);
             default:
-                throw new AssertionError("Invalid: " + type);
+                throw new AlixError("Invalid: " + type);
         }
-    }
-
-    @NotNull
-    public final Channel getChannel() {
-        return channel;
     }
 
     @NotNull
@@ -329,13 +357,23 @@ public class PacketBlocker extends ChannelDuplexHandler {
             this.loginKickTask.cancel();
     }*/
 
-    public void stop() {
+    public AlixDeque<Object> getBlockedChatPackets() {
+        return blockedChatPackets;
+    }
+
+    public Channel getChannel() {
+        return channel;
+    }
+
+    //Deprecated: the packet handler is now never
+    //removed, only the packet processors change
+/*    public void stop() {
         //this.cancelLoginKickTask(); //only cancel the login task, as the captcha task will be cancelled when the user is removed from the user map
         this.channel.eventLoop().submit(() -> {
             this.channel.pipeline().remove(packetHandlerName);
             return null;
         });
-    }
+    }*/
 
     public void updateBuilder() {
     }

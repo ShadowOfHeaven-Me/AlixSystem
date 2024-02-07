@@ -3,7 +3,7 @@ package shadow.systems.executors;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.*;
-import alix.common.antibot.connection.ConnectionFilter;
+import shadow.systems.login.filters.ConnectionFilter;
 
 import static shadow.utils.main.AlixUtils.isOperatorCommandRestricted;
 import static shadow.utils.users.UserManager.addOnlineUser;

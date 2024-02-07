@@ -3,7 +3,8 @@ package shadow.utils.command.managers;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PersonalMessageManager {
+//Basically, /msg, but with a fancy name
+public final class PersonalMessageManager {
 
     private static final Map<String, String> receiverToSender = new HashMap<>();
 

@@ -16,7 +16,7 @@ import java.util.concurrent.ForkJoinPool;
 public final class Hashing {
 
     public static final byte CONFIG_HASH_ID;
-    private static final HashingAlgorithm hash0, hash1, hash2, hash3, hash4, configHash;//Maybe an array of these hashes types in the future?
+    private static final HashingAlgorithm hash0, hash1, hash2, hash3, configHash;//Maybe an array of these hashes types in the future?
 
     public static HashingAlgorithm ofHashId(byte hashId) {
         switch (hashId) {
@@ -166,7 +166,6 @@ public final class Hashing {
         hash1 = new Hash1();
         hash2 = new Hash2();
         hash3 = new Hash3();
-        hash4 = new Hash4();
 
         configHash = ofHashId(CONFIG_HASH_ID);
         //}

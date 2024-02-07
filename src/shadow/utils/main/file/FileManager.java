@@ -47,11 +47,11 @@ public abstract class FileManager {
         this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
     }
 
-    public static void write(File file, Collection<?> values) throws IOException {
+    public static void write(File file, Collection<?> lines) throws IOException {
         FileWriter stream = new FileWriter(file);
         BufferedWriter writer = new BufferedWriter(stream);
 
-        for (Object data : values) {
+        for (Object data : lines) {
             writer.write(data.toString());
             writer.newLine();
         }
@@ -113,13 +113,23 @@ public abstract class FileManager {
         }
     }
 
-    public static void loadFiles() {
+    public static void preEnableFileLoad() {
         try {
             Messages.init();
             UserFileManager.initialize();
-            OriginalLocationsManager.initialize();
             FireWallManager.initialize();
             WarpFileManager.initialize();
+            Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded (pre-enable)!" : "Poprawnie wczytano wszystkie pliki (przed-włączeniem)!");
+        } catch (IOException e) {
+            Main.logError(AlixUtils.isPluginLanguageEnglish ? "An error occurred whilst trying to load the " + e.getMessage() + " file!"
+                    : "Napotkano error przy próbie wczytania pliku " + e.getMessage() + "!");
+            e.getCause().printStackTrace();
+        }
+    }
+
+    public static void onEnableFileLoad() {
+        try {
+            OriginalLocationsManager.initialize();
             SpawnFileManager.initialize();
             Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded!" : "Poprawnie wczytano wszystkie pliki!");
         } catch (IOException e) {
@@ -260,7 +270,7 @@ public abstract class FileManager {
         save0(map.values());
     }
 
-    protected synchronized void save0(Collection<?> values) throws IOException {
+    protected synchronized void save0(Collection<?> values) throws IOException {//synchronized to avoid any possible async saving issues
         write(file, values);
     }
 

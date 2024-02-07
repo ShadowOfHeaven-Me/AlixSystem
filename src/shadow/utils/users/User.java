@@ -1,21 +1,22 @@
 package shadow.utils.users;
 
-import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.packet.types.unverified.PacketBlocker;
-import shadow.utils.objects.packet.types.verified.AlixDuplexHandler;
+import shadow.utils.objects.packet.PacketInterceptor;
+import shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.multi.HomeList;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public final class User {// implements ObjectSerializable {
 
     private final Player player;
-    protected final UUID uuid;
-    protected final AlixDuplexHandler duplexHandler;
+    private final UUID uuid;
+    private final PacketInterceptor duplexHandler;
+    private final VerifiedPacketProcessor duplexProcessor;
     private final PersistentUserData data;
     private final short maxHomes;
     private final boolean canBypassChatStatus, canSendColoredMessages;
@@ -23,12 +24,17 @@ public final class User {// implements ObjectSerializable {
     private boolean canReceiveTeleportRequests;
     /*    protected boolean isOwner;*/
 
-    //name - password - ip - homes
-    protected User(Player player, PersistentUserData data, Channel channel) {
+
+    User(Player player, PersistentUserData data, PacketInterceptor duplexHandler) {
+        Objects.requireNonNull(data);//require the data to be non-null
         this.player = player;
         this.data = data;
         this.uuid = player.getUniqueId();
-        this.duplexHandler = AlixDuplexHandler.getHandler(this, channel);
+        this.duplexHandler = duplexHandler;
+        if (this.duplexHandler != null) {
+            this.duplexProcessor = VerifiedPacketProcessor.getProcessor(this, duplexHandler);
+            this.duplexHandler.setProcessor(this.duplexProcessor);
+        } else this.duplexProcessor = null;
 
         if (player.isOp()) {
             this.maxHomes = 32767;
@@ -43,19 +49,35 @@ public final class User {// implements ObjectSerializable {
         this.canReceiveTeleportRequests = true;
     }
 
-    protected User(Player player) {
-        this(player, UserFileManager.getOrCreatePremiumInformation(player), PacketBlocker.getChannel(player));
+    User(Player player) {
+        this(player, UserFileManager.getOrCreatePremiumInformation(player), null);
     }
 
-    public Player getPlayer() {
+    public final Player getPlayer() {
         return player;
     }
 
-    public String getName() {
+    public final String getName() {
         return data.getName();
     }
 
-/*    public PersistentUserData getData() {
+    public final UUID getUUID() {
+        return uuid;
+    }
+
+    public final PersistentUserData getData() {
+        return data;
+    }
+
+    public final VerifiedPacketProcessor getDuplexProcessor() {
+        return duplexProcessor;
+    }
+
+    public final PacketInterceptor getDuplexHandler() {
+        return duplexHandler;
+    }
+
+    /*    public PersistentUserData getData() {
         return data;
     }*/
 
@@ -69,7 +91,7 @@ public final class User {// implements ObjectSerializable {
 
     @Override
     public boolean equals(Object o) {
-        return o != null && o.getClass() == User.class && ((User) o).uuid.equals(uuid);
+        return o == this; //o != null && o.getClass() == User.class && ((User) o).uuid.equals(uuid);
     }
 
     @Override
@@ -186,9 +208,9 @@ public final class User {// implements ObjectSerializable {
         AlixUtils.sendMessage(player, message);
     }
 
-    public void quit() {
+/*    public void quit() {
         //if (duplexHandler != null) this.duplexHandler.stop();
-    }
+    }*/
 
     public String getIPAddress() {
         return data.getSavedIP();

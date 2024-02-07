@@ -1,10 +1,12 @@
 package shadow.utils.objects.packet.types.unverified;
 
+import alix.common.data.LoginType;
 import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
 import shadow.utils.users.offline.UnverifiedUser;
 
@@ -15,8 +17,8 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
     //private static final Set<Integer> WINDOW_IDS = new ConcurrentSet<>();
     private AnvilPasswordBuilder builder;
 
-    protected AnvilGUIPacketBlocker(UnverifiedUser u) {
-        super(u);
+    protected AnvilGUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
+        super(u, handler);
         this.builder = (AnvilPasswordBuilder) u.getPasswordBuilder();
     }
 
@@ -25,12 +27,18 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
         //Main.logInfo(msg.getClass().getSimpleName());
         if (user.hasCompletedCaptcha()) {
             switch (msg.getClass().getSimpleName()) {
+                case "PacketPlayInPosition"://most common packets
+                case "PacketPlayInPositionLook":
+                case "PacketPlayInLook":
+                case "d":
+                    this.trySpoofPackets();
+                    return;
                 case "PacketPlayInItemName":
                     super.channelReadNotOverridden(ctx, msg);
                     this.updateText(msg);
                     return;
                 case "PacketPlayInWindowClick":
-                    super.channelRead(ctx, msg);
+                    super.channelReadNotOverridden(ctx, msg);
                     this.builder.spoofValidAccordingly();
                     return;
                 case "PacketPlayInCloseWindow":
@@ -42,20 +50,20 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             }
             return;
         }
-        super.captchaVerification(ctx, msg);
+        super.onReadCaptchaVerification(ctx, msg);
     }
 
     private void updateText(Object packet) {
         try {
             String text = (String) ReflectionUtils.inItemNamePacketTextMethod.invoke(packet);
 
-            boolean invalid = true;
+            String invalidityReason = null;
 
             if (user.isRegistered()) this.builder.spoofAllItems();
-            else if (invalid = AlixUtils.isPasswordInvalid(text)) this.builder.spoofItemsInvalidIndicate();
+            else if ((invalidityReason = AlixUtils.getPasswordInvalidityReason(text, LoginType.ANVIL)) != null) this.builder.spoofItemsInvalidIndicate();
             else this.builder.spoofAllItems();
 
-            this.builder.input(text, !invalid);
+            this.builder.input(text, invalidityReason);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -101,7 +109,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             return;
         }
 
-        super.write(ctx, msg, promise);//super call on purpose
+        super.write(ctx, msg, promise);//intentional super call
     }
 
     /*        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {//Items

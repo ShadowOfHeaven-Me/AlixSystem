@@ -1,6 +1,6 @@
 package shadow.utils.main;
 
-import alix.common.data.PasswordType;
+import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.formatter.AlixFormatter;
@@ -24,6 +24,7 @@ import shadow.systems.commands.ExecutableCommandList;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.world.AlixWorldHolder;
 
@@ -46,20 +47,19 @@ public final class AlixUtils {
     public static final SimpleDateFormat dateFormatter, timeFormatter;
     //public static final String[] invalidNicknamesStart;
     //public static final Language pluginLanguage;
-    public static final ExecutableCommandList registerCommandList, loginCommandList;
+    public static final ExecutableCommandList registerCommandList, loginCommandList, autoLoginCommandList, autoRegisterCommandList;
     public static final String serverVersion, operatorCommandPassword, chatFormat;//, banFormat;
     public static final CaptchaType captchaVerificationType;
     public static final CaptchaVisualType captchaVerificationVisualType;
-    public static final PasswordType defaultPasswordType;
+    public static final LoginType defaultLoginType;
     public static final float doubledDefaultWalkSpeed, doubledDefaultFlySpeed;
     public static final long verificationReminderDelay;
-    public static final int bukkitVersion, maximumTotalAccounts, maxCaptchaTime, maxLoginTime;//, lowestTeleportableYLevel;
+    public static final int bukkitVersion, maximumTotalAccounts, maxCaptchaTime, maxLoginTime, maxLoginAttempts, maxCaptchaAttempts;//, lowestTeleportableYLevel;
     public static final byte captchaLength;
-    public static final boolean isOperatorCommandRestricted, playerIPAutoLogin, isPluginLanguageEnglish, isOfflineExecutorRegistered,
-            kickOnIncorrectPassword, requireCaptchaVerification, kickOnIncorrectCaptcha,
+    public static final boolean isOperatorCommandRestricted, playerIPAutoLogin, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
-            requirePingCheckVerification, isCaptchaVerificationMapBased, repeatedVerificationReminderMessages,
-            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
+            requirePingCheckVerification, repeatedVerificationReminderMessages,
+            anvilPasswordGui, pinPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
 
     private static final String
             tooLongMessage = Messages.get("password-invalid-too-long"),
@@ -126,15 +126,11 @@ public final class AlixUtils {
                         captchaType + "! Switching to 'text', as default.");
                 break;
         }
-        boolean anvilPasswordGui0 = false;
-        String passwordType = config.getString("password-type", "password").toLowerCase();
-        switch (passwordType) {
+        String loginType = config.getString("password-type", "password").toLowerCase();
+        switch (loginType) {
             case "password":
             case "pin":
-                break;
             case "anvil_password":
-                passwordType = "password";
-                anvilPasswordGui0 = true;
                 break;
             default:
                 Main.logWarning("Invalid 'password-type' parameter set in config! Available: password & pin, but instead got '" +
@@ -143,11 +139,11 @@ public final class AlixUtils {
         }
         //pluginLanguage = getPluginLanguage(language);
         isPluginLanguageEnglish = !language.equals("pl");
-        defaultPasswordType = PasswordType.valueOf(passwordType.toUpperCase());
-        anvilPasswordGui = anvilPasswordGui0;
+        defaultLoginType = LoginType.parseConfig(loginType.toUpperCase());
+        anvilPasswordGui = defaultLoginType == LoginType.ANVIL;
+        pinPasswordGui = defaultLoginType == LoginType.PIN;
         captchaVerificationType = CaptchaType.from(captchaType.toUpperCase());
         captchaVerificationVisualType = CaptchaVisualType.from(captchaVisualType.toUpperCase());
-        isCaptchaVerificationMapBased = captchaVerificationVisualType == CaptchaVisualType.MAP;
         //renderFancyCaptchaDigits = config.getBoolean("fancy-digits") && captchaVerificationType == CaptchaType.NUMERIC;
         byte captchaLength0 = (byte) Math.min(Math.max((byte) config.getInt("captcha-length"), 1), 10);
 /*        if (renderFancyCaptchaDigits) {
@@ -163,6 +159,8 @@ public final class AlixUtils {
         //}
         registerCommandList = new ExecutableCommandList(config.getStringList("after-register-commands"));
         loginCommandList = new ExecutableCommandList(config.getStringList("after-login-commands"));
+        autoRegisterCommandList = new ExecutableCommandList(config.getStringList("after-auto-register-commands"));
+        autoLoginCommandList = new ExecutableCommandList(config.getStringList("after-auto-login-commands"));
         captchaLength = captchaLength0;
         captchaVerificationCaseSensitive = config.getBoolean("captcha-case-sensitive");
         verificationReminderDelay = config.getLong("verification-reminder-message-delay");
@@ -170,7 +168,7 @@ public final class AlixUtils {
         isOnlineModeEnabled = Bukkit.getServer().getOnlineMode();
         antibotService = config.getBoolean("antibot-service");
         isOfflineExecutorRegistered = config.getBoolean("offline-login-requirement") && !isOnlineModeEnabled;
-        kickOnIncorrectPassword = config.getBoolean("kick-on-incorrect-password");
+        maxLoginAttempts = config.getInt("max-login-attempts");
         playerIPAutoLogin = config.getBoolean("auto-login");
         isDebugEnabled = config.getBoolean("debug");
         userDataAutoSave = config.getBoolean("auto-save");
@@ -192,7 +190,7 @@ public final class AlixUtils {
         maximumTotalAccounts = config.getInt("max-total-accounts");
         isOperatorCommandRestricted = config.getBoolean("restrict-op-command");
         operatorCommandPassword = config.getString("op-command-password");
-        kickOnIncorrectCaptcha = config.getBoolean("kick-on-incorrect-captcha");
+        maxCaptchaAttempts = config.getInt("max-captcha-attempts");
         hideFailedJoinAttempts = config.getBoolean("hide-failed-join-attempts");
         alixJoinLog = config.getBoolean("custom-join-log");
         //invalidNicknamesStart = config.getStringList("disallow-join-of").toArray(new String[0]);
@@ -204,6 +202,8 @@ public final class AlixUtils {
         bukkitVersion = getBukkitVersion();
         //name - password - ip - homes
         //alexSkinTexture = parseTexture("Alex");
+
+        //Copied from Essentials ;]
         ipPattern = Pattern.compile("^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
         //vanishInvisibilityEffect = new PotionEffect(PotionEffectType.INVISIBILITY, -1, 147, false, false, false);
         dateFormatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -265,6 +265,15 @@ public final class AlixUtils {
         return data != null ? data.getPasswordType() == PasswordType.PIN : fancyPasswordGui || defaultPasswordType == PasswordType.PIN;
     }*/
 
+    private static final String pinTypeInvalid = Messages.get("gui-pin-type-invalid");
+
+    public static String getPasswordInvalidityReason(String password, LoginType type) {
+        if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin
+            return AlixUtils.isPIN(password) ? null : pinTypeInvalid;
+
+        return AlixUtils.getInvalidityReason(password, false);
+    }
+
     public static String formatMillis(long millis) {
         //if (millis % 1000 == 0) return millis + " second" + (millis / 1000 > 1 ? "s" : "");
         float div = millis / 1000f;
@@ -286,10 +295,10 @@ public final class AlixUtils {
         //return user.isPinGUIInitialized() || !startsWith(cmd, "login", "loguj", "zaloguj", "register", "reg", "zarejestruj", "captcha");
     }*/
 
-    public static ItemStack getSkull(String url, String name) {
+    public static ItemStack getSkull(String name, String url) {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta headMeta = (SkullMeta) head.getItemMeta();
-        headMeta.setDisplayName(name);
+        headMeta.setDisplayName(AlixFormatter.translateColors(name));
 
         GameProfile profile = new GameProfile(UUID.randomUUID(), "none");
         profile.getProperties().put("textures", new Property("textures", url));
@@ -311,7 +320,7 @@ public final class AlixUtils {
         return list;
     }
 
-    public static void checkAuthentication(Player p) {
+/*    public static void checkAuthentication(Player p) {
         try {
             Object entityPlayer = p.getClass().getMethod("getHandle").invoke(p);
             GameProfile profile = (GameProfile) ReflectionUtils.getProfile.invoke(entityPlayer);
@@ -319,7 +328,7 @@ public final class AlixUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 
     public static String convertToFormattedUUID(String id) {
         StringBuilder sb = new StringBuilder(id);
@@ -389,13 +398,10 @@ public final class AlixUtils {
         return s.equals("null") ? null : s;
     }
 
-    public static PasswordType readPasswordType(String s) {
-        if (s.equals("null") || s.equals("0")) return defaultPasswordType;
-        try {
-            return PasswordType.valueOf(s);
-        } catch (Exception e) {
-            return defaultPasswordType;//something went wrong, we'll return the default
-        }
+    public static LoginType readLoginType(String s, LoginType defaultForNull) {
+        if (s.equals("null")) return defaultForNull;
+        if (s.equals("0")) return defaultLoginType;
+        return LoginType.parseData(s);
     }
 
 /*    public static double getDamageReduced(Player player) {//some random guy made this at https://www.spigotmc.org/threads/get-armor-defense-points-from-a-player.153971/
@@ -472,6 +478,20 @@ public final class AlixUtils {
         return a;
     }
 
+    public static Character[] toObject(char... a) {
+        int l = a.length;
+        Character[] b = new Character[l];
+        for(int c = 0; c < l; c++) b[c] = a[c];
+        return b;
+    }
+
+    public static char[] toPrimitive(Character... a) {
+        int l = a.length;
+        char[] b = new char[l];
+        for(int c = 0; c < l; c++) b[c] = a[c];
+        return b;
+    }
+
     public static Integer[] toObject(int... a) {
         int l = a.length;
         Integer[] b = new Integer[l];
@@ -497,6 +517,14 @@ public final class AlixUtils {
             builder.append(newChar);
             if (newChar == to) break;
         }
+    }
+
+    public static boolean isPIN(String password) {
+        if (password.length() != 4) return false;
+        char[] c = password.toCharArray();
+        for (char d : c)
+            if (d < 48 || d > 57) return false;
+        return true;
     }
 
     public static String getInvalidityReason(String text, boolean canBeShort) {
@@ -540,8 +568,15 @@ public final class AlixUtils {
         return false;
     }
 
-    public static String getVerificationReminderMessage(boolean isRegistered) {
-        return isRegistered ? Messages.notLoggedInUserMessage : requireCaptchaVerification ? Messages.captchaNotCompletedUserMessage : Messages.unregisteredUserMessage;
+    public static final Object
+            notLoggedInUserMessagePacket = OutMessagePacketConstructor.construct(Messages.notLoggedInUserMessage),
+            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.construct(Messages.captchaNotCompletedUserMessage),
+            unregisteredUserMessagePacket = OutMessagePacketConstructor.construct(Messages.unregisteredUserMessage);
+
+    public static Object getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
+        if (isRegistered) return notLoggedInUserMessagePacket;
+        if (hasAccount) return unregisteredUserMessagePacket;//isn't registered, but has an account - the password must've been reset
+        return requireCaptchaVerification ? captchaNotCompletedUserMessagePacket : unregisteredUserMessagePacket;
     }
 
     public static void sendEmptyMessage(Conversable c) {
@@ -586,13 +621,12 @@ public final class AlixUtils {
         try {
             i = parseInteger(c);
         } catch (NumberFormatException e) {
-            Main.logError(isPluginLanguageEnglish ? "Invalid permission 'alixsystem.maxhomes.<number>' - instead of a number got: '" + a + "'!" :
+            Main.logWarning(isPluginLanguageEnglish ? "Invalid permission 'alixsystem.maxhomes.<number>' - instead of a number got: '" + a + "'!" :
                     "Nieprawidłowa permisja 'alixsystem.maxhomes.<liczba>' - zamiast liczby otrzymano: '" + a + "'!");
             return 0;
         }
-        short h = (short) i;
-        if (h != i) return 32767; //more than max was set
-        return h;
+        if (i > 32767) return 32767;
+        return (short) Math.max(i, 0);
     }
 
 /*    public static boolean isReloadCommandHandled(String cmd) {
@@ -771,7 +805,7 @@ public final class AlixUtils {
         return null;
     }
 
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "String#split")
     public static String[] split(String text, String regex) {
         int regexLength = regex.length();
         switch (regexLength) {
@@ -782,11 +816,11 @@ public final class AlixUtils {
         }
         char[] textArray = text.toCharArray();
         char[] regexArray = regex.toCharArray();
-        int textLength = textArray.length;
+        final int txtLM1 = textArray.length - 1;
         List<String> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder(), secondSB = new StringBuilder();
         short j = 0;
-        for (short i = 0; i < textLength; i++) {
+        for (short i = 0; i < textArray.length; i++) {
             char currentTextLetter = textArray[i];
             if (currentTextLetter == regexArray[j++]) {
                 if (j == regexLength) {
@@ -803,33 +837,54 @@ public final class AlixUtils {
                 j = 0;
             }
 
-            if (i == textLength - 1) list.add(sb.toString());
+            if (i == txtLM1) list.add(sb.toString());
         }
         return list.toArray(new String[0]);
     }
 
     //A faster String#split implementation
     //for non-complex Strings
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "String#split")
     public static String[] split(String a, char b) {
-        int l = a.length();
         char[] c = a.toCharArray();
-        int limit = getCharsCount(c, b);
-        int j = 0, k = 0, n = l - limit;
-        String[] d = new String[limit + 1];
+        final int lM1 = c.length - 1;
+        int regexes = getCharsCount(c, b);//it's usually faster to count the array's size rather than resize it
+        int j = 0, k = 0, n = c.length - regexes;//'n' is the known amount of chars left
+        String[] d = new String[regexes + 1];//we already know how big the array should be
         char[] e = new char[n];
-        for (int i = 0; i < l; i++) {
+        for (int i = 0; i < c.length; i++) {
             char f = c[i];
-            if (f == b) {
+            if (f != b) e[k++] = f;//it's more common for the char to not be the regex
+            else {
                 d[j++] = new String(e, 0, k);
                 n -= k;
                 e = new char[n];
                 k = 0;
-            } else e[k++] = f;
-            if (i == l - 1) d[j++] = new String(e, 0, k);
+            }
+            if (i == lM1) d[j++] = new String(e, 0, k);//apply the remaining chars
         }
         return d;
     }
+
+/*    @AlixIntrinsified
+    public static String[] split(String a, char b, int assumedLength) {
+        char[] c = a.toCharArray();
+        final int lM1 = c.length - 1;
+        int stringArrayIndex = 0, currentStringLength = 0, totalCharsLeft = c.length - assumedLength;
+        String[] stringArray = new String[assumedLength];
+        char[] charsInCurrentString = new char[totalCharsLeft];
+        for (int i = 0; i < c.length; i++) {
+            char f = c[i];
+            if (f == b) {
+                stringArray[stringArrayIndex++] = new String(charsInCurrentString, 0, currentStringLength);
+                totalCharsLeft -= currentStringLength;
+                charsInCurrentString = new char[totalCharsLeft];
+                currentStringLength = 0;
+            } else charsInCurrentString[currentStringLength++] = f;
+            if (i == lM1) stringArray[stringArrayIndex++] = new String(charsInCurrentString, 0, currentStringLength);
+        }
+        return stringArray;
+    }*/
 
     public static int getCharsCount(char[] a, char b) {
         int c = 0;
@@ -841,7 +896,7 @@ public final class AlixUtils {
         return split(data, '|');
     }
 
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "String#contains")
     public static boolean contains(char[] a, String regex) {
         char[] b = regex.toCharArray();
         int i = 0;
@@ -862,7 +917,7 @@ public final class AlixUtils {
         return random.nextDouble() * (to - from) + from;
     }
 
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "Integer#parseInteger")
     public static int parseInteger(String a) throws NumberFormatException {
         if (a.charAt(0) == 45) return -parseInteger(a.substring(1));
         char[] b = a.toCharArray();
@@ -951,22 +1006,17 @@ public final class AlixUtils {
     }
 
     public static String mergeWithSpaces(String[] a) {
-        StringBuilder sb = new StringBuilder();
-        int l = a.length;
-        for (int i = 0; i < l; i++) {
-            sb.append(a[i]);
-            if (i != l - 1) sb.append(' ');
-        }
-        return sb.toString();
+        return mergeWithSpacesAndSkip(a, 0);
     }
 
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "StringJoiner#merge")
+//not necessarily this specific method, but rather used symbolically for all joiners
     public static String mergeWithSpacesAndSkip(String[] a, int toSkip) {
-        StringBuilder sb = new StringBuilder();
-        int l = a.length;
-        for (int i = toSkip; i < l; i++) {
+        StringBuilder sb = new StringBuilder((a.length - toSkip) << 3);//the estimated length assumes that each String is 8 chars long on average
+        final int lM1 = a.length - 1;
+        for (int i = toSkip; i < a.length; i++) {
             sb.append(a[i]);
-            if (i != l - 1) sb.append(' ');
+            if (i != lM1) sb.append(' ');
         }
         return sb.toString();
     }
@@ -1077,11 +1127,7 @@ public final class AlixUtils {
     }
 
     public static OfflinePlayer getOfflinePlayer(String name) {
-        for (OfflinePlayer p : Bukkit.getOfflinePlayers()) {
-            String offlineName = p.getName();
-            if (offlineName != null && offlineName.equalsIgnoreCase(name)) return p;
-        }
-        return null;
+        return Bukkit.getOfflinePlayer(name);
     }
 
     public static <T> T[] getArrayWithoutNulls(T[] array, T[] newArray) {
@@ -1101,11 +1147,11 @@ public final class AlixUtils {
     }
 
     public static List<String> getItemLore(String... lore) {
-        return Arrays.asList(translateArrayColors(lore));
+        return Arrays.asList(translateArrayColorsAndTrimEach(lore));
     }
 
-    public static String[] translateArrayColors(String... texts) {
-        for (int i = 0; i < texts.length; i++) texts[i] = translateColors(texts[i]);
+    public static String[] translateArrayColorsAndTrimEach(String... texts) {
+        for (int i = 0; i < texts.length; i++) texts[i] = translateColors(texts[i]).trim();
         return texts;
     }
 

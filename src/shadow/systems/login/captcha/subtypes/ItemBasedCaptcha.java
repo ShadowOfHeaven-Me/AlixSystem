@@ -29,13 +29,5 @@ abstract class ItemBasedCaptcha extends Captcha {
         return OutWindowItemsPacketConstructor.construct(0, list);
     }
 
-    @Override
-    public final void sendPackets() {
-        UnverifiedUser user0 = this.user;
-        if (user0 == null) return;
-        Channel channel = user0.getPacketBlocker().getChannel();
-        this.sendPackets(channel);
-    }
-
-    abstract void sendPackets(Channel channel);
+    public abstract void sendPackets();
 }

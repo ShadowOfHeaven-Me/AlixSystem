@@ -1,6 +1,7 @@
 package shadow.systems.login;
 
 import org.bukkit.entity.Player;
+import shadow.systems.login.result.LoginInfo;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.users.offline.UnverifiedUser;
 
@@ -16,8 +17,8 @@ public final class Verifications {//TODO: Commands and users
     //private static final AlixMap<UUID, UnverifiedUser> map = new KeyedIdentityMap<>(Bukkit.getMaxPlayers());
 
     //not done async, because introducing a delay on packet blocking can prove fatal
-    public static UnverifiedUser add(Player p, PersistentUserData data, String ipAddress, String joinMessage) {
-        UnverifiedUser user = new UnverifiedUser(p, data, ipAddress, joinMessage);
+    public static UnverifiedUser add(Player p, LoginInfo login, String joinMessage) {
+        UnverifiedUser user = new UnverifiedUser(p, login, joinMessage);
         map.put(p.getUniqueId(), user);
         return user;//map.put(Key, Value) returns the previous Value, thus it cannot be returned instead for short
     }

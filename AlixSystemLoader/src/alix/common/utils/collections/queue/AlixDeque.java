@@ -66,6 +66,10 @@ public class AlixDeque<T> {
         this.size++;
     }
 
+    public static <T> void forEach(Consumer<T> consumer, AlixDeque<T> deque) {
+        forEach(consumer, deque.firstNode());
+    }
+
     public static <T> void forEach(Consumer<T> consumer, Node<T> node) {
         if (node == null) return;
         do {

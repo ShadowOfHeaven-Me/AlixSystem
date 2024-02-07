@@ -1,19 +1,20 @@
-as: alixsystem, alixs, systemalix, js
-fly: flying, latanie, lataj
+as: alixsystem, alixs
+fly: flying
 sudo: -
-rename: itemrename, nazwijprzedmiot, nazwaprzedmiotu, zmiennazweprzedmiotu
+rename: itemrename
 speed: swiftness, szybkosc, predkosc
 heal: h, ulecz
-feed: f, najedz, nasyc
+feed: f, nasyc
 enderchest: ec, invec, echest, enderc
-invsee: inventorylook, invlook, inventory, inv, inventoryview, inview, eq, zobaczeq, zobaczekwipunek, ekwipunek
+invsee: inventory, inv, eq
 gamemode: gm, trybgry, gms, gmc, gma, gmsp, gm0, gm1, gm2, gm3
 list: -
-nickname: nick, nicknameplayer, name, nazwa, zmiennazwe
-register: reg, zarejestruj
-login: loguj, zaloguj
-changepassword: changepass, cpass, zmienhaslo, zhaslo
+nickname: nick, nicknameplayer, name
 captcha: -
+register: -
+login: -
+account: settings
+changepassword: changepass
 unban: -
 unbanip: pardonip, unban-ip
 tempban: -
@@ -30,8 +31,8 @@ tpadeny: tpdeny, tpd
 tpacancel: tpcancel, tpc
 tpaon: -
 tpaoff: -
-mute: wycisz
-unmute: odcisz
+mute: -
+unmute: -
 warp: -
 addwarp: warpadd, createwarp, warpcreate, dodajwarp, stworzwarp, setwarp
 removewarp: warpremove, usunwarp

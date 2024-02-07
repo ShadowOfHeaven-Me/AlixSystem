@@ -3,10 +3,10 @@ package alix.loaders.velocity;
 import alix.common.AlixMain;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
-import alix.common.update.FileUpdater;
+import alix.common.utils.file.update.FileUpdater;
 import alix.common.utils.file.FileManager;
-import alix.pluginloader.JarInJarClassLoader;
-import alix.pluginloader.LoaderBootstrap;
+import alix.loaders.classloader.JarInJarClassLoader;
+import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.nio.file.Path;
 
-@Plugin(id = "AlixSystem", name = "AlixSystem", version = "2.7.3", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
+@Plugin(id = "AlixSystem", name = "AlixSystem", version = "2.8.0", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
         authors = "ShadowOfHeaven", dependencies = @Dependency(id = "FastLogin", optional = true))
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
@@ -28,7 +28,8 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
     private static final String JAR_NAME = "AlixSystemVelocity.jarinjar";
     private static final String BOOTSTRAP_CLASS = "alix.velocity.Main";
     private final ProxyServer server;
-    private final LoggerAdapter logger;
+    private final Logger logger;
+    private final LoggerAdapter loggerAdapter;
     private final Path dataDirectory;
     private final JarInJarClassLoader loader;
     private final LoaderBootstrap bootstrap;
@@ -38,7 +39,8 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
     public VelocityAlixMain(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         instance = this;
         this.server = server;
-        this.logger = LoggerAdapter.createAdapter(logger);
+        this.logger = logger;
+        this.loggerAdapter = LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
         File f = FileManager.createPluginFile("vconfig.yml");
         this.config = YamlConfiguration.loadConfiguration(f);
@@ -46,7 +48,8 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         //CommonAlixMain.loggerManager = this;
 
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
-        this.bootstrap = loader.instantiatePlugin(BOOTSTRAP_CLASS, VelocityAlixMain.class, this);
+        this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, VelocityAlixMain.class, this);
+        this.loader.close();
         //CommonAlixMain.bootstrap = this.plugin;
 
         FileUpdater.updateFiles();
@@ -60,11 +63,19 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
     @Override
     public LoggerAdapter getLoggerAdapter() {
+        return loggerAdapter;
+    }
+
+    public Logger getLogger() {
         return logger;
     }
 
     public final ProxyServer getServer() {
         return server;
+    }
+
+    public Path getDataDirectory() {
+        return dataDirectory;
     }
 
     @Override

@@ -15,11 +15,11 @@
 
 #Highly recommended, as it's greatly optimized and prevents one-time connections for unregistered players (which are common in bot attacks)
 prevent-first-time-join: true
-#Used if the parameter above is set to true to define the maximum number of remembered connections - a connection will be forgotten only when this list's size amount of connections will be made (min of 3, max of 32767)
+#Used if the parameter above is set to true to define the maximum number of remembered connections - a connection will be forgotten only when this list's size amount of connections will be made
 connection-list-size: 500
 #Defines whether an unregistered player should be required to ping the server before joining (can stop primitive bot attacks, offline mode only)
 ping-before-join: false
-#Used if the parameter above is set to true to define the maximum number of remembered pings - a ping will be forgotten only when this list's size amount of connections will be made (min of 3, max of 32767)
+#Used if the parameter above is set to true to define the maximum number of remembered pings - a ping will be forgotten only when this list's size amount of connections will be made
 ping-list-size: 500
 #Defines how much accounts in total should be a player allowed to have (counted by their ip), set it to 0 or less if you want to disable it
 max-total-accounts: 1
@@ -27,6 +27,9 @@ max-total-accounts: 1
 anti-vpn: true
 #Defines whether bot attack detection algorithms should be enabled in pair with the fast-blocking FireWall system. Works best with 'prevent-first-time-join' and 'anti-vpn' set to true.
 antibot-service: true
+#If set to true, Alix will immediately forcibly close connections and have the player see the automatic "Connection Refused" message.
+#If set to false, the "Your IP has been firewalled" message will be shown after waiting for login packets (a bit less optimized).
+fast-raw-firewall: true
 
 
 #----------------------------------------------#
@@ -47,7 +50,8 @@ captcha-visual-type: map
 #text - The captcha is a four letter text (referring to the default captcha length of 4)
 captcha-type: text
 #Defines the range (in ASCII) of possible symbols in the text captcha (will not work for non-literal chars & ranges greater than the total of 32767)
-text-captcha-ascii-range: a-z, A-Z, 0-9
+#Any arguments after symbolize singular characters excluded from the ranges ";e="
+captcha-text-ascii-range: a-z, A-Z, 1-9 ;e= I, l, O
 #Defines the font used for character rendering in the map captcha (only works in a headful environment)
 map-captcha-font: Arial
 #Defines how big the drawn characters are
@@ -56,10 +60,10 @@ map-captcha-font-size: 35
 map-captcha-font-max-random-rotation: 45
 #Defines the length of the captcha (min of 1, max of 5)
 captcha-length: 5
-#Defines whether captcha should be case-sensitive (not recommended, as whether the letters are capital can be sometimes hard to tell)
+#Defines whether captcha should be case-sensitive (not recommended, as whether the letters are capital can sometimes be hard to tell)
 captcha-case-sensitive: false
-#Defines whether the player should be kicked when the entered captcha is incorrect (setting it to false could be risky because of bot attacks)
-kick-on-incorrect-captcha: true
+#Defines how many times the player can enter the incorrect captcha before being kicked out (setting it to a high number could be risky because of bot attacks)
+max-captcha-attempts: 1
 #Defines (in seconds) how long should a player allowed to be on the server without completing the captcha test before being kicked out
 max-captcha-time: 30
 
@@ -77,22 +81,28 @@ max-login-time: 75
 #Defines whether, if the server is set to offline mode, the players should be required to log in using a set beforehand password
 offline-login-requirement: true
 #Defines whether the player should be kicked when the entered password is incorrect (setting it to false could be risky because of password crackers)
-kick-on-incorrect-password: true
+max-login-attempts: 1
 #Defines the way the passwords set by the users will be hashed in by default
 # 0 - No hash, not recommended in case of password leaks
 # 1 - Mixes character's code point, very fast but possibly repeatable, stored in a 32-bit integer
-# 2 - Uses uuid's bit generation & MD5 hashing, much less repeatable, but in exchange takes more computing time, stored in a 64-bit integer
-# 3 - Uses uuid's bit generation & SHA-256 hashing, almost never repeats (no idea if it even ever can repeat), most secure of all the options, but is also the heaviest (~1ms of computing time), stored in a 64-bit integer
-# 4 - Uses uuid's bit generation
-password-hash-type: 4
+# 2 - Uses uuid's bit generation & MD5 hashing, takes more computing time, stored in a 64-bit integer
+# 3 - Uses uuid's bit generation & SHA-256 hashing, most secure of all the options, but is also the heaviest, stored in a 64-bit integer
+password-hash-type: 3
 #Requires FastLogin, but allows premium users to join without the need of registering or logging in
 premium-auto-in: true
 #Defines (in milliseconds) the delay between each verification message sent (used for captcha, register and login message reminders, you can set it to 0 or less in order to make the message be sent only once)
 verification-reminder-message-delay: 5000
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
+#Invoked after a manual register
+#An example would be
+#- "say 3333 %name% -p".
 after-register-commands:
-#Works exactly the same as the parameter above with the sole difference of being invoked after a successful login
+#Works exactly the same as the parameter above with the sole difference of being invoked after a successful, manual login
 after-login-commands:
+#Works exactly like the parameters above but invoked on an automatic register (premium register)
+after-auto-register-commands:
+#Works exactly like the parameters above but invoked on an automatic login (premium login or ip auto-login)
+after-auto-login-commands:
 
 
 #----------------------------------------------#
@@ -102,22 +112,24 @@ after-login-commands:
 #Config used when the player is in the login phase, either trying to login in or register, but by using a GUI
 
 #Defines the default way the users have to register/log in. Available:
-# password - The user registers/logs in using the traditional password typed in the login command
-# anvil_password - The user registers/logs in using an anvil rename
+# password/command - The user registers/logs in using the traditional password typed in the login command
+# anvil_password/anvil - The user registers/logs in using an anvil rename gui
 # pin - The user have to registers/logs in using a pin gui
 password-type: password
 #Defines whether the player should have his pin checked the moment he types the last digit, without the need of clicking the CONFIRM button
 pin-auto-confirm: true
+#Defines the background item in all guis
+background-item: gray_stained_glass_pane
 #Defines the item type used for the pin gui's digits. Available:
 # wooden_skull - The built-in wooden skull
 # chat_stone_skull - The built-in stone skull with a visible contrast between the darker background and the brighter digit
 # plush_skull - The built-in skull with a bright expression and each digit being a different color
 # quartz_skull - The built-in inverse of the "chat_stone" skull - The digit is darker with a brighter background
 # <Material> - Any given valid material (e. g. red_wool, diamond_sword, dirt, oak_leaves etc.)
-pin-digit-item-type: quartz_skull
+pin-digit-item-type: wooden_skull
 #Defines the item amount for the pin digits
 # <Number> - Any given positive number, up to 64
-# digit_equivalent - The item amount will be the exact same as the pin digit
+# digit_equivalent - The item amount will be the exact same as the pin's digit
 pin-digit-item-amount: 1
 #Defines the item amount for the '0' digit in the pin login, as 'digit_equivalent' would result in no item
 pin-digit-zero-item-amount: 1
@@ -149,7 +161,7 @@ language: en
 custom-join-log: true
 #As the name suggests, it will hide any failed join attempts (such as unlisted, banned players etc.) from the console in order to avoid spam
 hide-failed-join-attempts: true
-#Defines whether Alix should override other commands with it's own implementation (if set to true, you can disable the ones you don't want in the commands.txt file)
+#Defines whether Alix should override other commands with it's own implementation (if set to true you can disable the ones you don't want in the commands.txt file)
 override-existing-commands: false
 #Defines (in seconds) in what period of time should the teleportation request automatically expire (set it to 0 or less if you want to disable it)
 tpa-auto-expire: 120

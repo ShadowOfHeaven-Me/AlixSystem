@@ -21,11 +21,15 @@ public final class OriginalLocationsFile extends FileManager {
     @Override
     protected void loadLine(String line) {
         String[] a = line.split("\\|", 2);
-        this.map.put(UUID.fromString(a[0]), SavableLocation.fromString(a[1]));
+        this.map.put(UUID.fromString(a[0]), SavableLocation.fromStringOrSpawnIfAbsent(a[1]));
     }
 
     public void save() throws IOException {
         super.saveKeyAndVal(map, "|", SavableLocation::toSavableString);//l -> toSavableString(l)
+    }
+
+    public final void put(UUID uuid, Location loc) {
+
     }
 
     public final Map<UUID, Location> getMap() {

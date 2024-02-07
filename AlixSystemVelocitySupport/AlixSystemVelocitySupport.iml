@@ -7,6 +7,7 @@
           <platformType>SPIGOT</platformType>
           <platformType>BUNGEECORD</platformType>
           <platformType>VELOCITY</platformType>
+          <platformType>MCP</platformType>
         </autoDetectTypes>
       </configuration>
     </facet>
@@ -14,7 +15,7 @@
   <component name="McpModuleSettings">
     <option name="srgType" value="SRG" />
   </component>
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_11" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
@@ -40,5 +41,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="limboapi-1.1.18" level="project" />
   </component>
 </module>

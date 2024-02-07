@@ -1,5 +1,6 @@
 package alix.velocity.systems.autoin.fastlogin;
 
+import alix.common.utils.other.throwable.AlixError;
 import alix.velocity.Main;
 import alix.velocity.systems.autoin.AuthAPI;
 import alix.velocity.systems.events.FastLoginEvents;
@@ -9,9 +10,8 @@ public final class FastLoginAuthImpl extends AuthAPI {
 
     private final FastLoginVelocity base;
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public FastLoginAuthImpl() {
-        this.base = (FastLoginVelocity) Main.pm.getPlugin("FastLogin").get();
+        this.base = (FastLoginVelocity) Main.pm.getPlugin("FastLogin").orElseThrow(AlixError::new);
         this.base.getCore().setAuthPluginHook(new AlixAuthImpl());
     }
 

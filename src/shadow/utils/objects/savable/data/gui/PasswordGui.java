@@ -1,7 +1,8 @@
 package shadow.utils.objects.savable.data.gui;
 
-import alix.common.data.GuiType;
+import alix.common.data.LoginType;
 import alix.common.messages.Messages;
+import alix.common.utils.formatter.AlixFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
@@ -14,6 +15,21 @@ import shadow.utils.objects.savable.data.gui.builders.SimplePinBuilder;
 import shadow.utils.users.offline.UnverifiedUser;
 
 public class PasswordGui {
+
+    static {
+        String config = Main.config.getString("background-item").toUpperCase();
+        Material m;
+        try {
+            m = Material.valueOf(config);
+        } catch (Exception e) {
+            Main.logWarning("Invalid material type in 'background-item': " + config + ". Defaulting to GRAY_STAINED_GLASS_PANE!");
+            m = Material.GRAY_STAINED_GLASS_PANE;
+        }
+
+        BACKGROUND_ITEM = rename(new ItemStack(m), "§f");
+    }
+
+    public static final ItemStack BACKGROUND_ITEM;
 
     public static final String
             pinConfirm = Messages.get("pin-confirm"),
@@ -47,15 +63,15 @@ public class PasswordGui {
             ACTION_LAST_REMOVE = 23,
             ACTION_RESET = 24,
             ACTION_LEAVE = 25;
-    public static final Inventory gui = createGUI();
+    private static final ItemStack[] pinVerificationGuiItems = createPINVerificationItems();
 
-    public static AlixGui newBuilder(UnverifiedUser user, GuiType type) {
-        AlixGui builder = create(user, type);
+    public static AlixVerificationGui newBuilder(UnverifiedUser user, LoginType type) {
+        AlixVerificationGui builder = create(user, type);
         user.setGUIInitialized(true);
         return builder;
     }
 
-    private static AlixGui create(UnverifiedUser user, GuiType type) {
+    private static AlixVerificationGui create(UnverifiedUser user, LoginType type) {
         switch (type) {
             case PIN:
                 return new SimplePinBuilder(user);
@@ -91,47 +107,46 @@ public class PasswordGui {
         JavaScheduler.async(() -> en.openInventory(getCloned()));
     }*/
 
-    private static Inventory createNew() {
-        return Bukkit.createInventory(null, 36, pinGUITitle);
+    private static Inventory createNew(String title) {
+        return Bukkit.createInventory(null, 36, title);
     }
 
-    public static Inventory getPINCloned() {
-        Inventory cloned = createNew();
-        cloned.setContents(gui.getContents());
+    public static Inventory getPinGuiCloned(String title) {
+        Inventory cloned = createNew(title);
+        cloned.setContents(pinVerificationGuiItems);
         return cloned;
     }
 
-    private static Inventory createGUI() {
-        Inventory inv = createNew();
-        for (byte i = 0; i < 10; i++) {
-            inv.setItem(PIN_DIGIT_SLOTS[i], digits[i]);
-        }
-/*        inv.setItem(DIGIT_0, digits[0]);
-        inv.setItem(DIGIT_1, digits[1]);
-        inv.setItem(DIGIT_2, digits[2]);
-        inv.setItem(DIGIT_3, digits[3]);
-        inv.setItem(DIGIT_4, digits[4]);
-        inv.setItem(DIGIT_5, digits[5]);
-        inv.setItem(DIGIT_6, digits[6]);
-        inv.setItem(DIGIT_7, digits[7]);
-        inv.setItem(DIGIT_8, digits[8]);
-        inv.setItem(DIGIT_9, digits[9]);*/
+    private static ItemStack[] createPINVerificationItems() {
+        //Inventory inv = createNew(null);//we do not care about the title
+        ItemStack[] items = new ItemStack[36];
+        for (byte i = 0; i < 10; i++) items[PIN_DIGIT_SLOTS[i]] = digits[i];
 
-        inv.setItem(ACTION_PIN_CONFIRM, rename(new ItemStack(Material.GREEN_WOOL), pinConfirm));
-        inv.setItem(ACTION_LAST_REMOVE, rename(new ItemStack(Material.YELLOW_WOOL), pinRemoveLast));
-        inv.setItem(ACTION_RESET, rename(new ItemStack(Material.RED_WOOL), pinReset));
-        inv.setItem(ACTION_LEAVE, rename(new ItemStack(Material.BLACK_WOOL), pinLeave));
+/*        items[DIGIT_0, digits[0]);
+        items[DIGIT_1, digits[1]);
+        items[DIGIT_2, digits[2]);
+        items[DIGIT_3, digits[3]);
+        items[DIGIT_4, digits[4]);
+        items[DIGIT_5, digits[5]);
+        items[DIGIT_6, digits[6]);
+        items[DIGIT_7, digits[7]);
+        items[DIGIT_8, digits[8]);
+        items[DIGIT_9, digits[9]);*/
 
-        for (int i : EMPTY_DIGIT_SLOTS) {
-            inv.setItem(i, BARRIER);
-        }
+        items[ACTION_PIN_CONFIRM] = rename(new ItemStack(Material.GREEN_WOOL), pinConfirm);
+        items[ACTION_LAST_REMOVE] = rename(new ItemStack(Material.YELLOW_WOOL), pinRemoveLast);
+        items[ACTION_RESET] = rename(new ItemStack(Material.RED_WOOL), pinReset);
+        items[ACTION_LEAVE] = rename(new ItemStack(Material.BLACK_WOOL), pinLeave);
 
-        ItemStack glassPane = rename(new ItemStack(Material.GRAY_STAINED_GLASS_PANE), "§f");
+        for (int i : EMPTY_DIGIT_SLOTS) items[i] = BARRIER;
+
+
+        ItemStack background = BACKGROUND_ITEM;
         for (byte i = 0; i < 36; i++) {
-            ItemStack item = inv.getItem(i);
-            if (item == null || item.getType().isAir()) inv.setItem(i, glassPane);
+            ItemStack item = items[i];
+            if (item == null || item.getType().isAir()) items[i] = background;
         }
-        return inv;
+        return items;
     }
 
     private static ItemStack[] getDigits() {
@@ -204,7 +219,7 @@ public class PasswordGui {
 
     private static ItemStack rename(ItemStack i, String s) {
         ItemMeta meta = i.getItemMeta();
-        meta.setDisplayName(s);
+        meta.setDisplayName(AlixFormatter.translateColors(s));
         i.setItemMeta(meta);
         return i;
     }
@@ -212,7 +227,7 @@ public class PasswordGui {
     private static ItemStack ofDigit(byte digit, String skullType) {
         String encodedHead = encodeSkullProperty(digit, skullType);
 
-        return AlixUtils.getSkull(encodedHead, "§e" + digit);
+        return AlixUtils.getSkull("&e" + digit, encodedHead);
     }
 
     private static String encodeSkullProperty(byte digit, String skullType) {

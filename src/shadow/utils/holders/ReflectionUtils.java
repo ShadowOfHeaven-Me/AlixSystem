@@ -1,8 +1,8 @@
 package shadow.utils.holders;
 
+import alix.common.utils.other.throwable.AlixException;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
-import net.minecraft.server.v1_14_R1.PacketPlayOutOpenBook;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -10,20 +10,17 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import shadow.utils.holders.packet.constructors.OutGameStatePacketConstructor;
 import shadow.utils.holders.packet.constructors.OutMapPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
-import shadow.utils.main.AlixUtils;
-import shadow.utils.main.file.FileManager;
+import shadow.utils.holders.packet.getters.LoginInStartPacketGetter;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ReflectionUtils {
@@ -79,7 +76,12 @@ public final class ReflectionUtils {
         getProfileFromPlayerInfoDataMethod = method;
     }
 
+    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket","network.protocol.game.PacketPlayOutChat");
+    public static final Class<?> chatMessageType = nms2("network.chat.ChatMessageType");
 
+    public static final Class<?> outGameStatePacketClass = nms2("network.protocol.game.PacketPlayOutGameStateChange");
+    //public static final Constructor<?> outGameStatePacketConstructor = getConstructor(outGameStatePacketClass, int.class, float.class);
+    //public static final Object ADVENTURE_MODE_PACKET = newInstance(outGameStatePacketConstructor, 3, 2);//3 for gamemode, 2 for adventure
 
     public static final Class<?> outHeldItemSlotPacketClass = nms2("network.protocol.game.PacketPlayOutHeldItemSlot");
 
@@ -87,7 +89,7 @@ public final class ReflectionUtils {
     //public static final Field inWindowClickSlotField = getFieldFromTypeSafe(inWindowClickPacketClass, int.class, 1);
 
     public static final Class<?> outWindowOpenPacketClass = nms2("network.protocol.game.PacketPlayOutOpenWindow");
-    //public static final Method outWindowOpenIdMethod = getMethodByReturnType(outWindowOpenPacketClass, int.class);
+    public static final Method outWindowOpenIdMethod = getMethodByReturnType(outWindowOpenPacketClass, int.class);
     //public static final Field outWindowOpenIdField = getFieldFromTypeSafe(outWindowOpenPacketClass, int.class);
 
     public static final Class<?> nonNullListClass = nms2("core.NonNullList");
@@ -130,13 +132,11 @@ public final class ReflectionUtils {
 
     public static final Class<?> outMapPacketClass = nms2("network.protocol.game.PacketPlayOutMap");
 
-
-
     public static final Class<?> craftChatMessageClass = obc("util.CraftChatMessage");
     public static final Method IChatComponentArrayFromStringMethod = getMethod(craftChatMessageClass, "fromString", String.class);
-    public static final Class<?> chatComponentTextClass = IChatComponentArrayFromStringMethod.getReturnType().getComponentType();
+    public static final Class<?> IChatBaseComponentClass = IChatComponentArrayFromStringMethod.getReturnType().getComponentType();
 
-    public static final Class<?> loginInStartPacketClass = nms2("network.protocol.login.PacketLoginInStart","network.protocol.login.ServerboundHelloPacket");
+    public static final Class<?> loginInStartPacketClass = nms2("network.protocol.login.PacketLoginInStart", "network.protocol.login.ServerboundHelloPacket");
 
     public static final Class<?> disconnectKickPlayPhasePacketClass = nms2("network.protocol.game.PacketPlayOutKickDisconnect", "network.protocol.common.ClientboundDisconnectPacket");
     public static final Class<?> disconnectLoginPhasePacketClass = nms2("network.protocol.login.PacketLoginOutDisconnect", "network.protocol.login.ClientboundLoginDisconnectPacket");
@@ -162,6 +162,18 @@ public final class ReflectionUtils {
     public static final CommandMap commandMap = getCommandMap();
     public static final Map<String, Command> serverKnownCommands = getKnownCommands();
     public static final YamlConfiguration serverConfiguration = getServerConfiguration();
+
+/*    public static void initCrashSave() {
+
+    }*/
+
+    public static Object[] constructTextComponents(String text) {
+        try {
+            return (Object[]) IChatComponentArrayFromStringMethod.invoke(null, text);
+        } catch (Exception e) {
+            throw new AlixException(e);
+        }
+    }
 
     public static void replaceBansToConcurrent() {
         replaceToConcurrent0(Bukkit.getBanList(BanList.Type.NAME));
@@ -221,13 +233,10 @@ public final class ReflectionUtils {
 
         try {
             List<Object> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                list.add(getHandle.invoke(p));
-            }
+            for (Player p : Bukkit.getOnlinePlayers()) list.add(getHandle.invoke(p));
 
             Object addPlayersPacket = OutPlayerInfoPacketConstructor.constructADD(list);
             channel.writeAndFlush(addPlayersPacket);
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -239,29 +248,22 @@ public final class ReflectionUtils {
             Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(entityId, BLINDNESS_MOB_EFFECT_LIST);
 
             channel.writeAndFlush(removeBlindnessPacket);
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static void sendLoginEffectPacket(int entityId, Channel channel) {
-/*        int slownessEffectId = 2;
 
-        Object slownessPacket = createMaxedEffectPacket(entityId, slownessEffectId);
+    /*potion effect ids:
+    slowness = 2
+    jump boost = 8
+    */
+    public static void sendLoginEffectPacket(UnverifiedUser user) {
+        user.writeAndFlushSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
 
-        channel.writeAndFlush(slownessPacket);
+        Object blindnessPacket = createMaxedEffectPacket(user.getPlayer().getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
 
-
-        int jumpBoostEffectId = 8;
-
-        Object jumpBoostPacket = createMaxedEffectPacket(entityId, jumpBoostEffectId);
-
-        channel.writeAndFlush(jumpBoostPacket);*/
-
-        Object blindnessPacket = createMaxedEffectPacket(entityId, BLINDNESS_MOB_EFFECT_LIST);
-
-        channel.writeAndFlush(blindnessPacket);
+        user.writeAndFlushSilently(blindnessPacket);
     }
 
     private static Map<String, Command> getKnownCommands() {
@@ -452,10 +454,10 @@ public final class ReflectionUtils {
         return Integer.parseInt(serverVersion2.split("_")[1]);
     }
 
-    private static int getSubBukkitVersion() {
+/*    private static int getSubBukkitVersion() {
         String[] m = serverVersion2.split("_");
         return m.length == 3 ? Integer.parseInt(m[2]) : 0;
-    }
+    }*/
 
     private static String getServerVersion() {
         return Bukkit.getServer().getClass().getPackage().getName().substring(23);
@@ -519,21 +521,27 @@ public final class ReflectionUtils {
         }
     }
 
-    public static Method getMethodByReturnType(Class<?> instance, Class<?> returnType, Class<?>... parameterTypes) {
-        for (Method method : instance.getMethods()) {
-            if (method.getReturnType() == returnType && AlixUtils.equalsArrayCheck(parameterTypes, method.getParameterTypes()))
+    public static Method getMethodByReturnType(Class<?> clazz, Class<?> returnType, Class<?>... parameterTypes) {
+        for (Method method : clazz.getMethods()) {
+            if (method.getReturnType() == returnType && equalsArrayCheck(parameterTypes, method.getParameterTypes()))
                 return method;
         }
-        throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + instance));
+        throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + clazz));
     }
 
     public static Method getMethodByReturnTypeAssignable(Class<?> instance, Class<?> returnType, Class<?>... parameterTypes) {
         for (Method method : instance.getMethods()) {
-            if (returnType.isAssignableFrom(method.getReturnType()) && AlixUtils.equalsArrayCheck(parameterTypes, method.getParameterTypes()))
+            if (returnType.isAssignableFrom(method.getReturnType()) && equalsArrayCheck(parameterTypes, method.getParameterTypes()))
                 return method;
         }
         //AlixUtils.debug(instance.getDeclaredMethods());
         throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + instance));
+    }
+
+    private static boolean equalsArrayCheck(Object[] a1, Object[] a2) {
+        if (a1.length != a2.length) return false;
+        for (int i = 0; i < a1.length; i++) if (!Objects.equals(a1[i], a2[i])) return false;
+        return true;
     }
 
     public static Constructor<?> getConstructor(Class<?> instanceClass, Class<?>... parameterTypes) {
@@ -544,10 +552,19 @@ public final class ReflectionUtils {
         }
     }
 
+    public static <T> T newInstance(Constructor<T> c, Object... args) {
+        try {
+            return c.newInstance(args);
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
     public static void init() {
         OutMapPacketConstructor.init();
         OutWindowItemsPacketConstructor.init();
         OutPlayerInfoPacketConstructor.init();
+        LoginInStartPacketGetter.init();
     }
 
     private ReflectionUtils() {

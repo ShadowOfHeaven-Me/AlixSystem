@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.check.ping.impl;
 
 import alix.common.messages.Messages;
@@ -84,4 +85,4 @@ public abstract class AbstractPingCheck implements PingCheck {
 
         Main.logInfo("sent");
     }
-}
+}*/

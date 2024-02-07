@@ -14,16 +14,16 @@ public abstract class Captcha {
 
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
     //private static boolean registered = true;
-    protected transient UnverifiedUser user;
+    protected UnverifiedUser user;
     protected String captcha;
 
     protected Captcha() {
         this.captcha = CaptchaGenerator.generateTextCaptcha(); //this::regenerate cannot be used because of initialization issues
     }
 
-    protected Captcha(Captcha captcha) {
+/*    protected Captcha(Captcha captcha) {
         this.captcha = captcha.captcha;
-    }
+    }*/
 
     public static void pregenerate() {
         CaptchaThreadManager.pregenerate();

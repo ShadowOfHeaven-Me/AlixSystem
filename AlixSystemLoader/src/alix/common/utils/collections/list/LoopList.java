@@ -1,20 +1,40 @@
 package alix.common.utils.collections.list;
 
+import alix.common.utils.other.throwable.AlixException;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class LoopList<T> {
 
     private final T[] values;
+    final int size;
     final int maxIndex;
 
     LoopList(T[] values) {
         this.values = values;
-        int l = values.length;
-        this.maxIndex = l;
+        this.size = values.length;
+        this.maxIndex = size - 1;
+    }
+
+    abstract int nextIndex();
+
+    abstract int previousIndex();
+
+    abstract void setCurrentIndex0(int index);
+
+    public abstract int getCurrentIndex();
+
+    public final void setCurrentIndex(int index) {
+        if (index >= size || index < 0) throw new AlixException("Index: " + index + " for size " + size);
+        this.setCurrentIndex0(index);
     }
 
     public final void setNext(T value) {
-        this.values[nextIndex()] = value;
+        this.values[this.nextIndex()] = value;
+    }
+
+    public final void setPrevious(T value) {
+        this.values[this.previousIndex()] = value;
     }
 
     public final void setValue(int i, T value) {
@@ -22,19 +42,28 @@ public abstract class LoopList<T> {
     }
 
     public final T next() {
-        return this.values[nextIndex()];
+        return this.values[this.nextIndex()];
     }
 
-    abstract int nextIndex();
+    public final T current() {
+        return this.values[this.getCurrentIndex()];
+    }
 
-    public abstract int getCurrentIndex();
+    public final T previous() {
+        return this.values[this.previousIndex()];
+    }
 
     public final boolean contains(T v) {
         for (T t : values) if (v.equals(t)) return true;
         return false;
     }
 
-    public final T get(short i) {
+    public final int indexOf(T v) {
+        for (int i = 0; i < values.length; i++) if (v.equals(values[i])) return i;
+        return -1;
+    }
+
+    public final T get(int i) {
         return this.values[i];
     }
 
@@ -43,19 +72,30 @@ public abstract class LoopList<T> {
     }
 
     public final int size() {
-        return maxIndex;
+        return size;
     }
 
     private static final class NormalLoopList<T> extends LoopList<T> {
 
-        private short currentIndex;
+        private int currentIndex;
 
         private NormalLoopList(T[] values) {
             super(values);
         }
 
+        @Override
         int nextIndex() {
-            return currentIndex != maxIndex ? currentIndex++ : (currentIndex = 0);
+            return currentIndex != maxIndex ? ++currentIndex : (currentIndex = 0);
+        }
+
+        @Override
+        int previousIndex() {
+            return currentIndex != 0 ? --currentIndex : (currentIndex = maxIndex);
+        }
+
+        @Override
+        void setCurrentIndex0(int index) {
+            this.currentIndex = index;
         }
 
         @Override
@@ -72,13 +112,24 @@ public abstract class LoopList<T> {
             super(values);
         }
 
+        @Override
         int nextIndex() {
-            return currentIndex.get() != maxIndex ? currentIndex.getAndIncrement() : this.reset0();
+            return currentIndex.get() != maxIndex ? currentIndex.incrementAndGet() : setAndGet(0);
         }
 
-        private int reset0() {
-            this.currentIndex.set(0);
-            return 0;
+        @Override
+        int previousIndex() {
+            return currentIndex.get() != 0 ? currentIndex.decrementAndGet() : setAndGet(maxIndex);
+        }
+
+        @Override
+        void setCurrentIndex0(int index) {
+            this.currentIndex.set(index);
+        }
+
+        private int setAndGet(int i) {
+            this.currentIndex.set(i);
+            return i;
         }
 
         @Override
@@ -87,11 +138,13 @@ public abstract class LoopList<T> {
         }
     }
 
-    public static <T> LoopList<T> of(T[] array) {
+    @SafeVarargs
+    public static <T> LoopList<T> of(T... array) {
         return new NormalLoopList<>(array);
     }
 
-    public static <T> LoopList<T> newConcurrent(T[] array) {
+    @SafeVarargs
+    public static <T> LoopList<T> newConcurrent(T... array) {
         return new ConcurrentLoopList<>(array);
     }
 }

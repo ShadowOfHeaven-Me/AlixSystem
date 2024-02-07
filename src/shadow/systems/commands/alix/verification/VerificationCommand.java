@@ -1,6 +1,5 @@
 package shadow.systems.commands.alix.verification;
 
-import org.bukkit.entity.Player;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.users.offline.UnverifiedUser;
@@ -8,7 +7,7 @@ import shadow.utils.users.offline.UnverifiedUser;
 @FunctionalInterface
 public interface VerificationCommand {
 
-    void onCommand(UnverifiedUser user, Player player, String arg1);
+    void onCommand(UnverifiedUser user, String arg1);
 
     VerificationCommand OF_CAPTCHA = CommandManager::onAsyncCaptchaCommand; //PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncCaptchaCommand : CommandManager::onSyncCaptchaCommand;
     VerificationCommand OF_REGISTER = PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncRegisterCommand : CommandManager::onSyncRegisterCommand;

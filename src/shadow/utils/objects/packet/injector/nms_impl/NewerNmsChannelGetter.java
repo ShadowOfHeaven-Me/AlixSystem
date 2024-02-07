@@ -1,11 +1,9 @@
 package shadow.utils.objects.packet.injector.nms_impl;
 
 import io.netty.channel.Channel;
-import net.minecraft.server.network.PlayerConnection;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 import org.bukkit.entity.Player;
 import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.main.AlixUtils;
 
 import java.lang.reflect.Field;
 

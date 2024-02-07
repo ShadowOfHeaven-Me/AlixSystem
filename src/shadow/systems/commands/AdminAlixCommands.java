@@ -1,6 +1,7 @@
 package shadow.systems.commands;
 
-import alix.common.antibot.connection.filters.ServerPingManager;
+import alix.common.data.LoginType;
+import shadow.systems.login.filters.ServerPingManager;
 import alix.common.messages.Messages;
 import alix.common.messages.AlixMessage;
 import com.google.gson.JsonObject;
@@ -16,7 +17,6 @@ import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;
-import alix.common.data.PasswordType;
 
 import java.util.Date;
 
@@ -98,25 +98,24 @@ public final class AdminAlixCommands implements CommandExecutor {
                             return false;
                         }
 
-                        data.resetPassword();
+                        data.resetPasswords();
 
                         Player p = Bukkit.getPlayerExact(data.getName());
                         if (p != null) p.kickPlayer(passwordResetMessage);
 
                         if (l > 2) {
-
                             String arg3 = args[2].toUpperCase();
 
-                            PasswordType type;
+                            LoginType type;
 
                             try {
-                                type = PasswordType.valueOf(arg3);
+                                type = LoginType.valueOf(arg3);
                             } catch (Exception e) {
-                                sendMessage(sender, "Available password types: PASSWORD & PIN, but instead got: " + arg3);
+                                sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg3);
                                 return false;
                             }
 
-                            data.setPasswordType(type);
+                            data.setLoginType(type);
                             sendMessage(sender, "Successfully reset the password of the player " + arg2
                                     + " and set his password type to " + type + "!");
                         } else sendMessage(sender, "Successfully reset the password of the player " + arg2 + ".");
@@ -137,11 +136,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "&cPlayer " + arg2 + " is not in the AlixSystems's User DataBase!");
                             return false;
                         }
-                        //TODO: Last Online/Currently Online from
                         sendMessage(sender, "");
                         sendMessage(sender, "The player " + offlinePlayer.getName() + " has following user data:");
                         sendMessage(sender, "IP: " + data.getSavedIP());
-                        sendMessage(sender, "Password: " + (data.getPassword().isHashed() ? "(Hashed)" : "") + data.getHashedPassword());
+                        sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
                         sendMessage(sender, "First joined: " + getFormattedDate(new Date(offlinePlayer.getFirstPlayed())));
                         sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: " : "Last joined: ") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
                         sendMessage(sender, "");
@@ -209,7 +207,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                         String[] c = split(b.replaceAll(" ",""),',');
                         dispatch(sender, "median(" + b + ") = " + getMedian(parseArray(c)));
                         break;*/
-                    case "item":
+/*                    case "item":
                         if (bukkitVersion < 16) {
                             sendMessage(sender, "&cThis command is available on 1.16+ server version, but current server version is " + serverVersion + ".");
                             return false;
@@ -237,7 +235,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                                         "display:{Name:'[{\"text\":\"Houyi\\'s Bow\",\"italic\":false,\"color\":\"gold\",\"bold\":true}]'}," +
                                         "Enchantments:[{id:flame,lvl:7},{id:power,lvl:7}],HideFlags:5} 1");
                                 break;
-                        }
+                        }*/
                     default:
                         sendMessage(sender, "&cTry /as help!");
                         break;
@@ -250,7 +248,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
                     sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
-                    sendMessage(sender, "&c/as rp/resetpassword <player> <password type> &7- Resets the player's password and changes their password type. Available password types: PASSWORD & PIN.");
+                    sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
                     sendMessage(sender, "&c/as calc/calculate <mathematical operation> &7- " +
                             "Returns what the given mathematical operation is equal to. " +
                             "Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925");

@@ -39,5 +39,4 @@ public abstract class AbstractPacketAffirmator implements PacketAffirmator {
                 return false;
         }
     }
-
 }

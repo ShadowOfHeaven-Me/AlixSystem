@@ -2,12 +2,14 @@ package alix.common.utils.formatter;
 
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import org.bukkit.ChatColor;
+import org.jetbrains.annotations.Contract;
 
 import java.util.Arrays;
 
 public final class AlixFormatter {
 
-    public static final String pluginPrefix = translateColors(ConfigProvider.config.getString("prefix"));
+    //public static final String pluginPrefix = translateColors(ConfigProvider.config.getString("prefix"));
     private static final String messagePrefix;
     private static final boolean appendPrefix;
 
@@ -26,7 +28,7 @@ public final class AlixFormatter {
      * Different formatting methods are invoked depending on the args' length.
      * It should be noted that if only one formatting argument is provided
      * (args.length == 1), the method will end after reformatting only one regex.
-     * If you wish to reformat the same regex of {0} that has multiple
+     * If you wish to reformat the same regex of "{0}" that has multiple
      * occurrences, then use the formatMultiple method.
      *
      * @param s    The String that should be formatted
@@ -36,6 +38,8 @@ public final class AlixFormatter {
      * @author ShadowOfHeaven
      */
 
+
+    @AlixIntrinsified(method = "String#replaceAll")
     public static String format(String s, Object... args) {
         switch (args.length) {
             case 0:
@@ -48,7 +52,7 @@ public final class AlixFormatter {
     }
 
     /**
-     * Returns a formatted String with the syntax {0}, where the regex
+     * Returns a formatted String with the syntax "{0}", where the regex
      * is replaced with the "replacement" argument. Assumes there's
      * only one formatting regex.
      *
@@ -111,11 +115,11 @@ public final class AlixFormatter {
         return sb.toString();
     }
 
-    @AlixIntrinsified
+    @AlixIntrinsified(method = "ChatColor.translateAlternateColorCodes")
     public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
         final char[] c = text.toCharArray();
-        final int l = c.length - 1;
-        for (int i = 0; i < l; i++)
+        final int lM1 = c.length - 1;
+        for (int i = 0; i < lM1; i++)
             if (c[i] == '&') {
                 char d = c[++i];
                 if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9') c[i - 1] = '§';

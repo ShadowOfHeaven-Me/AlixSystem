@@ -1,31 +1,54 @@
 package alix.velocity.utils;
 
-import alix.common.antibot.connection.ConnectionFilter;
-import alix.common.antibot.connection.filters.AntiVPN;
-import alix.common.antibot.connection.filters.ConnectionManager;
-import alix.common.antibot.connection.filters.GeoIPTracker;
-import alix.common.antibot.connection.filters.ServerPingManager;
-import alix.velocity.utils.users.UnverifiedUser;
-import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.server.ServerInfo;
-import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 
+import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
+import alix.velocity.server.packets.users.Verifications;
+import alix.velocity.systems.autoin.PremiumAutoIn;
+import alix.velocity.systems.filters.ConnectionFilter;
+import alix.velocity.systems.filters.firewall.AlixChannelFireWall;
+import alix.velocity.utils.data.PersistentUserData;
+import alix.velocity.utils.data.UserDataManager;
+import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
+import com.velocitypowered.proxy.network.ConnectionManager;
+import io.netty.channel.ChannelInitializer;
+
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class AlixHandler {
 
+    public static void initializeFireWall(VelocityServer server) {
+        try {
+            for (Field f : server.getClass().getDeclaredFields()) {
+                if (f.getType() == ConnectionManager.class) {
+                    f.setAccessible(true);
+                    ConnectionManager m = (ConnectionManager) f.get(server);
+                    ChannelInitializer<?> initializer = m.getServerChannelInitializer().get();
+                    if (initializer.getClass() != AlixChannelFireWall.EXTENDING_CLASS)
+                        throw new AlixException("Report this immediately! Server class: '" + initializer.getClass() + "' with '" + AlixChannelFireWall.EXTENDING_CLASS + "' registered in Alix!");
+                    m.getServerChannelInitializer().set(new AlixChannelFireWall(server));
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            throw new AlixError(e);
+        }
+    }
+
     public static ConnectionFilter[] getConnectionFilters() {
-        ServerInfo
         List<ConnectionFilter> list = new ArrayList<>();
-        list.add(new ConnectionManager());
-        list.add(new ServerPingManager());
-        list.add(new GeoIPTracker());
-        list.add(new AntiVPN());
+
         return list.toArray(new ConnectionFilter[0]);
     }
 
-    public static UnverifiedUser handleOfflineUserJoin(ConnectedPlayer player) {
-        return new UnverifiedUser(player);
+    public static void handleJoin(ConnectedPlayer player) {
+        if (PremiumAutoIn.remove(player.getUsername())) return;//leave him be and let him join the server
+
+        PersistentUserData data = UserDataManager.get(player.getUsername());
+
+        Verifications.add(player, data);
     }
 }

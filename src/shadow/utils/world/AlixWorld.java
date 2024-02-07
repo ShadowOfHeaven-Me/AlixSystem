@@ -4,10 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.main.file.managers.OriginalLocationsManager;
-import shadow.utils.users.offline.UnverifiedUser;
 import shadow.utils.world.generator.AlixWorldGenerator;
 
 public final class AlixWorld {
@@ -45,11 +42,9 @@ public final class AlixWorld {
     private void forceloadSpawnChunks() {
         int min = Math.max(Bukkit.getViewDistance(), 2);
 
-        for (int i = -min; i <= min; i++) {
-            for (int j = -min; j <= min; j++) {
+        for (int i = -min; i <= min; i++)
+            for (int j = -min; j <= min; j++)
                 this.world.setChunkForceLoaded(i, j, true);
-            }
-        }
     }
 
     public static boolean preload() {

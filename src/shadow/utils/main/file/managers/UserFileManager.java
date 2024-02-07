@@ -45,11 +45,7 @@ public final class UserFileManager {
         return data != null ? data : PersistentUserData.createFromPremiumPlayer(p);
     }
 
-    public static void addData(PersistentUserData data) {
+    public static void putData(PersistentUserData data) {
         map.put(data.getName(), data);
-    }
-
-    public static Collection<PersistentUserData> getAllData() {
-        return map.values();
     }
 }

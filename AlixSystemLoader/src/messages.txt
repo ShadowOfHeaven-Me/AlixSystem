@@ -1,4 +1,4 @@
-account-limit-reached: &cYou've reached the maximum amount of accounts ({0})
+account-limit-reached: &cYou've reached the maximum amount of accounts! ({0})
 already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
 already-logged-in: &cYou're already logged in!
 already-registered: &cYou're already registered!
@@ -84,8 +84,43 @@ gamemode-spectator-player: Gamemode for player {0} was set to &cspectator.
 gamemode-spectator-self: Your gamemode was set to &cspectator.
 gamemode-survival-player: Gamemode for player {0} was set to &csurvival.
 gamemode-survival-self: Your gamemode was set to &csurvival.
-gui-title-login: Enter your password
-gui-title-register: Register with the password
+gui-account-passwords: &aPasswords
+gui-account-login-settings: &aLogin Settings
+gui-ip-autologin-accept: &aACCEPT
+gui-ip-autologin-explanation: &7This gui asks whether you'd &n&7Want to be automatically logged in &n&7if you join with the same &n&7IP as in your previous successful &n&7login.
+gui-ip-autologin-explanation-accept: &7Accepting is usually safe, since &n&7each IP is unique as assigned &n&7by the ISP.
+gui-ip-autologin-explanation-reject: &7Rejecting is also valid, since &n&7even tho negligible, there still &n&7exists a chance that someone &n&7tries to join this server &n&7using your nickname, and &n&7has the same ip as your &n&7last successful login &n&7(for example when using a VPN, &n&7having their dynamic IP &n&7be provided by the same ISP or &n&7when using the same router).
+gui-ip-autologin-reject: &cREJECT
+gui-ip-autologin-question-mark: &eWhat is this?
+gui-login-settings-ip-autologin-off: &cIP AutoLogin: OFF
+gui-login-settings-ip-autologin-on: &aIP AutoLogin: ON
+gui-passwords-applied-changes: &aSuccessfully applied changes!
+gui-passwords-change-main: &aChange Password
+gui-passwords-change-secondary: &aChange Secondary Password
+gui-passwords-changed-main: &8Changed password: {0}
+gui-passwords-changed-secondary: &8Changed secondary password: {0}
+gui-passwords-login-type-anvil: &aLogin Type: Anvil
+gui-passwords-login-type-command: &aLogin Type: Command
+gui-passwords-login-type-pin: &aLogin Type: PIN
+gui-passwords-login-type-secondary-anvil: &aLogin Type: Anvil
+gui-passwords-login-type-secondary-command: &aLogin Type: Command
+gui-passwords-login-type-secondary-disabled: &cDisabled
+gui-passwords-login-type-secondary-pin: &aLogin Type: PIN
+gui-passwords-save-changes: &aSave Changes
+gui-password-try-apply-data-fail-main-not-pin: &cYou need to change your MAIN password to a PIN!
+gui-password-try-apply-data-fail-main-pin: &cYou need to change your MAIN password to a longer one if you wish to switch from a PIN password!
+gui-password-try-apply-data-fail-secondary-password-not-set: &cYou need to set your secondary password if you wish to use double verification!
+gui-password-try-apply-data-fail-secondary-not-pin: &cYou need to change your SECONDARY password to a PIN!
+gui-password-try-apply-data-fail-secondary-pin: &cYou need to change your SECONDARY password to a longer one if you wish to switch from a PIN password!
+gui-pin-type-invalid: &cThe main password is not a PIN, but the login type is set to PIN!
+gui-title-account: Settings
+gui-title-login: Login
+gui-title-login-settings: Login Settings
+gui-title-register: Register
+gui-title-passwords: Passwords
+gui-title-ip-autologin: Login automatically?
+gui-title-password-changing: Enter at least 5 chars
+gui-title-password-changing-pin: Enter 4 digits
 heal-self: You have been healed!
 home-absent: &cHome was never set!
 home-default-overwrite: &6Your old default home was successfully overwritten, and set to your current location!
@@ -99,6 +134,8 @@ incorrect-command: &cIncorrect command to sudo!
 incorrect-password: &cIncorrect password!
 invalid-command: &cInvalid command!
 invalid-name: &cInvalid name, please use another one!
+ip-autologin-accept: &aYou will now be always automatically logged in by IP! You can manage these settings at /account
+ip-autologin-reject: &aYou will now always not be automatically logged in by IP! You can manage these settings at /account
 ip-info-absent-ban: &cNo ip information about {0} was found, therefore the ip ban was unsuccessful.
 ip-not-banned: &cERROR: IP {0} is not banned!
 item-absent-during-renaming: &cYou have to hold the item you want to rename!
@@ -165,6 +202,7 @@ register-reminder-command: &cRegister first!
 register-success: &aSuccessfully registered! You may now rejoin the server!
 remove-warp: &6Successfully removed the warp {0}!
 renamed-item: &6Successfully renamed held item.
+server-still-starting: &cThe server still hasn't started yet!
 spawn-location-set: &6Spawn location was successfully set!
 spawn-teleport: &6Successfully teleported to spawn!
 speed-invalid-arg: &cFourth argument should be either walk or fly, but instead found '{0}'!

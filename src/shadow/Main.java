@@ -1,21 +1,19 @@
 package shadow;
 
-import alix.common.antibot.firewall.netty.NettyFireWallInitializer;
 import alix.common.data.security.Hashing;
-import alix.common.environment.ServerEnvironment;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
-import alix.common.update.UpdateChecker;
-import alix.pluginloader.LoaderBootstrap;
+import alix.common.utils.file.update.UpdateChecker;
+import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Hex;
-import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
+import shadow.systems.executors.PreStartUpExecutors;
+import shadow.systems.gui.impl.IpAutoLoginGUI;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.Captcha;
@@ -26,14 +24,11 @@ import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
-import shadow.utils.main.file.managers.OriginalLocationsManager;
-import shadow.utils.main.paper.PaperAccess;
+import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
-import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
 
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import static shadow.utils.main.AlixUtils.anvilPasswordGui;
@@ -45,27 +40,39 @@ public final class Main implements LoaderBootstrap {
     public static JavaPlugin plugin;
     public static YamlConfiguration config;
     public static PluginManager pm;
+    private PreStartUpExecutors preStartUpExecutors;
     private Metrics metrics;
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added bot attack detection algorithms
-    //[+] Added a fast-blocking firewall system
-    //[+] Added a big warning message if the firewall cannot be initialized
-    //[+] Improved the AlixConsoleFilter
-    //[+] Now commands can also have their fallback prefix disabled by putting 2 Hashtags ("##") in front of their line
-    //[*] Fixed players not being teleported to their original location at ip autologin
-    //[*] "override-existing-commands" will now be false by default
-    //[*] Fixed commands not registering or unregistering
-    //[*] Halved the amount of the async scheduler parallelisms
-    //[+] Added the forgotten custom quit console messages
-    //[*] Fixed temporary IPs not being removed correctly
-    //[*] Fixed captcha sometimes not being shown
-    //[*] Made kicks fully asynchronous
-    //[*] Due to various complications, the original location will no longer be removed at a successful teleport back
+    //[+] Added /account, helping in managing your account's settings, configuring autologin or enabling double verification
+    //[+] The player will now no longer be receiving any messages during verification, except for verification completion reminders - the blocked messages will be sent after the verification is completed
+    //[+] Added a few new config parameters
+    //[+] Made the captcha completion less annoying by removing similar-looking symbols
+    //[+] Added a new Bot Detection Algorithm, and disabled one that was deemed unnecessary
+    //[+] Greatly improved the FireWall - it does not require now neither Paper nor PacketEvents in order to work, and performs the connection close earlier on
+    //[+] The Channel injection is now performed on the authentication thread, making it's impact on server performance minimal
+    //[+] Expanded the vpn detection providers
+    //[+] Slightly optimized player kicking
+    //[+] Replaced the true/false value for incorrect input during login/captcha verification with a numerical amount of maximum tries before an automatic kick occurs
+    //[+] Teleports will now be performed semi-asynchronously on Paper servers, using the PaperLib
+    //[*] Reformatted the Bot Detection Algorithms
+    //[*] Fixed auto-invoked commands after verification being removed from the config after reload
+    //[*] Fixed 'check-server-compatibility' not working
+    //[*] Fixed an error thrown at an early player join after server start-up
+    //[*] Fixed the captcha's slow or no appearance for gui users
+    //[*] Reconstructed the way captcha's texts are generated
+    //[*] Removed command aliases deemed unnecessary from commands.txt
+    //[*] Fixed the player respawning at death location if verification was required after quitting the server without respawning
+    //[*] Fixed a console color issue on Paper
+    //[*] Changed the amount of alix scheduler's parallelisms
+    //[*] Fixed config lists disappearing after reload
+    //[*] 'password-hash-type' will now be 3 instead of 1 by default, improving the hashing's security
+    //[*] Fixed command tab completers throwing errors
+    //[*] Fixed many errors connected to guis
+    //[*] Fixed potential issues with Sha256's concurrent hashing
+    //[*] Experiences countdowns updates will now be performed 5 times a second, instead of 10
 
-
-    //TODO: Check for packets instead of relaying on fixed scheduler delay on captcha map sending
 
     //todo: Add a custom data structure for unverified users
     //TODO: fix pin gui's location sounds bugs
@@ -119,36 +126,41 @@ public final class Main implements LoaderBootstrap {
         config = (YamlConfiguration) plugin.getConfig();
         pm = Bukkit.getPluginManager();
         ReflectionUtils.replaceBansToConcurrent();
-        //NettyFireWallInitializer.initialize();
+        Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
+        AlixCommandManager.init();
+        Captcha.pregenerate();//will not pregenerate the captcha itself if disabled, but needs to be invoked for the CountdownTask values to pregenerate
+        //Dependencies.initAdditional();
+        VerificationReminder.init();
+        if (anvilPasswordGui) AnvilPasswordBuilder.init();
+        MethodProvider.init();
+        IpAutoLoginGUI.init();
+        this.metrics = Metrics.createMetrics();
+        FileManager.preEnableFileLoad();
+        AlixScheduler.async(() -> {});//pre-loading the scheduler
         AlixHandler.kickAll("Reload");
     }
 
     @Override
     public void onEnable() {//TODO: Player GUI in /js commands (texture not working & items can be picked up)
+        pm.registerEvents(this.preStartUpExecutors = new PreStartUpExecutors(), plugin);
         config.options().copyDefaults(true);
+        mainServerThread = Thread.currentThread();
+        FileManager.onEnableFileLoad();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
-        Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
-        //AlixWorld.init();
-        Captcha.pregenerate();//will not pregenerate the captcha itself if disabled, but needs to be invoked for the CountdownTask values to pregenerate
-        FileManager.loadFiles();
-        AlixCommandManager.init();
-        //Dependencies.initAdditional();
-        VerificationReminder.init();
-        if (anvilPasswordGui) AnvilPasswordBuilder.init();
-        AlixScheduler.runLaterSync(this::setUp, 0, TimeUnit.MILLISECONDS);
-        this.metrics = Metrics.createMetrics();
+        CommandManager.register();
+        AlixScheduler.sync(() -> AlixScheduler.async(this::setUp));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
     }
 
     @Override
     public void onDisable() {//ChatColor.of(color)
         FileManager.saveFiles();
         Verifications.disable();
-        UserManager.disable();
+        //UserManager.disable();
         //Captcha.unregister();
         AlixScheduler.shutdown();
         if (this.metrics != null) this.metrics.shutdown();
         AlixThread.shutdownAllAlixThreads();
-        if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
+        //if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
         logConsoleInfo(en ? "AlixSystem has been disabled." : "AlixSystem zostało wyłączone.");
     }
 
@@ -178,28 +190,32 @@ public final class Main implements LoaderBootstrap {
 
     private void setUp() {
         en = AlixUtils.isPluginLanguageEnglish;
-        mainServerThread = Thread.currentThread();
         //AlixHandler.kickAll("Reload");
         PremiumAutoIn.checkForInit();
-        CommandManager.register();
         UpdateChecker.checkForUpdates();
+        //AlixScheduler.async(UpdateChecker::checkForUpdates);
         if (requireCaptchaVerification) Captcha.sendInitMessage();
-        PacketBlocker.init(); //load the class and send the init message
+        PacketBlocker.init(); //load the class
+        PacketInterceptor.init();//send the init message
         //ConfigUpdater.checkForUpdates(config);
         ReflectionUtils.init();
-        if (config.getBoolean("check-compatibility")) {
+        if (config.getBoolean("check-server-compatibility")) {
             //logConsoleInfo(en ? "Started checking for plugin compatibilities..." : "Rozpoczęto sprawdzanie kompatybilności pluginów...");
             //checkPlugins();
             if (Bukkit.getConnectionThrottle() > 500 && config.getBoolean("prevent-first-time-join")) {
-                logWarning("The connection throttle in bukkit.yml settings is " + Bukkit.getConnectionThrottle()
-                        + " with the recommended number being 500 or below. If you wish to have it overridden automatically, " +
-                        "type /alixsystem connection-setup or /as c-s for short.");
+                logWarning("");
+                logWarning("The connection throttle in bukkit.yml settings is " + Bukkit.getConnectionThrottle() + ",");
+                logWarning("with the recommended number being 500 or below. If you wish to have it overridden");
+                logWarning("automatically type /alixsystem connection-setup or /as c-s for short.");
+                logWarning("");
             }
             //logConsoleInfo(en ? "Done!" : "Ukończono!");
         }
         String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
         AlixHandler.initExecutors(pm);
+        HandlerList.unregisterAll(preStartUpExecutors);
+        this.preStartUpExecutors = null;
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");
     }
 

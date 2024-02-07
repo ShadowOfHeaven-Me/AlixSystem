@@ -12,9 +12,9 @@ public final class SubtitleCaptcha extends Captcha {
         super();
     }
 
-    public SubtitleCaptcha(Captcha captcha) {
+/*    public SubtitleCaptcha(Captcha captcha) {
         super(captcha);
-    }
+    }*/
 
     @Override
     protected Captcha inject(UnverifiedUser user) {

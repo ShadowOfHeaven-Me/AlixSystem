@@ -4,16 +4,26 @@ package shadow.utils.objects.savable.loc;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.libs.jline.internal.Nullable;
+import org.jetbrains.annotations.NotNull;
+import shadow.utils.main.file.managers.SpawnFileManager;
 
 import static shadow.utils.main.AlixUtils.parsePureInteger;
 import static shadow.utils.main.AlixUtils.split;
 
 public class SavableLocation {
 
-    public static String toSavableString(Location location) {
-        return location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ() + ":" + location.getWorld().getName() + ":" + location.getYaw() + ":" + location.getPitch();
+    public static String toSavableString(Location loc) {
+        return loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ() + ":" + loc.getWorld().getName() + ":" + loc.getYaw() + ":" + loc.getPitch();
     }
 
+    @NotNull
+    public static Location fromStringOrSpawnIfAbsent(String a) {
+        Location loc = fromString(a);
+        return loc != null ? loc : SpawnFileManager.getSpawnLocation();
+    }
+
+    @Nullable
     public static Location fromString(String a) {
         String[] b = split(a, ':');
         World c = Bukkit.getWorld((b[3]));

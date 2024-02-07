@@ -32,7 +32,7 @@ public final class Password {
         return hashedPassword + ":" + hashId;
     }
 
-    public boolean isCorrect(String unhashedPassword) {
+    public boolean isEqualTo(String unhashedPassword) {
         return this.hashedPassword.equals(hashing.hash(unhashedPassword));
     }
 
@@ -49,7 +49,7 @@ public final class Password {
     }
 
     public boolean isSet() {
-        return hashedPassword != null;
+        return hashedPassword != null;//this != SHARED_EMPTY
     }
 
 /*    public HashingAlgorithm getHashing() {
@@ -70,15 +70,15 @@ public final class Password {
     }*/
 
     private static final Password SHARED_EMPTY = new Password(null, (byte) 0);
+    private static final HashingAlgorithm CONFIG_HASH = Hashing.getConfigHashingAlgorithm();
 
     public static Password empty() {
         return SHARED_EMPTY;
     }
 
     public static Password fromUnhashed(String unhashedPassword) {
-        HashingAlgorithm algorithm = Hashing.getConfigHashingAlgorithm();
-        String hashed = algorithm.hash(unhashedPassword);
-        return new Password(hashed, Hashing.CONFIG_HASH_ID, algorithm);
+        String hashed = CONFIG_HASH.hash(unhashedPassword);
+        return new Password(hashed, Hashing.CONFIG_HASH_ID, CONFIG_HASH);
     }
 
     public static Password readFromSaved(String savablePassword) {
@@ -86,7 +86,7 @@ public final class Password {
         String password = s[0];
 
         if (password.equals("null")) password = null;
-        if (s.length == 1) return new Password(password, (byte) 0);
+        if (s.length == 1) return password == null ? empty() : fromUnhashed(password); //the old formatting support - we know it's unhashed since the hashing id was not saved
 
         return new Password(password, Byte.parseByte(s[1]));
     }

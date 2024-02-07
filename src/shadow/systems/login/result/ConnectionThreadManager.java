@@ -1,6 +1,7 @@
 package shadow.systems.login.result;
 
 import alix.common.antibot.connection.algorithms.ConnectionAlgorithm;
+import alix.common.antibot.connection.algorithms.types.JoinCounterAlgorithm;
 import alix.common.antibot.connection.algorithms.types.Name2IPAlgorithm;
 import alix.common.antibot.connection.algorithms.types.RequestAmountAlgorithm;
 import alix.common.scheduler.AlixScheduler;
@@ -53,8 +54,9 @@ public final class ConnectionThreadManager {
 
         private ConnectionThreadRunnable() {
             this.algorithms = new ConnectionAlgorithm[]{
-                    new RequestAmountAlgorithm(),
-                    new Name2IPAlgorithm()
+                    //new RequestAmountAlgorithm(),
+                    new Name2IPAlgorithm(),
+                    new JoinCounterAlgorithm()
             };
         }
     }

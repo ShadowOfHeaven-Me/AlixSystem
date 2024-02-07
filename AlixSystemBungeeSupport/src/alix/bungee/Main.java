@@ -1,10 +1,7 @@
 package alix.bungee;
 
-import alix.pluginloader.LoaderBootstrap;
+import alix.loaders.classloader.LoaderBootstrap;
 import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.config.YamlConfiguration;
-
-import java.util.logging.Logger;
 
 public class Main implements LoaderBootstrap {
 

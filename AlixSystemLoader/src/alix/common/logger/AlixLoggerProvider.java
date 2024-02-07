@@ -1,9 +1,6 @@
 package alix.common.logger;
 
-import alix.common.environment.ServerEnvironment;
-import alix.common.logger.plugin.AlixPaperLogger;
-import alix.common.logger.plugin.AlixSpigotLogger;
-import alix.common.utils.file.FileManager;
+import alix.common.logger.plugin.AlixUniversalLogger;
 
 import java.util.logging.Logger;
 
@@ -12,14 +9,15 @@ public interface AlixLoggerProvider {
     LoggerAdapter getLoggerAdapter();
 
     static Logger createServerAdequateLogger() {
-        switch (ServerEnvironment.getEnvironment()) {
+        return new AlixUniversalLogger();
+        /*switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
                 return new AlixSpigotLogger();
             case PAPER:
                 return new AlixPaperLogger();
             default:
                 throw new AssertionError();
-        }
+        }*/
     }
 
     String BRIGHT_RED = "\u001B[1;31m";

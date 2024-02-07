@@ -3,7 +3,7 @@ package alix.common.data.security.types;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-public class Sha256 {
+public final class Sha256 {
 
     //copied from the internet
     //Link: https://github.com/meyfa/java-sha256/blob/master/src/main/java/net/meyfa/sha256/Sha256.java
@@ -23,11 +23,6 @@ public class Sha256 {
             0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
     };
 
-    // working arrays
-    private final int[] W = new int[64];
-    private final int[] H = new int[8];
-    private final int[] TEMP = new int[8];
-
     /**
      * Hashes the given message with SHA-256 and returns the hash.
      *
@@ -38,8 +33,10 @@ public class Sha256 {
     @SuppressWarnings("SuspiciousSystemArraycopy")
     public byte[] hash(byte[] message) {
         // let H = H0
+        int[] H = new int[8];
         System.arraycopy(H0, 0, H, 0, H0.length);
 
+        int[] W = new int[64];
         // initialize all words
         int[] words = pad(message);
 
@@ -53,6 +50,7 @@ public class Sha256 {
             }
 
             // let TEMP = H
+            int[] TEMP = new int[8];
             System.arraycopy(H, 0, TEMP, 0, H.length);
 
             // operate on TEMP

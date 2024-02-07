@@ -3,6 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/AlixSystem</output-path>
     <root id="archive" name="AlixSystem.jarinjar">
       <element id="module-output" name="AlixSystem" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/paperlib-1.0.7.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

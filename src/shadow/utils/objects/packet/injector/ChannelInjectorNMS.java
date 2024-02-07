@@ -1,6 +1,7 @@
 package shadow.utils.objects.packet.injector;
 
 import io.netty.channel.Channel;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import shadow.utils.objects.packet.injector.nms_impl.NmsChannelGetter;
 

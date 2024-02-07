@@ -31,8 +31,9 @@ public final class AlixCommonHandler {
             case SPIGOT:
                 AlixCommonMain.logInfo("Using the unoptimized BukkitAlixScheduler for task execution - Paper is suggested for better performance.");
                 return new BukkitAlixScheduler();
+            default:
+                throw new InternalError("Invalid: " + ServerEnvironment.getEnvironment());
         }
-        throw new InternalError("Invalid: " + ServerEnvironment.getEnvironment());
     }
 
     public static AbstractBanList createBanListImpl(boolean ip) {

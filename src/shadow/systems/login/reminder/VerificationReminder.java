@@ -2,9 +2,6 @@ package shadow.systems.login.reminder;
 
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.collections.queue.AlixDeque;
-import io.netty.channel.Channel;
-import shadow.systems.commands.CommandManager;
 import shadow.systems.login.Verifications;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
@@ -16,13 +13,12 @@ import java.util.concurrent.TimeUnit;
 public final class VerificationReminder {
 
     private static long nextSend = System.currentTimeMillis();
-    private static final AlixDeque<Channel> kicked = !AlixUtils.requireCaptchaVerification ? new AlixDeque<>() : null;
+    //private static final AlixDeque<Channel> kicked = !AlixUtils.requireCaptchaVerification ? new AlixDeque<>() : null;
     private static final Object loginTimePassedKickPacket = !AlixUtils.requireCaptchaVerification ? OutDisconnectKickPacketConstructor.constructAtPlayPhase(Messages.get("login-time-passed")) : null;
 
     public static void init() {
         if (!AlixUtils.requireCaptchaVerification)
             AlixScheduler.repeatAsync(VerificationReminder::sendVerificationMessagesAndUpdateTimer, 100, TimeUnit.MILLISECONDS);
-
     }
 
     public static boolean hasDelayPassed() {
@@ -48,14 +44,16 @@ public final class VerificationReminder {
         if (delayPassed) updateNextSend();
 
         for (UnverifiedUser user : Verifications.users()) {
-            if (delayPassed && user.getVerificationMessage() != null)
-                user.getPlayer().sendRawMessage(user.getVerificationMessage());
-            if (user.getPacketBlocker().getCountdownTask().tick()) kicked.offerLast(user.getPacketBlocker().getChannel());
+            if (user.getPacketBlocker().getCountdownTask().tick())
+                MethodProvider.kickAsync(user, loginTimePassedKickPacket);
+
+            if (delayPassed && user.getVerificationMessagePacket() != null)
+                user.writeAndFlushSilently(user.getVerificationMessagePacket());
         }
-        AlixDeque.Node<Channel> node = kicked.firstNode();
+        /*AlixDeque.Node<Channel> node = kicked.firstNode();
         kicked.clear();
 
-        if (node != null) AlixDeque.forEach(channel -> MethodProvider.kickAsync(channel, loginTimePassedKickPacket), node);
+        if (node != null) AlixDeque.forEach(channel -> MethodProvider.kickAsync(channel, loginTimePassedKickPacket), node);*/
 
         //AlixScheduler.sync(() -> AlixDeque.forEach(player -> player.kickPlayer(CommandManager.), node));
     }

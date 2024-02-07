@@ -1,8 +1,11 @@
 package shadow.utils.main.file.managers;
 
+import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 import shadow.Main;
+import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.subtypes.OriginalLocationsFile;
 
@@ -18,12 +21,15 @@ public final class OriginalLocationsManager {
     }*/
 
     public static void teleportBack(Player player, boolean warningIfAbsent) {
-        Location originalLoc = file.getMap().get(player.getUniqueId());
-        if (originalLoc != null) player.teleport(originalLoc);
-        else if (warningIfAbsent) Main.logWarning("Original location was null! - The Player was in the captcha world at verification!");
+        Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
+        if (originalLoc != null) MethodProvider.teleportAsync(player, originalLoc);
+        else if (warningIfAbsent) {
+            Main.logWarning("The original location was absent! - The Player was in the captcha world before verification! Teleporting the player to the default spawn!");
+            MethodProvider.teleportAsync(player, SpawnFileManager.getSpawnLocation());
+        }
     }
 
-    public static void add(Player player, Location originalLocation) {
+    public static void add(Player player, @NotNull Location originalLocation) {
         file.getMap().put(player.getUniqueId(), originalLocation);
     }
 

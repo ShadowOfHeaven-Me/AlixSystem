@@ -3,26 +3,46 @@ package shadow.systems.commands;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import shadow.Main;
+import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.main.AlixUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ExecutableCommandList {
 
     private final ExecutableCommand[] cmds;
 
-    public ExecutableCommandList(List<String> list) {
-        this.cmds = new ExecutableCommand[list.size()];
-        for (int i = 0; i < cmds.length; i++) this.cmds[i] = new ExecutableCommand(list.get(i));
+    public ExecutableCommandList(List<String> config) {
+        List<ExecutableCommand> cmds = new ArrayList<>();
+        for (String cmd : config) {
+            ExecutableCommand c = constructIfValid(cmd);
+            if (c != null) cmds.add(c);
+        }
+        this.cmds = cmds.toArray(new ExecutableCommand[0]);
     }
 
-    public void invoke(Player player) {
+    public final void invoke(Player player) {
         for (ExecutableCommand c : cmds) c.invoke(player);
+    }
+
+    private static ExecutableCommand constructIfValid(String cmd) {
+        cmd = AlixUtils.unslashify(cmd.trim());
+        /*String cmdArg = cmd.split(" ")[0];
+        if (!ReflectionUtils.serverKnownCommands.containsKey(cmdArg)) {
+            Main.logWarning("The given command '" + cmdArg + "' is not valid! Ignoring this command line!");
+            return null;
+        }*/
+        ExecutableCommand c = new ExecutableCommand(cmd);
+        if (c.command.isEmpty()) return null;
+        return c;
     }
 
     private static final class ExecutableCommand {
 
         private final String command;
-        private final boolean executeWithPlayerAsSender, nameReplaceable, executable;
+        private final boolean executeWithPlayerAsSender, nameReplaceable;
 
         private ExecutableCommand(String cmd) {
             String cmdLine = cmd.trim();
@@ -34,11 +54,9 @@ public final class ExecutableCommandList {
             this.command = cmdLine;
             this.nameReplaceable = cmdLine.contains("%name%");
             this.executeWithPlayerAsSender = playerExecute;
-            this.executable = !cmdLine.isEmpty();
         }
 
         private void invoke(Player player) {
-            if (!executable) return;
             String cmd = this.nameReplaceable ? this.command.replaceAll("%name%", player.getName()) : this.command;
             CommandSender sender = this.executeWithPlayerAsSender ? player : Bukkit.getConsoleSender();
             Bukkit.dispatchCommand(sender, cmd);

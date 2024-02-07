@@ -23,7 +23,10 @@ public final class PremiumAutoIn {
         return initialized && set.remove(name);
     }
 
-    public static void checkForInit() {
+    public static boolean contains(String name) {
+        return initialized && set.contains(name);
+    }
 
+    public static void checkForInit() {
     }
 }

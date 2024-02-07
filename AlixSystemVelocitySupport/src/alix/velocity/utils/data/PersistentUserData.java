@@ -12,10 +12,9 @@ public final class PersistentUserData {
         this.password = Password.fromUnhashed(password);
     }
 
-    private PersistentUserData(String line) {
-        String[] s = line.split("\\|");
-        this.name = s[0];
-        this.password = Password.readFromSaved(s[1]);
+    private PersistentUserData(String[] data) {
+        this.name = data[0];
+        this.password = Password.readFromSaved(data[1]);
     }
 
     @Override
@@ -27,7 +26,7 @@ public final class PersistentUserData {
         return new PersistentUserData(name, password);
     }
 
-    public static PersistentUserData fromLine(String line) {
-        return new PersistentUserData(line);
+    public static PersistentUserData fromData(String[] data) {
+        return new PersistentUserData(data);
     }
 }

@@ -21,6 +21,7 @@
     </inspection_tool>
     <inspection_tool class="EqualsAndHashcode" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="EqualsUsesNonFinalVariable" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="FieldCanBeLocal" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="HashCodeUsesNonFinalVariable" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="IgnoreResultOfCall" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="m_reportAllNonLibraryCalls" value="false" />
@@ -118,6 +119,7 @@
     <inspection_tool class="ResultOfObjectAllocationIgnored" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredClasses">
         <set>
+          <option value="shadow.systems.executors.packetevents.PacketEventsFireWall" />
           <option value="shadow.systems.executors.packetevents.PacketEventsListener" />
           <option value="shadow.utils.main.update.ConfigUpdater" />
         </set>

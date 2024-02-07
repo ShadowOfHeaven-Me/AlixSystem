@@ -3,20 +3,28 @@ package shadow.utils.objects.packet.types.unverified;
 import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import shadow.Main;
+import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import java.util.concurrent.TimeUnit;
 
 public class GUIPacketBlocker extends PacketBlocker {
 
-    protected GUIPacketBlocker(UnverifiedUser u) {
-        super(u);
+    protected GUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
+        super(u, handler);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (user.hasCompletedCaptcha()) {//has completed the captcha and is currently undergoing the pin verification
             switch (msg.getClass().getSimpleName()) {
+                case "PacketPlayInPosition"://most common packets
+                case "PacketPlayInPositionLook":
+                case "PacketPlayInLook":
+                case "d":
+                    this.trySpoofPackets();
+                    return;
                 case "PacketPlayInCloseWindow":
                     //super.channelReadNotOverridden(ctx, msg);
                     AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
@@ -28,7 +36,7 @@ public class GUIPacketBlocker extends PacketBlocker {
             }
             return;
         }
-        super.captchaVerification(ctx, msg);
+        super.onReadCaptchaVerification(ctx, msg);
     }
 
     @Override
@@ -36,6 +44,15 @@ public class GUIPacketBlocker extends PacketBlocker {
         //if (spoofedWindowItems(msg)) return;
         if (user.hasCompletedCaptcha()) {
             switch (msg.getClass().getSimpleName()) {
+                case "PacketPlayOutChat":
+                case "ClientboundSystemChatPacket":
+                    this.blockedChatPackets.offerLast(msg);
+                    return;
+                case "PacketPlayOutRespawn":
+                case "ClientboundRespawnPacket":
+                    this.waitPackets += WAIT_PACKETS_INCREASE;
+                    break;
+                case "PacketPlayOutGameStateChange":
                 case "PacketPlayOutRelEntityMove":
                 case "PacketPlayOutNamedEntitySpawn":
                 case "PacketPlayOutSpawnEntityLiving":
@@ -54,24 +71,6 @@ public class GUIPacketBlocker extends PacketBlocker {
             //Main.logInfo("RECEIVED: " + msg.getClass().getSimpleName());
             return;
         }
-
-        switch (msg.getClass().getSimpleName()) {
-            case "PacketPlayOutRelEntityMove":
-            case "PacketPlayOutNamedEntitySpawn":
-            case "PacketPlayOutSpawnEntityLiving":
-            case "PacketPlayOutSpawnEntity":
-            case "PacketPlayOutEntityMetadata":
-            case "PacketPlayOutEntityEquipment":
-            case "PacketPlayOutEntityHeadRotation":
-            case "PacketPlayOutEntityStatus":
-            case "PacketPlayOutEntityVelocity":
-            case "PacketPlayOutEntityDestroy":
-            case "PacketPlayOutEntityLook":
-            case "PacketPlayOutPlayerInfo":
-            case "ClientboundPlayerInfoUpdatePacket":
-            case "ClientboundBundlePacket":
-                return;
-        }
-        super.writeNotOverridden(ctx, msg, promise);
+        this.onWriteCaptchaVerification(ctx, msg, promise);
     }
 }

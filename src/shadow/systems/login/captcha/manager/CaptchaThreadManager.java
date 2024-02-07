@@ -4,7 +4,6 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
-import io.netty.channel.Channel;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
@@ -35,7 +34,7 @@ public final class CaptchaThreadManager {
     private static final class CaptchaThreadRunnable implements Runnable {
 
         private final AlixDeque<Captcha> captchasToRegen = new ConcurrentAlixDeque<>();
-        private final AlixDeque<Channel> kicked = new AlixDeque<>();
+        //private final AlixDeque<Channel> kicked = new AlixDeque<>();
         //private final MergedTask mergedTask = new MergedTask();
         //private final int maxPlayers = Bukkit.getMaxPlayers();
         //private volatile boolean whilstCopying = false;
@@ -51,27 +50,26 @@ public final class CaptchaThreadManager {
 
             for (UnverifiedUser user : Verifications.users()) {
                 //if (user.isGUIInitialized()) continue;
-
                 //TODO: Make the countdown switchable (the ability to turn it OFF)
                 CountdownTask task = user.getPacketBlocker().getCountdownTask();
 
-                if (task.tick()) this.kicked.offerLast(user.getPacketBlocker().getChannel());//captcha countdown
+                if (task.tick())
+                    MethodProvider.kickAsync(user, captchaTimePassedKickPacket);  // this.kicked.offerLast(user.getPacketBlocker().getChannel());//captcha countdown
 
-                if (verMsgDelayPassed && !user.isGUIInitialized() && user.getVerificationMessage() != null) {
-                    user.getPlayer().sendRawMessage(user.getVerificationMessage());//message reminder
-                }
+                if (verMsgDelayPassed && !user.isGUIInitialized() && user.getVerificationMessagePacket() != null)
+                    user.writeAndFlushSilently(user.getVerificationMessagePacket());//message reminder
             }
 
             if (verMsgDelayPassed) VerificationReminder.updateNextSend();
 
-            if (!this.kicked.isEmpty()) {
+            /*if (!this.kicked.isEmpty()) {
                 AlixDeque.Node<Channel> node = this.kicked.firstNode();
                 //AlixScheduler.sync(() -> AlixDeque.forEach(player -> player.kickPlayer(captchaTimePassed), node));
                 AlixDeque.forEach(channel -> MethodProvider.kickAsync(channel, captchaTimePassedKickPacket), node);
 
                 this.kicked.clear();
                 //this.mergedTask.setTask(() -> AlixDeque.forEach(player -> player.kickPlayer(captchaTimePassed), this.kicked.firstNode()));
-            }
+            }*/
 
             //Captcha Regeneration Logic
 

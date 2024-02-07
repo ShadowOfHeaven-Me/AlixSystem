@@ -38,6 +38,10 @@ public final class AlixCommand extends Command {
     @NotNull
     @Override
     public List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) throws IllegalArgumentException {
-        return this.completer != null ? this.completer.onTabComplete(sender, this, alias, args) : NO_SUGGESTIONS;
+        return this.completer != null ? unnullify(this.completer.onTabComplete(sender, this, alias, args)) : NO_SUGGESTIONS;
+    }
+
+    private static List<String> unnullify(List<String> list) {
+        return list != null ? list : NO_SUGGESTIONS;
     }
 }

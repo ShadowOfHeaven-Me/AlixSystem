@@ -1,7 +1,5 @@
 package shadow.systems.login.captcha.manager;
 
-import alix.common.utils.AlixCommonUtils;
-import alix.common.utils.collections.LoopCharIterator;
 import alix.common.utils.other.ConcurrentRandom;
 import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
@@ -66,22 +64,49 @@ public abstract class CaptchaGenerator {
 
     private static final class CaptchaTextGenImpl implements CaptchaTextGenerator {
 
-        private final LoopCharIterator iterator;
+        //private final LoopCharIterator iterator;
+        private final ConcurrentRandom random;
+        private final char[] chars;
         private final byte length;
 
         private CaptchaTextGenImpl() {
             StringBuilder builder = new StringBuilder();
-            String config = Main.config.getString("text-captcha-ascii-range").replaceAll(" ", "");
-            String[] ranges = AlixUtils.split(config, ',');
+            String config = Main.config.getString("captcha-text-ascii-range").replaceAll(" ", "");
+
+            String[] configArgs = config.split(";e=");
+            String[] ranges = AlixUtils.split(configArgs[0], ',');
+            StringBuilder excludedChars = new StringBuilder();
+            if (configArgs.length == 2) {
+                String[] excluded = configArgs[1].split(",");
+                for (String ex : excluded) excludedChars.append(ex);
+            }
             for (String s : ranges) AlixUtils.fill(builder, s.charAt(0), s.charAt(2));
-            char[] chars = builder.toString().toCharArray();
-            this.iterator = new LoopCharIterator(AlixCommonUtils.shuffle(chars));
+            char[] excluded = excludedChars.toString().toCharArray();
+            char[] generalIncluded = builder.toString().toCharArray();
+
+            StringBuilder chars = new StringBuilder();
+
+            z:
+            for (char c : generalIncluded) {
+                for (char e : excluded) if (c == e) continue z;
+                chars.append(c);
+            }
+            this.chars = chars.toString().toCharArray();
+
+            //probably the longest single-line statement I've ever written
+            //this.chars = AlixUtils.toPrimitive(Stream.of(AlixUtils.toObject(generalIncluded)).filter(c -> excluded.anyMatch(c2 -> c == c2)).toList().toArray(new Character[0]));
+
+            //this.iterator = new LoopCharIterator(AlixCommonUtils.shuffle(chars));
+            this.random = ConcurrentRandom.getInstance();
             this.length = AlixUtils.captchaLength;
         }
 
         @Override
         public String nextCaptchaText() {
-            return new String(iterator.next(length));
+            char[] c = new char[length];
+            for (int i = 0; i < length; i++) c[i] = chars[random.nextInt(chars.length)];
+            return new String(c);
+            //return new String(iterator.next(length));
         }
     }
 

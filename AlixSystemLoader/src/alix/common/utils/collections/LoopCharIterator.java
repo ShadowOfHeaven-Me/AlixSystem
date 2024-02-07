@@ -15,18 +15,18 @@ public final class LoopCharIterator {
     }
 
     private char next() {
-        return chars[++index == size ? index = 0 : index];
+        return chars[++index == size ? index = 0 : index];//we do not care for concurrency issues here, since this class is supposed to be pseudo-random
     }
 
     public char[] next(int length) {
         char[] c = new char[length];
-/*        int newIndex = length + index;
-        if (newIndex < size) {
+        //int newIndex = length + index;
+        /*if (newIndex < size) {
             System.arraycopy(chars, index, c, 0, length);
             return c;
             //return Arrays.copyOfRange(chars, index, newIndex);
         }*/
-        for (int i = 0; i < length; i++) c[i] = next();
+        for (int i = 0; i < length; i++) c[i] = this.next();
         return c;
     }
 }

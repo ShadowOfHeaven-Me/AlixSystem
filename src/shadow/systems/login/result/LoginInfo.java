@@ -1,5 +1,6 @@
 package shadow.systems.login.result;
 
+import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.savable.data.PersistentUserData;
 
 public final class LoginInfo {
@@ -8,12 +9,14 @@ public final class LoginInfo {
     private final LoginVerdict verdict;
     private final String ip;
     private final PersistentUserData data;
+    private final PacketInterceptor packetInterceptor;
     //final long removalTime;
 
-    public LoginInfo(LoginVerdict verdict, String ip, PersistentUserData data) {
+    LoginInfo(LoginVerdict verdict, String ip, PersistentUserData data, PacketInterceptor interceptor) {
         this.verdict = verdict;
         this.ip = ip;
         this.data = data;
+        this.packetInterceptor = interceptor;
         //this.removalTime = System.currentTimeMillis() + 60000;
     }
 
@@ -27,5 +30,9 @@ public final class LoginInfo {
 
     public final PersistentUserData getData() {
         return data;
+    }
+
+    public final PacketInterceptor getPacketInterceptor() {
+        return packetInterceptor;
     }
 }

@@ -1,11 +1,11 @@
 package shadow.utils.objects.savable.data;
 
+import alix.common.data.LoginType;
+import alix.common.data.Password;
 import org.bukkit.entity.Player;
+import shadow.systems.login.filters.GeoIPTracker;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
-import alix.common.antibot.connection.filters.GeoIPTracker;
-import alix.common.data.Password;
-import alix.common.data.PasswordType;
 import shadow.utils.objects.savable.multi.HomeList;
 
 public final class PersistentUserData {
@@ -13,8 +13,7 @@ public final class PersistentUserData {
     public static final int CURRENT_DATA_LENGTH = 6;
     private final HomeList homes;
     private final String name;
-    private Password password;
-    private PasswordType passwordType;
+    private final LoginParams loginParams;
     private String ip;
     private long mutedUntil;
 
@@ -22,36 +21,36 @@ public final class PersistentUserData {
     private PersistentUserData(String[] splitData) {
         splitData = AlixUtils.ensureSplitDataCorrectness(splitData);
         this.name = splitData[0];
-        this.password = Password.readFromSaved(splitData[1]);
+        this.loginParams = new LoginParams(splitData[1]);
         this.ip = splitData[2];
         this.homes = new HomeList(splitData[3]);
         this.mutedUntil = AlixUtils.parsePureLong(splitData[4]);
-        this.passwordType = AlixUtils.readPasswordType(splitData[5]);
+        this.loginParams.initLoginTypes(splitData[5]);
         //TODO: sixThArgument - is using pin & add /pin command, to toggle pin-only password
         addToMap();
     }
 
-    private PersistentUserData(String name, String ip) {
+    private PersistentUserData(String name, String ip, Password password) {
         this.name = name;
         this.ip = ip;
-        this.password = Password.empty();
+        this.loginParams = new LoginParams(password);
         this.homes = new HomeList();
-        this.passwordType = AlixUtils.defaultPasswordType;
+        //this.loginParams.setLoginType(AlixUtils.defaultLoginType);
         //storageManager = null;
         addToMap();
     }
 
     private void addToMap() {
-        UserFileManager.addData(this);
-        GeoIPTracker.update(ip);
+        UserFileManager.putData(this);
+        GeoIPTracker.onAccountCreation(ip);
     }
 
     public static PersistentUserData from(String data) {
         return new PersistentUserData(AlixUtils.splitPersistentData(data));
     }
 
-    public static PersistentUserData createDefault(String name, String ip) {
-        return new PersistentUserData(name, ip);
+    public static PersistentUserData createDefault(String name, String ip, Password password) {
+        return new PersistentUserData(name, ip, password);
     }
 
     public static PersistentUserData createFromPremiumPlayer(Player p) {
@@ -59,17 +58,17 @@ public final class PersistentUserData {
     }
 
     public static PersistentUserData createFromPremiumInfo(String name, String ip) {
-        PersistentUserData data = new PersistentUserData(name, ip);
-
-        data.setPassword(Password.createRandom()); //ensure the account cannot be stolen in case the server suddenly ever switches to offline mode, and does not use FastLogin
-        data.setPasswordType(PasswordType.PASSWORD);
+        //By creating a password we ensure the account cannot be stolen in case
+        //the server suddenly ever switches to offline mode, and does not use FastLogin
+        PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
+        data.setLoginType(LoginType.COMMAND);
 
         return data;
     }
 
     @Override
     public final String toString() {
-        return name + "|" + password.toSavable() + "|" + ip + "|" + homes.toSavable() + "|" + mutedUntil + "|" + passwordType; //originalWorldUUID;
+        return name + "|" + loginParams.passwordsToSavable() + "|" + ip + "|" + homes.toSavable() + "|" + mutedUntil + "|" + loginParams.loginTypesToSavable(); //originalWorldUUID;
     }
 
     public final String getName() {
@@ -77,11 +76,15 @@ public final class PersistentUserData {
     }
 
     public final String getHashedPassword() {
-        return password.getHashedPassword();
+        return this.getPassword().getHashedPassword();
     }
 
     public final Password getPassword() {
-        return password;
+        return loginParams.getPassword();
+    }
+
+    public final LoginParams getLoginParams() {
+        return loginParams;
     }
 
     public final String getSavedIP() {
@@ -96,12 +99,12 @@ public final class PersistentUserData {
         return mutedUntil;
     }
 
-    public PasswordType getPasswordType() {
-        return passwordType;
+    public LoginType getLoginType() {
+        return this.loginParams.getLoginType();
     }
 
-    public void setPasswordType(PasswordType passwordType) {
-        this.passwordType = passwordType;
+    public void setLoginType(LoginType loginType) {
+        this.loginParams.setLoginType(loginType);
     }
 
     public void setMutedUntil(long mutedUntil) {
@@ -109,15 +112,17 @@ public final class PersistentUserData {
     }
 
     public void setPassword(String password) {
-        this.password = Password.fromUnhashed(password);
+        this.loginParams.setPassword(Password.fromUnhashed(password));
     }
 
     public void setPassword(Password password) {
-        this.password = password;
+        this.loginParams.setPassword(password);
     }
 
-    public void resetPassword() {
-        this.password = Password.empty();
+    public void resetPasswords() {
+        this.loginParams.setPassword(Password.empty());
+        this.loginParams.setExtraPassword(null);
+        this.loginParams.setExtraLoginType(null);
     }
 
     public PersistentUserData setIP(String ip) {

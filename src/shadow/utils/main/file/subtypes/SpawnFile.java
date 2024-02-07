@@ -1,5 +1,6 @@
 package shadow.utils.main.file.subtypes;
 
+import org.jetbrains.annotations.NotNull;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
@@ -7,9 +8,9 @@ import shadow.utils.objects.savable.loc.Spawn;
 
 import java.io.IOException;
 
-public class SpawnFile extends FileManager {
+public final class SpawnFile extends FileManager {
 
-    private Spawn spawn = Spawn.getDefaultSpawn();//not-null
+    private Spawn spawn = Spawn.DEFAULT_SPAWN;//not-null
     private byte index;
 
     public SpawnFile() {
@@ -41,6 +42,7 @@ public class SpawnFile extends FileManager {
         return String.valueOf(spawn);
     }
 
+    @NotNull
     public Spawn getSpawn() {
         return spawn;
     }

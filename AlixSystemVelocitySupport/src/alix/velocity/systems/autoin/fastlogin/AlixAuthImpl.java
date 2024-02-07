@@ -3,7 +3,7 @@ package alix.velocity.systems.autoin.fastlogin;
 import com.github.games647.fastlogin.core.hooks.AuthPlugin;
 import com.velocitypowered.api.proxy.Player;
 
-public class AlixAuthImpl implements AuthPlugin<Player> {
+public final class AlixAuthImpl implements AuthPlugin<Player> {
 
     @Override
     public boolean forceLogin(Player player) {
@@ -16,7 +16,7 @@ public class AlixAuthImpl implements AuthPlugin<Player> {
     }
 
     @Override
-    public boolean isRegistered(String s) throws Exception {
+    public boolean isRegistered(String s) {
         return false;
     }
 }

@@ -9,6 +9,7 @@ import static shadow.utils.main.AlixUtils.*;
 
 public class Spawn {
 
+    public static final Spawn DEFAULT_SPAWN = createDefaultSpawn0();
     private final Location location;
 
     public Spawn(Location location) {
@@ -25,7 +26,7 @@ public class Spawn {
         return location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ() + ":" + location.getWorld().getName() + ":" + location.getYaw() + ":" + location.getPitch();
     }
 
-    public static Spawn getDefaultSpawn() {
+    private static Spawn createDefaultSpawn0() {
 /*        for (World w : Bukkit.getWorlds()) {
             if (w.getEnvironment() == World.Environment.NORMAL) {
                 return new Spawn(w.getSpawnLocation());
@@ -36,10 +37,10 @@ public class Spawn {
     }
 
     public static Spawn fromString(String a) {
-        if (a == null || a.equals("null")) return getDefaultSpawn();
+        if (a == null || a.equals("null")) return DEFAULT_SPAWN;
         String[] b = split(a, ':');
         World c = Bukkit.getWorld(b[3]);
-        if (c == null) return getDefaultSpawn();
+        if (c == null) return DEFAULT_SPAWN;
         return new Spawn(new Location(c, parseInteger(b[0]), parseInteger(b[1]), parseInteger(b[2]), Float.parseFloat(b[4]), Float.parseFloat(b[5])));
     }
 }

@@ -45,7 +45,7 @@ public final class AlixThread extends Thread {
     }
 
     public static void shutdownAllAlixThreads() {
-        AlixDeque.forEach(AlixThread::shutdown, alixThreads.firstNode());
+        AlixDeque.forEach(AlixThread::shutdown, alixThreads);
         alixThreads.clear();
     }
 

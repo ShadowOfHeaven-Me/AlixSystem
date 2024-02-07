@@ -1,9 +1,11 @@
 package alix.velocity;
 
 import alix.loaders.velocity.VelocityAlixMain;
-import alix.pluginloader.LoaderBootstrap;
+import alix.loaders.classloader.LoaderBootstrap;
+import alix.velocity.server.AlixServer;
 import alix.velocity.systems.autoin.PremiumAutoIn;
 import alix.velocity.systems.events.Events;
+import alix.velocity.utils.AlixHandler;
 import com.velocitypowered.api.plugin.PluginManager;
 import com.velocitypowered.proxy.VelocityServer;
 
@@ -27,8 +29,11 @@ public final class Main implements LoaderBootstrap {
 
     @Override
     public void onEnable() {
+        //AlixServer.init();
+        AlixServer.onProxyInit();
         PremiumAutoIn.checkForInit();
         this.server.getEventManager().register(instance, new Events());
+        AlixHandler.initializeFireWall(this.server);
         //server.getBackendChannelInitializer();
         //VelocityServerConnection
     }

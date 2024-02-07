@@ -23,15 +23,24 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="gson-2.9.0" level="project" />
-    <orderEntry type="library" name="FastLoginBukkit" level="project" />
-    <orderEntry type="library" name="spigot-1.14.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="FastLoginBukkit" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="spigot-1.14.4" level="project" />
     <orderEntry type="module" module-name="AlixSystemLoader" />
-    <orderEntry type="library" name="spigot 1.17" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="spigot 1.17" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="LuckPerms-Bukkit-5.4.71" level="project" />
-    <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
     <orderEntry type="library" name="org.jetbrains:annotations:24.0.0" level="project" />
-    <orderEntry type="library" name="packetevents-spigot-2.0.2" level="project" />
-    <orderEntry type="library" name="spigot-1.20.2-R0.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="paper-1.20.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="packetevents-spigot-2.0.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="spigot-1.20.2-R0.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="paper-1.20.2" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/Downloads/paperlib-1.0.7.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>

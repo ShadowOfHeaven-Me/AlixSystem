@@ -34,7 +34,9 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import shadow.Main;
 
-public class Metrics {
+//A class I copied for Metrics
+//Got it from kubag5
+public final class Metrics {
 
     private final Plugin plugin;
 
@@ -47,7 +49,7 @@ public class Metrics {
      * @param serviceId The id of the service. It can be found at <a
      *     href="https://bstats.org/what-is-my-plugin-id">What is my plugin id?</a>
      */
-    public Metrics(JavaPlugin plugin, int serviceId) {
+    private Metrics(JavaPlugin plugin, int serviceId) {
         this.plugin = plugin;
         // Get the config file
         File bStatsFolder = new File(plugin.getDataFolder().getParentFile(), "bStats");
