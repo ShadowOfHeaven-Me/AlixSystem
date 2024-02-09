@@ -29,17 +29,14 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     public BukkitAlixMain() {
         instance = this;
         //CommonAlixMain.loggerManager = this;
-
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
         this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, JavaPlugin.class, this);
         //this.alixLogger = new AlixPluginLogger();
-        this.logger = AlixLoggerProvider.createServerAdequateLogger();
+        this.logger = AlixLoggerProvider.createServerAdequateLogger(super.getLogger());
         this.loggerAdapter = LoggerAdapter.createAdapter(this.getLogger());
-
         //CommonAlixMain.bootstrap = this.plugin;
 
         saveDefaultConfig();
-
         FileUpdater.updateFiles();
 
 /*        if (UpdateChecker.checkForUpdates(this)) {
@@ -104,6 +101,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
 
     @Override
     public void onEnable() {
+        setEnabled(true);
         this.bootstrap.onEnable();
     }
 

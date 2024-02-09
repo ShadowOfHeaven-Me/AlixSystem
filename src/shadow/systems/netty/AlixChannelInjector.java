@@ -4,9 +4,12 @@ import com.google.common.collect.MapMaker;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import net.minecraft.network.protocol.status.PacketStatusInPing;
+import net.minecraft.network.protocol.status.PacketStatusOutPong;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.getters.LoginInStartPacketGetter;
 
+import java.util.BitSet;
 import java.util.Map;
 
 import static io.netty.channel.ChannelHandler.Sharable;
@@ -14,8 +17,9 @@ import static io.netty.channel.ChannelHandler.Sharable;
 public final class AlixChannelInjector {
 
     public static final Map<String, Channel> CHANNELS = new MapMaker().weakValues().makeMap();//ensure we do not hold the Channel reference captive by using weak values
-    public static final String CHANNEL_ACTIVE_LISTENER_NAME = "AlixChannelActiveListener";
-    public static final String PACKET_INJECTOR_NAME = "AlixPacketChannelInjector";
+    public static final String
+            CHANNEL_ACTIVE_LISTENER_NAME = "AlixChannelActiveListener",
+            PACKET_INJECTOR_NAME = "AlixPacketChannelInjector";
     private static final ChannelActiveListener channelActiveListener = new ChannelActiveListener();
     private static final PacketInjectorImpl packetInjector = new PacketInjectorImpl();
 

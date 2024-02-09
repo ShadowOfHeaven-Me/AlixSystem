@@ -1,4 +1,4 @@
-package alix.common.antibot.connection.algorithms;
+package alix.common.antibot.algorithms.connection;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;

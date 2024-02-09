@@ -3,6 +3,7 @@ package shadow.systems.netty;
 import alix.common.AlixCommonMain;
 import alix.common.antibot.firewall.FireWallManager;
 import io.netty.channel.*;
+import org.bukkit.event.server.ServerListPingEvent;
 import shadow.utils.main.AlixUtils;
 
 import java.net.InetSocketAddress;

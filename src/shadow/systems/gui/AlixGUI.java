@@ -50,7 +50,7 @@ public abstract class AlixGUI implements AbstractAlixGUI {
     @Override
     public final void onClick(InventoryClickEvent event) {
         int slot = event.getRawSlot();
-        GUIItem item = slot < this.items.length ? this.items[slot] : null;
+        GUIItem item = slot >= 0 && slot < this.items.length ? this.items[slot] : null;
         if (item != null) item.getConsumer().accept(event);
     }
 

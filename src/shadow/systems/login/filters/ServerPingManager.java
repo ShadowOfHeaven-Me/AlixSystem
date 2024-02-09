@@ -1,8 +1,8 @@
 package shadow.systems.login.filters;
 
 import alix.common.messages.Messages;
-import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.collections.list.LoopList;
+import alix.common.utils.config.ConfigProvider;
 
 public final class ServerPingManager implements ConnectionFilter {
 
@@ -21,8 +21,8 @@ public final class ServerPingManager implements ConnectionFilter {
         //Main.debug("Initialized ServerPingManager!");
     }
 
-    public static void pureAdd(String address) {
-        INSTANCE.addIfAbsent(address);
+    public static void add(String address) {
+        if (registered) INSTANCE.addIfAbsent(address);
     }
 
     public static boolean isRegistered() {

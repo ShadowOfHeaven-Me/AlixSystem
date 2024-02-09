@@ -16,4 +16,8 @@ public final class AlixError extends InternalError {
     public AlixError(String message, Throwable e) {
         super(message, e);
     }
+
+    public AlixError(Throwable e, String message) {
+        super(message, e);
+    }
 }

@@ -1,5 +1,6 @@
 package shadow.utils.holders;
 
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
@@ -517,7 +518,7 @@ public final class ReflectionUtils {
         try {
             return clazz.getMethod(name, classes);
         } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
+            throw new AlixError(e, "No method: " +  clazz.getSimpleName() + "." + name + "(" + Arrays.toString(classes) + ")");
         }
     }
 

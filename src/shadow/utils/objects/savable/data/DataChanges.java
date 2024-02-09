@@ -42,7 +42,7 @@ public final class DataChanges {
 
             LoginType extraLoginType = data.getLoginParams().getExtraLoginType();
 
-            if (this.extraLoginType != null) {
+            if (this.extraLoginType != null && newExtraPassword == null) {
                 if (extraLoginType == LoginType.PIN && this.extraLoginType != LoginType.PIN) {
                     player.sendRawMessage(secondaryPin);
                     return false;

@@ -45,33 +45,13 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added /account, helping in managing your account's settings, configuring autologin or enabling double verification
-    //[+] The player will now no longer be receiving any messages during verification, except for verification completion reminders - the blocked messages will be sent after the verification is completed
-    //[+] Added a few new config parameters
-    //[+] Made the captcha completion less annoying by removing similar-looking symbols
-    //[+] Added a new Bot Detection Algorithm, and disabled one that was deemed unnecessary
-    //[+] Greatly improved the FireWall - it does not require now neither Paper nor PacketEvents in order to work, and performs the connection close earlier on
-    //[+] The Channel injection is now performed on the authentication thread, making it's impact on server performance minimal
-    //[+] Expanded the vpn detection providers
-    //[+] Slightly optimized player kicking
-    //[+] Replaced the true/false value for incorrect input during login/captcha verification with a numerical amount of maximum tries before an automatic kick occurs
-    //[+] Teleports will now be performed semi-asynchronously on Paper servers, using the PaperLib
-    //[*] Reformatted the Bot Detection Algorithms
-    //[*] Fixed auto-invoked commands after verification being removed from the config after reload
-    //[*] Fixed 'check-server-compatibility' not working
-    //[*] Fixed an error thrown at an early player join after server start-up
-    //[*] Fixed the captcha's slow or no appearance for gui users
-    //[*] Reconstructed the way captcha's texts are generated
-    //[*] Removed command aliases deemed unnecessary from commands.txt
-    //[*] Fixed the player respawning at death location if verification was required after quitting the server without respawning
-    //[*] Fixed a console color issue on Paper
-    //[*] Changed the amount of alix scheduler's parallelisms
-    //[*] Fixed config lists disappearing after reload
-    //[*] 'password-hash-type' will now be 3 instead of 1 by default, improving the hashing's security
-    //[*] Fixed command tab completers throwing errors
-    //[*] Fixed many errors connected to guis
-    //[*] Fixed potential issues with Sha256's concurrent hashing
-    //[*] Experiences countdowns updates will now be performed 5 times a second, instead of 10
+    //[+] Implemented a DDoS Detection Algorithm (bear in mind that this does not provide full Anti-DDoS protection, only primitive minecraft ping attacks)
+    //[+] Removed all slowdowns caused by captcha pre-generation on server start-up
+    //[*] Fixed spam messages regarding invalid player head setting on newer servers
+    //[*] Fixed an error occurring only on Paper servers
+    //[*] Fixed console prefix repeating on Paper servers
+    //[*] Fixed console "lost connection" messages staying on Paper servers
+    //[*] Fixed a problem with /account
 
 
     //todo: Add a custom data structure for unverified users
@@ -119,6 +99,7 @@ public final class Main implements LoaderBootstrap {
         plugin = instance;
     }
 
+    //DO NOT USE THE ALIX SCHEDULER ON LOAD, CUZ ON PAPER THIS MFO THROWS ERRORS
     @Override
     public void onLoad() {
         //if (autoRestart()) return;
@@ -128,24 +109,22 @@ public final class Main implements LoaderBootstrap {
         ReflectionUtils.replaceBansToConcurrent();
         Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
         AlixCommandManager.init();
-        Captcha.pregenerate();//will not pregenerate the captcha itself if disabled, but needs to be invoked for the CountdownTask values to pregenerate
         //Dependencies.initAdditional();
         VerificationReminder.init();
         if (anvilPasswordGui) AnvilPasswordBuilder.init();
         MethodProvider.init();
         IpAutoLoginGUI.init();
         this.metrics = Metrics.createMetrics();
-        FileManager.preEnableFileLoad();
-        AlixScheduler.async(() -> {});//pre-loading the scheduler
         AlixHandler.kickAll("Reload");
     }
 
     @Override
     public void onEnable() {//TODO: Player GUI in /js commands (texture not working & items can be picked up)
+        Captcha.pregenerate(); //will not pregenerate the captcha itself if disabled, but needs to be invoked for the BufferedPackets values to pregenerate
         pm.registerEvents(this.preStartUpExecutors = new PreStartUpExecutors(), plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
-        FileManager.onEnableFileLoad();
+        FileManager.loadFiles();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         CommandManager.register();
         AlixScheduler.sync(() -> AlixScheduler.async(this::setUp));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread

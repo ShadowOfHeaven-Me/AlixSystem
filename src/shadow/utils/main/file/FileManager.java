@@ -1,6 +1,7 @@
 package shadow.utils.main.file;
 
 import alix.common.messages.Messages;
+import alix.common.scheduler.AlixScheduler;
 import alix.loaders.bukkit.BukkitAlixMain;
 import shadow.Main;
 import alix.common.antibot.firewall.FireWallManager;
@@ -113,25 +114,15 @@ public abstract class FileManager {
         }
     }
 
-    public static void preEnableFileLoad() {
+    public static void loadFiles() {
         try {
             Messages.init();
-            UserFileManager.initialize();
+            AlixScheduler.async(UserFileManager::init);
             FireWallManager.initialize();
             WarpFileManager.initialize();
-            Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded (pre-enable)!" : "Poprawnie wczytano wszystkie pliki (przed-włączeniem)!");
-        } catch (IOException e) {
-            Main.logError(AlixUtils.isPluginLanguageEnglish ? "An error occurred whilst trying to load the " + e.getMessage() + " file!"
-                    : "Napotkano error przy próbie wczytania pliku " + e.getMessage() + "!");
-            e.getCause().printStackTrace();
-        }
-    }
-
-    public static void onEnableFileLoad() {
-        try {
-            OriginalLocationsManager.initialize();
+            AlixScheduler.async(OriginalLocationsManager::init);
             SpawnFileManager.initialize();
-            Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded!" : "Poprawnie wczytano wszystkie pliki!");
+            Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded (pre-enable)!" : "Poprawnie wczytano wszystkie pliki (przed-włączeniem)!");
         } catch (IOException e) {
             Main.logError(AlixUtils.isPluginLanguageEnglish ? "An error occurred whilst trying to load the " + e.getMessage() + " file!"
                     : "Napotkano error przy próbie wczytania pliku " + e.getMessage() + "!");
@@ -163,7 +154,6 @@ public abstract class FileManager {
             File newFile = new File(INTERNAL_FOLDER.getAbsolutePath() + File.separator + fileName);
             if (oldFile.exists()) {
                 try {
-
                     Files.copy(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     oldFile.delete();
                     return newFile;

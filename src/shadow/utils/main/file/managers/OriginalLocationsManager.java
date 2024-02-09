@@ -1,6 +1,5 @@
 package shadow.utils.main.file.managers;
 
-import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +19,14 @@ public final class OriginalLocationsManager {
         return file.getMap().compute(uuid, (id, loc) -> loc != null ? loc : player.getLocation());
     }*/
 
+    static {
+        try {
+            file.load();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void teleportBack(Player player, boolean warningIfAbsent) {
         Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
         if (originalLoc != null) MethodProvider.teleportAsync(player, originalLoc);
@@ -37,10 +44,6 @@ public final class OriginalLocationsManager {
         return file.getMap().remove(player.getUniqueId());
     }*/
 
-    public static void initialize() throws IOException {
-        file.load();
-    }
-
     public static void onAsyncSave() {
         try {
             file.save();
@@ -57,5 +60,8 @@ public final class OriginalLocationsManager {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void init() {
     }
 }

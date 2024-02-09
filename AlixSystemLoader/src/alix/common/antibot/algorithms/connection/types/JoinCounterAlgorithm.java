@@ -1,7 +1,7 @@
-package alix.common.antibot.connection.algorithms.types;
+package alix.common.antibot.algorithms.connection.types;
 
 import alix.common.AlixCommonMain;
-import alix.common.antibot.connection.algorithms.ConnectionAlgorithm;
+import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
@@ -24,7 +24,7 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
     public void onThreadRepeat() {
         final long now = System.currentTimeMillis();
         this.ipMap.forEach((ip, map) -> {
-            if (map.removalTime.get() < now) this.ipMap.remove(ip);
+            if (map.removalTime < now) this.ipMap.remove(ip);
         });
     }
 
@@ -33,21 +33,22 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
+    /** @noinspection NonAtomicOperationOnVolatileField*/
     private static final class NameMapImpl extends NameMap {
 
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
-        private final AtomicLong removalTime;
+        private volatile long removalTime;
 
         private NameMapImpl(String address) {
             super(address);
-            this.removalTime = new AtomicLong(System.currentTimeMillis() + 15000);
+            this.removalTime = System.currentTimeMillis() + 15000;
         }
 
         protected boolean add(String name) {
             //AliCommonMain.logInfo("IP: " + ip + " Name To IP: " + vl.get());
 
-            if (this.namesSet.add(name)) this.removalTime.getAndAdd(7000);
-            else this.removalTime.getAndAdd(500);
+            if (this.namesSet.add(name)) this.removalTime += 7000;
+            else this.removalTime += 500;
 
             if (this.namesSet.size() > 12) {
                 if (FireWallManager.add(ip, ALGORITHM_ID))

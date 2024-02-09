@@ -17,14 +17,17 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.conversations.Conversable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import shadow.Main;
 import shadow.systems.commands.ExecutableCommandList;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
+import shadow.utils.holders.NewerVersionAccess;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.holders.skull.SkullSupplier;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.world.AlixWorldHolder;
 
@@ -295,22 +298,13 @@ public final class AlixUtils {
         //return user.isPinGUIInitialized() || !startsWith(cmd, "login", "loguj", "zaloguj", "register", "reg", "zarejestruj", "captcha");
     }*/
 
+    private static final SkullSupplier skullSupplier = SkullSupplier.createImpl();
+
     public static ItemStack getSkull(String name, String url) {
-        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta headMeta = (SkullMeta) head.getItemMeta();
-        headMeta.setDisplayName(AlixFormatter.translateColors(name));
-
-        GameProfile profile = new GameProfile(UUID.randomUUID(), "none");
-        profile.getProperties().put("textures", new Property("textures", url));
-
-        try {
-            Field profileField = headMeta.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            profileField.set(headMeta, profile);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        head.setItemMeta(headMeta);
+        ItemStack head = skullSupplier.createSkull(url);
+        ItemMeta meta = head.getItemMeta();
+        meta.setDisplayName(AlixFormatter.translateColors(name));
+        head.setItemMeta(meta);
         return head;
     }
 

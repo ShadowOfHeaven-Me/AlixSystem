@@ -31,8 +31,8 @@ public abstract class Captcha {
 
     public static void sendInitMessage() {
         Main.logInfo(AlixUtils.isPluginLanguageEnglish ?
-                "Pre-generated the captcha pool with the size " + captchaPool.size() + "."
-                : "Wygenerowano przedwcześnie captcha w ilości " + captchaPool.size() + ".");
+                "Pre-generated the captcha pool with the size " + CaptchaPoolManager.maxSize + "."
+                : "Wygenerowano przedwcześnie captcha w ilości " + CaptchaPoolManager.maxSize + ".");
     }
 
 /*    public static int currentPoolSize() {

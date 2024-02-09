@@ -2,7 +2,7 @@
 package shadow.systems.commands;
 
 import com.google.gson.JsonObject;
-import alix.common.antibot.connection.types.ServerPingManager;
+import alix.common.antibot.algorithms.connection.types.ServerPingManager;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;

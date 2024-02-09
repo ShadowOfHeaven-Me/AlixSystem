@@ -24,7 +24,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="spigot-1.14.4" level="project" />
     <orderEntry type="library" name="gson-2.9.0" level="project" />
-    <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
     <orderEntry type="library" name="BungeeCord" level="project" />
     <orderEntry type="library" name="org.jetbrains:annotations:24.0.0" level="project" />
     <orderEntry type="module-library">
@@ -37,5 +36,6 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="paper-1.20.2" level="project" />
+    <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
   </component>
 </module>

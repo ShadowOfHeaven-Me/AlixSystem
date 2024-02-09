@@ -1,9 +1,10 @@
 package shadow.systems.login.result;
 
-import alix.common.antibot.connection.algorithms.ConnectionAlgorithm;
-import alix.common.antibot.connection.algorithms.types.JoinCounterAlgorithm;
-import alix.common.antibot.connection.algorithms.types.Name2IPAlgorithm;
-import alix.common.antibot.connection.algorithms.types.RequestAmountAlgorithm;
+import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
+import alix.common.antibot.algorithms.connection.types.JoinCounterAlgorithm;
+import alix.common.antibot.algorithms.connection.types.Name2IPAlgorithm;
+import alix.common.antibot.algorithms.ping.PingRequestAlgorithm;
+import alix.common.antibot.algorithms.ping.types.TotalCounterPingAlgorithm;
 import alix.common.scheduler.AlixScheduler;
 import shadow.utils.main.AlixUtils;
 
@@ -17,22 +18,29 @@ public final class ConnectionThreadManager {
     }
 
     public static void addJoinAttempt(String name, String address) {
-        for (ConnectionAlgorithm algorithm : runnable.algorithms) algorithm.onJoinAttempt(name, address);
+        for (ConnectionAlgorithm algorithm : runnable.connectionAlgorithms) algorithm.onJoinAttempt(name, address);
     }
+
+    public static void addPingRequest(String address) {
+        for (PingRequestAlgorithm algorithm : runnable.pingRequestAlgorithms) algorithm.onPingRequest(address);
+    }
+
     //runnable.joins.offerLast(new JoinAttempt(name, address));
     //for (ConnectionAlgorithm a : runnable.algorithms) a.onJoinAttempt(name, address);
 
 
     private static final class ConnectionThreadRunnable implements Runnable {
 
-        private final ConnectionAlgorithm[] algorithms;
+        private final ConnectionAlgorithm[] connectionAlgorithms;
+        private final PingRequestAlgorithm[] pingRequestAlgorithms;
         //private final AlixDeque<JoinAttempt> joins = new ConcurrentAlixDeque<>();
         //private final ConnectionListManager list = new ConnectionListManager();
 
 
         @Override
         public void run() {
-            for (ConnectionAlgorithm a : algorithms) a.onThreadRepeat();
+            for (ConnectionAlgorithm a : connectionAlgorithms) a.onThreadRepeat();
+            for (PingRequestAlgorithm a : pingRequestAlgorithms) a.onThreadRepeat();
         }
 
             /*if (!joins.isEmpty()) {
@@ -53,10 +61,13 @@ public final class ConnectionThreadManager {
         }*/
 
         private ConnectionThreadRunnable() {
-            this.algorithms = new ConnectionAlgorithm[]{
+            this.connectionAlgorithms = new ConnectionAlgorithm[]{
                     //new RequestAmountAlgorithm(),
                     new Name2IPAlgorithm(),
                     new JoinCounterAlgorithm()
+            };
+            this.pingRequestAlgorithms = new PingRequestAlgorithm[]{
+                    new TotalCounterPingAlgorithm()
             };
         }
     }

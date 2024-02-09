@@ -3,6 +3,8 @@ package alix.common.antibot.firewall;
 import alix.common.AlixCommonMain;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

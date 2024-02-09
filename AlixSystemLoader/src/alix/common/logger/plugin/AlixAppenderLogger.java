@@ -7,11 +7,11 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public final class AlixUniversalLogger extends Logger {
+public final class AlixAppenderLogger extends Logger {
 
     private final String name = AlixLoggerProvider.LOGGER_NAME_FULL;
 
-    public AlixUniversalLogger() {
+    public AlixAppenderLogger() {
         super("AlixSystem", null);
         this.setParent(BukkitAlixMain.instance.getServer().getLogger());
         this.setLevel(Level.ALL);

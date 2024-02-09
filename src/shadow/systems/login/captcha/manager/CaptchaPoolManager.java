@@ -1,5 +1,6 @@
 package shadow.systems.login.captcha.manager;
 
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import org.bukkit.Bukkit;
@@ -8,15 +9,17 @@ import shadow.utils.main.AlixUtils;
 
 public final class CaptchaPoolManager {
 
+    public static final int maxSize = (int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.1, 1.2));
     private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();
 
     public CaptchaPoolManager() {
-        //generate a little bit more than the max player count in order to lower the chance of the captchas ever running out at runtime, before they have the time to be re-generated
-        int size = (int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.1, 1.2));// + 64 + AlixUtils.random.nextInt(64);
-
         //pre-generating
-        while (size-- != 0)
-            this.add(CaptchaGenerator.generateCaptcha());
+        AlixScheduler.async(() -> {
+            //generate a little bit more than the max player count in order to lower the chance of the captchas ever running out at runtime, before they have the time to be re-generated
+            int size = maxSize;// + 64 + AlixUtils.random.nextInt(64);
+            while (size-- != 0)
+                this.add(CaptchaGenerator.generateCaptcha());
+        });
     }
 
     public final Captcha next() {

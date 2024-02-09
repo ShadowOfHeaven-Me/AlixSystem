@@ -3,10 +3,10 @@ already-logged-in-login-command: &cYou're already logged in! To change your pass
 already-logged-in: &cYou're already logged in!
 already-registered: &cYou're already registered!
 anti-bot-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a bot attack. Algorithm ID: {1}
-anti-bot-fail-suspect-message: &cYour ip has been blocked under the suspicion of performing a bot attack. Algorithm ID: {0}
 anti-bot-firewalled: &cYour IP has been firewalled!
+anti-ddos-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a DDoS attack. Algorithm ID: {1}
 anti-vpn: &cDisable your VPN!
-auto-login: &aYour last ip was the same as before, so you've been automatically logged in! VPNs may be troublesome because of this
+auto-login: &aYour last ip was the same as before, so you've been automatically logged in! You can manage these setting at /account
 ban-reason-absent: You've been banned!
 banned-ip-forever: Banned ip &c{0} &7forever!
 banned-ip-reason-and-time: Banned ip &c{0} &7until &c{1}&7, for {2}&7!

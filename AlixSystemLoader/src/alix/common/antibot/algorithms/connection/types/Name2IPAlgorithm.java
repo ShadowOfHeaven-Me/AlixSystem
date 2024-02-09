@@ -1,7 +1,7 @@
-package alix.common.antibot.connection.algorithms.types;
+package alix.common.antibot.algorithms.connection.types;
 
 import alix.common.AlixCommonMain;
-import alix.common.antibot.connection.algorithms.ConnectionAlgorithm;
+import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
@@ -26,7 +26,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
     public void onThreadRepeat() {
         //final long now = System.currentTimeMillis();
         this.ipMap.forEach((ip, map) -> {
-            if (map.vl.addAndGet(-1.5f) <= 0) this.ipMap.remove(ip);
+            if (map.tick() <= 0) this.ipMap.remove(ip);
         });
     }
 
@@ -35,29 +35,34 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
+    /** @noinspection NonAtomicOperationOnVolatileField*/
     private static final class NameMapImpl extends NameMap {
 
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
-        private final AtomicFloat vl;
+        private volatile int vl;
 
         private NameMapImpl(String address) {
             super(address);
-            this.vl = new AtomicFloat();
             //this.removalTime = new AtomicLong(System.currentTimeMillis() + 20000);
         }
 
         protected boolean add(String name) {
             //AliCommonMain.logInfo("IP: " + ip + " Name To IP: " + vl.get());
 
-            if (this.namesSet.add(name)) this.vl.getAndAdd(12);
-            else this.vl.incrementAndGetSelf();
+            if (this.namesSet.add(name)) this.vl += 24;
+            else this.vl += 2;
 
-            if (this.vl.get() > 120) {
+            if (this.vl > 240) {
                 if (FireWallManager.add(ip, ALGORITHM_ID))
                     AlixCommonMain.logInfo(consoleMessage.format(ip));
                 return true;
             }
             return false;
+        }
+
+        private int tick() {
+            this.vl -= 3;
+            return vl;
         }
     }
 

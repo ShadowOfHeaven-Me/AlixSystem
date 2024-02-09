@@ -9,8 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class GeoIPTracker implements ConnectionFilter {
 
-    public static final GeoIPTracker instance = ConfigParams.maximumTotalAccounts > 0 ? new GeoIPTracker() : null;
-    private static final boolean initialized = instance != null;
+    public static final GeoIPTracker INSTANCE = ConfigParams.maximumTotalAccounts > 0 ? new GeoIPTracker() : null;
+    private static final boolean initialized = INSTANCE != null;
     private static final String maxAccountsReached = Messages.get("account-limit-reached", ConfigParams.maximumTotalAccounts);
     private final TempIPCounter tempIPCounter;
     private final Map<String, Integer> map;//existing accounts
@@ -89,22 +89,22 @@ public final class GeoIPTracker implements ConnectionFilter {
     }
 
     public static void addTempIP(String ip) {//unregistered player joined the server
-        if (initialized) instance.tempIPCounter.addIP(ip);
+        if (initialized) INSTANCE.tempIPCounter.addIP(ip);
     }
 
     public static void removeTempIP(String ip) {//unregistered player left the server
-        if (initialized) instance.tempIPCounter.removeIP(ip);
+        if (initialized) INSTANCE.tempIPCounter.removeIP(ip);
     }
 
     public static boolean disallowLogin(String ip) {
-        return initialized && instance.getAccountsOf(ip) >= ConfigParams.maximumTotalAccounts;
+        return initialized && INSTANCE.getAccountsOf(ip) >= ConfigParams.maximumTotalAccounts;
     }
 
     public static int getAccounts(String ip) {
-        return initialized ? instance.getAccountsOf(ip) : -1;
+        return initialized ? INSTANCE.getAccountsOf(ip) : -1;
     }
 
     public static void onAccountCreation(String ip) {
-        if (initialized) instance.updateMap(ip);
+        if (initialized) INSTANCE.updateMap(ip);
     }
 }

@@ -1,5 +1,6 @@
 package shadow.utils.objects;
 
+import alix.common.environment.ServerEnvironment;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Filter;
@@ -37,7 +38,7 @@ public final class AlixConsoleFilterHolder implements Filter {
                 return Result.ACCEPT;
             }*/
             if (AlixUtils.hideFailedJoinAttempts && (AlixUtils.startsWith(message, "UUID of player",
-                    "Disconnecting com.mojang.authlib.GameProfile", "com.mojang.authlib.GameProfile", "Disconnecting","handleDisconnection()") || this.isLostCon0(message)))
+                    "Disconnecting com.mojang.authlib.GameProfile", "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()") || this.isLostCon0(message)))
                 return Result.DENY;
             if (AlixUtils.alixJoinLog && Thread.currentThread() == Main.mainServerThread) {
                 char[] msg = message.toCharArray();
@@ -48,12 +49,21 @@ public final class AlixConsoleFilterHolder implements Filter {
             return Result.NEUTRAL;
         }
 
+        private static final boolean waitFor2ndSpace = ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER;
+
         //Checks for the connection lost messages
         //_ShadowOfHeaven_ (/IP) lost connection: We're analysing your connection. You may now join the server.
         private boolean isLostCon0(String message) {
+            boolean wait = waitFor2ndSpace;
             char[] chars = message.toCharArray();
             for (int i = 0; i < chars.length; i++)
-                if (chars[i] == ' ') return isRegexPresent(chars, regex2, i);
+                if (chars[i] == ' ') {
+                    if (wait) {
+                        wait = false;
+                        continue;
+                    }
+                    return isRegexPresent(chars, regex2, i);
+                }
             return false;
         }
 

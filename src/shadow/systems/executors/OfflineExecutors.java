@@ -59,7 +59,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         //Also, do not change the login result to let the server show the actual ban message
         //This logic might be changed in the future
         if (BukkitBanList.IP.isBanned(address) || BukkitBanList.NAME.isBanned(name))
-            return;//prevent further processing, since #getLoginResult returns ALLOWED unless changed by another plugin
+            return;//prevent further processing, since #getLoginResult returns ALLOWED, unless changed by another plugin
 
         if (name.startsWith("MC_STORM") || name.startsWith("BOT_")) {//primitive protection
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "AntiBot Protection");

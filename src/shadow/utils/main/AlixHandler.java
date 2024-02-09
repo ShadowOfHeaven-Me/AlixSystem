@@ -131,14 +131,14 @@ public final class AlixHandler {
         List<ConnectionFilter> filters = new ArrayList<>();
         if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.INSTANCE);
         if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
-        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.instance);
+        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
         if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
         return filters.toArray(new ConnectionFilter[0]);
     }
 
     public static ConnectionFilter[] getPremiumConnectionFilters() {//set up in the most efficient way
         List<ConnectionFilter> filters = new ArrayList<>();
-        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.instance);
+        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
         if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
         return filters.toArray(new ConnectionFilter[0]);
     }
@@ -173,7 +173,7 @@ public final class AlixHandler {
                 pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
                 Main.logError("drftgyhjuik");
             }*/
-            if (ServerPingManager.isRegistered()) pm.registerEvents(new ServerPingListener(), Main.plugin);
+            pm.registerEvents(new ServerPingListener(), Main.plugin);
             /*            if (requireCaptchaVerification) {
              *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
                     Main.logInfo("Enabling Async Tab Completion support.");
