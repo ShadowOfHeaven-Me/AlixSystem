@@ -33,6 +33,7 @@ public final class AlixConsoleFilterHolder implements Filter {
 
         private Result filter(LogEvent e) {
             String message = e.getMessage().getFormattedMessage();
+            if (message.isEmpty()) return Result.ACCEPT;
             /*if (Thread.currentThread() == Main.mainServerThread) {
                 AlixScheduler.async(() -> Main.logInfo("THREAD MAIN - " + e.getMessage()));
                 return Result.ACCEPT;
@@ -53,9 +54,11 @@ public final class AlixConsoleFilterHolder implements Filter {
 
         //Checks for the connection lost messages
         //_ShadowOfHeaven_ (/IP) lost connection: We're analysing your connection. You may now join the server.
+
+        //[18:30:53] [Server thread/INFO]: /177.244.29.74:54974 lost connection: Internal Exception: io.netty.handler.codec.DecoderException: java.lang.IndexOutOfBoundsException: readerIndex(18) + length(8) exceeds writerIndex(19): PooledUnsafeDirectByteBuf(ridx: 18, widx: 19, cap: 256)
         private boolean isLostCon0(String message) {
-            boolean wait = waitFor2ndSpace;
             char[] chars = message.toCharArray();
+            boolean wait = chars[0] != '/' && waitFor2ndSpace;//
             for (int i = 0; i < chars.length; i++)
                 if (chars[i] == ' ') {
                     if (wait) {

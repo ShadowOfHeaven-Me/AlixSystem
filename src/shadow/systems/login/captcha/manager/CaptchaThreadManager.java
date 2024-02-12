@@ -1,9 +1,11 @@
 package shadow.systems.login.captcha.manager;
 
+import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
+import org.bukkit.craftbukkit.v1_20_R2.entity.CraftPlayer;
 import shadow.systems.login.Verifications;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
@@ -20,9 +22,10 @@ public final class CaptchaThreadManager {
     private static final CaptchaThreadRunnable captchaRunnable = initialize ? new CaptchaThreadRunnable() : null;
     //public static final Object CAPTCHA_LOCK = captchaRunnable;
 
-    public static void regenerateCaptcha(Captcha captcha) {
-        captchaRunnable.captchasToRegen.offerLast(captcha);
-    }
+    /*public static void regenerateCaptcha(Captcha captcha) {
+        AlixScheduler.async(() -> Captcha.
+        //captchaRunnable.captchasToRegen.offerLast(captcha);
+    }*/
 
     public static void pregenerate() {
         CountdownTask.pregenerate();
@@ -33,11 +36,12 @@ public final class CaptchaThreadManager {
 
     private static final class CaptchaThreadRunnable implements Runnable {
 
-        private final AlixDeque<Captcha> captchasToRegen = new ConcurrentAlixDeque<>();
+        //private final AlixDeque<Captcha> captchasToRegen = new ConcurrentAlixDeque<>();
         //private final AlixDeque<Channel> kicked = new AlixDeque<>();
         //private final MergedTask mergedTask = new MergedTask();
         //private final int maxPlayers = Bukkit.getMaxPlayers();
         //private volatile boolean whilstCopying = false;
+        private byte repeats;
 
         @Override
         public void run() {
@@ -73,16 +77,18 @@ public final class CaptchaThreadManager {
 
             //Captcha Regeneration Logic
 
-            if (!this.captchasToRegen.isEmpty()) {
+            /*if (!this.captchasToRegen.isEmpty()) {
                 AlixDeque.Node<Captcha> firstNode = this.captchasToRegen.firstNode();
                 this.captchasToRegen.clear();
 
                 AlixDeque.forEach(Captcha::regenerate, firstNode);
                 Captcha.addToPool(firstNode);
-                //this.mergedTask.mergeOrSet(() -> Captcha.addToPool(firstNode));
-            }
+            }*/
 
-            //this.mergedTask.executeSyncAndRemove();
+            if (++repeats == 5) {
+                this.repeats = 0;
+                AntiBotStatistics.INSTANCE.reset();
+            }
         }
 
         private CaptchaThreadRunnable() {

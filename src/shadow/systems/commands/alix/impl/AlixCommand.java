@@ -7,6 +7,7 @@ import org.bukkit.command.TabCompleter;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.alix.AlixCommandInfo;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,10 +39,15 @@ public final class AlixCommand extends Command {
     @NotNull
     @Override
     public List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) throws IllegalArgumentException {
-        return this.completer != null ? unnullify(this.completer.onTabComplete(sender, this, alias, args)) : NO_SUGGESTIONS;
+        return this.completer != null ? tidyUp(this.completer.onTabComplete(sender, this, alias, args), args) : NO_SUGGESTIONS;
     }
 
-    private static List<String> unnullify(List<String> list) {
-        return list != null ? list : NO_SUGGESTIONS;
+    private static List<String> tidyUp(List<String> list, String[] args) {
+        if (list == null) return NO_SUGGESTIONS;//un-nullify
+        if (args.length != 1) return list;
+        String arg1 = args[0];
+        List<String> p = new ArrayList<>(list);
+        p.removeIf(s -> !s.startsWith(arg1));
+        return p;
     }
 }

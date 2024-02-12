@@ -747,7 +747,7 @@ public final class AlixUtils {
     public static String getRandomMathematicalOperation() {
         String operation = getRandomMathematicalOperation(getRandom(3, 7), getRandom(3, 10), getRandom(10, 30));
         String result = split(operation, " = ")[1];
-        int n = getCharsCount(result, '.') > 0 ? split(result, '.')[1].length() : 0;
+        int n = result.contains(".") ? split(result, '.')[1].length() : 0;
         if (n > 2) return getRandomMathematicalOperation();//Too complex, try again
         return operation;
     }

@@ -1,15 +1,17 @@
 package shadow.systems.netty;
 
+import alix.common.antibot.firewall.FireWallManager;
+import alix.common.messages.AlixMessage;
+import alix.common.messages.Messages;
 import com.google.common.collect.MapMaker;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import net.minecraft.network.protocol.status.PacketStatusInPing;
-import net.minecraft.network.protocol.status.PacketStatusOutPong;
+import io.netty.handler.codec.DecoderException;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.getters.LoginInStartPacketGetter;
 
-import java.util.BitSet;
+import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static io.netty.channel.ChannelHandler.Sharable;
@@ -37,6 +39,13 @@ public final class AlixChannelInjector {
             channel.pipeline().addBefore("packet_handler", PACKET_INJECTOR_NAME, packetInjector);//now we can add the temporary packet listener
             //Main.logWarning("LISTENER ACTIVUH " + ctx.name());
         }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            ctx.channel().close();
+            //Main.logWarning("LISTENER ACTIVUH ERROR " + ctx.name());
+            //super.exceptionCaught(ctx, cause);
+        }
     }
 
     @Sharable
@@ -47,6 +56,17 @@ public final class AlixChannelInjector {
             if (msg.getClass() == ReflectionUtils.loginInStartPacketClass)//this packet contains the player's nickname
                 CHANNELS.put(LoginInStartPacketGetter.getPlayerName(msg), ctx.channel());
             super.channelRead(ctx, msg);
+        }
+
+        //private final AlixMessage firewalled = Messages.getAsObject("anti-ddos-fail-console-message", "{0}", "InvalidDecoder");
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            //if(cause.getClass() != DecoderException.class) Main.logWarning("ERROR ON INTERCEPTING: " + cause.toString());
+            if (cause.getClass() == DecoderException.class)
+                FireWallManager.addCauseException(((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress(), cause);
+            //Main.logInfo(this.firewalled.format(ip));
+            ctx.channel().close();
         }
     }
 

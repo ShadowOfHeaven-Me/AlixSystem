@@ -105,8 +105,6 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
         return password;
     }
 
-    private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
-
     public void updateWindowID() {
         this.updateWindowID(windowId + 1);
     }
@@ -114,14 +112,10 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
     public void updateWindowID(int id) {
         this.windowId = id;
         this.allItemsPacket = allItemsSupplier.apply(windowId);
-        if (allItemsPacket == null) {
-            MethodProvider.kickAsync(channel, errorKickPacket);
-            //AlixScheduler.sync(() -> user.getPlayer().kickPlayer("§cSomething went wrong - " + windowId));
-            return;
-        }
-        //if (!user.isRegistered()) {
         this.invalidIndicateItemsPacket = invalidIndicateItemsSupplier.apply(windowId);
-        if (invalidIndicateItemsPacket == null) MethodProvider.kickAsync(channel, errorKickPacket);
+        //MethodProvider.kickAsync(channel, errorKickPacket);
+        //if (!user.isRegistered()) {
+        //MethodProvider.kickAsync(channel, errorKickPacket);
         //AlixScheduler.sync(() -> user.getPlayer().kickPlayer("§cSomething went wrong - " + windowId));
         //}
     }

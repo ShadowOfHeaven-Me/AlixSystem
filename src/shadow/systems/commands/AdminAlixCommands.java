@@ -1,9 +1,9 @@
 package shadow.systems.commands;
 
+import alix.common.antibot.firewall.FireWallManager;
 import alix.common.data.LoginType;
-import shadow.systems.login.filters.ServerPingManager;
-import alix.common.messages.Messages;
 import alix.common.messages.AlixMessage;
+import alix.common.messages.Messages;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -12,11 +12,13 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
+import shadow.systems.commands.alix.ABStats;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.users.UserManager;
 
 import java.util.Date;
 
@@ -136,10 +138,13 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "&cPlayer " + arg2 + " is not in the AlixSystems's User DataBase!");
                             return false;
                         }
+                        boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
                         sendMessage(sender, "");
-                        sendMessage(sender, "The player " + offlinePlayer.getName() + " has following user data:");
-                        sendMessage(sender, "IP: " + data.getSavedIP());
+                        sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
+                        sendMessage(sender, "IP: &c" + data.getSavedIP());
                         sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
+                        sendMessage(sender, "Login Type: &c" + data.getLoginType());
+                        sendMessage(sender, "Double verification: " + (dVer ? "&aEnabled" : "&cDisabled"));
                         sendMessage(sender, "First joined: " + getFormattedDate(new Date(offlinePlayer.getFirstPlayed())));
                         sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: " : "Last joined: ") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
                         sendMessage(sender, "");
@@ -243,18 +248,30 @@ public final class AdminAlixCommands implements CommandExecutor {
                 return true;
             }
             switch (arg1) {
-                case "help":
-                    sendMessage(sender, "");
-                    sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
-                    sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
-                    sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
-                    sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                case "helpmath":
                     sendMessage(sender, "&c/as calc/calculate <mathematical operation> &7- " +
                             "Returns what the given mathematical operation is equal to. " +
                             "Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925");
                     sendMessage(sender, "&c/as avg/average <numbers> &7- " +
                             "Returns what the given numbers average is equal to. " +
                             "Example: &c/as avg 4 + 67 - 9 + 14 returns 19.");
+                    sendMessage(sender, "&c/as valueof <number> &7- Returns a more readable version of a given number.");
+                    sendMessage(sender, "&c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.");
+                    sendMessage(sender, "&c/as randommath/rmath &7- Gives you random, already solved mathematical operation. " +
+                            "Example: &c" + AlixUtils.getRandomMathematicalOperation());
+                    break;
+                case "help":
+                    sendMessage(sender, "");
+                    sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
+                    sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
+                    sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
+                    sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                    sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op, you can forcefully op a player, " +
+                            "by executing this command in console.");
+                    sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop, you can forcefully deop a player, " +
+                            "by executing this command in console.");
+                    sendMessage(sender, "&c/as helpmath &7- Lists alix commands related to math.");
+                    sendMessage(sender, "");
 /*                        dispatch(sender, "&c/as median <numbers> &7- " +
                                 "Returns the median of the given numbers. " +
                                 "Example: &c/as median 5, 2, 3, 6, 4 returns 3.");*/
@@ -264,17 +281,18 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as incognito <skin> <true/false> <true/false> &7- Turns your skin to a skin of a player you named, " +
                             "and gives you a name, in which: first true/false statement defines if it should be in english or in polish, " +
                             "and second statement defines if it should an actual name or a name of a thing.");*/
-                    sendMessage(sender, "&c/as valueof <number> &7- Returns a more readable version of a given number.");
-                    sendMessage(sender, "&c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.");
-                    sendMessage(sender, "&c/as pings &7- Returns a list of all contained ip adresses that have pinged this server.");
-                    sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op, you can forcefully op a player, " +
-                            "by executing this command in console.");
-                    sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop, you can forcefully deop a player, " +
-                            "by executing this command in console.");
-                    sendMessage(sender, "&c/as incognitooff &7- Gives you back your original name");//, and skin.");
-                    sendMessage(sender, "&c/as randommath/rmath &7- Gives you random, already solved mathematical operation. " +
-                            "Example: &c" + AlixUtils.getRandomMathematicalOperation());
-                    sendMessage(sender, "");
+                    //sendMessage(sender, "&c/as pings &7- Returns a list of all contained ip adresses that have pinged this server.");
+                    //sendMessage(sender, "&c/as incognitooff &7- Gives you back your original name");//, and skin.");
+
+                    break;
+                case "abstats":
+                    if (isConsoleButPlayerRequired(sender)) return false;
+                    Player player = (Player) sender;
+                    if (ABStats.reversePresence(UserManager.getVerifiedUser(player))) {
+                        sendMessage(sender, "&aAdded to AntiBot Statistics view!");
+                        if (FireWallManager.isOsFireWallInUse)
+                            sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the OS FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the OS beforehand.");
+                    } else sendMessage(sender, "&cRemoved from AntiBot Statistics view!");
                     break;
                 case "connection-setup":
                 case "c-s":
@@ -344,7 +362,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&cOmega &7- 0.56714329040978");
                     sendMessage(sender, "");
                     break;
-                case "pings":
+                /*case "pings":
                     if (!ServerPingManager.isRegistered()) {
                         sendMessage(sender, "&cServerPingManager is disabled. Please set the parameter 'ping-before-join' in the config.yml " +
                                 "file to true if you want to enable it.");
@@ -359,7 +377,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "");
                     for (String s : pings) sendMessage(sender, s);
                     sendMessage(sender, "");
-                    break;
+                    break;*/
 /*                    case "rl":
                     case "reload":
                         dispatch(sender, "AlixSystem is currently reloading..");

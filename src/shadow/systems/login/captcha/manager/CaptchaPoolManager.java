@@ -1,8 +1,7 @@
 package shadow.systems.login.captcha.manager;
 
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.collections.queue.AlixDeque;
-import alix.common.utils.collections.queue.ConcurrentAlixDeque;
+import alix.common.utils.collections.queue.array.AlixLoopArrayDeque;
 import org.bukkit.Bukkit;
 import shadow.systems.login.captcha.Captcha;
 import shadow.utils.main.AlixUtils;
@@ -10,37 +9,29 @@ import shadow.utils.main.AlixUtils;
 public final class CaptchaPoolManager {
 
     public static final int maxSize = (int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.1, 1.2));
-    private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();
+    private final AlixLoopArrayDeque<Captcha> deque = AlixLoopArrayDeque.concurrentOfSize(maxSize);
+    //private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();
 
     public CaptchaPoolManager() {
         //pre-generating
         AlixScheduler.async(() -> {
             //generate a little bit more than the max player count in order to lower the chance of the captchas ever running out at runtime, before they have the time to be re-generated
-            int size = maxSize;// + 64 + AlixUtils.random.nextInt(64);
+            int size = maxSize;
             while (size-- != 0)
-                this.add(CaptchaGenerator.generateCaptcha());
+                this.addNew();
         });
     }
 
+    /*long nano = System.nanoTime();
+
+    long n2 = System.nanoTime();
+    Main.logError("Regenerated in: " + ((n2 - nano) / Math.pow(10, 6)) + " ms");*/
+
     public final Captcha next() {
-        Captcha captcha = this.deque.pollFirst();
-
-        return captcha != null ? captcha : CaptchaGenerator.generateCaptcha();//in case the max capacity was somehow reached
+        return this.deque.nextInLine();
     }
 
-    public final void add(Captcha captcha) {
-        deque.offerLast(captcha);
-    }
-
-    public final void addNode(AlixDeque.Node<Captcha> node) {
-        this.deque.addNodeLast(node);
-    }
-
-    public final int size() {
-        return this.deque.size();
-    }
-
-    public final void clear() {
-        this.deque.clear();
+    public final void addNew() {
+        this.deque.offerNext(CaptchaGenerator.generateCaptcha());
     }
 }

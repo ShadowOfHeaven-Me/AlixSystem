@@ -22,7 +22,7 @@ public abstract class CaptchaGenerator {
         this.textGenerator = createTextGenerator();
     }
 
-    protected abstract Captcha generate();
+    abstract Captcha generate();
 
     public static String generateTextCaptcha() {
         return generator.textGenerator.nextCaptchaText();
@@ -143,24 +143,33 @@ public abstract class CaptchaGenerator {
 
     private static final class MapCaptchaGenerator extends CaptchaGenerator {
 
+        private MapCaptchaGenerator() {
+        }
+
         @Override
-        protected Captcha generate() {
+        Captcha generate() {
             return new MapCaptcha();
         }
     }
 
     private static final class SubtitleCaptchaGenerator extends CaptchaGenerator {
 
+        private SubtitleCaptchaGenerator() {
+        }
+
         @Override
-        protected Captcha generate() {
+        Captcha generate() {
             return new SubtitleCaptcha();
         }
     }
 
     private static final class MessageCaptchaGenerator extends CaptchaGenerator {
 
+        private MessageCaptchaGenerator() {
+        }
+
         @Override
-        protected Captcha generate() {
+        Captcha generate() {
             return new MessageCaptcha();
         }
     }

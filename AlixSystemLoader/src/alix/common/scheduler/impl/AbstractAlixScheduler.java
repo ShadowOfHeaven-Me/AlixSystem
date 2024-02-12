@@ -15,7 +15,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     //For now disabled \/
     //TO DO: Fix errors not being logged with AlixCommonUtils.logException(Exception) when ThreadPoolExecutor is used
     protected AbstractAlixScheduler() {
-        int parallelisms = Math.max(Runtime.getRuntime().availableProcessors(), 2);//at least two threads
+        int parallelisms = Math.max(Runtime.getRuntime().availableProcessors() + 1, 2);//at least two threads
         AlixCommonMain.logInfo("Async scheduler parallelisms: " + parallelisms);
          //parallelisms == 1 ?//no need to create a ForkJoinPool for only one thread
                 //new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>()) ://the default returned with Executors.newSingleThreadExecutor, but without the unnecessary extra delegation

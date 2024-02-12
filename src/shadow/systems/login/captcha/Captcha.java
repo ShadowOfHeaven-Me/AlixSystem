@@ -1,10 +1,12 @@
 package shadow.systems.login.captcha;
 
-import alix.common.utils.collections.queue.AlixDeque;
+import alix.common.scheduler.AlixScheduler;
 import shadow.Main;
 import shadow.systems.login.captcha.manager.CaptchaGenerator;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
 import shadow.systems.login.captcha.manager.CaptchaThreadManager;
+import shadow.utils.holders.methods.MethodProvider;
+import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.offline.UnverifiedUser;
 
@@ -14,8 +16,7 @@ public abstract class Captcha {
 
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
     //private static boolean registered = true;
-    protected UnverifiedUser user;
-    protected String captcha;
+    protected final String captcha;
 
     protected Captcha() {
         this.captcha = CaptchaGenerator.generateTextCaptcha(); //this::regenerate cannot be used because of initialization issues
@@ -39,11 +40,7 @@ public abstract class Captcha {
         return captchaPool.size();
     }*/
 
-    public void sendPackets() {
-    }
-
-    public void regenerate() {
-        this.captcha = CaptchaGenerator.generateTextCaptcha();
+    public void sendPackets(UnverifiedUser user) {
     }
 
     public final boolean isCorrect(String s) {
@@ -51,21 +48,25 @@ public abstract class Captcha {
     }
 
     protected Captcha inject(UnverifiedUser user) {
-        this.user = user;
         return this;
     }
 
-    public void uninject() {
-        this.user = null;
-        CaptchaThreadManager.regenerateCaptcha(this);
+    public void uninject(UnverifiedUser user) {
+        AlixScheduler.async(captchaPool::addNew);
+        //CaptchaThreadManager.regenerateCaptcha(this);
     }
+
+    private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
 
     public static Captcha nextCaptcha(UnverifiedUser u) {
-        return captchaPool.next().inject(u);
-    }
-
-    public static void addToPool(AlixDeque.Node<Captcha> node) {
-        captchaPool.addNode(node);
+        Captcha captcha = captchaPool.next();
+        if (captcha == null) {//shouldn't happen, but should stay just in case
+            Main.logWarning("Captcha could not catch up with generation!");
+            MethodProvider.kickAsync(u, errorKickPacket);
+            return null;
+        }
+        captcha.inject(u);
+        return captcha;
     }
 
 /*    public static void unregister() {

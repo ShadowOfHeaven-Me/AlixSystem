@@ -2,6 +2,7 @@ package alix.common.utils.file;
 
 
 import alix.common.AlixCommonMain;
+import alix.common.utils.other.throwable.AlixException;
 import alix.loaders.bukkit.BukkitAlixMain;
 
 import java.io.*;
@@ -11,7 +12,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public abstract class FileManager {
 
@@ -41,11 +44,42 @@ public abstract class FileManager {
         this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
     }
 
-    public static void write(File file, Collection<?> values) throws IOException {
+    public static void readLines(InputStream is, Consumer<String> consumer) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            //Files.readAllLines
+
+            String line;
+
+            while ((line = reader.readLine()) != null) if (!line.isEmpty()) consumer.accept(line);
+
+            reader.close();
+        } catch (Exception e) {
+            throw new AlixException(e);
+        }
+    }
+
+    public static <K, V> void writeKeyAndVal(File file, Map<K, V> map, String separator, Predicate<V> shouldSave, Function<V, String> valueFormatter) throws IOException {
         FileWriter stream = new FileWriter(file);
         BufferedWriter writer = new BufferedWriter(stream);
 
-        for (Object data : values) {
+        Function<V, String> valueFormatter0 = valueFormatter == null ? V::toString : valueFormatter;
+
+        for (Map.Entry<K, V> e : map.entrySet()) {
+            if (!shouldSave.test(e.getValue())) continue;
+            writer.write(e.getKey() + separator + valueFormatter0.apply(e.getValue()));
+            writer.newLine();
+        }
+
+        writer.close();
+        stream.close();
+    }
+
+    public static void write(File file, Collection<?> lines) throws IOException {
+        FileWriter stream = new FileWriter(file);
+        BufferedWriter writer = new BufferedWriter(stream);
+
+        for (Object data : lines) {
             writer.write(data.toString());
             writer.newLine();
         }
@@ -206,16 +240,20 @@ public abstract class FileManager {
         }
     }
 
-    public <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Function<V, String> valueFormatter) throws IOException {
+    public <K, V> void saveKeyAndValFormatted(Map<K, V> map, String separator, Function<V, String> valueFormatter) throws IOException {
         List<String> list = new ArrayList<>(map.size());
         for (Map.Entry<K, V> e : map.entrySet()) list.add(e.getKey() + separator + valueFormatter.apply(e.getValue()));
         save0(list);
     }
 
-    public void saveKeyAndVal(Map<?, ?> map, String separator) throws IOException {
-        List<String> list = new ArrayList<>(map.size());
-        for (Map.Entry<?, ?> e : map.entrySet()) list.add(e.getKey() + separator + e.getValue());
-        save0(list);
+    private static final Predicate ALWAYS_TRUE = v -> true;
+
+    public <K, V> void saveKeyAndVal(Map<K, V> map, String separator) throws IOException {
+        this.saveKeyAndVal(map, separator, ALWAYS_TRUE);
+    }
+
+    public synchronized <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate) throws IOException {
+        writeKeyAndVal(this.file, map, separator, predicate, null);
     }
 
     public void save(Map<?, ?> map) throws IOException {

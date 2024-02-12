@@ -10,7 +10,7 @@ public abstract class LoopList<T> {
     final int size;
     final int maxIndex;
 
-    LoopList(T[] values) {
+    private LoopList(T[] values) {
         this.values = values;
         this.size = values.length;
         this.maxIndex = size - 1;
@@ -22,10 +22,10 @@ public abstract class LoopList<T> {
 
     abstract void setCurrentIndex0(int index);
 
-    public abstract int getCurrentIndex();
+    //public abstract int getCurrentIndex();
 
     public final void setCurrentIndex(int index) {
-        if (index >= size || index < 0) throw new AlixException("Index: " + index + " for size " + size);
+        if (index > size || index < 0) throw new AlixException("Index: " + index + " for size " + size);
         this.setCurrentIndex0(index);
     }
 
@@ -45,9 +45,9 @@ public abstract class LoopList<T> {
         return this.values[this.nextIndex()];
     }
 
-    public final T current() {
+/*    public final T current() {
         return this.values[this.getCurrentIndex()];
-    }
+    }*/
 
     public final T previous() {
         return this.values[this.previousIndex()];
@@ -59,7 +59,7 @@ public abstract class LoopList<T> {
     }
 
     public final int indexOf(T v) {
-        for (int i = 0; i < values.length; i++) if (v.equals(values[i])) return i;
+        for (int i = 0; i < size; i++) if (v.equals(values[i])) return i;
         return -1;
     }
 
@@ -85,7 +85,7 @@ public abstract class LoopList<T> {
 
         @Override
         int nextIndex() {
-            return currentIndex != maxIndex ? ++currentIndex : (currentIndex = 0);
+            return currentIndex != maxIndex ? currentIndex++ : (currentIndex = 0);
         }
 
         @Override
@@ -98,10 +98,10 @@ public abstract class LoopList<T> {
             this.currentIndex = index;
         }
 
-        @Override
+/*        @Override
         public int getCurrentIndex() {
             return currentIndex;
-        }
+        }*/
     }
 
     private static final class ConcurrentLoopList<T> extends LoopList<T> {
@@ -114,7 +114,7 @@ public abstract class LoopList<T> {
 
         @Override
         int nextIndex() {
-            return currentIndex.get() != maxIndex ? currentIndex.incrementAndGet() : setAndGet(0);
+            return currentIndex.get() != maxIndex ? currentIndex.getAndIncrement() : setAndGet(0);
         }
 
         @Override
@@ -132,10 +132,10 @@ public abstract class LoopList<T> {
             return i;
         }
 
-        @Override
+/*        @Override
         public int getCurrentIndex() {
             return currentIndex.get();
-        }
+        }*/
     }
 
     @SafeVarargs

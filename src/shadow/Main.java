@@ -1,5 +1,6 @@
 package shadow;
 
+import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.data.security.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
@@ -24,6 +25,7 @@ import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
+import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
@@ -45,13 +47,6 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Implemented a DDoS Detection Algorithm (bear in mind that this does not provide full Anti-DDoS protection, only primitive minecraft ping attacks)
-    //[+] Removed all slowdowns caused by captcha pre-generation on server start-up
-    //[*] Fixed spam messages regarding invalid player head setting on newer servers
-    //[*] Fixed an error occurring only on Paper servers
-    //[*] Fixed console prefix repeating on Paper servers
-    //[*] Fixed console "lost connection" messages staying on Paper servers
-    //[*] Fixed a problem with /account
 
 
     //todo: Add a custom data structure for unverified users
@@ -116,6 +111,7 @@ public final class Main implements LoaderBootstrap {
         IpAutoLoginGUI.init();
         this.metrics = Metrics.createMetrics();
         AlixHandler.kickAll("Reload");
+        //Runtime.getRuntime().exec(
     }
 
     @Override

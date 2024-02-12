@@ -29,5 +29,5 @@ abstract class ItemBasedCaptcha extends Captcha {
         return OutWindowItemsPacketConstructor.construct(0, list);
     }
 
-    public abstract void sendPackets();
+    public abstract void sendPackets(UnverifiedUser user);
 }

@@ -115,11 +115,11 @@ public final class UnverifiedUser {
     public void spoofVerificationPackets() {
         ReflectionUtils.sendLoginEffectPacket(this);
         if (isGUIInitialized) AlixScheduler.sync(this::openPasswordBuilderGUI);
-        if (captchaInitialized) this.captcha.sendPackets();
+        if (captchaInitialized) this.captcha.sendPackets(this);
     }
 
     public final void uninject() {//removes all that was ever assigned and related (but does not teleport back)
-        if (captchaInitialized) captcha.uninject();
+        if (captchaInitialized) captcha.uninject(this);
 
         if (!hasCompletedCaptcha) return;//do not return the original params as captcha unverified are non-persistent
 
@@ -129,7 +129,7 @@ public final class UnverifiedUser {
     //the action blocker is now automatically disabled by
     //overriding the PacketProcessor in the User constructor
     public final void disableActionBlockerAndUninject() {
-        this.duplexHandler.setProcessor(new SelfDelegatingProcessor(this.duplexHandler));
+        this.duplexHandler.setProcessor(new SelfDelegatingProcessor(this.duplexHandler));//make sure no problems occur by allowing all packet flow
         this.uninject();
     }
 

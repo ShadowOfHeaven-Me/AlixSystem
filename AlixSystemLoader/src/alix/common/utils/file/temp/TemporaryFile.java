@@ -22,12 +22,8 @@ public abstract class TemporaryFile extends FileManager {
     }
 
     @Override
-    public void saveKeyAndVal(Map<?, ?> map, String separator) {
-        try {
-            super.saveKeyAndVal(map, separator);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public <K, V> void saveKeyAndVal(Map<K, V> map, String separator) throws IOException {
+        super.saveKeyAndVal(map, separator);
     }
 
     /*@Override

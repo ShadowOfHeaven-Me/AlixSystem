@@ -2,6 +2,7 @@ package shadow.utils.main.file;
 
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.other.throwable.AlixException;
 import alix.loaders.bukkit.BukkitAlixMain;
 import shadow.Main;
 import alix.common.antibot.firewall.FireWallManager;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class FileManager {
@@ -48,9 +50,25 @@ public abstract class FileManager {
         this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
     }
 
+    //Thanks Emily and Coll1234567 (jishuna) ^^
+    public static void readLines(InputStream is, Consumer<String> consumer) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            //Files.readAllLines
+
+            String line;
+
+            while ((line = reader.readLine()) != null) if (!line.isEmpty()) consumer.accept(line);
+
+            reader.close();
+        } catch (Exception e) {
+            throw new AlixException(e);
+        }
+    }
+
     public static void write(File file, Collection<?> lines) throws IOException {
-        FileWriter stream = new FileWriter(file);
-        BufferedWriter writer = new BufferedWriter(stream);
+        //FileWriter stream = new FileWriter(file);
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
 
         for (Object data : lines) {
             writer.write(data.toString());
@@ -58,7 +76,7 @@ public abstract class FileManager {
         }
 
         writer.close();
-        stream.close();
+        //stream.close();
     }
 
     public static File getWithJarCompiledFile(String s, boolean internal) {
@@ -118,7 +136,7 @@ public abstract class FileManager {
         try {
             Messages.init();
             AlixScheduler.async(UserFileManager::init);
-            FireWallManager.initialize();
+            FireWallManager.init();
             WarpFileManager.initialize();
             AlixScheduler.async(OriginalLocationsManager::init);
             SpawnFileManager.initialize();

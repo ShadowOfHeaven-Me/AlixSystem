@@ -1,5 +1,5 @@
 name: AlixSystem
-version: 2.8.1
+version: 2.8.2
 main: alix.loaders.bukkit.BukkitAlixMain
 author: ShadowOfHeaven
 api-version: 1.13
@@ -8,7 +8,3 @@ softdepend:
   - LuckPerms
   - packetevents
   - Essentials #to ensure it loads first and has it's commands registered first, so that we can potentially override them
-commands:
-  as:
-    description: Main AlixSystem commands.
-    permission: alixsystem.admin

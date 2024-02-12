@@ -1,10 +1,12 @@
 package shadow.systems.login.firewall;
 
+import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.Messages;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
 import shadow.Main;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
@@ -45,7 +47,9 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
         //ctx.writeAndFlush(ctx.alloc().buffer().writeBytes("'mimimimimxxxw'".getBytes()));
 
         //ctx.close();
+        //Main.logError("ACTIVEEE ");
         super.channelActive(ctx);
+        //Main.logError("ACTIVEEE 22222222222");
         ctx.channel().pipeline().addBefore("packet_handler", interceptorName, this.interceptor);
     }
 /*
@@ -66,10 +70,18 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
 
         @Override
         public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            //Main.logError("REAAADD " + msg.getClass().getSimpleName());
+            //Main.logError("REAAADD: " + msg.getClass().getSimpleName());
             if (msg.getClass() == ReflectionUtils.loginInStartPacketClass)
                 ctx.channel().writeAndFlush(kickPacket).addListener(ChannelFutureListener.CLOSE);
             else super.channelRead(ctx, msg);
+        }
+
+        ///212.88.124.174:58009 lost connection: Internal Exception: io.netty.handler.codec.DecoderException: java.lang.IndexOutOfBoundsException: readerIndex(18) + length(8) exceeds writerIndex(19): PooledUnsafeDirectByteBuf(ridx: 18, widx: 19, cap: 256)
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            //if(cause.getCause().getClass() == DecoderException.class)
+            //FireWallManager.addCauseException(ctx.channel());
+            ctx.channel().close();
         }
     }
 }

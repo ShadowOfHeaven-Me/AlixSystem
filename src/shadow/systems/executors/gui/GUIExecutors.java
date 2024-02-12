@@ -26,8 +26,8 @@ public final class GUIExecutors implements Listener {
         if (user == null) {
             AbstractAlixGUI gui = AlixGUI.MAP.get(uuid);
             if (gui != null) {
-                gui.onClick(event);
                 event.setCancelled(true);
+                gui.onClick(event);
             }
             return;
         }
