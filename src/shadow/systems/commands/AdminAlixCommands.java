@@ -4,6 +4,7 @@ import alix.common.antibot.firewall.FireWallManager;
 import alix.common.data.LoginType;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
+import alix.common.scheduler.AlixScheduler;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -128,26 +129,30 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "&cError! Console or Owner permission level required! Try /as help!");
                             return false;
                         }*/
-                        OfflinePlayer offlinePlayer = getOfflinePlayer(arg2);
-                        if (offlinePlayer == null) {
-                            sendMessage(sender, "&cPlayer " + arg2 + " has never joined this server before!");
-                            return false;
-                        }
-                        PersistentUserData data = UserFileManager.get(offlinePlayer.getName());
-                        if (data == null) {
-                            sendMessage(sender, "&cPlayer " + arg2 + " is not in the AlixSystems's User DataBase!");
-                            return false;
-                        }
-                        boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
-                        sendMessage(sender, "");
-                        sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
-                        sendMessage(sender, "IP: &c" + data.getSavedIP());
-                        sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
-                        sendMessage(sender, "Login Type: &c" + data.getLoginType());
-                        sendMessage(sender, "Double verification: " + (dVer ? "&aEnabled" : "&cDisabled"));
-                        sendMessage(sender, "First joined: " + getFormattedDate(new Date(offlinePlayer.getFirstPlayed())));
-                        sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: " : "Last joined: ") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
-                        sendMessage(sender, "");
+                        AlixScheduler.async(() -> {
+                            OfflinePlayer offlinePlayer = getOfflinePlayer(arg2);
+                            if (offlinePlayer == null) {
+                                sendMessage(sender, "&cPlayer " + arg2 + " has never joined this server before!");
+                                return;
+                            }
+                            PersistentUserData data = UserFileManager.get(offlinePlayer.getName());
+                            if (data == null) {
+                                sendMessage(sender, "&cPlayer " + arg2 + " is not in the AlixSystems's User DataBase!");
+                                return;
+                            }
+                            boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
+                            sendMessage(sender, "");
+                            sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
+                            sendMessage(sender, "IP: &c" + data.getSavedIP());
+                            //sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
+                            sendMessage(sender, "Login Type: &c" + data.getLoginType());
+                            if (dVer)
+                                sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
+                            sendMessage(sender, "Double verification: " + (dVer ? "&cEnabled" : "&cDisabled"));
+                            sendMessage(sender, "First joined: &c" + getFormattedDate(new Date(offlinePlayer.getFirstPlayed())));
+                            sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: &c" : "Last joined: &c") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
+                            sendMessage(sender, "");
+                        });
                         return true;
                     }
                     case "valueof":
@@ -249,6 +254,7 @@ public final class AdminAlixCommands implements CommandExecutor {
             }
             switch (arg1) {
                 case "helpmath":
+                    sendMessage(sender, "");
                     sendMessage(sender, "&c/as calc/calculate <mathematical operation> &7- " +
                             "Returns what the given mathematical operation is equal to. " +
                             "Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925");
@@ -259,16 +265,18 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.");
                     sendMessage(sender, "&c/as randommath/rmath &7- Gives you random, already solved mathematical operation. " +
                             "Example: &c" + AlixUtils.getRandomMathematicalOperation());
+                    sendMessage(sender, "");
                     break;
                 case "help":
                     sendMessage(sender, "");
                     sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
                     sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
+                    sendMessage(sender, "&c/as abstats &7- Enables or disables the ability to view the AntiBot Statistics.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
-                    sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op, you can forcefully op a player, " +
+                    sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
                             "by executing this command in console.");
-                    sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop, you can forcefully deop a player, " +
+                    sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, " +
                             "by executing this command in console.");
                     sendMessage(sender, "&c/as helpmath &7- Lists alix commands related to math.");
                     sendMessage(sender, "");

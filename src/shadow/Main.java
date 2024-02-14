@@ -1,9 +1,9 @@
 package shadow;
 
-import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.data.security.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
+import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.file.update.UpdateChecker;
 import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
@@ -11,6 +11,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import shadow.systems.commands.AdminAlixCommands;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.executors.PreStartUpExecutors;
@@ -25,7 +26,6 @@ import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
-import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
@@ -47,6 +47,10 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
+    //[+] Added /as abstats for viewing AntiBot Statistics
+    //[+] Further expanded the default FireWall IP DataBase
+    //[*] Added a very specific ProtocolLib fix for injection
+    //[*] Fixed /account and the proxy check getter working incorrectly
 
 
     //todo: Add a custom data structure for unverified users

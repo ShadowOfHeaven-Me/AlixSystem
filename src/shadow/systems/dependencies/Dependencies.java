@@ -7,7 +7,7 @@ import shadow.systems.dependencies.luckperms.LuckPermsExecutors;
 
 public final class Dependencies {
 
-    public static final boolean isPacketEventsPresent;
+    public static final boolean isPacketEventsPresent, isProtocolLibPresent;
 
     public static void initAdditional() {
         PluginManager pm = Bukkit.getPluginManager();
@@ -17,6 +17,7 @@ public final class Dependencies {
     static {
         PluginManager pm = Main.pm;
         isPacketEventsPresent = pm.isPluginEnabled("packetevents");
+        isProtocolLibPresent = pm.getPlugin("ProtocolLib") != null;
     }
 
     private Dependencies() {

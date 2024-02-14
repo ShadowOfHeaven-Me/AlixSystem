@@ -4,6 +4,7 @@ import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
 import io.netty.channel.*;
+import shadow.Main;
 import shadow.utils.main.AlixUtils;
 
 import java.net.InetSocketAddress;
@@ -40,10 +41,12 @@ public final class AlixInterceptor {
             //if (msg instanceof Channel) {
             Channel channel = (Channel) msg;
             AntiBotStatistics.INSTANCE.incrementJoins();
-            //Main.logError("Channel creation: " + channel.remoteAddress());
+            //Main.logError("Channel creation: " + channel);
             if (!AlixUtils.antibotService || !FireWallManager.isBlocked((InetSocketAddress) channel.unsafe().remoteAddress())) {
+                //Main.logWarning("STARTED INJECTING " + ctx.name());
                 AlixChannelInjector.inject(channel);
                 super.channelRead(ctx, msg);
+                //Main.logWarning("INJECTION LISTENER ACTIVATED " + ctx.name());
                 return;
             }
             if (delayedFirewall == null) {

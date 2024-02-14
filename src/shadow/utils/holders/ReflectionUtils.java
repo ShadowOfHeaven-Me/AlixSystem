@@ -77,7 +77,7 @@ public final class ReflectionUtils {
         getProfileFromPlayerInfoDataMethod = method;
     }
 
-    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket","network.protocol.game.PacketPlayOutChat");
+    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket", "network.protocol.game.PacketPlayOutChat");
     public static final Class<?> chatMessageType = nms2("network.chat.ChatMessageType");
 
     public static final Class<?> outGameStatePacketClass = nms2("network.protocol.game.PacketPlayOutGameStateChange");
@@ -137,7 +137,7 @@ public final class ReflectionUtils {
     public static final Method IChatComponentArrayFromStringMethod = getMethod(craftChatMessageClass, "fromString", String.class);
     public static final Class<?> IChatBaseComponentClass = IChatComponentArrayFromStringMethod.getReturnType().getComponentType();
 
-    public static final Class<?> loginInStartPacketClass = nms2("network.protocol.login.PacketLoginInStart", "network.protocol.login.ServerboundHelloPacket");
+    public static final Class<?> loginInStartPacketClass = nms2("network.protocol.login.PacketLoginInStart");
 
     public static final Class<?> disconnectKickPlayPhasePacketClass = nms2("network.protocol.game.PacketPlayOutKickDisconnect", "network.protocol.common.ClientboundDisconnectPacket");
     public static final Class<?> disconnectLoginPhasePacketClass = nms2("network.protocol.login.PacketLoginOutDisconnect", "network.protocol.login.ClientboundLoginDisconnectPacket");
@@ -518,7 +518,7 @@ public final class ReflectionUtils {
         try {
             return clazz.getMethod(name, classes);
         } catch (Exception e) {
-            throw new AlixError(e, "No method: " +  clazz.getSimpleName() + "." + name + "(" + Arrays.toString(classes) + ")");
+            throw new AlixError(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(classes) + ")");
         }
     }
 

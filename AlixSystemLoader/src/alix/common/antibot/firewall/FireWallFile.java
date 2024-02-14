@@ -5,7 +5,7 @@ import alix.common.utils.file.FileManager;
 
 public final class FireWallFile extends FileManager {
 
-    protected FireWallFile() {
+    FireWallFile() {
         super("firewall.txt");
     }
 

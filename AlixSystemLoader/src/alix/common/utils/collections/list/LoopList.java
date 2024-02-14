@@ -85,7 +85,7 @@ public abstract class LoopList<T> {
 
         @Override
         int nextIndex() {
-            return currentIndex != maxIndex ? currentIndex++ : (currentIndex = 0);
+            return currentIndex != maxIndex ? ++currentIndex : (currentIndex = 0);
         }
 
         @Override

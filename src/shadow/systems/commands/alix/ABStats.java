@@ -32,11 +32,13 @@ public final class ABStats {
     private static Boolean manageTask(Boolean v) {
         switch (map.size()) {
             case 0:
+                AntiBotStatistics.INSTANCE.markViewed(false);
                 task.cancel();
                 task = null;
                 break;
             case 1:
                 if (task == null)
+                    AntiBotStatistics.INSTANCE.markViewed(true);
                     task = AlixScheduler.repeatAsync(() -> {
                         BaseComponent component = new TextComponent(AntiBotStatistics.INSTANCE.getFormattedStatistics());
                         for (UUID uuid : map.keySet()) {

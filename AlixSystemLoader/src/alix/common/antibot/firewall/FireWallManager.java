@@ -31,23 +31,25 @@ public final class FireWallManager {
         });
     }
 
-    public static boolean addCauseException(String ip, Throwable e) {
-        String msg = e.toString().replaceAll("\n", "");
-        return add0(ip, new FireWallEntry("ex_ca:" + msg)) == null;
+    public static void addCauseException(String ip, Throwable e) {
+        String msg = e.toString();//.replaceAll("\n", "");
+        add0(ip, new FireWallEntry("ex_ca:" + msg));
     }
 
     public static boolean add(String ip, String algorithmId) {
         return add0(ip, new FireWallEntry(algorithmId)) == null;
     }
 
-    static FireWallEntry add0(String ip, FireWallEntry entry) {
-        if (isOsFireWallInUse) {
-            try {
-                osFireWall.blacklist(ip);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
+    private static void osBlacklist0(String ip) {
+        try {
+            osFireWall.blacklist(ip);
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
+    }
+
+    static FireWallEntry add0(String ip, FireWallEntry entry) {
+        if (isOsFireWallInUse) osBlacklist0(ip);
         return map.put(ip, entry);
     }
 

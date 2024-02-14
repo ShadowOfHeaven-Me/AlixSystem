@@ -19,9 +19,16 @@ public final class AntiBotStatistics {
             lastCps = new AtomicInteger(),
             totalConnections = new AtomicInteger();
 
+    private boolean viewed;
+
+    public void markViewed(boolean viewed) {
+        this.viewed = viewed;
+    }
+
     public String getFormattedStatistics() {
         int total = getTotalBlocked();
-        return AlixFormatter.format("&7CPS: &c" + getCPS() + " &7Total Blocked: &c" + total + " &7Blocked Since Start: &c" + getBlockedSinceStart(total));
+        String cpsView = FireWallManager.isOsFireWallInUse ? "&7ACPS: " : "&7CPS: ";
+        return AlixFormatter.translateColors(cpsView + "&c" + getCPS() + " &7Total Blocked: &c" + total + " &7Blocked Since Start: &c" + getBlockedSinceStart(total));
     }
 
     private int getBlockedSinceStart(int total) {
@@ -33,7 +40,7 @@ public final class AntiBotStatistics {
     }
 
     public void incrementJoins() {
-        this.currentCps.getAndIncrement();
+        if (viewed) this.currentCps.getAndIncrement();
     }
 
     public void reset() {
