@@ -11,6 +11,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import shadow.systems.commands.CommandManager;
+import shadow.systems.commands.alix.ABStats;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.executors.PreStartUpExecutors;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
@@ -45,6 +46,7 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
+    //[*] Fixed players gui-verifying users timing out
 
 
     //todo: Add a custom data structure for unverified users

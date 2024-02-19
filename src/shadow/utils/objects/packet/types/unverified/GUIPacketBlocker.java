@@ -31,6 +31,7 @@ public class GUIPacketBlocker extends PacketBlocker {
                     return;
                 case "PacketPlayInWindowClick":
                 case "PacketPlayInKeepAlive":
+                case "ServerboundKeepAlivePacket"://another possible name of this packet on 1.20.2+
                     super.channelReadNotOverridden(ctx, msg); //sends packets only if they are pin-related or necessary in other ways
                     return;
             }

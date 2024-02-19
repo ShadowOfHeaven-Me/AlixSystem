@@ -46,6 +46,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
                     AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
                     return;
                 case "PacketPlayInKeepAlive":
+                case "ServerboundKeepAlivePacket"://another possible name of this packet on 1.20.2+
                     super.channelReadNotOverridden(ctx, msg);
             }
             return;
