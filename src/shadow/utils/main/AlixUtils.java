@@ -183,9 +183,9 @@ public final class AlixUtils {
         requirePingCheckVerification = requireCaptchaVerification && config.getBoolean("ping-check");
         int maxCaptchaTime0 = config.getInt("max-captcha-time");
 
-        if (maxCaptchaTime0 < 5 && requireCaptchaVerification) {
-            Main.logWarning("'max-captcha-time' cannot be less than 5! (Got " + maxCaptchaTime0 + " - switching to 25, as default) If you wish to disable the captcha verification, then change 'captcha' to false in the config file!");
-            maxCaptchaTime0 = 25;
+        if (maxCaptchaTime0 < 20 && requireCaptchaVerification) {
+            Main.logWarning("'max-captcha-time' cannot be less than 20! (Got " + maxCaptchaTime0 + " - switching to 30, as default) If you wish to disable the captcha verification, then change 'captcha' to false in the config file!");
+            maxCaptchaTime0 = 30;
         }
 
         maxCaptchaTime = maxCaptchaTime0;

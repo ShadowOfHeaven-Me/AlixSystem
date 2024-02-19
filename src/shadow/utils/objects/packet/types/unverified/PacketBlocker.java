@@ -1,6 +1,7 @@
 package shadow.utils.objects.packet.types.unverified;
 
 import alix.common.data.LoginType;
+import alix.common.environment.ServerEnvironment;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
@@ -9,7 +10,7 @@ import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import net.minecraft.network.protocol.game.PacketPlayOutWindowItems;
+import net.minecraft.network.protocol.game.*;
 import org.jetbrains.annotations.NotNull;
 import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandManager;
@@ -81,7 +82,9 @@ public class PacketBlocker extends PacketProcessor {
     //private SchedulerTask loginKickTask;
     private long lastMovementPacket;
     private int movementPacketsUntilKick, totalPacketsUntilKick;
-    protected static final byte WAIT_PACKETS_INCREASE = 3;
+    protected static final byte
+            WAIT_PACKETS_INCREASE = (byte) (ServerEnvironment.isPaper() ? 0 : 3),
+            WAIT_PACKETS_THRESHOLD = (byte) (WAIT_PACKETS_INCREASE + 5);
     protected byte waitPackets;
     protected boolean packetsSent;
 
@@ -94,16 +97,14 @@ public class PacketBlocker extends PacketProcessor {
         this.blockedChatPackets = new AlixDeque<>();
     }
 
-    public void startLoginKickTask() {
+    public final void startLoginKickTask() {
         this.countdownTask.setToLogin();
-        //Simply setting it to null is enough to cancel it (Deprecated)
-        //this.loginKickTask = initLoginTask ? AlixScheduler.runLaterSync(this::kickLoginTimePassed, maxLoginTime, TimeUnit.SECONDS) : null;
     }
 
     //public abstract PingCheck getPingCheck();
 
     protected final void trySpoofPackets() {
-        if (!this.packetsSent && ++this.waitPackets >= 8 && (this.packetsSent = true))//8 - at least 5 move packets and one out respawn packet from the server
+        if (!this.packetsSent && ++this.waitPackets >= WAIT_PACKETS_THRESHOLD && (this.packetsSent = true))//8 - at least 5 move packets and one out respawn packet from the server
             this.user.spoofVerificationPackets();//setting the boolean in a branchless if statement for a slight performance boost
         //Main.logError("wwwwww " + waitPackets);
     }
@@ -145,13 +146,15 @@ public class PacketBlocker extends PacketProcessor {
             switch (msg.getClass().getSimpleName()) {
                 case "PacketPlayOutChat":
                 case "ClientboundSystemChatPacket":
+                case "ClientboundDisguisedChatPacket":
+                case "ClientboundPlayerChatPacket":
                     this.blockedChatPackets.offerLast(msg);
                     return;
                 case "PacketPlayOutRespawn":
                 case "ClientboundRespawnPacket":
                     this.waitPackets += WAIT_PACKETS_INCREASE;
                     break;
-                case "PacketPlayOutGameStateChange":
+                //case "PacketPlayOutGameStateChange":
                 case "PacketPlayOutRelEntityMove":
                 case "PacketPlayOutNamedEntitySpawn":
                 case "PacketPlayOutSpawnEntityLiving":
@@ -201,13 +204,15 @@ public class PacketBlocker extends PacketProcessor {
         switch (msg.getClass().getSimpleName()) {
             case "PacketPlayOutChat":
             case "ClientboundSystemChatPacket":
+            case "ClientboundDisguisedChatPacket":
+            case "ClientboundPlayerChatPacket":
                 this.blockedChatPackets.offerLast(msg);
                 return;
             case "PacketPlayOutRespawn":
             case "ClientboundRespawnPacket":
                 this.waitPackets += WAIT_PACKETS_INCREASE;
                 break;
-            case "PacketPlayOutGameStateChange":
+            //case "PacketPlayOutGameStateChange":
             case "PacketPlayOutWindowItems":
             case "PacketPlayOutRelEntityMove":
             case "PacketPlayOutNamedEntitySpawn":

@@ -6,8 +6,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
-import io.netty.handler.timeout.ReadTimeoutException;
-import io.netty.handler.timeout.TimeoutException;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
 import shadow.utils.holders.ReflectionUtils;
@@ -34,18 +32,18 @@ public final class AlixChannelInjector {
     @Sharable
     private static final class ChannelActiveListener extends ChannelDuplexHandler {
 
-        private final String before;
+        private final String injectBefore;
 
         private ChannelActiveListener() {
             if (Dependencies.isProtocolLibPresent) Main.logInfo("Fixing a specific ProtocolLib injection problem.");
-            this.before = Dependencies.isProtocolLibPresent ? "protocol_lib_inbound_interceptor" : "packet_handler";
+            this.injectBefore = Dependencies.isProtocolLibPresent ? "protocol_lib_inbound_interceptor" : "packet_handler";
         }
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
             //Main.logWarning("LISTENER ACTIVUH " + ctx.name() + " " + ctx.pipeline().names());
-            ctx.channel().pipeline().addBefore(before, PACKET_INJECTOR_NAME, packetInjector);//now we can add the temporary packet listener
+            ctx.channel().pipeline().addBefore(injectBefore, PACKET_INJECTOR_NAME, packetInjector);//now we can add the temporary packet listener
         }
 
         @Override
@@ -92,7 +90,7 @@ public final class AlixChannelInjector {
             //Main.logWarning("ERROR ON INTERCEPTING: " + ctx.name() + " " + cause.toString());
             //cause.printStackTrace();
             if (cause.getClass() == DecoderException.class)
-                FireWallManager.addCauseException(((InetSocketAddress) ctx.channel().remoteAddress()).getAddress().getHostAddress(), cause);
+                FireWallManager.addCauseException(((InetSocketAddress) ctx.channel().remoteAddress()).getAddress());
             ctx.channel().close();
             //Main.logInfo(this.firewalled.format(ip));
             //if (cause.getClass() != ReadTimeoutException.class) ctx.channel().close();

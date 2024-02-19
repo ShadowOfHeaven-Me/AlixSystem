@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
+import shadow.Main;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
 import shadow.utils.main.AlixUtils;
@@ -57,9 +58,15 @@ public final class IpAutoLoginGUI extends AlixGUI {
     }
 
     public static void add(Player player) {
+        if (Thread.currentThread() == Main.mainServerThread) add0(player);
+        else AlixScheduler.sync(() -> add0(player));
+    }
+
+    private static void add0(Player player) {
         MAP.put(player.getUniqueId(), INSTANCE);
         player.openInventory(INSTANCE.gui);
     }
+
 
 /*    public static void remove(Player player) {
         MAP.remove(player.getUniqueId());

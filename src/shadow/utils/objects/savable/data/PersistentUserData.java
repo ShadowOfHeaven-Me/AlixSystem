@@ -10,7 +10,7 @@ import shadow.utils.objects.savable.multi.HomeList;
 
 public final class PersistentUserData {
 
-    public static final int CURRENT_DATA_LENGTH = 6;
+    public static final int CURRENT_DATA_LENGTH = 7;
     private final HomeList homes;
     private final String name;
     private final LoginParams loginParams;
@@ -26,6 +26,7 @@ public final class PersistentUserData {
         this.homes = new HomeList(splitData[3]);
         this.mutedUntil = AlixUtils.parsePureLong(splitData[4]);
         this.loginParams.initLoginTypes(splitData[5]);
+        this.loginParams.initSettings(splitData[6]);
         //TODO: sixThArgument - is using pin & add /pin command, to toggle pin-only password
         addToMap();
     }
@@ -68,7 +69,7 @@ public final class PersistentUserData {
 
     @Override
     public final String toString() {
-        return name + "|" + loginParams.passwordsToSavable() + "|" + ip + "|" + homes.toSavable() + "|" + mutedUntil + "|" + loginParams.loginTypesToSavable(); //originalWorldUUID;
+        return name + "|" + loginParams.passwordsToSavable() + "|" + ip + "|" + homes.toSavable() + "|" + mutedUntil + "|" + loginParams.settingsToSavable(); //originalWorldUUID;
     }
 
     public final String getName() {

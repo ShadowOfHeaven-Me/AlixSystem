@@ -2,17 +2,19 @@ package shadow.systems.login.captcha.manager;
 
 import alix.common.utils.netty.NettyUtils;
 import io.netty.channel.ChannelHandlerContext;
+import shadow.systems.netty.AlixChannelInjector;
 import shadow.utils.holders.packet.buffered.BufferedPackets;
+import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.users.offline.UnverifiedUser;
 
-public final class CountdownTask {//show count down and kick out
+public final class CountdownTask {//shows countdown and kicks out
 
     private final ChannelHandlerContext ctx;
     private Object[] packets;
     private int index;
 
     public CountdownTask(UnverifiedUser user, boolean loginCountdown) {
-        this.ctx = user.getDuplexHandler().getSilentContext();
+        this.ctx = user.getDuplexHandler().getSilentContext();//in order to optimize PacketProcessor's implementation checks
         this.index = loginCountdown ? BufferedPackets.loginPacketArraySize : BufferedPackets.captchaPacketArraySize;
         this.packets = loginCountdown ? BufferedPackets.loginOutExperiencePackets : BufferedPackets.captchaOutExperiencePackets;
     }

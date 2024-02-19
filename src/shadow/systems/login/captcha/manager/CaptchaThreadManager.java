@@ -30,7 +30,7 @@ public final class CaptchaThreadManager {
     public static void pregenerate() {
         CountdownTask.pregenerate();
         if (initialize)
-            AlixScheduler.newAlixThread(captchaRunnable, 100, "Captcha Thread"); //todo: proportional 3
+            AlixScheduler.newAlixThread(captchaRunnable, 200, "Captcha Thread"); //todo: proportional 3
         //the "todos" are for the sole purpose of code visibility
     }
 

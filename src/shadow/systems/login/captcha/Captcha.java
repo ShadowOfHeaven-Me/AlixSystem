@@ -2,7 +2,7 @@ package shadow.systems.login.captcha;
 
 import alix.common.scheduler.AlixScheduler;
 import shadow.Main;
-import shadow.systems.login.captcha.manager.CaptchaGenerator;
+import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
 import shadow.systems.login.captcha.manager.CaptchaThreadManager;
 import shadow.utils.holders.methods.MethodProvider;
@@ -15,16 +15,12 @@ import static shadow.utils.main.AlixUtils.captchaVerificationCaseSensitive;
 public abstract class Captcha {
 
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
-    //private static boolean registered = true;
+
     protected final String captcha;
 
     protected Captcha() {
         this.captcha = CaptchaGenerator.generateTextCaptcha(); //this::regenerate cannot be used because of initialization issues
     }
-
-/*    protected Captcha(Captcha captcha) {
-        this.captcha = captcha.captcha;
-    }*/
 
     public static void pregenerate() {
         CaptchaThreadManager.pregenerate();
@@ -41,6 +37,9 @@ public abstract class Captcha {
     }*/
 
     public void sendPackets(UnverifiedUser user) {
+    }
+
+    public void onCompletion(UnverifiedUser user) {
     }
 
     public final boolean isCorrect(String s) {
@@ -61,12 +60,11 @@ public abstract class Captcha {
     public static Captcha nextCaptcha(UnverifiedUser u) {
         Captcha captcha = captchaPool.next();
         if (captcha == null) {//shouldn't happen, but should stay just in case
-            Main.logWarning("Captcha could not catch up with generation!");
+            Main.logWarning("Captcha could not catch up with the generation!");
             MethodProvider.kickAsync(u, errorKickPacket);
             return null;
         }
-        captcha.inject(u);
-        return captcha;
+        return captcha.inject(u);
     }
 
 /*    public static void unregister() {

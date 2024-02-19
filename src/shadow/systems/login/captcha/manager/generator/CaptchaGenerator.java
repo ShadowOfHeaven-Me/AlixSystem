@@ -1,4 +1,4 @@
-package shadow.systems.login.captcha.manager;
+package shadow.systems.login.captcha.manager.generator;
 
 import alix.common.utils.other.ConcurrentRandom;
 import shadow.Main;
@@ -25,7 +25,7 @@ public abstract class CaptchaGenerator {
     abstract Captcha generate();
 
     public static String generateTextCaptcha() {
-        return generator.textGenerator.nextCaptchaText();
+        return generator.textGenerator.generateTextCaptcha();
     }
 
     public static Captcha generateCaptcha() {
@@ -58,7 +58,7 @@ public abstract class CaptchaGenerator {
 
     private interface CaptchaTextGenerator {
 
-        String nextCaptchaText();
+        String generateTextCaptcha();
 
     }
 
@@ -102,7 +102,7 @@ public abstract class CaptchaGenerator {
         }
 
         @Override
-        public String nextCaptchaText() {
+        public String generateTextCaptcha() {
             char[] c = new char[length];
             for (int i = 0; i < length; i++) c[i] = chars[random.nextInt(chars.length)];
             return new String(c);
@@ -135,7 +135,7 @@ public abstract class CaptchaGenerator {
         }
 
         @Override
-        public String nextCaptchaText() {
+        public String generateTextCaptcha() {
             return this.format(random.nextInt(numericBoundary)); //formatNumericCaptcha(String.valueOf(nextNumericCaptcha()));
         }
     }

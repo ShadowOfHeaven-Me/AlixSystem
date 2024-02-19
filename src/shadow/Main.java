@@ -3,7 +3,6 @@ package shadow;
 import alix.common.data.security.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
-import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.file.update.UpdateChecker;
 import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
@@ -11,7 +10,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import shadow.systems.commands.AdminAlixCommands;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.executors.PreStartUpExecutors;
@@ -47,10 +45,6 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added /as abstats for viewing AntiBot Statistics
-    //[+] Further expanded the default FireWall IP DataBase
-    //[*] Added a very specific ProtocolLib fix for injection
-    //[*] Fixed /account and the proxy check getter working incorrectly
 
 
     //todo: Add a custom data structure for unverified users
@@ -132,13 +126,16 @@ public final class Main implements LoaderBootstrap {
 
     @Override
     public void onDisable() {//ChatColor.of(color)
+        //logConsoleInfo("Saving files...");
         FileManager.saveFiles();
+        //logConsoleInfo("Saved!");
         Verifications.disable();
         //UserManager.disable();
         //Captcha.unregister();
         AlixScheduler.shutdown();
         if (this.metrics != null) this.metrics.shutdown();
         AlixThread.shutdownAllAlixThreads();
+        if (preStartUpExecutors != null) HandlerList.unregisterAll(preStartUpExecutors);
         //if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
         logConsoleInfo(en ? "AlixSystem has been disabled." : "AlixSystem zostało wyłączone.");
     }
@@ -184,7 +181,8 @@ public final class Main implements LoaderBootstrap {
             if (Bukkit.getConnectionThrottle() > 500 && config.getBoolean("prevent-first-time-join")) {
                 logWarning("");
                 logWarning("The connection throttle in bukkit.yml settings is " + Bukkit.getConnectionThrottle() + ",");
-                logWarning("with the recommended number being 500 or below. If you wish to have it overridden");
+                logWarning("with the recommended number being 500 or below, with the reason of it being annoying for");
+                logWarning("unregistered players when combined with Alix's safety measures. If you wish to have it overridden");
                 logWarning("automatically type /alixsystem connection-setup or /as c-s for short.");
                 logWarning("");
             }

@@ -98,7 +98,7 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
 
             if (task == null) return;
 
-            synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are lightweight
+            synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are extremely lightweight
                 this.first = this.last = null;
             }
 
@@ -115,7 +115,7 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
     private static final class LinkedAlixTask {
 
         private final Runnable task;
-        private LinkedAlixTask next;
+        private volatile LinkedAlixTask next;
 
         private LinkedAlixTask(Runnable task) {
             this.task = task;

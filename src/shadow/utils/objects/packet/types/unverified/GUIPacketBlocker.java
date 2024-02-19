@@ -46,13 +46,15 @@ public class GUIPacketBlocker extends PacketBlocker {
             switch (msg.getClass().getSimpleName()) {
                 case "PacketPlayOutChat":
                 case "ClientboundSystemChatPacket":
+                case "ClientboundDisguisedChatPacket":
+                case "ClientboundPlayerChatPacket":
                     this.blockedChatPackets.offerLast(msg);
                     return;
                 case "PacketPlayOutRespawn":
                 case "ClientboundRespawnPacket":
                     this.waitPackets += WAIT_PACKETS_INCREASE;
                     break;
-                case "PacketPlayOutGameStateChange":
+                //case "PacketPlayOutGameStateChange":
                 case "PacketPlayOutRelEntityMove":
                 case "PacketPlayOutNamedEntitySpawn":
                 case "PacketPlayOutSpawnEntityLiving":

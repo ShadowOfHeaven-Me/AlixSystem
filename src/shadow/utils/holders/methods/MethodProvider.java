@@ -9,6 +9,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import shadow.utils.users.offline.UnverifiedUser;
 
+import java.util.concurrent.CompletableFuture;
+
 public final class MethodProvider {
 
     //private static final MethodProvider instance = new MethodProvider();
@@ -45,8 +47,8 @@ public final class MethodProvider {
     }
 
     @AlixIntrinsified(method = "Player#teleport")
-    public static void teleportAsync(Player player, Location loc) {
-        PaperLib.teleportAsync(player, loc);
+    public static CompletableFuture<Boolean> teleportAsync(Player player, Location loc) {
+        return PaperLib.teleportAsync(player, loc);
     }
 
     public static void init() {

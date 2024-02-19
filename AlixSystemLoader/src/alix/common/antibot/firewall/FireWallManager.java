@@ -1,19 +1,20 @@
 package alix.common.antibot.firewall;
 
 import alix.common.AlixCommonMain;
-import alix.common.antibot.firewall.os.AlixOSFireWall;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.file.FileManager;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class FireWallManager {
 
-    public static final AlixOSFireWall osFireWall = AlixOSFireWall.INSTANCE;
+    //Disabled for now
+    private static final AlixOSFireWall osFireWall = null;//AlixOSFireWall.INSTANCE;
     public static final boolean isOsFireWallInUse = osFireWall != null;
     private static final FireWallFile file = new FireWallFile();
     private static final Map<String, FireWallEntry> map = new ConcurrentHashMap<>(65536);
@@ -31,9 +32,8 @@ public final class FireWallManager {
         });
     }
 
-    public static void addCauseException(String ip, Throwable e) {
-        String msg = e.toString();//.replaceAll("\n", "");
-        add0(ip, new FireWallEntry("ex_ca:" + msg));
+    public static void addCauseException(InetAddress ip) {
+        add0(ip.getHostAddress(), new FireWallEntry("ex_ca: DecoderException"));
     }
 
     public static boolean add(String ip, String algorithmId) {
@@ -59,7 +59,10 @@ public final class FireWallManager {
 
     public static void fastSave() {
         try {
+            //AlixCommonMain.logError("Started saving firewall.txt...");
+            //long t = System.nanoTime();
             file.saveKeyAndVal(map, "|", FireWallEntry::isNotBuiltIn);
+            //AlixCommonMain.logError("Took " + (System.nanoTime() - t) / Math.pow(10, 6) + "ms too save the firewall file!");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

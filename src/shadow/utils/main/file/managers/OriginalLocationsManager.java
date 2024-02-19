@@ -9,6 +9,7 @@ import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.subtypes.OriginalLocationsFile;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 public final class OriginalLocationsManager {
 
@@ -27,13 +28,11 @@ public final class OriginalLocationsManager {
         }
     }
 
-    public static void teleportBack(Player player, boolean warningIfAbsent) {
+    public static CompletableFuture<Boolean> teleportBack(Player player, boolean warningIfAbsent) {
         Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
-        if (originalLoc != null) MethodProvider.teleportAsync(player, originalLoc);
-        else if (warningIfAbsent) {
-            Main.logWarning("The original location was absent! - The Player was in the captcha world before verification! Teleporting the player to the default spawn!");
-            MethodProvider.teleportAsync(player, SpawnFileManager.getSpawnLocation());
-        }
+        if (originalLoc != null) return MethodProvider.teleportAsync(player, originalLoc);
+        else if (warningIfAbsent) Main.logWarning("The original location was absent! - The Player was in the captcha world before verification! Teleporting the player to the default spawn!");
+        return MethodProvider.teleportAsync(player, SpawnFileManager.getSpawnLocation());
     }
 
     public static void add(Player player, @NotNull Location originalLocation) {

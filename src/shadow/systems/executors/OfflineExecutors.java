@@ -48,6 +48,7 @@ public final class OfflineExecutors extends UniversalExecutors {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
+        //Main.logInfo("[DEBUG] ASYNC PRE LOGIN ACTIVATED");
         String name = e.getName();
         String address = e.getAddress().getHostAddress();
         //Main.logWarning("ADDRESS " + address);
@@ -104,7 +105,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         Location originalLoc = event.getSpawnLocation();
         //the join location is not in the captcha world
         if (originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) || LoginVerdictManager.getExisting(event.getPlayer()).getVerdict().isAutoLogin())
-            return;//the player doesn't need to be verified
+            return;//the player doesn't need to be teleported for verification
 
         Player player = event.getPlayer();
 
@@ -172,7 +173,7 @@ public final class OfflineExecutors extends UniversalExecutors {
 
             if (AlixCommandManager.isPasswordChangeCommand(commandLabel)) {
                 e.setCancelled(true);
-                CommandManager.onPasswordChangeCommand(UserManager.getNullableUserOnline(player), Arrays.copyOfRange(spletCommand, 1, spletCommand.length));
+                CommandManager.onPasswordChangeCommand(UserManager.getVerifiedUser(player), Arrays.copyOfRange(spletCommand, 1, spletCommand.length));
                 return;
             }
         }

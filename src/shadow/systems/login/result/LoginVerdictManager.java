@@ -2,8 +2,10 @@ package shadow.systems.login.result;
 
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import shadow.Main;
 import shadow.systems.netty.AlixChannelInjector;
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.savable.data.PersistentUserData;
@@ -23,17 +25,22 @@ public final class LoginVerdictManager {
         put0(name, justCreated ? LoginVerdict.REGISTER_PREMIUM : LoginVerdict.LOGIN_PREMIUM, ip, data);
     }
 
-    private static final String packetHandlerName = "alix_handler";
+    public static final String packetHandlerName = "alix_handler";
 
     private static void put0(String name, LoginVerdict verdict, String ip, PersistentUserData data) {
+        //Main.logInfo("[DEBUG] CREATING A VERDICT...");
         Channel channel = AlixChannelInjector.CHANNELS.remove(name);
         if (channel == null) throw new AlixError("Channel for " + name + " was not found!");
-        channel.pipeline().remove(AlixChannelInjector.CHANNEL_ACTIVE_LISTENER_NAME);
-        channel.pipeline().remove(AlixChannelInjector.PACKET_INJECTOR_NAME);
 
+        ChannelPipeline pipeline = channel.pipeline();
         PacketInterceptor interceptor = new PacketInterceptor(channel);
-        channel.pipeline().addBefore("packet_handler", packetHandlerName, interceptor);
+
+        pipeline.addBefore("packet_handler", packetHandlerName, interceptor);
+        pipeline.remove(AlixChannelInjector.PACKET_INJECTOR_NAME);
+        pipeline.remove(AlixChannelInjector.CHANNEL_ACTIVE_LISTENER_NAME);
+
         map.put(name, new LoginInfo(verdict, ip, data, interceptor));
+        //Main.logInfo("[DEBUG] CREATED A VERDICT");
     }
 
     private static LoginVerdict createVerdict(String ip, PersistentUserData data) {

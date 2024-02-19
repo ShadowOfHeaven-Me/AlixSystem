@@ -18,7 +18,7 @@ public final class VerificationReminder {
 
     public static void init() {
         if (!AlixUtils.requireCaptchaVerification)
-            AlixScheduler.repeatAsync(VerificationReminder::sendVerificationMessagesAndUpdateTimer, 100, TimeUnit.MILLISECONDS);
+            AlixScheduler.repeatAsync(VerificationReminder::sendVerificationMessagesAndUpdateTimer, 200, TimeUnit.MILLISECONDS);
     }
 
     public static boolean hasDelayPassed() {
@@ -37,7 +37,7 @@ public final class VerificationReminder {
         }
     }*/
 
-    //synchronized in order to ensure that this method is never executed
+    //synchronized in order to ensure that this method is never executed twice at once
     private static synchronized void sendVerificationMessagesAndUpdateTimer() {
         boolean delayPassed = hasDelayPassed();
 

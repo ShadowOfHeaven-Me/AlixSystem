@@ -1,21 +1,22 @@
 package shadow.systems.login.captcha.manager;
 
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.collections.queue.array.AlixLoopArrayDeque;
+import alix.common.utils.collections.queue.array.AlixLoopDeque;
 import org.bukkit.Bukkit;
 import shadow.systems.login.captcha.Captcha;
+import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 import shadow.utils.main.AlixUtils;
 
 public final class CaptchaPoolManager {
 
-    public static final int maxSize = (int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.1, 1.2));
-    private final AlixLoopArrayDeque<Captcha> deque = AlixLoopArrayDeque.concurrentOfSize(maxSize);
+    //generate a little bit more than max players to lessen the chance of a captcha ever repeating because of
+    public static final int maxSize = (int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.05, 1.1)) + 1;
+    private final AlixLoopDeque<Captcha> deque = AlixLoopDeque.concurrentOfSize(maxSize);
     //private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();
 
     public CaptchaPoolManager() {
         //pre-generating
         AlixScheduler.async(() -> {
-            //generate a little bit more than the max player count in order to lower the chance of the captchas ever running out at runtime, before they have the time to be re-generated
             int size = maxSize;
             while (size-- != 0)
                 this.addNew();

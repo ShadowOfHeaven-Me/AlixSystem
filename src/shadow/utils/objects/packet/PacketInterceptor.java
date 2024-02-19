@@ -4,17 +4,20 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import net.minecraft.network.protocol.game.PacketPlayOutGameStateChange;
+import shadow.Main;
 import shadow.utils.objects.packet.types.verified.SelfDelegatingProcessor;
 
+import java.lang.reflect.Proxy;
 import java.util.List;
+
+import static shadow.systems.login.result.LoginVerdictManager.packetHandlerName;
 
 public final class PacketInterceptor extends ChannelDuplexHandler {
 
     //private static final ChannelInjector channelInjector = AlixHandler.createChannelInjectorImpl();
     private final Channel channel;
     private final ChannelHandlerContext afterAlixHandlerContext;
-    private PacketProcessor processor = new SelfDelegatingProcessor(this);//delegate to self in order to deliver all packets, before we set another processor later on
+    private volatile PacketProcessor processor = new SelfDelegatingProcessor(this);//delegate to self in order to deliver all packets, before we set another processor later on
 
     //read -> (decompression, buffers to packets, etc.) -> alix_handler -> packet_handler
     //write -> packet_handler -> alix_handler -> (compression, packets to buffers, etc.)
@@ -24,8 +27,8 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     }*/
 
     //This code finds a Channel Handler placed before the server's "packet_handler".
-    //Alix's PacketInterceptor is injected before "packet_handler", and with PacketBlocker
-    //or other PacketProcessors not all packets will be delivered to the player.
+    //Alix's PacketInterceptor is injected before the packet handler,
+    //and with PacketBlocker or other PacketProcessors not all packets will be delivered to the player.
     //The invocation now looks like this:
     //write -> packet_handler -> alix_handler -> (some another handler after alix)
     //However, we want our own packet to be delivered, and we can bypass the checks of the PacketProcessor
@@ -35,6 +38,7 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     public PacketInterceptor(Channel channel) {
         this.channel = channel;
         List<String> handlers = channel.pipeline().names();
+        //Main.logInfo(handlers.toString());
         String name = handlers.get(handlers.indexOf("packet_handler") - 1);
         this.afterAlixHandlerContext = this.channel.pipeline().context(name);
     }
@@ -64,6 +68,7 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     }*/
 
     public final void setProcessor(PacketProcessor processor) {
+        //Main.logInfo("[DEBUG] SET THE PROCESSOR TO " + processor.getClass().getSimpleName());
         this.processor = processor;
     }
 
@@ -82,11 +87,13 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
 
     @Override
     public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //Main.logInfo("[DEBUG] PROCESSING... " + msg.getClass().getSimpleName());
         this.processor.channelRead(ctx, msg);
     }
 
     @Override
     public final void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        //Main.logInfo("[DEBUG] PROCESSING... " + msg.getClass().getSimpleName());
         this.processor.write(ctx, msg, promise);
     }
 
@@ -96,10 +103,12 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     }
 
     final void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //Main.logInfo("[DEBUG] PROCESSED " + msg.getClass().getSimpleName());
         super.channelRead(ctx, msg);
     }
 
     final void write0(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        //Main.logInfo("[DEBUG] PROCESSED " + msg.getClass().getSimpleName());
         super.write(ctx, msg, promise);
     }
 

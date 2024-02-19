@@ -32,14 +32,18 @@ public final class LoginParams {
         if(a.length == 2) this.extraLoginType = AlixUtils.readLoginType(a[1], null);
     }
 
+    void initSettings(String settings) {
+        this.ipAutoLogin = settings.equals("0") || settings.equals("null") ? null : Boolean.parseBoolean(settings);
+    }
+
     public String passwordsToSavable() {
         if (extraPassword == null) return password.toSavable();
         return password.toSavable() + ";" + extraPassword.toSavable();
     }
 
-    public String loginTypesToSavable() {
+    public String settingsToSavable() {
         if (extraLoginType == null) return loginType.name();
-        return loginType + ";" + extraLoginType;
+        return loginType + ";" + extraLoginType + "|" + ipAutoLogin;
     }
 
     public boolean isDoubleVerificationEnabled() {

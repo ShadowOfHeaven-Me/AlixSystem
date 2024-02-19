@@ -4,11 +4,11 @@ import alix.common.utils.other.throwable.AlixException;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class AlixLoopArrayDeque<T> {
+public abstract class AlixLoopDeque<T> {
 
     private final Object[] array;
 
-    private AlixLoopArrayDeque(int fixedSize) {
+    private AlixLoopDeque(int fixedSize) {
         this.array = new Object[fixedSize];
         if (fixedSize <= 0)
             throw new AlixException("Fixed pointer deque size must be greater than zero! Got: " + fixedSize);
@@ -16,7 +16,7 @@ public abstract class AlixLoopArrayDeque<T> {
 
     //we can cast it without worrying for NPE
     public final T nextInLine() {
-        return (T) array[this.nextGetterIndex()];
+        return (T) this.array[this.nextGetterIndex()];
     }
 
     public final void offerNext(T t) {
@@ -27,12 +27,12 @@ public abstract class AlixLoopArrayDeque<T> {
 
     abstract int nextSetterIndex();
 
-    private static final class ConcurrentAlixLoopArrayDeque<T> extends AlixLoopArrayDeque<T> {
+    private static final class ConcurrentAlixLoopDeque<T> extends AlixLoopDeque<T> {
 
         private final AtomicInteger getterIndex, setterIndex;
         private final int maxIndex;
 
-        private ConcurrentAlixLoopArrayDeque(int fixedSize) {
+        private ConcurrentAlixLoopDeque(int fixedSize) {
             super(fixedSize);
             this.getterIndex = new AtomicInteger();
             this.setterIndex = new AtomicInteger();
@@ -55,8 +55,8 @@ public abstract class AlixLoopArrayDeque<T> {
         }
     }
 
-    public static <T> AlixLoopArrayDeque<T> concurrentOfSize(int size) {
-        return new ConcurrentAlixLoopArrayDeque<>(size);
+    public static <T> AlixLoopDeque<T> concurrentOfSize(int size) {
+        return new ConcurrentAlixLoopDeque<>(size);
     }
     /*private static final class NormalAlixPointerDeque<T> extends AlixPointerDeque<T> {
 

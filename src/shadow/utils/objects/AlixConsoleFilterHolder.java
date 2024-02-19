@@ -50,7 +50,7 @@ public final class AlixConsoleFilterHolder implements Filter {
             return Result.NEUTRAL;
         }
 
-        private static final boolean waitFor2ndSpace = ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER;
+        private static final boolean waitFor2ndSpace = ServerEnvironment.isPaper();
 
         //Checks for the connection lost messages
         //_ShadowOfHeaven_ (/IP) lost connection: We're analysing your connection. You may now join the server.

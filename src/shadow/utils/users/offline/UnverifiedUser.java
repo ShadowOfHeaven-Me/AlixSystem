@@ -1,6 +1,7 @@
 package shadow.utils.users.offline;
 
 import alix.common.data.LoginType;
+import alix.common.environment.ServerEnvironment;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
@@ -27,6 +28,7 @@ import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static shadow.utils.main.AlixUtils.getVerificationReminderMessagePacket;
@@ -121,9 +123,8 @@ public final class UnverifiedUser {
     public final void uninject() {//removes all that was ever assigned and related (but does not teleport back)
         if (captchaInitialized) captcha.uninject(this);
 
-        if (!hasCompletedCaptcha) return;//do not return the original params as captcha unverified are non-persistent
-
-        this.player.setCollidable(this.originalCollidableState); // <- returning the player to his original collide state
+        if (hasCompletedCaptcha) //do not return the original params if not completed, as captcha unverified users are non-persistent
+            this.player.setCollidable(this.originalCollidableState); // <- returning the player to his original collide state
     }
 
     //the action blocker is now automatically disabled by
@@ -204,6 +205,7 @@ public final class UnverifiedUser {
         this.writeAndFlushSilently(this.verificationMessagePacket);
 
         this.blocker.startLoginKickTask();
+        this.captcha.onCompletion(this);
 
         this.hasCompletedCaptcha = true;
 
@@ -297,10 +299,10 @@ public final class UnverifiedUser {
 
     private void register1() {
         //this.player.setGameMode(this.originalGameMode);
-        OriginalLocationsManager.teleportBack(player, true);
+        CompletableFuture<Boolean> future = OriginalLocationsManager.teleportBack(player, true);
         AlixUtils.registerCommandList.invoke(player);
         if (captchaInitialized) GeoIPTracker.removeTempIP(this.ipAddress);
-        if (!hasAccount()) IpAutoLoginGUI.add(this.player);
+        if (!hasAccount()) future.thenAccept(b -> IpAutoLoginGUI.add(this.player));//make sure to open the gui after the teleport, as it will close otherwise
         //this.player.setGameMode(this.originalGameMode);
     }
 
