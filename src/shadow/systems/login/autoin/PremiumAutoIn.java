@@ -34,7 +34,6 @@ public final class PremiumAutoIn {
     }
 
     public static void checkForInit() {
-
     }
 
     public static boolean remove(String username) {

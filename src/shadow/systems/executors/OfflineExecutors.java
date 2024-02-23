@@ -50,16 +50,16 @@ public final class OfflineExecutors extends UniversalExecutors {
     public void onLogin(AsyncPlayerPreLoginEvent e) {
         //Main.logInfo("[DEBUG] ASYNC PRE LOGIN ACTIVATED");
         String name = e.getName();
-        String address = e.getAddress().getHostAddress();
-        //Main.logWarning("ADDRESS " + address);
+        String ip = e.getAddress().getHostAddress();
+        //Main.logWarning("ADDRESS " + ip);
         //The FireWall should handle unnecessary connections from being processed
-        if (antibotService) ConnectionThreadManager.addJoinAttempt(name, address);
+        if (antibotService) ConnectionThreadManager.addJoinAttempt(name, e.getAddress());
         if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
         //Intentional concurrent check, as the ban Maps are overridden to their
         //concurrent equivalent in ReflectionUtils.replaceBansToConcurrent
         //Also, do not change the login result to let the server show the actual ban message
         //This logic might be changed in the future
-        if (BukkitBanList.IP.isBanned(address) || BukkitBanList.NAME.isBanned(name))
+        if (BukkitBanList.IP.isBanned(ip) || BukkitBanList.NAME.isBanned(name))
             return;//prevent further processing, since #getLoginResult returns ALLOWED, unless changed by another plugin
 
         if (name.startsWith("MC_STORM") || name.startsWith("BOT_")) {//primitive protection
@@ -75,29 +75,29 @@ public final class OfflineExecutors extends UniversalExecutors {
         PersistentUserData data = UserFileManager.get(name);
 
         if (data != null) {//the account exists
-            if (PremiumAutoIn.remove(name)) LoginVerdictManager.addOnline(name, address, data, false);
-            else LoginVerdictManager.addOffline(name, address, data);
+            if (PremiumAutoIn.remove(name)) LoginVerdictManager.addOnline(name, ip, data, false, e);
+            else LoginVerdictManager.addOffline(name, ip, data, e);
             return;
         }
 
         if (PremiumAutoIn.remove(name)) {
             for (ConnectionFilter filter : premiumFilters) {
-                if (filter.disallowJoin(address, name)) {
+                if (filter.disallowJoin(ip, name)) {
                     e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                     return;
                 }
             }
-            LoginVerdictManager.addOnline(name, address, PersistentUserData.createFromPremiumInfo(name, address), true);
+            LoginVerdictManager.addOnline(name, ip, PersistentUserData.createFromPremiumInfo(name, ip), true, e);
             return;
         }
 
         for (ConnectionFilter filter : filters) {
-            if (filter.disallowJoin(address, name)) {
+            if (filter.disallowJoin(ip, name)) {
                 e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                 return;
             }
         }
-        LoginVerdictManager.addOffline(name, address, data);
+        LoginVerdictManager.addOffline(name, ip, data, e);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

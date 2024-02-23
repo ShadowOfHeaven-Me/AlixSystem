@@ -49,7 +49,7 @@ public final class AlixChannelInjector {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             ctx.channel().close();
-            //Main.logWarning("LISTENER ACTIVUH ERROR " + ctx.name() + " " + cause.toString());
+            //Main.logWarning("LISTENER ACTIVATE ERROR " + cause.toString());
             //cause.printStackTrace();
             //super.exceptionCaught(ctx, cause);
         }
@@ -87,11 +87,11 @@ public final class AlixChannelInjector {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             //if(cause.getClass() != DecoderException.class) Main.logWarning("ERROR ON INTERCEPTING: " + cause.toString());
-            //Main.logWarning("ERROR ON INTERCEPTING: " + ctx.name() + " " + cause.toString());
+            //Main.logWarning("ERROR ON INTERCEPTING: " + cause.toString());
             //cause.printStackTrace();
-            if (cause.getClass() == DecoderException.class)
+            if (cause.getClass() == DecoderException.class)// && cause.getCause() != null && cause.getCause().getClass() == IndexOutOfBoundsException.class)
                 FireWallManager.addCauseException(((InetSocketAddress) ctx.channel().remoteAddress()).getAddress());
-            ctx.channel().close();
+            //ctx.channel().close();
             //Main.logInfo(this.firewalled.format(ip));
             //if (cause.getClass() != ReadTimeoutException.class) ctx.channel().close();
         }

@@ -4,11 +4,8 @@ import alix.common.data.LoginType;
 import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.bukkit.Bukkit;
-import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
-import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixUtils;
@@ -31,6 +28,7 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
     private boolean settingPassword;
     private AnvilPasswordBuilder builder;
     private Supplier<LoginType> loginType;
+    private Object lastItemsPacket;
 
     private VerifiedPacketProcessor(User user, PacketInterceptor handler) {
         super(handler);
@@ -41,24 +39,26 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
 
     @Override
     public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        switch (msg.getClass().getSimpleName()) {
-            case "ServerboundChatCommandPacket":
-                String cmd = (String) PacketBlocker.getStringFromCommandPacketMethod.invoke(msg);
-                String[] splet = AlixUtils.split(cmd, ' ');
-                //again, async cuz of password hashing algorithms
-                if (AlixCommandManager.isPasswordChangeCommand(splet[0]))
-                    AlixScheduler.async(() -> CommandManager.onPasswordChangeCommand(user, Arrays.copyOfRange(splet, 1, splet.length)));
-                else super.channelRead(ctx, msg);
+        if (!settingPassword) {
+            if (msg.getClass() != PacketBlocker.commandPacketClass) {
+                super.channelRead(ctx, msg);
                 return;
+            }
+
+            String cmd = (String) PacketBlocker.getStringFromCommandPacketMethod.invoke(msg);
+            String[] splet = AlixUtils.split(cmd, ' ');
+            //again, async cuz of password hashing algorithms
+            if (AlixCommandManager.isPasswordChangeCommand(splet[0]))
+                AlixScheduler.async(() -> CommandManager.onPasswordChangeCommand(user, Arrays.copyOfRange(splet, 1, splet.length)));
+            else super.channelRead(ctx, msg);
+            return;
+        }
+        switch (msg.getClass().getSimpleName()) {
             case "PacketPlayInItemName":
-                if (!settingPassword) {
-                    super.channelRead(ctx, msg);//the user is just renaming an item
-                    return;
-                }
                 this.passwordInput(msg);
                 return;
             case "PacketPlayInCloseWindow":
-                if (settingPassword) this.disablePasswordSetting();
+                this.disablePasswordSetting();
                 super.channelRead(ctx, msg);
                 return;
             case "PacketPlayInWindowClick":
@@ -72,15 +72,20 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
 
     @Override
     public final void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (settingPassword && msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
-            //Main.logInfo("SERVER: " + settingPassword + " ID: " + ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
+        if (!settingPassword) {
+            super.write(ctx, msg, promise);
+            return;
+        }
+        //Main.logInfo("SERVER: " + settingPassword + " ID: " + ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
+        if (msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
             super.write(ctx, msg, promise);
             this.builder.updateWindowID((int) ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
             this.builder.spoofValidAccordingly();
             return;
         }
 
-        super.write(ctx, msg, promise);
+        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass)//Window Items from the server
+            this.lastItemsPacket = msg;
     }
 
     /*if (msg.getClass() != PacketBlocker.commandPacketClass) {
@@ -112,9 +117,11 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
     }
 
     public void disablePasswordSetting() {
+        if (this.lastItemsPacket != null) user.getDuplexHandler().writeAndFlushSilently(lastItemsPacket);
         this.settingPassword = false;
         this.loginType = null;
         this.builder = null;
+        this.lastItemsPacket = null;
     }
 
     /*if (msg.getClass() == ReflectionUtils.outPlayerInfoPacketClass) {

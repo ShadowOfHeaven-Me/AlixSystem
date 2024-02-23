@@ -1,7 +1,6 @@
 package shadow.systems.commands.alix;
 
 import alix.common.utils.other.annotation.AlixIntrinsified;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.file.CommandsFile;
@@ -88,10 +87,10 @@ public final class AlixCommandManager {
         if (consumer == null) return;//the unverified user tried to execute a command different to a verification one
 
         if (isArgSize0) {
-            if (consumer == VerificationCommand.OF_CAPTCHA) {
+            /*if (consumer == VerificationCommand.OF_CAPTCHA) {
                 sendMessage(p, CommandManager.formatCaptcha);
                 return;
-            }
+            }*/
             if (consumer == VerificationCommand.OF_LOGIN) {
                 sendMessage(p, CommandManager.formatLogin);
                 return;
@@ -110,10 +109,10 @@ public final class AlixCommandManager {
     }
 
     static {
-        commandsFile.read();
+        commandsFile.loadExceptionless();
         Map<String, VerificationCommand> map = verificationCommands;
 
-        VerificationCommand captcha = VerificationCommand.OF_CAPTCHA;
+        //VerificationCommand captcha = VerificationCommand.OF_CAPTCHA;
         VerificationCommand register = VerificationCommand.OF_REGISTER;
         VerificationCommand login = VerificationCommand.OF_LOGIN;
 
@@ -123,9 +122,9 @@ public final class AlixCommandManager {
                 throw new ExceptionInInitializerError("Invalid verification command: '" + commandAlias + "'!");
             String command = alix.getCommand();
             switch (command) {
-                case "captcha":
+                /*case "captcha":
                     map.put(commandAlias, captcha);
-                    continue;
+                    continue;*/
                 case "register":
                     map.put(commandAlias, register);
                     continue;

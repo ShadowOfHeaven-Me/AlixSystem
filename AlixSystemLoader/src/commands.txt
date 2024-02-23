@@ -10,7 +10,6 @@ invsee: inventory, inv, eq
 gamemode: gm, gms, gmc, gma, gmsp, gm0, gm1, gm2, gm3
 list: -
 nickname: nick, nicknameplayer, name
-captcha: -
 register: -
 login: -
 account: settings

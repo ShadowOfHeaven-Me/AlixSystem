@@ -1,6 +1,6 @@
 package alix.common.utils.file.update;
 
-import alix.common.utils.file.FileManager;
+import alix.common.utils.file.AlixFileManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,13 +11,13 @@ public final class MessagesFileUpdater {
     //Replaces the old formatting (%s<number>) with the universally known one ({<number>})
 
     public static void updateFormatting(File messagesFile) {
-        List<String> lines = FileManager.getLines(messagesFile);
+        List<String> lines = AlixFileManager.getLines(messagesFile);
         for (int i = 0; i < lines.size(); i++) {
             String line = reformat(lines.get(i));
             lines.set(i, line);
         }
         try {
-            FileManager.write(messagesFile, lines);
+            AlixFileManager.write(messagesFile, lines);
         } catch (IOException e) {
             e.printStackTrace();
         }

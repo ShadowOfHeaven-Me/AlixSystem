@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.objects.packet.types.unverified.GUIPacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
 import shadow.utils.objects.savable.data.gui.builders.SimplePinBuilder;
 import shadow.utils.users.offline.UnverifiedUser;

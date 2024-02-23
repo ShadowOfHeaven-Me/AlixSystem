@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit;
 public final class IpAutoLoginGUI extends AlixGUI {
 
     private static final IpAutoLoginGUI INSTANCE = new IpAutoLoginGUI();
+    private final String
+            messageAccept = Messages.getWithPrefix("ip-autologin-accept"),
+            messageReject = Messages.getWithPrefix("ip-autologin-reject");
 
     private IpAutoLoginGUI() {
         super(Bukkit.createInventory(null, InventoryType.DROPPER, Messages.get("gui-title-ip-autologin")));
@@ -40,7 +43,7 @@ public final class IpAutoLoginGUI extends AlixGUI {
             Player player = (Player) event.getWhoClicked();
             PersistentUserData data = UserFileManager.get(player.getName());
             data.getLoginParams().setIpAutoLogin(true);
-            player.sendMessage(Messages.get("ip-autologin-accept"));
+            player.sendMessage(this.messageAccept);
             AlixScheduler.runLaterSync(player::closeInventory, 100, TimeUnit.MILLISECONDS);//we need to delay it because of a ConcurrentModificationException in the 'MAP' in AlixGUI
         });
 
@@ -50,7 +53,7 @@ public final class IpAutoLoginGUI extends AlixGUI {
             Player player = (Player) event.getWhoClicked();
             PersistentUserData data = UserFileManager.get(player.getName());
             data.getLoginParams().setIpAutoLogin(false);
-            player.sendMessage(Messages.get("ip-autologin-reject"));
+            player.sendMessage(this.messageReject);
             AlixScheduler.runLaterSync(player::closeInventory, 100, TimeUnit.MILLISECONDS);//we need to delay it because of a ConcurrentModificationException in the 'MAP' in AlixGUI
         });
 

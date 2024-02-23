@@ -7,6 +7,7 @@ import shadow.utils.main.file.subtypes.UserFile;
 import shadow.utils.objects.savable.data.PersistentUserData;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,6 +51,10 @@ public final class UserFileManager {
 
     public static void putData(PersistentUserData data) {
         map.put(data.getName(), data);
+    }
+
+    public static Collection<PersistentUserData> getAllData() {
+        return map.values();
     }
 
     public static void init() {

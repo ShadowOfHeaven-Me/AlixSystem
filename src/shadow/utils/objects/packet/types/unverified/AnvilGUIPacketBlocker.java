@@ -17,7 +17,11 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
     //private static final Set<Integer> WINDOW_IDS = new ConcurrentSet<>();
     private AnvilPasswordBuilder builder;
 
-    protected AnvilGUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
+    AnvilGUIPacketBlocker(PacketBlocker previousBlocker) {
+        super(previousBlocker);
+    }
+
+    AnvilGUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
         super(u, handler);
         this.builder = (AnvilPasswordBuilder) u.getPasswordBuilder();
     }
@@ -61,7 +65,8 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             String invalidityReason = null;
 
             if (user.isRegistered()) this.builder.spoofAllItems();
-            else if ((invalidityReason = AlixUtils.getPasswordInvalidityReason(text, LoginType.ANVIL)) != null) this.builder.spoofItemsInvalidIndicate();
+            else if ((invalidityReason = AlixUtils.getPasswordInvalidityReason(text, LoginType.ANVIL)) != null)
+                this.builder.spoofItemsInvalidIndicate();
             else this.builder.spoofAllItems();
 
             this.builder.input(text, invalidityReason);
@@ -103,11 +108,15 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         //if (spoofedWindowItems(msg)) return;
-        if (user.hasCompletedCaptcha() && msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
-            super.writeNotOverridden(ctx, msg, promise);
-            this.builder.updateWindowID();
-            this.builder.spoofValidAccordingly();
-            return;
+        if (user.hasCompletedCaptcha()) {
+            if (msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
+                super.writeNotOverridden(ctx, msg, promise);
+                this.builder.updateWindowID((int) ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
+                this.builder.spoofValidAccordingly();
+                return;
+            }
+            if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass)//Window Items from the server
+                return;
         }
 
         super.write(ctx, msg, promise);//intentional super call

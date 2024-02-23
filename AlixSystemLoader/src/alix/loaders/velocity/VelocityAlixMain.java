@@ -4,7 +4,7 @@ import alix.common.AlixMain;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
 import alix.common.utils.file.update.FileUpdater;
-import alix.common.utils.file.FileManager;
+import alix.common.utils.file.AlixFileManager;
 import alix.loaders.classloader.JarInJarClassLoader;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
@@ -42,7 +42,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         this.logger = logger;
         this.loggerAdapter = LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
-        File f = FileManager.createPluginFile("vconfig.yml");
+        File f = AlixFileManager.createPluginFile("vconfig.yml");
         this.config = YamlConfiguration.loadConfiguration(f);
 
         //CommonAlixMain.loggerManager = this;

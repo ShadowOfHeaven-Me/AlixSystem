@@ -1,22 +1,27 @@
 package alix.common.utils.collections.queue.array;
 
+import alix.common.AlixCommonMain;
 import alix.common.utils.other.throwable.AlixException;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class AlixLoopDeque<T> {
+public abstract class LoopDeque<T> {
 
     private final Object[] array;
 
-    private AlixLoopDeque(int fixedSize) {
+    private LoopDeque(int fixedSize) {
         this.array = new Object[fixedSize];
         if (fixedSize <= 0)
             throw new AlixException("Fixed pointer deque size must be greater than zero! Got: " + fixedSize);
+        if (fixedSize == 1)
+            AlixCommonMain.logWarning("For the size 1 in " + this.getClass().getSuperclass().getSimpleName() + " the class is unnecessary!");
     }
 
     //we can cast it without worrying for NPE
-    public final T nextInLine() {
-        return (T) this.array[this.nextGetterIndex()];
+    public final T getAndReplaceWith(T replacement) {
+        T value = (T) this.array[this.nextGetterIndex()];
+        this.array[this.nextSetterIndex()] = replacement;
+        return value;
     }
 
     public final void offerNext(T t) {
@@ -27,12 +32,12 @@ public abstract class AlixLoopDeque<T> {
 
     abstract int nextSetterIndex();
 
-    private static final class ConcurrentAlixLoopDeque<T> extends AlixLoopDeque<T> {
+    private static final class ConcurrentLoopDeque<T> extends LoopDeque<T> {
 
         private final AtomicInteger getterIndex, setterIndex;
         private final int maxIndex;
 
-        private ConcurrentAlixLoopDeque(int fixedSize) {
+        private ConcurrentLoopDeque(int fixedSize) {
             super(fixedSize);
             this.getterIndex = new AtomicInteger();
             this.setterIndex = new AtomicInteger();
@@ -55,8 +60,8 @@ public abstract class AlixLoopDeque<T> {
         }
     }
 
-    public static <T> AlixLoopDeque<T> concurrentOfSize(int size) {
-        return new ConcurrentAlixLoopDeque<>(size);
+    public static <T> LoopDeque<T> concurrentOfSize(int size) {
+        return new ConcurrentLoopDeque<>(size);
     }
     /*private static final class NormalAlixPointerDeque<T> extends AlixPointerDeque<T> {
 

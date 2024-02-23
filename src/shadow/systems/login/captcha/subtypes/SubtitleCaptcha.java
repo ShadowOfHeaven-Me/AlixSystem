@@ -23,9 +23,8 @@ public final class SubtitleCaptcha extends Captcha {
     }
 
     @Override
-    public void uninject(UnverifiedUser user) {
+    public void onCompletion(UnverifiedUser user) {
         user.getPlayer().resetTitle();
-        //player.sendTitle(null, null, 0, 0, 0);
-        super.uninject(user);
+        super.onCompletion(user);
     }
 }

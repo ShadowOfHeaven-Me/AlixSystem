@@ -3,28 +3,28 @@ package shadow.utils.main;
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.i18n.HttpsHandler;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.conversations.Conversable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import shadow.Main;
 import shadow.systems.commands.ExecutableCommandList;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
-import shadow.utils.holders.NewerVersionAccess;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.holders.skull.SkullSupplier;
@@ -32,7 +32,6 @@ import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.world.AlixWorldHolder;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -56,12 +55,12 @@ public final class AlixUtils {
     public static final CaptchaVisualType captchaVerificationVisualType;
     public static final LoginType defaultLoginType;
     public static final float doubledDefaultWalkSpeed, doubledDefaultFlySpeed;
-    public static final long verificationReminderDelay;
+    //public static final long verificationReminderDelay;
     public static final int bukkitVersion, maximumTotalAccounts, maxCaptchaTime, maxLoginTime, maxLoginAttempts, maxCaptchaAttempts;//, lowestTeleportableYLevel;
     public static final byte captchaLength;
     public static final boolean isOperatorCommandRestricted, playerIPAutoLogin, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
-            requirePingCheckVerification, repeatedVerificationReminderMessages,
+            requirePingCheckVerification, //repeatedVerificationReminderMessages,
             anvilPasswordGui, pinPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
 
     private static final String
@@ -166,8 +165,8 @@ public final class AlixUtils {
         autoLoginCommandList = new ExecutableCommandList(config.getStringList("after-auto-login-commands"));
         captchaLength = captchaLength0;
         captchaVerificationCaseSensitive = config.getBoolean("captcha-case-sensitive");
-        verificationReminderDelay = config.getLong("verification-reminder-message-delay");
-        repeatedVerificationReminderMessages = verificationReminderDelay > 0;
+        //verificationReminderDelay = config.getLong("verification-reminder-message-delay");
+        //repeatedVerificationReminderMessages = verificationReminderDelay > 0;
         isOnlineModeEnabled = Bukkit.getServer().getOnlineMode();
         antibotService = config.getBoolean("antibot-service");
         isOfflineExecutorRegistered = config.getBoolean("offline-login-requirement") && !isOnlineModeEnabled;
@@ -475,14 +474,14 @@ public final class AlixUtils {
     public static Character[] toObject(char... a) {
         int l = a.length;
         Character[] b = new Character[l];
-        for(int c = 0; c < l; c++) b[c] = a[c];
+        for (int c = 0; c < l; c++) b[c] = a[c];
         return b;
     }
 
     public static char[] toPrimitive(Character... a) {
         int l = a.length;
         char[] b = new char[l];
-        for(int c = 0; c < l; c++) b[c] = a[c];
+        for (int c = 0; c < l; c++) b[c] = a[c];
         return b;
     }
 
@@ -532,7 +531,7 @@ public final class AlixUtils {
                 case 59:
                     return AlixFormatter.format(invalidCharacterMessage, c);
                 default:
-                    if (c < 35 || c > 382 || c > 90 && !Character.isLetter(c))
+                    if (c < 35 || c > AlixFileManager.HIGHEST_CHAR || c > 90 && !Character.isLetter(c))
                         return AlixFormatter.format(invalidCharacterMessage, c);
             }
         }
@@ -563,13 +562,14 @@ public final class AlixUtils {
     }
 
     public static final Object
-            notLoggedInUserMessagePacket = OutMessagePacketConstructor.construct(Messages.notLoggedInUserMessage),
-            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.construct(Messages.captchaNotCompletedUserMessage),
-            unregisteredUserMessagePacket = OutMessagePacketConstructor.construct(Messages.unregisteredUserMessage);
+            notLoggedInUserMessagePacket = OutMessagePacketConstructor.construct(Messages.notLoggedInUserMessage, true),
+            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.construct(Messages.captchaNotCompletedUserMessage, true),
+            unregisteredUserMessagePacket = OutMessagePacketConstructor.construct(Messages.unregisteredUserMessage, true);
 
     public static Object getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
         if (isRegistered) return notLoggedInUserMessagePacket;
-        if (hasAccount) return unregisteredUserMessagePacket;//isn't registered, but has an account - the password must've been reset
+        if (hasAccount)
+            return unregisteredUserMessagePacket;//isn't registered, but has an account - the password must've been reset
         return requireCaptchaVerification ? captchaNotCompletedUserMessagePacket : unregisteredUserMessagePacket;
     }
 

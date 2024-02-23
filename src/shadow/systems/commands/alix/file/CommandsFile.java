@@ -1,5 +1,6 @@
 package shadow.systems.commands.alix.file;
 
+import alix.common.utils.file.AlixFileManager;
 import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandInfo;
 import shadow.utils.main.file.FileManager;
@@ -21,6 +22,8 @@ public final class CommandsFile extends FileManager {
     protected void loadLine(String line) {
         String[] a = line.replaceAll(" ", "").split(":");
 
+        //Main.logInfo("Line: " + line + " array: " + Arrays.toString(a));
+
         String cmd = a[0];
         boolean registered = cmd.charAt(0) != '#';
         if (!registered) cmd = cmd.substring(1);
@@ -31,7 +34,7 @@ public final class CommandsFile extends FileManager {
         String aliasLine = a[1];
         String[] aliases = aliasLine.equals("-") ? null : aliasLine.split(",");
         switch (cmd) {
-            case "captcha":
+            //case "captcha":
             case "register":
             case "login":
                 this.loginCommands.add(cmd);
@@ -54,7 +57,7 @@ public final class CommandsFile extends FileManager {
     }
 
     private static File findFile() {
-        File f = FileManager.getPluginFile("commands.txt", false);
+        File f = AlixFileManager.getPluginFile("commands.txt", false);
         if (f.exists()) return f;
         Main.debug("Unable to find this plugin's commands.txt file. Generating a new one.");
         return createPluginFile("commands.txt", false);

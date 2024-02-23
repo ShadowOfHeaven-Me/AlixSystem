@@ -1,11 +1,12 @@
 package alix.common.antibot.algorithms.connection;
 
+import java.net.InetAddress;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public interface ConnectionAlgorithm {
 
-    void onJoinAttempt(String name, String ip);
+    void onJoinAttempt(String name, InetAddress ip);
 
     void onThreadRepeat();
 
@@ -14,9 +15,9 @@ public interface ConnectionAlgorithm {
     abstract class NameMap {
 
         protected final Set<String> namesSet;
-        protected final String ip;
+        protected final InetAddress ip;
 
-        protected NameMap(String address) {
+        protected NameMap(InetAddress address) {
             this.namesSet = ConcurrentHashMap.newKeySet();
             this.ip = address;
         }

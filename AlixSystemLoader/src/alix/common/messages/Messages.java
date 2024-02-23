@@ -20,10 +20,10 @@ public final class Messages {
             Main.logError("File " + e.getMessage() + " has thrown an error whilst loading.");
             e.getCause().printStackTrace();
         }*/
-        file.read();
-        unregisteredUserMessage = getWithPrefix("unregistered-reminder");
-        notLoggedInUserMessage = getWithPrefix("not-logged-in-reminder");
-        captchaNotCompletedUserMessage = getWithPrefix("uncompleted-captcha-reminder");
+        file.loadExceptionless();
+        unregisteredUserMessage = get("unregistered-reminder");
+        notLoggedInUserMessage = get("not-logged-in-reminder");
+        captchaNotCompletedUserMessage = get("uncompleted-captcha-type-reminder");
         autoLoginMessage = getWithPrefix("auto-login");
         chatAlreadyOn = getWithPrefix("chat-already-on");
         chatAlreadyOff = getWithPrefix("chat-already-off");
@@ -61,8 +61,8 @@ public final class Messages {
 
     public static boolean merge() {
         if (extractedMessages == null) return false;
-        extractedMessages.load();
         try {
+            extractedMessages.load();
             file.save0(extractedMessages.getFormattedMessages());
         } catch (IOException e) {
             throw new RuntimeException(e);

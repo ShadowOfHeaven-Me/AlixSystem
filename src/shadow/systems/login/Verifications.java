@@ -20,7 +20,7 @@ public final class Verifications {//TODO: Commands and users
     public static UnverifiedUser add(Player p, LoginInfo login, String joinMessage) {
         UnverifiedUser user = new UnverifiedUser(p, login, joinMessage);
         map.put(p.getUniqueId(), user);
-        return user;//map.put(Key, Value) returns the previous Value, thus it cannot be returned instead for short
+        return user;//Map#put returns the previous Value, thus it cannot be used instead for short
     }
 
     public static UnverifiedUser remove(Player p) {
@@ -29,6 +29,10 @@ public final class Verifications {//TODO: Commands and users
 
     public static boolean has(Player p) {
         return get(p) != null;
+    }
+
+    public static boolean has(UUID uuid) {
+        return get(uuid) != null;
     }
 
     public static UnverifiedUser get(Player p) {

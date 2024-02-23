@@ -7,6 +7,10 @@ public abstract class PacketProcessor {
 
     private final PacketInterceptor handler;
 
+    protected PacketProcessor(PacketProcessor processor) {
+        this.handler = processor.handler;
+    }
+
     protected PacketProcessor(PacketInterceptor handler) {
         this.handler = handler;
     }
@@ -19,6 +23,7 @@ public abstract class PacketProcessor {
         this.handler.write0(ctx, msg, promise);
     }
 
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        this.handler.exceptionCaught0(ctx, cause);
     }
 }

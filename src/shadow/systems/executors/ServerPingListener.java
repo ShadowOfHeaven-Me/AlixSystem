@@ -12,7 +12,7 @@ public final class ServerPingListener implements Listener {
     @EventHandler
     public final void onServerPing(ServerListPingEvent event) {
         String ip = event.getAddress().getHostAddress();
-        if (AlixUtils.antibotService) ConnectionThreadManager.addPingRequest(ip);
+        if (AlixUtils.antibotService) ConnectionThreadManager.addPingRequest(event.getAddress());
         ServerPingManager.add(ip);
     }
 }

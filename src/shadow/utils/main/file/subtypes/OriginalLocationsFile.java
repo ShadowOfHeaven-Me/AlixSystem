@@ -25,11 +25,7 @@ public final class OriginalLocationsFile extends FileManager {
     }
 
     public void save() throws IOException {
-        super.saveKeyAndVal(map, "|", SavableLocation::toSavableString);//l -> toSavableString(l)
-    }
-
-    public final void put(UUID uuid, Location loc) {
-
+        super.saveKeyAndVal(map, "|", null, null, SavableLocation::toSavableString);//l -> toSavableString(l)
     }
 
     public final Map<UUID, Location> getMap() {

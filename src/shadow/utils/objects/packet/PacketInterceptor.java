@@ -4,13 +4,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import shadow.Main;
+import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.objects.packet.types.verified.SelfDelegatingProcessor;
 
-import java.lang.reflect.Proxy;
 import java.util.List;
-
-import static shadow.systems.login.result.LoginVerdictManager.packetHandlerName;
 
 public final class PacketInterceptor extends ChannelDuplexHandler {
 
@@ -35,12 +32,18 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     //by getting the ChannelHandlerContext that's right after the "packet_handler", since the alix_handler
     //hasn't been injected yet. This way, the 'silent' invocation looks like this:
     //write -> (some another handler after alix)
-    public PacketInterceptor(Channel channel) {
-        this.channel = channel;
+    private PacketInterceptor(ChannelHandlerContext context) {
+        this.channel = context.channel();
+        this.afterAlixHandlerContext = context;
+    }
+
+    public static PacketInterceptor construct(Channel channel) {
         List<String> handlers = channel.pipeline().names();
         //Main.logInfo(handlers.toString());
-        String name = handlers.get(handlers.indexOf("packet_handler") - 1);
-        this.afterAlixHandlerContext = this.channel.pipeline().context(name);
+        int index = handlers.indexOf("packet_handler") - 1;
+        if (index < 0) return null;
+        String name = handlers.get(index);
+        return new PacketInterceptor(channel.pipeline().context(name));
     }
 
     //Inspired by: https://github.com/retrooper/packetevents/blob/2.0/api/src/main/java/com/github/retrooper/packetevents/protocol/player/User.java#L143
@@ -98,7 +101,7 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     }
 
     @Override
-    public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public final void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         this.processor.exceptionCaught(ctx, cause);
     }
 
@@ -110,6 +113,10 @@ public final class PacketInterceptor extends ChannelDuplexHandler {
     final void write0(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         //Main.logInfo("[DEBUG] PROCESSED " + msg.getClass().getSimpleName());
         super.write(ctx, msg, promise);
+    }
+
+    final void exceptionCaught0(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
     }
 
     public static void init() {

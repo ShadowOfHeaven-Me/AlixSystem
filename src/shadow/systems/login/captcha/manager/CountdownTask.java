@@ -1,29 +1,37 @@
 package shadow.systems.login.captcha.manager;
 
+import alix.common.messages.Messages;
 import alix.common.utils.netty.NettyUtils;
 import io.netty.channel.ChannelHandlerContext;
-import shadow.systems.netty.AlixChannelInjector;
+import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.buffered.BufferedPackets;
-import shadow.utils.objects.packet.PacketInterceptor;
+import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.users.offline.UnverifiedUser;
 
 public final class CountdownTask {//shows countdown and kicks out
 
+    private static final Object
+            captchaTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(Messages.get("captcha-time-passed")),
+            loginTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(Messages.get("login-time-passed"));
     private final ChannelHandlerContext ctx;
+    private final UnverifiedUser user;
     private Object[] packets;
     private int index;
 
-    public CountdownTask(UnverifiedUser user, boolean loginCountdown) {
-        this.ctx = user.getDuplexHandler().getSilentContext();//in order to optimize PacketProcessor's implementation checks
-        this.index = loginCountdown ? BufferedPackets.loginPacketArraySize : BufferedPackets.captchaPacketArraySize;
-        this.packets = loginCountdown ? BufferedPackets.loginOutExperiencePackets : BufferedPackets.captchaOutExperiencePackets;
+    public CountdownTask(UnverifiedUser user) {
+        boolean login = user.hasCompletedCaptcha();
+        this.user = user;
+        this.ctx = user.getDuplexHandler().getSilentContext();//used in order to optimize PacketProcessor's implementation checks
+        this.index = login ? BufferedPackets.loginPacketArraySize : BufferedPackets.captchaPacketArraySize;
+        this.packets = login ? BufferedPackets.loginOutExperiencePackets : BufferedPackets.captchaOutExperiencePackets;
     }
 
-    //Returns: Whether the player should be kicked
-    public boolean tick() {
-        if (index == 0) return true;
-        NettyUtils.writeAndFlush(this.ctx, this.packets[--this.index]);
-        return false;
+    public void tick() {
+        if (index != 0) {
+            NettyUtils.writeAndFlush(this.ctx, this.packets[--this.index]);
+            return;
+        }
+        MethodProvider.kickAsync(user, user.hasCompletedCaptcha() ? loginTimePassedKickPacket : captchaTimePassedKickPacket);
     }
 
     public void setToLogin() {

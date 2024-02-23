@@ -8,6 +8,8 @@ import alix.common.antibot.algorithms.ping.types.TotalCounterPingAlgorithm;
 import alix.common.scheduler.AlixScheduler;
 import shadow.utils.main.AlixUtils;
 
+import java.net.InetAddress;
+
 public final class ConnectionThreadManager {
 
     private static final ConnectionThreadRunnable runnable = new ConnectionThreadRunnable();
@@ -17,11 +19,11 @@ public final class ConnectionThreadManager {
         if (AlixUtils.antibotService) AlixScheduler.newAlixThread(runnable, 3000, "Connection Thread");
     }
 
-    public static void addJoinAttempt(String name, String address) {
+    public static void addJoinAttempt(String name, InetAddress address) {
         for (ConnectionAlgorithm algorithm : runnable.connectionAlgorithms) algorithm.onJoinAttempt(name, address);
     }
 
-    public static void addPingRequest(String address) {
+    public static void addPingRequest(InetAddress address) {
         for (PingRequestAlgorithm algorithm : runnable.pingRequestAlgorithms) algorithm.onPingRequest(address);
     }
 

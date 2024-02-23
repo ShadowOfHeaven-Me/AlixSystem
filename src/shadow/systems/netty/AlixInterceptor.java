@@ -4,7 +4,6 @@ import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
 import io.netty.channel.*;
-import shadow.Main;
 import shadow.utils.main.AlixUtils;
 
 import java.net.InetSocketAddress;
@@ -27,9 +26,11 @@ public final class AlixInterceptor {
 
         private static final String fireWallName = "AlixDelayedChannelFireWall";
         private final ChannelHandler delayedFirewall;
+        private final boolean isImmediate;
 
         private Interceptor(ChannelHandler delayedFirewall) {
             this.delayedFirewall = delayedFirewall;
+            this.isImmediate = delayedFirewall == null;
             if (FireWallManager.isOsFireWallInUse)
                 AlixCommonMain.logInfo("Using the optimized OS IpSet for FireWall Protection.");
             else
@@ -38,7 +39,6 @@ public final class AlixInterceptor {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            //if (msg instanceof Channel) {
             Channel channel = (Channel) msg;
             AntiBotStatistics.INSTANCE.incrementJoins();
             //Main.logError("Channel creation: " + channel);
@@ -49,14 +49,12 @@ public final class AlixInterceptor {
                 //Main.logWarning("INJECTION LISTENER ACTIVATED " + ctx.name());
                 return;
             }
-            if (delayedFirewall == null) {
+            if (isImmediate) {
                 channel.unsafe().closeForcibly();//the fastest and probably the only way to close the channel in this phase
                 return;
             }
             channel.pipeline().addLast(fireWallName, this.delayedFirewall);//the delayed firewall handling
-            //}
             super.channelRead(ctx, msg);
-            //Main.logInfo(
         }
 
         @Override

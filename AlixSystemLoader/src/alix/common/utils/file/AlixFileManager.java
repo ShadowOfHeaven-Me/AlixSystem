@@ -6,6 +6,8 @@ import alix.common.utils.other.throwable.AlixException;
 import alix.loaders.bukkit.BukkitAlixMain;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -16,10 +18,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public abstract class FileManager {
+public abstract class AlixFileManager {
 
-    private final File file;
-
+    protected final File file;
     protected static final File INTERNAL_FOLDER;
 
     static {
@@ -27,26 +28,45 @@ public abstract class FileManager {
         INTERNAL_FOLDER.mkdir();
     }
 
-    protected FileManager(File file) {//existing file
+    protected AlixFileManager(File file) {//existing file
         this.file = file;
         file.toPath();//buffer the path object
     }
 
-    protected FileManager(String fileName) {
+    protected AlixFileManager(String fileName) {
         this(fileName, true, true);
     }
 
-    protected FileManager(String fileName, boolean internal) {
+    protected AlixFileManager(String fileName, boolean internal) {
         this(fileName, true, internal);
     }
 
-    protected FileManager(String fileName, boolean init, boolean internal) {
+    protected AlixFileManager(String fileName, boolean init, boolean internal) {
         this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
     }
 
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
+    //private static final boolean isUtf32;
+    public static int HIGHEST_CHAR = 382;
+
+    /*static {
+        Charset c;
+        boolean utf32;
+        try {
+           c = Charset.forName("utf-32");
+           utf32 = true;
+        } catch (Throwable e) {
+            c = StandardCharsets.UTF_16;
+            utf32 = false;
+        }
+        CHARSET = c;
+        isUtf32 = utf32;
+        HIGHEST_CHAR = isUtf32 ? 1 << 31 : 1 << 15;
+    }*/
+
     public static void readLines(InputStream is, Consumer<String> consumer) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, CHARSET));
             //Files.readAllLines
 
             String line;
@@ -59,15 +79,17 @@ public abstract class FileManager {
         }
     }
 
-    public static <K, V> void writeKeyAndVal(File file, Map<K, V> map, String separator, Predicate<V> shouldSave, Function<V, String> valueFormatter) throws IOException {
+    public static <K, V> void writeKeyAndVal(File file, Map<K, V> map, String separator, Predicate<V> shouldSave, Function<K, String> keyFormatter, Function<V, String> valueFormatter) throws IOException {
         FileWriter stream = new FileWriter(file);
         BufferedWriter writer = new BufferedWriter(stream);
 
         Function<V, String> valueFormatter0 = valueFormatter == null ? V::toString : valueFormatter;
+        Function<K, String> keyFormatter0 = keyFormatter == null ? K::toString : keyFormatter;
+        Predicate<V> shouldSave0 = shouldSave == null ? v -> true : shouldSave;//assume all entries should be saved if not specified
 
         for (Map.Entry<K, V> e : map.entrySet()) {
-            if (!shouldSave.test(e.getValue())) continue;
-            writer.write(e.getKey() + separator + valueFormatter0.apply(e.getValue()));
+            if (!shouldSave0.test(e.getValue())) continue;
+            writer.write(keyFormatter0.apply(e.getKey()) + separator + valueFormatter0.apply(e.getValue()));
             writer.newLine();
         }
 
@@ -202,7 +224,7 @@ public abstract class FileManager {
             throw new RuntimeException(e);
         }*/
 
-    public void read() {
+    public void loadExceptionless() {
         try {
             this.load();
         } catch (IOException e) {
@@ -211,19 +233,7 @@ public abstract class FileManager {
     }
 
     public void load() throws IOException {
-        try {
-            DataInputStream stream = new DataInputStream(Files.newInputStream(file.toPath()));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-
-            String line;
-
-            while ((line = reader.readLine()) != null) if (!line.isEmpty()) loadLine(line);
-
-            reader.close();
-            stream.close();
-        } catch (IOException e) {
-            throw new IOException(file.getName(), e);
-        }
+        readLines(Files.newInputStream(file.toPath()), this::loadLine);
     }
 
     protected void loadSingularValue() {
@@ -240,20 +250,16 @@ public abstract class FileManager {
         }
     }
 
-    public <K, V> void saveKeyAndValFormatted(Map<K, V> map, String separator, Function<V, String> valueFormatter) throws IOException {
-        List<String> list = new ArrayList<>(map.size());
-        for (Map.Entry<K, V> e : map.entrySet()) list.add(e.getKey() + separator + valueFormatter.apply(e.getValue()));
-        save0(list);
-    }
-
-    private static final Predicate ALWAYS_TRUE = v -> true;
-
     public <K, V> void saveKeyAndVal(Map<K, V> map, String separator) throws IOException {
-        this.saveKeyAndVal(map, separator, ALWAYS_TRUE);
+        this.saveKeyAndVal(map, separator, null);
     }
 
     public synchronized <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate) throws IOException {
-        writeKeyAndVal(this.file, map, separator, predicate, null);
+        writeKeyAndVal(this.file, map, separator, predicate, null, null);
+    }
+
+    public synchronized <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate, Function<K, String> keyFormatter, Function<V, String> valueFormatter) throws IOException {
+        writeKeyAndVal(this.file, map, separator, predicate, keyFormatter, valueFormatter);
     }
 
     public void save(Map<?, ?> map) throws IOException {

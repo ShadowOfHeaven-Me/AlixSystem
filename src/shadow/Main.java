@@ -7,12 +7,13 @@ import alix.common.utils.file.update.UpdateChecker;
 import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import shadow.systems.commands.CommandManager;
-import shadow.systems.commands.alix.ABStats;
 import shadow.systems.commands.alix.AlixCommandManager;
+import shadow.systems.dependencies.Dependencies;
 import shadow.systems.executors.PreStartUpExecutors;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
 import shadow.systems.login.Verifications;
@@ -46,7 +47,17 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[*] Fixed players gui-verifying users timing out
+    //[+] Added a missing configurable message
+    //[+] Optimized all ip operations
+    //[+] A lot less captchas will now be pooled, and instead will be asynchronously generated, at runtime if necessary
+    //[*] Fixed possible on-join errors, usually caused by bots
+    //[*] Fixed some of the intercepted messages disappearing when double verification was enabled
+    //[*] Fixed an incorrect kick message
+    //[*] Fixed a bug where the anvil password change gui would be inoperable
+    //[*] Fixed cyrillic characters being turned into gibberish
+    //[*] Fixed Alix not injecting into FastLogin after reloads
+    //[*] Captcha input will now be required to be on chat, instead of in the /captcha command
+    //[*] Removed 'verification-reminder-message-delay' from config, due to reminder messages now being shown in action bar
 
 
     //todo: Add a custom data structure for unverified users
@@ -62,6 +73,9 @@ public final class Main implements LoaderBootstrap {
             #packet - cancels all unnecessary client packets until the player logs in or leaves (could false some anticheats or result in errors on older versions of minecraft - should be tested beforehand, however it could potentially work as a safety measure against a bot attack)
 #teleport - teleports the player to their starting position every 3 seconds (supports every version, however right now it's very buggy (the inventory can be modified before logging in) and definitely not recommended)
             login-restrict-base: packet*/
+
+    /*#Defines (in milliseconds) the delay between each verification message sent (used for captcha, register and login message reminders, you can set it to 0 or less in order to make the message be sent only once)
+    verification-reminder-message-delay: 5000*/
 
     //TODO: /blacklist, mute-ip (?), ban format customizable
     //TODO: ping check by Keep Alive packets or the CraftPlayer getPing method (?)
@@ -97,6 +111,7 @@ public final class Main implements LoaderBootstrap {
     //DO NOT USE THE ALIX SCHEDULER ON LOAD, CUZ ON PAPER THIS MFO THROWS ERRORS
     @Override
     public void onLoad() {
+        //TODO: Make ip autologin ask configurable
         //if (autoRestart()) return;
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
         config = (YamlConfiguration) plugin.getConfig();
@@ -104,7 +119,6 @@ public final class Main implements LoaderBootstrap {
         ReflectionUtils.replaceBansToConcurrent();
         Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
         AlixCommandManager.init();
-        //Dependencies.initAdditional();
         VerificationReminder.init();
         if (anvilPasswordGui) AnvilPasswordBuilder.init();
         MethodProvider.init();
@@ -120,6 +134,8 @@ public final class Main implements LoaderBootstrap {
         pm.registerEvents(this.preStartUpExecutors = new PreStartUpExecutors(), plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
+        Dependencies.initAdditional();
+        PremiumAutoIn.checkForInit();
         FileManager.loadFiles();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         CommandManager.register();
@@ -137,7 +153,7 @@ public final class Main implements LoaderBootstrap {
         AlixScheduler.shutdown();
         if (this.metrics != null) this.metrics.shutdown();
         AlixThread.shutdownAllAlixThreads();
-        if (preStartUpExecutors != null) HandlerList.unregisterAll(preStartUpExecutors);
+        //if (preStartUpExecutors != null) HandlerList.unregisterAll(preStartUpExecutors);
         //if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
         logConsoleInfo(en ? "AlixSystem has been disabled." : "AlixSystem zostało wyłączone.");
     }
@@ -169,7 +185,6 @@ public final class Main implements LoaderBootstrap {
     private void setUp() {
         en = AlixUtils.isPluginLanguageEnglish;
         //AlixHandler.kickAll("Reload");
-        PremiumAutoIn.checkForInit();
         UpdateChecker.checkForUpdates();
         //AlixScheduler.async(UpdateChecker::checkForUpdates);
         if (requireCaptchaVerification) Captcha.sendInitMessage();

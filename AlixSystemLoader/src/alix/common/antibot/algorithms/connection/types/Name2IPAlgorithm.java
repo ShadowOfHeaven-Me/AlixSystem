@@ -7,6 +7,7 @@ import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.utils.other.AtomicFloat;
 
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,10 +16,10 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
     //private final String userMessage = Messages.get("anti-bot-fail-suspect-message","{0}", this.getAlgorithmID());
 
     private static final String ALGORITHM_ID = "B2";
-    private final Map<String, NameMapImpl> ipMap = new ConcurrentHashMap<>();//<ip, Name to join attempt map>
+    private final Map<InetAddress, NameMapImpl> ipMap = new ConcurrentHashMap<>();//<ip, Name to join attempt map>
 
     @Override
-    public void onJoinAttempt(String name, String ip) {
+    public void onJoinAttempt(String name, InetAddress ip) {
         if (this.ipMap.computeIfAbsent(ip, NameMapImpl::new).add(name)) this.ipMap.remove(ip);
     }
 
@@ -41,7 +42,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
         private volatile int vl;
 
-        private NameMapImpl(String address) {
+        private NameMapImpl(InetAddress address) {
             super(address);
             //this.removalTime = new AtomicLong(System.currentTimeMillis() + 20000);
         }
@@ -54,7 +55,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
             if (this.vl > 240) {
                 if (FireWallManager.add(ip, ALGORITHM_ID))
-                    AlixCommonMain.logInfo(consoleMessage.format(ip));
+                    AlixCommonMain.logInfo(consoleMessage.format(ip.getHostAddress()));
                 return true;
             }
             return false;

@@ -2,8 +2,8 @@ package shadow.utils.objects.savable.data.gui.builders;
 
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
-import alix.common.scheduler.AlixScheduler;
-import io.netty.channel.Channel;
+import alix.common.utils.netty.NettyUtils;
+import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -12,15 +12,12 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.gui.AbstractAlixGUI;
-import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.buffered.PacketConstructor;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.User;
 import shadow.utils.users.offline.UnverifiedUser;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
@@ -37,7 +34,7 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
 
     private final Inventory gui;
     //private final UnverifiedUser user;
-    private final Channel channel;
+    private final ChannelHandlerContext ctx;
     private final IntFunction<Object> allItemsSupplier, invalidIndicateItemsSupplier;
     private final Consumer<String> onValidPasswordConfirmation;
     private final Runnable returnOriginalGui;
@@ -48,7 +45,7 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
     private boolean isPasswordValid;
 
     public AnvilPasswordBuilder(UnverifiedUser user) {
-        this.channel = user.getDuplexHandler().getChannel();
+        this.ctx = user.getDuplexHandler().getSilentContext();
         this.gui = user.isRegistered() ? loginGUI : registerGUI;
         this.isPasswordValid = user.isRegistered();
         this.allItemsSupplier = PacketConstructor.AnvilGUI::allItems;
@@ -58,7 +55,7 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
     }
 
     public AnvilPasswordBuilder(User user, boolean pin, Consumer<String> onValidPasswordConfirmation, Runnable returnOriginalGui) {
-        this.channel = user.getDuplexHandler().getChannel();
+        this.ctx = user.getDuplexHandler().getSilentContext();
         this.gui = pin ? pinChangeGUI : passwordChangeGUI;
         this.allItemsSupplier = PacketConstructor.AnvilGUI::allItemsVerified;
         this.invalidIndicateItemsSupplier = PacketConstructor.AnvilGUI::invalidIndicateVerified;
@@ -105,9 +102,9 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
         return password;
     }
 
-    public void updateWindowID() {
+/*    public void updateWindowID() {
         this.updateWindowID(windowId + 1);
-    }
+    }*/
 
     public void updateWindowID(int id) {
         this.windowId = id;
@@ -121,21 +118,20 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
     }
 
     public void spoofAllItems() {
-        this.spoof(allItemsPacket);
+        this.spoof0(allItemsPacket);
     }
 
     public void spoofValidAccordingly() {
-        this.spoof(isPasswordValid ? allItemsPacket : invalidIndicateItemsPacket);
+        this.spoof0(isPasswordValid ? allItemsPacket : invalidIndicateItemsPacket);
     }
 
     public void spoofItemsInvalidIndicate() {
-        this.spoof(invalidIndicateItemsPacket);
+        this.spoof0(invalidIndicateItemsPacket);
     }
 
-    private void spoof(Object packet) {
-        //if (packet == null)
-        //AlixScheduler.sync(() -> user.getPlayer().kickPlayer("§cSomething went wrong - Nullability & " + windowId));
-        AlixScheduler.runLaterAsync(() -> this.channel.writeAndFlush(packet), 50, TimeUnit.MILLISECONDS);
+    private void spoof0(Object packet) {
+        NettyUtils.writeAndFlush(this.ctx, packet);
+        //this.ctx.writeAndFlush(packet);
     }
 
     public static void init() {

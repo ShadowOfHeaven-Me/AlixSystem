@@ -104,7 +104,7 @@ public final class User {// implements ObjectSerializable {
     }*/
 
     public void changePassword(String password) {
-        data.setPassword(password);
+        this.data.setPassword(password);
         //saveData();
     }
 

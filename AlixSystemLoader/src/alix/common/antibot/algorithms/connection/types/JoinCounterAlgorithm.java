@@ -6,6 +6,7 @@ import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -13,10 +14,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
 
     private static final String ALGORITHM_ID = "C1";
-    private final Map<String, NameMapImpl> ipMap = new ConcurrentHashMap<>();
+    private final Map<InetAddress, NameMapImpl> ipMap = new ConcurrentHashMap<>();
 
     @Override
-    public void onJoinAttempt(String name, String ip) {
+    public void onJoinAttempt(String name, InetAddress ip) {
         if (this.ipMap.computeIfAbsent(ip, NameMapImpl::new).add(name)) this.ipMap.remove(ip);
     }
 
@@ -39,7 +40,7 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
         private volatile long removalTime;
 
-        private NameMapImpl(String address) {
+        private NameMapImpl(InetAddress address) {
             super(address);
             this.removalTime = System.currentTimeMillis() + 15000;
         }
@@ -52,7 +53,7 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
 
             if (this.namesSet.size() > 12) {
                 if (FireWallManager.add(ip, ALGORITHM_ID))
-                    AlixCommonMain.logInfo(consoleMessage.format(ip));
+                    AlixCommonMain.logInfo(consoleMessage.format(ip.getHostAddress()));
                 return true;
             }
             return false;

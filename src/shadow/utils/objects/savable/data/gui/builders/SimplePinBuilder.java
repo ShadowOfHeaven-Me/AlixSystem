@@ -86,8 +86,11 @@ public final class SimplePinBuilder implements AlixVerificationGui {
             if (!complete) {
                 player.sendMessage(pinInvalidLength);
                 player.playSound(this.currentLocation, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            } else player.playSound(this.currentLocation, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-            return complete;
+                return false;
+            } else {
+                player.playSound(this.currentLocation, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                return true;
+            }
         }
 
         if (slot == ACTION_LAST_REMOVE) {
@@ -101,7 +104,6 @@ public final class SimplePinBuilder implements AlixVerificationGui {
 
         if (slot == ACTION_LEAVE) {
             MethodProvider.kickAsync(user, pinLeaveFeedbackKickPacket);
-            //player.kickPlayer(pinLeaveFeedback);
             return false;
         }
 

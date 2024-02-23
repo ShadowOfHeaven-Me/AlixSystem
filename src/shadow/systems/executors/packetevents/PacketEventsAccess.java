@@ -1,22 +1,40 @@
 package shadow.systems.executors.packetevents;
 
-import alix.common.antibot.firewall.FireWallManager;
-import alix.common.messages.Messages;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.*;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-import net.kyori.adventure.text.Component;
-import net.minecraft.network.protocol.game.PacketPlayOutKickDisconnect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
 import shadow.Main;
-import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 
 public final class PacketEventsAccess {
 
+    public static void initAll() {
+        //PacketEvents.getAPI().getEventManager().registerListener(new PacketEventsListener());
+        //Main.logInfo("Initialized additional functionality thanks to PacketEvents: Command Hiding");
+    }
+
+    private static final class PacketEventsListener extends PacketListenerAbstract {
+
+
+        @Override
+        public void onPacketSend(PacketSendEvent event) {
+            if (event.getPacketType() == PacketType.Play.Server.DECLARE_COMMANDS) {// && Verifications.has(event.getUser().getUUID())) {
+                WrapperPlayServerDeclareCommands packet = new WrapperPlayServerDeclareCommands(event);
+                //WrapperPlayServerResourcePackSend
+                Main.logWarning("DECLARE COMMANDS: " + packet.getNodes().toString());
+                /*List<Node> list = new ArrayList<>();
+                list.add(new Node((byte) 0, null, null, "yes", 5, null, null));
+                list.add(new Node((byte) 0, null, null, "login", 5, null, null));
+                packet.setNodes(list);*/
+            }
+        }
+
+        private PacketEventsListener() {
+        }
+    }
+
+    private PacketEventsAccess() {
+    }
 /*    public static void initializeFireWall() {
         boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
         PacketEvents.getAPI().getEventManager().registerListener(fastRaw ? new FastRawFireWall() : new NormalFireWall());

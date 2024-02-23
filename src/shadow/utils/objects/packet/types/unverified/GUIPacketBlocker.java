@@ -3,7 +3,6 @@ package shadow.utils.objects.packet.types.unverified;
 import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import shadow.Main;
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.users.offline.UnverifiedUser;
 
@@ -11,7 +10,11 @@ import java.util.concurrent.TimeUnit;
 
 public class GUIPacketBlocker extends PacketBlocker {
 
-    protected GUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
+    GUIPacketBlocker(PacketBlocker previousBlocker) {
+        super(previousBlocker);
+    }
+
+    GUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
         super(u, handler);
     }
 
@@ -56,6 +59,7 @@ public class GUIPacketBlocker extends PacketBlocker {
                     this.waitPackets += WAIT_PACKETS_INCREASE;
                     break;
                 //case "PacketPlayOutGameStateChange":
+                //case "PacketPlayOutWindowItems":
                 case "PacketPlayOutRelEntityMove":
                 case "PacketPlayOutNamedEntitySpawn":
                 case "PacketPlayOutSpawnEntityLiving":

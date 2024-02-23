@@ -1,5 +1,7 @@
 package shadow.systems.gui;
 
+import alix.common.messages.Messages;
+import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Material;
@@ -23,7 +25,7 @@ public abstract class AlixGUI implements AbstractAlixGUI {
     public static final Map<UUID, AbstractAlixGUI> MAP = new HashMap<>();
     protected static final GUIItem
             BACKGROUND_ITEM = new GUIItem(PasswordGui.BACKGROUND_ITEM);
-    public static final ItemStack GO_BACK_ITEM = AlixUtils.getSkull("&6Go Back", "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOThiNWU5ZDVhZmFjMTgzZjFmNTcwYzFiNmVmNTE1NmMxMjFjMWVmYmQ4NTUyN2Q4ZDc5ZDBhZGVlYjY3MjQ4NSJ9fX0=");
+    public static final ItemStack GO_BACK_ITEM = AlixUtils.getSkull(Messages.get("gui-overall-go-back"), "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOThiNWU5ZDVhZmFjMTgzZjFmNTcwYzFiNmVmNTE1NmMxMjFjMWVmYmQ4NTUyN2Q4ZDc5ZDBhZGVlYjY3MjQ4NSJ9fX0=");
     protected final GUIItem[] items;
     protected final Inventory gui;
 

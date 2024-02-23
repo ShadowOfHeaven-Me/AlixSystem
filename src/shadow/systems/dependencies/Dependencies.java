@@ -1,17 +1,16 @@
 package shadow.systems.dependencies;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import shadow.Main;
-import shadow.systems.dependencies.luckperms.LuckPermsExecutors;
+import shadow.systems.executors.packetevents.PacketEventsAccess;
 
 public final class Dependencies {
 
     public static final boolean isPacketEventsPresent, isProtocolLibPresent;
 
     public static void initAdditional() {
-        PluginManager pm = Bukkit.getPluginManager();
-        if (pm.isPluginEnabled("LuckPerms")) LuckPermsExecutors.register();
+        //if (pm.isPluginEnabled("LuckPerms")) LuckPermsExecutors.register();
+        if (isPacketEventsPresent) PacketEventsAccess.initAll();
     }
 
     static {

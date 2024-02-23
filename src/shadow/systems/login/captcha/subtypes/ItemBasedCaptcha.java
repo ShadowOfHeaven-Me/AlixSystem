@@ -31,6 +31,7 @@ abstract class ItemBasedCaptcha extends Captcha {
     @Override
     public final void onCompletion(UnverifiedUser user) {
         user.writeAndFlushSilently(EMPTY_INVENTORY_PACKET);
+        super.onCompletion(user);
     }
 
     @Override

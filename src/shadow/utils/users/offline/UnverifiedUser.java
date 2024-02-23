@@ -1,7 +1,6 @@
 package shadow.utils.users.offline;
 
 import alix.common.data.LoginType;
-import alix.common.environment.ServerEnvironment;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
@@ -29,6 +28,7 @@ import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static shadow.utils.main.AlixUtils.getVerificationReminderMessagePacket;
@@ -40,7 +40,7 @@ public final class UnverifiedUser {
     private static final Object loginSuccessMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("login-success"));
     private final Player player;
     private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
-    private final Captcha captcha;
+    private final CompletableFuture<Captcha> captcha;
     private final PacketInterceptor duplexHandler;
     private PacketBlocker blocker;
     //private final Location currentLocation;
@@ -70,11 +70,7 @@ public final class UnverifiedUser {
         this.hasCompletedCaptcha = hasAccount || !requireCaptchaVerification;//has an account or captcha is disabled
         this.captchaInitialized = !hasCompletedCaptcha;//the captcha was initialized if the user is required to complete it
 
-        if (hasAccount)
-            this.loginType = data.getLoginType(); //data.getLoginType() == LoginType.PIN ? LoginType.PIN : AlixUtils.anvilPasswordGui ? LoginType.ANVIL : LoginType.COMMAND;
-        else
-            this.loginType = AlixUtils.anvilPasswordGui ? LoginType.ANVIL : AlixUtils.pinPasswordGui ? LoginType.PIN : LoginType.COMMAND;
-
+        this.loginType = hasAccount ? data.getLoginType() : AlixUtils.defaultLoginType;
         this.isGuiUser = this.loginType != LoginType.COMMAND;
 
         //new PacketInterceptor(this.player);//the delegator to the processor
@@ -86,7 +82,7 @@ public final class UnverifiedUser {
         if (player.isDead()) player.spigot().respawn();
 
         if (this.captchaInitialized) {
-            this.captcha = Captcha.nextCaptcha(this); //Fast Captcha get
+            this.captcha = Captcha.assignCaptcha(this); //Fast captcha get and request for a captcha regeneration
             this.player.setPersistent(false); //Do not save the possibly bot player
         } else this.captcha = null;
 
@@ -106,25 +102,25 @@ public final class UnverifiedUser {
         //if (!captchaInitialized) this.spoofVerificationPackets();//spoof the verification packets immediately
     }
 
-    public final void writeSilently(Object messagePacket) {
-        this.duplexHandler.writeSilently(messagePacket);
+    public final void writeSilently(Object packet) {
+        this.duplexHandler.writeSilently(packet);
     }
 
-    public final void writeAndFlushSilently(Object messagePacket) {
-        this.duplexHandler.writeAndFlushSilently(messagePacket);
+    public final void writeAndFlushSilently(Object packet) {
+        this.duplexHandler.writeAndFlushSilently(packet);
     }
 
-    public void spoofVerificationPackets() {
+    public final void spoofVerificationPackets() {
         ReflectionUtils.sendLoginEffectPacket(this);
         if (isGUIInitialized) AlixScheduler.sync(this::openPasswordBuilderGUI);
-        if (captchaInitialized) this.captcha.sendPackets(this);
+        if (captchaInitialized) this.captcha.join().sendPackets(this);
     }
 
     public final void uninject() {//removes all that was ever assigned and related (but does not teleport back)
-        if (captchaInitialized) captcha.uninject(this);
+        //if (captchaInitialized) captcha.uninject(this);
 
         if (hasCompletedCaptcha) //do not return the original params if not completed, as captcha unverified users are non-persistent
-            this.player.setCollidable(this.originalCollidableState); // <- returning the player to his original collide state
+            this.player.setCollidable(this.originalCollidableState); // <- returning the player to his original collidable state
     }
 
     //the action blocker is now automatically disabled by
@@ -169,7 +165,7 @@ public final class UnverifiedUser {
     }
 
     public final boolean isCaptchaCorrect(String s) {
-        return this.captchaInitialized && this.captcha.isCorrect(s);
+        return this.captchaInitialized && this.captcha.join().isCorrect(s);
     }
 
     @Nullable
@@ -205,22 +201,35 @@ public final class UnverifiedUser {
         this.writeAndFlushSilently(this.verificationMessagePacket);
 
         this.blocker.startLoginKickTask();
-        this.captcha.onCompletion(this);
+        this.captcha.join().onCompletion(this);
 
         this.hasCompletedCaptcha = true;
 
         if (this.isGuiUser) {//synchronize, since we invoke it async on 1.17+
-            if (PacketBlocker.serverboundNameVersion) AlixScheduler.sync(this::initGUI0);
-            else this.initGUI0();
+            if (PacketBlocker.serverboundNameVersion) this.initGUIAsync();
+            else this.initGUISync();
         }
     }
 
-    private void initGUI0() {
-        this.player.closeInventory();
-        this.alixGui = PasswordGui.newBuilder(this, this.loginType);
-        this.blocker.updateBuilder();
+    private void initGUIAsync() {
+        this.initGUI1();
+        if (isGUIInitialized) AlixScheduler.sync(this::openPasswordBuilderGUI);
+    }
+
+    private void initGUISync() {
+        this.initGUI1();
         this.openPasswordBuilderGUI();
     }
+
+    private void initGUI1() {
+        this.alixGui = PasswordGui.newBuilder(this, this.loginType);
+        this.blocker.updateBuilder();
+    }
+
+    /*private void initGUI0() {
+        //this.player.closeInventory();
+        this.openPasswordBuilderGUI0();
+    }*/
 
 /*    public Object getMapPacket() {
         return ((MapCaptcha) captcha).
@@ -244,14 +253,21 @@ public final class UnverifiedUser {
 
     private boolean initDoubleVer() {
         if (data.getLoginParams().isDoubleVerificationEnabled() && loginVerification.isPhase1()) {
+            if (isGuiUser) {
+                this.player.closeInventory();
+                this.isGUIInitialized = false;
+            }
             this.loginType = data.getLoginParams().getExtraLoginType();
             this.isGuiUser = loginType != LoginType.COMMAND;
 
-            this.blocker = PacketBlocker.getPacketBlocker(this, this.loginType, this.duplexHandler);
+            this.blocker = PacketBlocker.getPacketBlocker(this.blocker, this.loginType);//uses the previous blocker
             this.duplexHandler.setProcessor(this.blocker);
 
-            this.isGUIInitialized = false;
-            if (isGuiUser) AlixScheduler.sync(this::initGUI0);
+            if (isGuiUser) this.initGUIAsync();
+            else {
+                this.verificationMessagePacket = AlixUtils.notLoggedInUserMessagePacket;
+                this.writeAndFlushSilently(this.verificationMessagePacket);
+            }
 
             this.loginVerification = new LoginVerification(data.getLoginParams().getExtraPassword(), false);
             return true;
@@ -302,7 +318,8 @@ public final class UnverifiedUser {
         CompletableFuture<Boolean> future = OriginalLocationsManager.teleportBack(player, true);
         AlixUtils.registerCommandList.invoke(player);
         if (captchaInitialized) GeoIPTracker.removeTempIP(this.ipAddress);
-        if (!hasAccount()) future.thenAccept(b -> IpAutoLoginGUI.add(this.player));//make sure to open the gui after the teleport, as it will close otherwise
+        if (!hasAccount())
+            future.thenAccept(b -> IpAutoLoginGUI.add(this.player));//make sure to open the gui after the teleport, as it will close otherwise
         //this.player.setGameMode(this.originalGameMode);
     }
 

@@ -1,21 +1,19 @@
 package shadow.systems.login.captcha;
 
-import alix.common.scheduler.AlixScheduler;
 import shadow.Main;
-import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
-import shadow.systems.login.captcha.manager.CaptchaThreadManager;
-import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.systems.login.captcha.manager.VerificationThreadManager;
+import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.offline.UnverifiedUser;
+
+import java.util.concurrent.CompletableFuture;
 
 import static shadow.utils.main.AlixUtils.captchaVerificationCaseSensitive;
 
 public abstract class Captcha {
 
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
-
     protected final String captcha;
 
     protected Captcha() {
@@ -23,7 +21,7 @@ public abstract class Captcha {
     }
 
     public static void pregenerate() {
-        CaptchaThreadManager.pregenerate();
+        VerificationThreadManager.initialize();
     }
 
     public static void sendInitMessage() {
@@ -50,21 +48,10 @@ public abstract class Captcha {
         return this;
     }
 
-    public void uninject(UnverifiedUser user) {
-        AlixScheduler.async(captchaPool::addNew);
-        //CaptchaThreadManager.regenerateCaptcha(this);
-    }
+    //private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
 
-    private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
-
-    public static Captcha nextCaptcha(UnverifiedUser u) {
-        Captcha captcha = captchaPool.next();
-        if (captcha == null) {//shouldn't happen, but should stay just in case
-            Main.logWarning("Captcha could not catch up with the generation!");
-            MethodProvider.kickAsync(u, errorKickPacket);
-            return null;
-        }
-        return captcha.inject(u);
+    public static CompletableFuture<Captcha> assignCaptcha(UnverifiedUser u) {
+        return captchaPool.next().thenApply(c -> c.inject(u));
     }
 
 /*    public static void unregister() {

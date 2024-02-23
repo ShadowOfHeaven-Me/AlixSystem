@@ -10,19 +10,21 @@ import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import net.minecraft.network.protocol.game.*;
 import org.jetbrains.annotations.NotNull;
-import shadow.Main;
+import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.login.captcha.manager.CountdownTask;
+import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.holders.packet.getters.InChatPacketGetter;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.ExecutionException;
 
 public class PacketBlocker extends PacketProcessor {
 
@@ -49,7 +51,7 @@ public class PacketBlocker extends PacketProcessor {
         Class<?> packetClazz = null;
         try {
             packetClazz = Class.forName("net.minecraft.network.protocol.game.ServerboundChatCommandPacket");
-            stringFromCommandPacket = getCmd(packetClazz);
+            stringFromCommandPacket = ReflectionUtils.getStringMethodFromPacketClass(packetClazz);
         } catch (ClassNotFoundException ignored) {//ignored
 
         }
@@ -58,20 +60,13 @@ public class PacketBlocker extends PacketProcessor {
         getStringFromCommandPacketMethod = stringFromCommandPacket;
     }
 
-    private static Method getCmd(Class<?> clazz) {
-        for (Method m : clazz.getMethods())
-            if (!m.getName().equals("toString") && m.getReturnType() == String.class)
-                return m;
-        throw new Error("Class: " + clazz);
-    }
-
     //protected static final PacketAffirmator affirmator = AlixHandler.createPacketAffirmatorImpl();
     //private static final PingCheckFactory factory = AlixHandler.createPingCheckFactoryImpl();
     private static final int maxMovementPackets = 120 + AlixUtils.maxLoginTime + (AlixUtils.requireCaptchaVerification ? AlixUtils.maxCaptchaTime : 0);//It's not used whenever captcha verification is disabled, but whatever, it can stay this way for now
     private static final int maxTotalPackets = maxMovementPackets + 80;
 
     //private static final boolean initLoginTask = maxLoginTime >= 3;
-    private static final boolean initCaptchaTask = AlixUtils.requireCaptchaVerification && AlixUtils.maxCaptchaTime >= 3;
+    //private static final boolean initCaptchaTask = AlixUtils.requireCaptchaVerification && AlixUtils.maxCaptchaTime >= 3;
     //private static final boolean initPingCheck = AlixUtils.requirePingCheckVerification;
 
     //private final PingCheck pingCheck;//null only if "initPingCheck" is false
@@ -88,13 +83,23 @@ public class PacketBlocker extends PacketProcessor {
     protected byte waitPackets;
     protected boolean packetsSent;
 
-    protected PacketBlocker(UnverifiedUser user, PacketInterceptor handler) {
+    PacketBlocker(PacketBlocker previousBlocker) {
+        super(previousBlocker);
+        this.user = previousBlocker.user;
+        this.channel = previousBlocker.channel;
+        this.countdownTask = new CountdownTask(user);//start a new countdown
+        this.blockedChatPackets = previousBlocker.blockedChatPackets;
+        this.packetsSent = previousBlocker.packetsSent;
+    }
+
+    PacketBlocker(UnverifiedUser user, PacketInterceptor handler) {
         super(handler);
         this.user = user;
         //this.channel = channelInjector.inject(user.getPlayer(), handler, packetHandlerName);
         this.channel = handler.getChannel();
-        this.countdownTask = new CountdownTask(user, !initCaptchaTask || user.hasCompletedCaptcha());
+        this.countdownTask = new CountdownTask(user);
         this.blockedChatPackets = new AlixDeque<>();
+        this.packetsSent = false;
     }
 
     public final void startLoginKickTask() {
@@ -127,6 +132,7 @@ public class PacketBlocker extends PacketProcessor {
                     this.processCommand(msg);
                     return;
                 case "PacketPlayInChat":
+                case "ServerboundChatPacket":
                     if (!serverboundNameVersion) super.channelRead(ctx, msg);
                     return;
                 default:
@@ -155,6 +161,7 @@ public class PacketBlocker extends PacketProcessor {
                     this.waitPackets += WAIT_PACKETS_INCREASE;
                     break;
                 //case "PacketPlayOutGameStateChange":
+                case "PacketPlayOutWindowItems":
                 case "PacketPlayOutRelEntityMove":
                 case "PacketPlayOutNamedEntitySpawn":
                 case "PacketPlayOutSpawnEntityLiving":
@@ -260,8 +267,9 @@ public class PacketBlocker extends PacketProcessor {
                 this.lastMovementPacket = now;
                 break;
             case "PacketPlayInChat":
-                if (serverboundNameVersion)
-                    break;//don't process chat packets on 1.17+, since commands now have a separate packet
+            case "ServerboundChatPacket":
+                AlixScheduler.async(() -> CommandManager.onCaptchaCompletionAttempt(this.user, InChatPacketGetter.getMessage(msg).trim()));
+                if (serverboundNameVersion) break;//don't process chat packets on 1.17+, since commands now have a separate packet
             case "ServerboundChatCommandPacket"://The command packet on 1.17+
                 this.processCommand(msg);
                 break;
@@ -329,6 +337,19 @@ public class PacketBlocker extends PacketProcessor {
 
     protected final void channelReadNotOverridden(ChannelHandlerContext ctx, Object msg) throws Exception {
         super.channelRead(ctx, msg);
+    }
+
+    public static PacketBlocker getPacketBlocker(PacketBlocker previousBlocker, LoginType type) {
+        switch (type) {
+            case COMMAND:
+                return new PacketBlocker(previousBlocker);
+            case PIN:
+                return new GUIPacketBlocker(previousBlocker);
+            case ANVIL:
+                return new AnvilGUIPacketBlocker(previousBlocker);
+            default:
+                throw new AlixError("Invalid: " + type);
+        }
     }
 
     public static PacketBlocker getPacketBlocker(UnverifiedUser user, LoginType type, PacketInterceptor handler) {

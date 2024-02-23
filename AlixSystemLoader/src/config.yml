@@ -90,8 +90,6 @@ max-login-attempts: 1
 password-hash-type: 3
 #Requires FastLogin, but allows premium users to join without the need of registering or logging in
 premium-auto-in: true
-#Defines (in milliseconds) the delay between each verification message sent (used for captcha, register and login message reminders, you can set it to 0 or less in order to make the message be sent only once)
-verification-reminder-message-delay: 5000
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
 #An example would be

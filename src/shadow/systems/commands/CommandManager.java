@@ -16,6 +16,7 @@ import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandInfo;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.commands.alix.impl.AlixCommand;
+import shadow.systems.commands.alix.verification.VerificationCommand;
 import shadow.systems.commands.tab.CommandTabCompleterAS;
 import shadow.systems.commands.tab.subtypes.*;
 import shadow.systems.gui.impl.AccountGUI;
@@ -108,7 +109,7 @@ public final class CommandManager {
             formatTempban = Messages.get("format-tempban"),
             formatUnban = Messages.get("format-unban"),
             formatUnbanip = Messages.get("format-unbanip"),
-            formatCaptcha = Messages.get("format-captcha"),
+            //formatCaptcha = Messages.get("format-captcha"),
             formatChangepassword = Messages.get("format-changepassword"),
             formatLogin = Messages.get("format-login"),
             formatRegister = Messages.get("format-register"),
@@ -187,10 +188,9 @@ public final class CommandManager {
             unbannedPlayer = Messages.get("unbanned-player"),
     //ipNotBanned = Messages.get("ip-not-banned"),
     unbannedIp = Messages.get("unbanned-ip"),
-            alreadyLoggedIn = Messages.get("already-logged-in"),
-            captchaAlreadyCompleted = Messages.get("captcha-already-completed"),
+            //alreadyLoggedIn = Messages.get("already-logged-in"),
+            //captchaAlreadyCompleted = Messages.get("captcha-already-completed"),
     //captchaNotInitialized = Messages.get("captcha-not-initialized"),
-    captchaComplete = Messages.get("captcha-complete"),
             incorrectCaptcha = Messages.get("incorrect-captcha"),
     //loginReminderCommand = Messages.get("login-reminder-command"),
     registerReminderCommand = Messages.get("register-reminder-command"),
@@ -372,8 +372,8 @@ public final class CommandManager {
             registerCommand("list", new OnlinePlayersListCommand());
             registerCommand("nickname", new NickNameCommand());
             if (isOfflineExecutorRegistered) {
-                if (requireCaptchaVerification)
-                    registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
+                //if (requireCaptchaVerification)
+                    //registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
                 registerPermissionlessCommandForcibly("register", new RegisterCommand());
                 registerPermissionlessCommandForcibly("login", new LoginCommand());
                 registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
@@ -1382,9 +1382,9 @@ public final class CommandManager {
     private static final Object incorrectCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(incorrectCaptcha);
     public static final Object
             incorrectCaptchaMessagePacket = OutMessagePacketConstructor.construct(incorrectCaptcha),
-            captchaCompleteMessagePacket = OutMessagePacketConstructor.construct(captchaComplete);
+            captchaCompleteMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("captcha-complete"));
 
-    public static void onAsyncCaptchaCommand(UnverifiedUser user, String captcha) {
+    public static void onCaptchaCompletionAttempt(UnverifiedUser user, String captcha) {
         if (user.isCaptchaCorrect(captcha)) {
             user.completeCaptcha();
             user.writeAndFlushSilently(captchaCompleteMessagePacket);
@@ -1394,14 +1394,14 @@ public final class CommandManager {
         else user.writeAndFlushSilently(incorrectCaptchaMessagePacket);
     }
 
-    private static final class CaptchaVerifyCommand implements CommandExecutor {
+/*    private static final class CaptchaVerifyCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             sender.sendMessage(commandUnreachable);
             return false;
         }
-    }
+    }*/
 
     public static void onPasswordChangeCommand(User user, String[] args) {
         Player sender = user.getPlayer();

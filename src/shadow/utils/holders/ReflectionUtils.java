@@ -6,6 +6,7 @@ import com.mojang.authlib.GameProfile;
 import io.netty.channel.Channel;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
+import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -77,7 +78,7 @@ public final class ReflectionUtils {
         getProfileFromPlayerInfoDataMethod = method;
     }
 
-    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket", "network.protocol.game.PacketPlayOutChat");
+    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket","network.protocol.game.ClientboundChatPacket", "network.protocol.game.PacketPlayOutChat");
     public static final Class<?> chatMessageType = nms2("network.chat.ChatMessageType");
 
     public static final Class<?> outGameStatePacketClass = nms2("network.protocol.game.PacketPlayOutGameStateChange");
@@ -277,7 +278,7 @@ public final class ReflectionUtils {
     }
 
     private static CommandMap getCommandMap() {
-        Object s = Bukkit.getServer();
+        Server s = Bukkit.getServer();
         Field f = getFieldFromTypeAssignable(s.getClass(), CommandMap.class);
         try {
             return (CommandMap) f.get(s);
@@ -287,7 +288,7 @@ public final class ReflectionUtils {
     }
 
     private static YamlConfiguration getServerConfiguration() {
-        Object s = Bukkit.getServer();
+        Server s = Bukkit.getServer();
         try {
             Field f = s.getClass().getDeclaredField("configuration");
             f.setAccessible(true);
@@ -299,7 +300,7 @@ public final class ReflectionUtils {
 
     public static void setConnectionThrottle(long value) {
         serverConfiguration.set("settings.connection-throttle", value);
-        Object s = Bukkit.getServer();
+        Server s = Bukkit.getServer();
         try {
             Method method = s.getClass().getDeclaredMethod("saveConfig");
             method.setAccessible(true);
@@ -310,7 +311,7 @@ public final class ReflectionUtils {
     }
 
     public static void reloadCommands() {
-        Object s = Bukkit.getServer();
+        Server s = Bukkit.getServer();
         try {
             Method method = s.getClass().getDeclaredMethod("syncCommands");
             method.setAccessible(true);
@@ -462,6 +463,13 @@ public final class ReflectionUtils {
 
     private static String getServerVersion() {
         return Bukkit.getServer().getClass().getPackage().getName().substring(23);
+    }
+
+    public static Method getStringMethodFromPacketClass(Class<?> clazz) {
+        for (Method m : clazz.getMethods())
+            if (!m.getName().equals("toString") && m.getReturnType() == String.class)
+                return m;
+        throw new Error("Class: " + clazz);
     }
 
 /*    private static Class<?> nms(String name) {

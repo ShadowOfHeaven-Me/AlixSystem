@@ -1,6 +1,8 @@
 package shadow.utils.holders.packet.constructors;
 
 import alix.common.utils.other.throwable.AlixException;
+import net.md_5.bungee.api.ChatMessageType;
+import net.minecraft.network.protocol.game.PacketPlayOutChat;
 import shadow.utils.holders.ReflectionUtils;
 
 import java.lang.reflect.Constructor;
@@ -10,7 +12,7 @@ public final class OutMessagePacketConstructor {
 
     private static final Constructor<?> constructor;
     private static final boolean newerConstructor;
-    private static final Enum<?> SYSTEM_MESSAGE_TYPE;
+    private static final Enum<?> SYSTEM_MESSAGE_TYPE, ACTION_BAR;
 
     static {
         Class<?> clazz = ReflectionUtils.outChatMessagePacketClass;
@@ -28,22 +30,27 @@ public final class OutMessagePacketConstructor {
         constructor = cons;
         newerConstructor = newerCons;
         SYSTEM_MESSAGE_TYPE = newerCons ? null : (Enum<?>) ReflectionUtils.chatMessageType.getEnumConstants()[1];
+        ACTION_BAR = newerCons ? null : (Enum<?>) ReflectionUtils.chatMessageType.getEnumConstants()[2];
     }
 
     public static Object construct(String message) {
+        return construct(message, false);
+    }
+
+    public static Object construct(String message, boolean actionBar) {
         try {
-            return newerConstructor ? construct_1_19(message) : construct_old(message);
+            return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
         } catch (Exception e) {
             throw new AlixException(e);
         }
     }
 
-    private static Object construct_1_19(String message) throws Exception {
-        return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], false);
+    private static Object construct_1_19(String message, boolean actionBar) throws Exception {
+        return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], actionBar);
     }
 
-    private static Object construct_old(String message) throws Exception {
-        return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], SYSTEM_MESSAGE_TYPE, null);
+    private static Object construct_old(String message, boolean actionBar) throws Exception {
+        return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], actionBar ? ACTION_BAR : SYSTEM_MESSAGE_TYPE, null);
     }
 
     private OutMessagePacketConstructor() {

@@ -2,10 +2,11 @@ package alix.common.messages.file.extracted;
 
 import alix.common.messages.file.MessagesFile;
 import alix.common.messages.Messages;
-import alix.common.utils.file.FileManager;
+import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.file.temp.TemporaryFile;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +20,11 @@ public class ExtractedMessages extends TemporaryFile {
         this.messages = new ArrayList<>();
         this.syntaxes = new ArrayList<>();
         this.syntaxes.addAll(file.getMap().keySet());
-        super.save0(file.getMap().values());//writing the messages into the file
+        try {
+            super.save0(file.getMap().values());//writing the messages into the file
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -37,7 +42,7 @@ public class ExtractedMessages extends TemporaryFile {
     }
 
     public static ExtractedMessages findFile() {
-        File f = FileManager.getPluginFile("extracted-messages.txt");
+        File f = AlixFileManager.getPluginFile("extracted-messages.txt");
         if (f.exists()) return new ExtractedMessages(Messages.getFileInstance());
         else return null;
     }

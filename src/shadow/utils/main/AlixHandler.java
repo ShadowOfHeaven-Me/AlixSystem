@@ -243,7 +243,7 @@ public final class AlixHandler {
         if (u != null) {//unregistered/not logged in user removal
             u.uninject();//uninject the user
             //u.getPacketBlocker().cancelLoginKickTask();
-            if (u.isCaptchaInitialized()) {//quit after captcha was initialized and the user hasn't registered occurred
+            if (u.isCaptchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
                 GeoIPTracker.removeTempIP(u.getIPAddress());
                 event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
                 if (alixJoinLog) Main.logInfo(quitCaptchaUnverified.format(p.getName(), u.getIPAddress()));

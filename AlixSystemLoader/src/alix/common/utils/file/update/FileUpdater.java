@@ -2,7 +2,7 @@ package alix.common.utils.file.update;
 
 import alix.common.AlixCommonMain;
 import alix.common.environment.ServerEnvironment;
-import alix.common.utils.file.FileManager;
+import alix.common.utils.file.AlixFileManager;
 import alix.loaders.bukkit.BukkitAlixMain;
 
 import java.io.File;
@@ -182,8 +182,8 @@ public final class FileUpdater {
     //Tbh I don't exactly know why the dash ('-') updater suddenly started working, but let's just leave it at that
     //It's not a face, it's a quoted character in braces
     public static void ensureUpdated(File existingFile, File newestFile, char spliterator, List<Validation> validate) {
-        List<String> existingLines = FileManager.getLines(existingFile);
-        List<String> newestLines = FileManager.getLines(newestFile);
+        List<String> existingLines = AlixFileManager.getLines(existingFile);
+        List<String> newestLines = AlixFileManager.getLines(newestFile);
 
         boolean isHashtagStartValid = validate.contains(Validation.VALIDATE_HASHTAG_START);
         boolean isTrimmedDashStartValid = validate.contains(Validation.VALIDATE_TRIMMED_DASH_START);
@@ -278,7 +278,7 @@ public final class FileUpdater {
         //CommonAlixMain.logInfo(
 
         try {
-            if (!existingLines.equals(newestLines)) FileManager.write(existingFile, newestLines);
+            if (!existingLines.equals(newestLines)) AlixFileManager.write(existingFile, newestLines);
         } catch (IOException e) {
             e.printStackTrace();
         }
