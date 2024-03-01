@@ -2,6 +2,7 @@ package alix.common.scheduler;
 
 import alix.common.scheduler.impl.InterfaceAlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
+import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonHandler;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -22,10 +23,6 @@ public final class AlixScheduler {
         impl.async(r);
     }
 
-    public static <T> CompletableFuture<T> supplyAsync(Supplier<T> r) {
-        return impl.supplyAsync(r);
-    }
-
     public static SchedulerTask runLaterSync(Runnable r, long d, TimeUnit u) {
         return impl.runLaterSync(r, d, u);
     }
@@ -41,6 +38,14 @@ public final class AlixScheduler {
     @CanIgnoreReturnValue
     public static SchedulerTask repeatAsync(Runnable r, long i, TimeUnit u) {
         return impl.repeatAsync(r, i, u);
+    }
+
+    public static <T> CompletableFuture<T> supplyAsync(Supplier<T> r) {
+        return impl.supplyAsync(r);
+    }
+
+    public static <T> AlixFuture<T> singleAlixFuture(Supplier<T> r) {
+        return impl.singleAlixFuture(r);
     }
 
     public static void shutdown() {

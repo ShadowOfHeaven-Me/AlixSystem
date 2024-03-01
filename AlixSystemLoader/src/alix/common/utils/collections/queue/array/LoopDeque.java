@@ -17,7 +17,6 @@ public abstract class LoopDeque<T> {
             AlixCommonMain.logWarning("For the size 1 in " + this.getClass().getSuperclass().getSimpleName() + " the class is unnecessary!");
     }
 
-    //we can cast it without worrying for NPE
     public final T getAndReplaceWith(T replacement) {
         T value = (T) this.array[this.nextGetterIndex()];
         this.array[this.nextSetterIndex()] = replacement;

@@ -8,6 +8,7 @@ import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -47,17 +48,9 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added a missing configurable message
-    //[+] Optimized all ip operations
-    //[+] A lot less captchas will now be pooled, and instead will be asynchronously generated, at runtime if necessary
-    //[*] Fixed possible on-join errors, usually caused by bots
-    //[*] Fixed some of the intercepted messages disappearing when double verification was enabled
-    //[*] Fixed an incorrect kick message
-    //[*] Fixed a bug where the anvil password change gui would be inoperable
-    //[*] Fixed cyrillic characters being turned into gibberish
-    //[*] Fixed Alix not injecting into FastLogin after reloads
-    //[*] Captcha input will now be required to be on chat, instead of in the /captcha command
-    //[*] Removed 'verification-reminder-message-delay' from config, due to reminder messages now being shown in action bar
+    //[+] Slightly changed the captcha generation strategy and overall look
+    //[*] Fixed /account still sometimes not working correctly when changing passwords
+
 
 
     //todo: Add a custom data structure for unverified users

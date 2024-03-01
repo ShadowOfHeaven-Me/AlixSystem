@@ -1,9 +1,11 @@
 package shadow.utils.objects.packet.types.verified;
 
+import alix.common.antibot.captcha.CaptchaImageGenerator;
 import alix.common.data.LoginType;
 import alix.common.scheduler.AlixScheduler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.gui.AlixGUI;
@@ -76,16 +78,14 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
             super.write(ctx, msg, promise);
             return;
         }
-        //Main.logInfo("SERVER: " + settingPassword + " ID: " + ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
         if (msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
             super.write(ctx, msg, promise);
-            this.builder.updateWindowID((int) ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
-            this.builder.spoofValidAccordingly();
+            this.builder.onOutWindowOpenPacket(msg);
             return;
         }
-
-        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass)//Window Items from the server
-            this.lastItemsPacket = msg;
+        //Window Items from the server
+        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) this.lastItemsPacket = msg;
+        else super.write(ctx, msg, promise);
     }
 
     /*if (msg.getClass() != PacketBlocker.commandPacketClass) {

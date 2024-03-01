@@ -1,6 +1,7 @@
 package shadow.systems.login.captcha.manager.generator;
 
 import alix.common.scheduler.AlixScheduler;
+import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.other.ConcurrentRandom;
 import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
@@ -11,6 +12,7 @@ import shadow.utils.main.AlixUtils;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import static shadow.utils.main.AlixUtils.captchaVerificationType;
 import static shadow.utils.main.AlixUtils.captchaVerificationVisualType;
@@ -18,6 +20,7 @@ import static shadow.utils.main.AlixUtils.captchaVerificationVisualType;
 public abstract class CaptchaGenerator {
 
     private static final CaptchaGenerator generator = createGenerator();
+    private static final Supplier<Captcha> SUPPLIER = generator::generate;
     private final CaptchaTextGenerator textGenerator;
 
     private CaptchaGenerator() {
@@ -30,8 +33,8 @@ public abstract class CaptchaGenerator {
         return generator.textGenerator.generateTextCaptcha();
     }
 
-    public static CompletableFuture<Captcha> generateCaptchaFuture() {
-        return AlixScheduler.supplyAsync(generator::generate);
+    public static AlixFuture<Captcha> generateCaptchaFuture() {
+        return AlixScheduler.singleAlixFuture(SUPPLIER);
     }
 
     private static CaptchaGenerator createGenerator() {

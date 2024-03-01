@@ -1,5 +1,6 @@
 package shadow.systems.login.captcha;
 
+import alix.common.scheduler.runnables.futures.AlixFuture;
 import shadow.Main;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
 import shadow.systems.login.captcha.manager.VerificationThreadManager;
@@ -34,8 +35,7 @@ public abstract class Captcha {
         return captchaPool.size();
     }*/
 
-    public void sendPackets(UnverifiedUser user) {
-    }
+    public abstract void sendPackets(UnverifiedUser user);
 
     public void onCompletion(UnverifiedUser user) {
     }
@@ -44,14 +44,10 @@ public abstract class Captcha {
         return captchaVerificationCaseSensitive ? captcha.equals(s) : captcha.equalsIgnoreCase(s);
     }
 
-    protected Captcha inject(UnverifiedUser user) {
-        return this;
-    }
-
     //private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
 
-    public static CompletableFuture<Captcha> assignCaptcha(UnverifiedUser u) {
-        return captchaPool.next().thenApply(c -> c.inject(u));
+    public static AlixFuture<Captcha> nextCaptcha() {
+        return captchaPool.next();
     }
 
 /*    public static void unregister() {

@@ -14,25 +14,16 @@ import shadow.utils.users.offline.UnverifiedUser;
 public final class MapCaptcha extends ItemBasedCaptcha {
 
     private static final int MAP_ID = 0;
-    private static final int maxRotation = Main.config.getInt("map-captcha-font-max-random-rotation") % 360;
+    private static final int maxRotation = Main.config.getInt("map-captcha-max-random-rotation") % 360;
     private static final ItemStack captchaMapItem = generateNewCaptchaMapItem();
     private static final Object itemPacket = createItemPacket(captchaMapItem);
     private final Object mapPacket;
 
     public MapCaptcha() {
-        //MapView mapView = Bukkit.createMap(AlixWorldHolder.getMain()); // Create a new map view
-        //this.renderer = CaptchaMapRenderer.createNewRenderer(mapView.getId(), captcha);
         byte[] pixelsToDraw = CaptchaImageGenerator.generatePixelsToDraw(captcha, maxRotation);
 
         this.mapPacket = OutMapPacketConstructor.construct(MAP_ID, pixelsToDraw);
     }
-
-/*    public MapCaptcha(MapCaptcha captcha) {
-        super(captcha);
-        this.itemPacket = captcha.itemPacket;
-        this.mapViewId = captcha.mapViewId;
-        this.mapPacket = captcha.mapPacket;
-    }*/
 
     @Override
     @Dependent(clazz = CountdownTask.class, method = "#tick", reason = "Flush already invoked every 200 ms")
@@ -41,12 +32,6 @@ public final class MapCaptcha extends ItemBasedCaptcha {
         user.writeSilently(itemPacket);
         user.writeSilently(this.mapPacket);//instead of writeAndFlushSilently, with the reason specified in the @Dependent annotation
     }
-
-/*    private void updateMapPacket(String captcha) {
-        byte[] pixelsToDraw = CaptchaImageGenerator.generatePixelsToDraw(captcha, maxRotation);
-
-        this.mapPacket = OutMapPacketConstructor.construct(MAP_ID, pixelsToDraw);
-    }*/
 
     private static ItemStack generateNewCaptchaMapItem() {
         ItemStack item = new ItemStack(Material.FILLED_MAP);

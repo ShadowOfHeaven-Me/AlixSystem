@@ -7,26 +7,97 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 
 public final class CaptchaImageGenerator {
 
     private static final Font font = AlixFontManager.getPluginFont();
     private static final ConcurrentRandom random = ConcurrentRandom.getInstance();
+    private static final ImageGenerator generator = new DefaultGenerator();
 
     //Source code: https://github.com/InstantlyMoist/Captcha/blob/master/src/main/java/me/kyllian/captcha/spigot/captchas/TextCaptcha.java
 
     public static byte[] generatePixelsToDraw(String captcha, int maxRotation) {
-        BufferedImage image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+        return imageToBytes(generator.generate(captcha, maxRotation));
+    }
 
-        Canvas canvas = new Canvas();
-        canvas.setSize(128, 128);
+    //Just some random stuff I found and skidded as well
+    private static final class SomeGen implements ImageGenerator {
 
-        Graphics2D graphics = (Graphics2D) image.getGraphics();
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        canvas.paint(graphics);
+        private void drawCode(Graphics graphics, String code) {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, 128, 128);
 
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(0, 0, 128, 128);
+
+            FontMetrics fontMetrics = graphics.getFontMetrics();
+            int totalWidth = fontMetrics.stringWidth(code);
+            int charGap = (128 - totalWidth) / (code.length() + 1);
+            int x = charGap;
+            int y = (128 - fontMetrics.getHeight()) / 2 + fontMetrics.getAscent();
+
+            Random random = new Random();
+
+            for (int i = 0; i < code.length(); i++) {
+                graphics.setColor(getRandomColor());
+
+                int charX = x + fontMetrics.charWidth(code.charAt(i)) / 2;
+                int angle = random.nextInt(41) - 20;
+
+                Graphics2D g2d = (Graphics2D) graphics;
+                g2d.rotate(Math.toRadians(angle), charX, y);
+                Font randomFont = font;
+                graphics.setFont(randomFont);
+                graphics.drawString(String.valueOf(code.charAt(i)), charX, y);
+                g2d.rotate(-Math.toRadians(angle), charX, y);
+
+                x += fontMetrics.charWidth(code.charAt(i)) + charGap;
+            }
+        }
+
+        /**
+         * Draw captcha noise.
+         *
+         * @param graphics Graphics
+         */
+        private void drawNoise(Graphics graphics) {
+            Random random = new Random();
+            for (int i = 0; i < 12; i++) {
+                int x1 = random.nextInt(128);
+                int y1 = random.nextInt(128);
+                int x2 = x1 + random.nextInt(50) - 25;
+                int y2 = y1 + random.nextInt(50) - 25;
+                graphics.setColor(getRandomColor());
+                graphics.drawLine(x1, y1, x2, y2);
+            }
+        }
+
+        @Override
+        public BufferedImage generate(String captcha, int maxRotation) {
+            BufferedImage captchaImage = new BufferedImage(128, 128,
+                    BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = captchaImage.createGraphics();
+
+            drawCode(graphics, captcha);
+            drawNoise(graphics);
+            return captchaImage;
+        }
+    }
+
+    private static final class DefaultGenerator implements ImageGenerator {
+
+        @Override
+        public BufferedImage generate(String captcha, int maxRotation) {
+            BufferedImage image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_ARGB);//TYPE_INT_RGB
+
+            Canvas canvas = new Canvas();
+            canvas.setSize(128, 128);
+
+            Graphics2D graphics = (Graphics2D) image.getGraphics();
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            canvas.paint(graphics);
+
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, 128, 128);
 
 /*            try {
                 File file = new File(plugin.getDataFolder(), "background.png");
@@ -37,33 +108,43 @@ public final class CaptchaImageGenerator {
                 exception.printStackTrace();
             }*/
 
-        int lines = random.nextInt(12) + 16;
+            int lines = random.nextInt(12) + 8;
 
-        while (lines-- != 0) {
-            graphics.setColor(getRandomColor());
-            graphics.drawLine(getRandomCoordinate(), getRandomCoordinate(), getRandomCoordinate(), getRandomCoordinate());
+            while (lines-- != 0) {
+                graphics.setColor(getRandomColor());
+                graphics.drawLine(getRandomCoordinate(), getRandomCoordinate(), getRandomCoordinate(), getRandomCoordinate());
+            }
+
+            graphics.setFont(font);
+
+            String[] chars = captcha.split("");
+
+            for (int i = 0; i != chars.length; i++) {
+                AffineTransform original = graphics.getTransform();
+                int rotation = random.nextInt(2 * maxRotation + 1) - maxRotation;//generates a number between -n & n
+                graphics.rotate(Math.toRadians(rotation), 30 + i * 20, 64);
+                graphics.setColor(getRandomColor());
+                graphics.drawString(chars[i], 20 + i * 20, 70);
+                graphics.setTransform(original);
+            }
+
+            graphics.dispose();
+            return image;
         }
 
-        graphics.setFont(font);
-
-        String[] chars = captcha.split("");
-
-        for (int i = 0; i != chars.length; i++) {
-            AffineTransform original = graphics.getTransform();
-            int rotation = random.nextInt(2 * maxRotation + 1) - maxRotation;//generates a number between -n & n
-            graphics.rotate(Math.toRadians(rotation), 30 + i * 20, 64);
-            graphics.setColor(getRandomColor());
-            graphics.drawString(chars[i], 20 + i * 20, 70);
-            graphics.setTransform(original);
+        private DefaultGenerator() {
         }
+    }
 
-        graphics.dispose();
 
-        return imageToBytes(image);
+    private interface ImageGenerator {
+
+        BufferedImage generate(String captcha, int maxRotation);
+
     }
 
     private static Color getRandomColor() {
-        return new Color(random.nextInt(224), random.nextInt(224), random.nextInt(224));//224 instead of 256 to not generate a white-ish colored characters which would be impossible to read
+        return new Color(random.nextInt(224), random.nextInt(224), random.nextInt(224));//224 instead of 256 in order to prevent the generation of whitish-colored characters, which would be impossible to read
     }
 
     private static int getRandomCoordinate() {
@@ -80,17 +161,11 @@ public final class CaptchaImageGenerator {
     }
 
     public static byte[] imageToBytes(BufferedImage image) {
-        BufferedImage temp = new BufferedImage(image.getWidth(null), image.getHeight(null), 2);
-        Graphics2D graphics = temp.createGraphics();
-        graphics.drawImage(image, 0, 0, null);
-        graphics.dispose();
-        int[] pixels = new int[temp.getWidth() * temp.getHeight()];
-        temp.getRGB(0, 0, temp.getWidth(), temp.getHeight(), pixels, 0, temp.getWidth());
-        byte[] result = new byte[temp.getWidth() * temp.getHeight()];
+        int[] pixels = new int[image.getWidth() * image.getHeight()];
+        image.getRGB(0, 0, image.getWidth(), image.getHeight(), pixels, 0, image.getWidth());
+        byte[] result = new byte[image.getWidth() * image.getHeight()];
 
-        for(int i = 0; i < pixels.length; ++i) {
-            result[i] = matchColor(new Color(pixels[i], true));
-        }
+        for (int i = 0; i < pixels.length; ++i) result[i] = matchColor(new Color(pixels[i], true));
 
         return result;
     }
@@ -102,7 +177,7 @@ public final class CaptchaImageGenerator {
             int index = 0;
             double best = -1.0D;
 
-            for(int i = 4; i < colors.length; ++i) {
+            for (int i = 4; i < colors.length; ++i) {
                 double distance = getDistance(color, colors[i]);
                 if (distance < best || best == -1.0D) {
                     best = distance;
@@ -110,20 +185,21 @@ public final class CaptchaImageGenerator {
                 }
             }
 
-            return (byte)(index < 128 ? index : -129 + (index - 127));
+            return (byte) (index < 128 ? index : -129 + (index - 127));
         }
     }
 
-
     private static double getDistance(@NotNull Color c1, @NotNull Color c2) {
-        double rmean = (double)(c1.getRed() + c2.getRed()) / 2.0D;
-        double r = (double)(c1.getRed() - c2.getRed());
-        double g = (double)(c1.getGreen() - c2.getGreen());
+        double rMean = (double) (c1.getRed() + c2.getRed()) / 2.0D;
+        double r = c1.getRed() - c2.getRed();
+        double g = c1.getGreen() - c2.getGreen();
         int b = c1.getBlue() - c2.getBlue();
-        double weightR = 2.0D + rmean / 256.0D;
+        double weightR = 2.0D + rMean / 256.0D;
         double weightG = 4.0D;
-        double weightB = 2.0D + (255.0D - rmean) / 256.0D;
-        return weightR * r * r + weightG * g * g + weightB * (double)b * (double)b;
+        double weightB = 2.0D + (255.0D - rMean) / 256.0D;
+        return weightR * r * r + weightG * g * g + weightB * (double) b * (double) b;
     }
 
+    private CaptchaImageGenerator() {
+    }
 }

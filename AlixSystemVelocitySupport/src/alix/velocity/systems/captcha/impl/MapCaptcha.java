@@ -6,22 +6,20 @@ import alix.velocity.systems.captcha.Captcha;
 import io.netty.channel.Channel;
 import net.elytrium.limboapi.api.material.Item;
 import net.elytrium.limboapi.api.material.VirtualItem;
-import net.elytrium.limboapi.api.player.LimboPlayer;
 import net.elytrium.limboapi.api.protocol.packets.data.MapData;
 import net.elytrium.limboapi.protocol.packets.s2c.MapDataPacket;
 import net.elytrium.limboapi.protocol.packets.s2c.SetSlotPacket;
 import net.elytrium.limboapi.server.world.SimpleItem;
-import net.kyori.adventure.nbt.CompoundBinaryTag;
 
 public final class MapCaptcha implements Captcha {
 
     //private static final Limbo limbo = AlixServer.getLimbo();
     private static final VirtualItem MAP = SimpleItem.fromItem(Item.FILLED_MAP);
-    private static final SetSlotPacket itemPacket = new SetSlotPacket(0, 36, MAP, 1, 0, (CompoundBinaryTag) null);
+    private static final SetSlotPacket itemPacket = new SetSlotPacket(0, 36, MAP, 1, 0, null);
     private final MapDataPacket mapDataPacket;
 
     public MapCaptcha(String captcha) {
-        byte[] pixels = CaptchaImageGenerator.generatePixelsToDraw(captcha, 45);
+        byte[] pixels = CaptchaImageGenerator.generatePixelsToDraw(captcha, 30);
         MapData data = new MapData(pixels);
         this.mapDataPacket = new MapDataPacket(0, (byte) 0, data);
     }

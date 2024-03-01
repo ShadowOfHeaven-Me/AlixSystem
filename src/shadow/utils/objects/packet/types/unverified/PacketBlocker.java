@@ -24,7 +24,6 @@ import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.ExecutionException;
 
 public class PacketBlocker extends PacketProcessor {
 
@@ -110,7 +109,7 @@ public class PacketBlocker extends PacketProcessor {
 
     protected final void trySpoofPackets() {
         if (!this.packetsSent && ++this.waitPackets >= WAIT_PACKETS_THRESHOLD && (this.packetsSent = true))//8 - at least 5 move packets and one out respawn packet from the server
-            this.user.spoofVerificationPackets();//setting the boolean in a branchless if statement for a slight performance boost
+            AlixScheduler.async(user::spoofVerificationPackets);// /\ setting the boolean in a branchless if statement for a very slight performance boost
         //Main.logError("wwwwww " + waitPackets);
     }
 
@@ -269,7 +268,8 @@ public class PacketBlocker extends PacketProcessor {
             case "PacketPlayInChat":
             case "ServerboundChatPacket":
                 AlixScheduler.async(() -> CommandManager.onCaptchaCompletionAttempt(this.user, InChatPacketGetter.getMessage(msg).trim()));
-                if (serverboundNameVersion) break;//don't process chat packets on 1.17+, since commands now have a separate packet
+                if (serverboundNameVersion)
+                    break;//don't process chat packets on 1.17+, since commands now have a separate packet
             case "ServerboundChatCommandPacket"://The command packet on 1.17+
                 this.processCommand(msg);
                 break;

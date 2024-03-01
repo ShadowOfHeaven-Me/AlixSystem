@@ -1,4 +1,4 @@
-package shadow.utils.objects.packet.types.verified;
+package shadow.utils.objects.packet.types;
 
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.PacketProcessor;

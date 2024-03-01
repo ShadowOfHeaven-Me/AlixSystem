@@ -12,6 +12,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.gui.AbstractAlixGUI;
+import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.buffered.PacketConstructor;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
@@ -106,15 +107,11 @@ public final class AnvilPasswordBuilder implements AlixVerificationGui, Abstract
         this.updateWindowID(windowId + 1);
     }*/
 
-    public void updateWindowID(int id) {
-        this.windowId = id;
+    public void onOutWindowOpenPacket(Object packet) throws Exception {
+        this.windowId = (int) ReflectionUtils.outWindowOpenIdMethod.invoke(packet);
         this.allItemsPacket = allItemsSupplier.apply(windowId);
         this.invalidIndicateItemsPacket = invalidIndicateItemsSupplier.apply(windowId);
-        //MethodProvider.kickAsync(channel, errorKickPacket);
-        //if (!user.isRegistered()) {
-        //MethodProvider.kickAsync(channel, errorKickPacket);
-        //AlixScheduler.sync(() -> user.getPlayer().kickPlayer("§cSomething went wrong - " + windowId));
-        //}
+        this.spoofValidAccordingly();
     }
 
     public void spoofAllItems() {

@@ -4,8 +4,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import shadow.systems.netty.AlixInterceptor;
-import shadow.utils.objects.packet.types.verified.SelfDelegatingProcessor;
+import shadow.utils.objects.packet.types.SelfDelegatingProcessor;
 
 import java.util.List;
 

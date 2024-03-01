@@ -24,11 +24,11 @@ public final class CommandTabCompleterAS implements TabCompleter {
                 return cmds;
             case 2:
                 switch (args[0].toLowerCase()) {
+                        /*List<String> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
+                        for (Player p : Bukkit.getOnlinePlayers()) list.add(p.getName());
+                        return list;*/
                     case "rp":
                     case "resetpassword":
-                        List<String> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
-                        for (Player p : Bukkit.getOnlinePlayers()) list.add(p.getName());
-                        return list;
                     case "user":
                         List<String> l = new ArrayList<>(UserFileManager.getAllData().size());
                         for (PersistentUserData d : UserFileManager.getAllData()) l.add(d.getName());

@@ -1,6 +1,7 @@
 package alix.common.scheduler.impl;
 
 import alix.common.AlixCommonMain;
+import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonUtils;
 
@@ -32,6 +33,11 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     @Override
     public <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier) {
         return CompletableFuture.supplyAsync(supplier, this.asyncExecutor);
+    }
+
+    @Override
+    public <T> AlixFuture<T> singleAlixFuture(Supplier<T> r) {
+        return AlixFuture.singleFuture(this.asyncExecutor, r);
     }
 
     @Override

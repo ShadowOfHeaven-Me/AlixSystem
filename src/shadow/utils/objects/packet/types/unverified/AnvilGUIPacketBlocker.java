@@ -111,8 +111,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
         if (user.hasCompletedCaptcha()) {
             if (msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
                 super.writeNotOverridden(ctx, msg, promise);
-                this.builder.updateWindowID((int) ReflectionUtils.outWindowOpenIdMethod.invoke(msg));
-                this.builder.spoofValidAccordingly();
+                this.builder.onOutWindowOpenPacket(msg);
                 return;
             }
             if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass)//Window Items from the server

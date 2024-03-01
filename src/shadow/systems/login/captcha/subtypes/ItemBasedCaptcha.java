@@ -33,7 +33,4 @@ abstract class ItemBasedCaptcha extends Captcha {
         user.writeAndFlushSilently(EMPTY_INVENTORY_PACKET);
         super.onCompletion(user);
     }
-
-    @Override
-    public abstract void sendPackets(UnverifiedUser user);
 }

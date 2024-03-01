@@ -6,6 +6,8 @@ import shadow.utils.users.offline.UnverifiedUser;
 
 public final class MessageCaptcha extends Captcha {
 
+    private final Object packet = OutMessagePacketConstructor.construct("\n Captcha: §c" + captcha + "\n");
+
     public MessageCaptcha() {
         super();
     }
@@ -15,8 +17,7 @@ public final class MessageCaptcha extends Captcha {
     }*/
 
     @Override
-    protected Captcha inject(UnverifiedUser user) {
-        user.writeAndFlushSilently(OutMessagePacketConstructor.construct("\n Captcha: §c" + captcha + "\n"));//unoptimized, but I don't care, this is a deprecated and pretty much never used visual captcha type
-        return super.inject(user);
+    public void sendPackets(UnverifiedUser user) {
+        user.writeAndFlushSilently(this.packet);
     }
 }

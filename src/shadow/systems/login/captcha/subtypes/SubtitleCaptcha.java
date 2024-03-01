@@ -4,7 +4,6 @@ import shadow.systems.login.captcha.Captcha;
 import shadow.utils.users.offline.UnverifiedUser;
 
 import static shadow.utils.main.AlixUtils.maxCaptchaTime;
-import static shadow.utils.main.AlixUtils.maxLoginTime;
 
 public final class SubtitleCaptcha extends Captcha {
 
@@ -17,9 +16,8 @@ public final class SubtitleCaptcha extends Captcha {
     }*/
 
     @Override
-    protected Captcha inject(UnverifiedUser user) {
+    public void sendPackets(UnverifiedUser user) {
         user.getPlayer().sendTitle("Captcha: ", "§c" + captcha, 0, maxCaptchaTime * 20, 0);
-        return super.inject(user);
     }
 
     @Override

@@ -57,7 +57,7 @@ map-captcha-font: Arial
 #Defines how big the drawn characters are
 map-captcha-font-size: 35
 #Defines (in degrees) the maximum random rotation of the letters on a captcha map (in both directions)
-map-captcha-font-max-random-rotation: 45
+map-captcha-max-random-rotation: 30
 #Defines the length of the captcha (min of 1, max of 5)
 captcha-length: 5
 #Defines whether captcha should be case-sensitive (not recommended, as whether the letters are capital can sometimes be hard to tell)

@@ -3,6 +3,7 @@ package shadow.utils.users.offline;
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.collections.queue.AlixDeque;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -20,7 +21,7 @@ import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
-import shadow.utils.objects.packet.types.verified.SelfDelegatingProcessor;
+import shadow.utils.objects.packet.types.SelfDelegatingProcessor;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
@@ -28,7 +29,6 @@ import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static shadow.utils.main.AlixUtils.getVerificationReminderMessagePacket;
@@ -40,7 +40,12 @@ public final class UnverifiedUser {
     private static final Object loginSuccessMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("login-success"));
     private final Player player;
     private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
-    private final CompletableFuture<Captcha> captcha;
+    //A captcha future that is very likely to be already finished, but we do not have the certainty that it is.
+    //It is also very likely to be completed if generated at runtime for a user before it is accessed, and even if
+    //accessed before completion, the captcha generation takes less than 35 ms and has already been started before
+    //AlixFuture#whenCompleted was invoked, so it will take even less. More than that, all consumer acceptance
+    //is done async to the currently executing thread.
+    private final AlixFuture<Captcha> captchaFuture;
     private final PacketInterceptor duplexHandler;
     private PacketBlocker blocker;
     //private final Location currentLocation;
@@ -82,10 +87,9 @@ public final class UnverifiedUser {
         if (player.isDead()) player.spigot().respawn();
 
         if (this.captchaInitialized) {
-            this.captcha = Captcha.assignCaptcha(this); //Fast captcha get and request for a captcha regeneration
+            this.captchaFuture = Captcha.nextCaptcha(); //Fast captcha get and request for a new captcha generation
             this.player.setPersistent(false); //Do not save the possibly bot player
-        } else this.captcha = null;
-
+        } else this.captchaFuture = null;
 
         if (isGuiUser && hasCompletedCaptcha)
             this.alixGui = PasswordGui.newBuilder(this, this.loginType);
@@ -113,7 +117,7 @@ public final class UnverifiedUser {
     public final void spoofVerificationPackets() {
         ReflectionUtils.sendLoginEffectPacket(this);
         if (isGUIInitialized) AlixScheduler.sync(this::openPasswordBuilderGUI);
-        if (captchaInitialized) this.captcha.join().sendPackets(this);
+        if (captchaInitialized) this.captchaFuture.whenCompleted(c -> c.sendPackets(this));
     }
 
     public final void uninject() {//removes all that was ever assigned and related (but does not teleport back)
@@ -165,7 +169,7 @@ public final class UnverifiedUser {
     }
 
     public final boolean isCaptchaCorrect(String s) {
-        return this.captchaInitialized && this.captcha.join().isCorrect(s);
+        return this.captchaInitialized && this.captchaFuture.hasCompleted() && this.captchaFuture.value().isCorrect(s);
     }
 
     @Nullable
@@ -201,7 +205,7 @@ public final class UnverifiedUser {
         this.writeAndFlushSilently(this.verificationMessagePacket);
 
         this.blocker.startLoginKickTask();
-        this.captcha.join().onCompletion(this);
+        this.captchaFuture.value().onCompletion(this);//It must've been completed if this method was invoked
 
         this.hasCompletedCaptcha = true;
 
@@ -295,7 +299,7 @@ public final class UnverifiedUser {
     }
 
     private void logIn0() {//the common part
-        this.writeAndFlushSilently(loginSuccessMessagePacket);//invoked here, since the
+        this.writeAndFlushSilently(loginSuccessMessagePacket);//invoked here, since the this#initDoubleVer can prevent this method from being invoked
         this.removeVerificationBecauseVerified();
         UserManager.addOfflineUser(player, data, ipAddress, duplexHandler);
         //AlixScheduler.async(() -> ReflectionUtils.resetLoginEffectPackets(this));
