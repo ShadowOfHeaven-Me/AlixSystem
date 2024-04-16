@@ -21,8 +21,8 @@ public final class ServerPingManager implements ConnectionFilter {
         //Main.debug("Initialized ServerPingManager!");
     }
 
-    public static void add(String address) {
-        if (registered) INSTANCE.addIfAbsent(address);
+    public static void add0(String address) {
+        INSTANCE.addIfAbsent(address);
     }
 
     public static boolean isRegistered() {

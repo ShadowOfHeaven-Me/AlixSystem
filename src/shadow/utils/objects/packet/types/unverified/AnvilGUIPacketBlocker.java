@@ -2,13 +2,14 @@ package shadow.utils.objects.packet.types.unverified;
 
 import alix.common.data.LoginType;
 import alix.common.scheduler.AlixScheduler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import shadow.utils.holders.ReflectionUtils;
+import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.concurrent.TimeUnit;
 
@@ -21,58 +22,52 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
         super(previousBlocker);
     }
 
-    AnvilGUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
-        super(u, handler);
+    AnvilGUIPacketBlocker(UnverifiedUser u) {
+        super(u);
         this.builder = (AnvilPasswordBuilder) u.getPasswordBuilder();
     }
 
     @Override
-    public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        //Main.logInfo(msg.getClass().getSimpleName());
-        if (user.hasCompletedCaptcha()) {
-            switch (msg.getClass().getSimpleName()) {
-                case "PacketPlayInPosition"://most common packets
-                case "PacketPlayInPositionLook":
-                case "PacketPlayInLook":
-                case "d":
-                    this.trySpoofPackets();
-                    return;
-                case "PacketPlayInItemName":
-                    super.channelReadNotOverridden(ctx, msg);
-                    this.updateText(msg);
-                    return;
-                case "PacketPlayInWindowClick":
-                    super.channelReadNotOverridden(ctx, msg);
-                    this.builder.spoofValidAccordingly();
-                    return;
-                case "PacketPlayInCloseWindow":
-                    super.channelReadNotOverridden(ctx, msg);
-                    AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
-                    return;
-                case "PacketPlayInKeepAlive":
-                case "ServerboundKeepAlivePacket"://another possible name of this packet on 1.20.2+
-                    super.channelReadNotOverridden(ctx, msg);
-            }
+    public void onPacketReceive(PacketPlayReceiveEvent event) {
+        if (!user.hasCompletedCaptcha()) {
+            this.onReadCaptchaVerification(event);
             return;
         }
-        super.onReadCaptchaVerification(ctx, msg);
+        //has completed the captcha and is currently undergoing the pin verification
+        switch (event.getPacketType()) {
+            case PLAYER_POSITION://most common packets
+            case PLAYER_POSITION_AND_ROTATION:
+            case PLAYER_ROTATION:
+            case PLAYER_FLYING:
+                this.trySpoofPackets();
+                event.setCancelled(true);
+                return;
+            case NAME_ITEM:
+                this.updateText(new WrapperPlayClientNameItem(event).getItemName());
+                //event.setCancelled(true);
+                return;
+            case CLICK_WINDOW:
+                this.builder.spoofValidAccordingly();
+                //event.setCancelled(true);
+                return;
+            case CLOSE_WINDOW:
+                AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
+                //event.setCancelled(true);
+/*                return;
+            case KEEP_ALIVE:
+                return;*/
+        }
     }
 
-    private void updateText(Object packet) {
-        try {
-            String text = (String) ReflectionUtils.inItemNamePacketTextMethod.invoke(packet);
+    private void updateText(String text) {
+        String invalidityReason = null;
 
-            String invalidityReason = null;
+        if (user.isRegistered()) this.builder.spoofAllItems();
+        else if ((invalidityReason = AlixUtils.getPasswordInvalidityReason(text, LoginType.ANVIL)) != null)
+            this.builder.spoofItemsInvalidIndicate();
+        else this.builder.spoofAllItems();
 
-            if (user.isRegistered()) this.builder.spoofAllItems();
-            else if ((invalidityReason = AlixUtils.getPasswordInvalidityReason(text, LoginType.ANVIL)) != null)
-                this.builder.spoofItemsInvalidIndicate();
-            else this.builder.spoofAllItems();
-
-            this.builder.input(text, invalidityReason);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.builder.input(text, invalidityReason);
     }
 
 /*    private static int getSlot(Object packet) {
@@ -106,19 +101,23 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
 
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+    public void onPacketSend(PacketPlaySendEvent event) {
         //if (spoofedWindowItems(msg)) return;
-        if (user.hasCompletedCaptcha()) {
-            if (msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
-                super.writeNotOverridden(ctx, msg, promise);
-                this.builder.onOutWindowOpenPacket(msg);
+        if (!user.hasCompletedCaptcha()) {
+            super.onWriteCaptchaVerification(event);
+            return;
+        }
+        switch (event.getPacketType()) {
+            case OPEN_WINDOW:
+                this.builder.updateWindowId(new WrapperPlayServerOpenWindow(event).getContainerId());
                 return;
-            }
-            if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass)//Window Items from the server
+            case WINDOW_ITEMS:
+                this.builder.updateWindowId(new WrapperPlayServerWindowItems(event).getWindowId());
+                //event.setCancelled(true);
                 return;
         }
 
-        super.write(ctx, msg, promise);//intentional super call
+        super.onPacketSend(event);
     }
 
     /*        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {//Items

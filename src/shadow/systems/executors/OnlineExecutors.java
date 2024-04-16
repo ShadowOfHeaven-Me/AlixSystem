@@ -1,11 +1,16 @@
 package shadow.systems.executors;
 
+import alix.common.scheduler.AlixScheduler;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.*;
+import org.bukkit.event.world.WorldSaveEvent;
 import shadow.systems.login.filters.ConnectionFilter;
+import shadow.utils.main.file.managers.UserFileManager;
+import shadow.utils.world.AlixWorldHolder;
 
 import static shadow.utils.main.AlixUtils.isOperatorCommandRestricted;
+import static shadow.utils.main.AlixUtils.userDataAutoSave;
 import static shadow.utils.users.UserManager.addOnlineUser;
 import static shadow.utils.users.UserManager.remove;
 
@@ -52,6 +57,12 @@ public final class OnlineExecutors extends UniversalExecutors {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onChat(AsyncPlayerChatEvent e) {
         super.onChat(e);
+    }
+
+    @EventHandler
+    public void onSave(WorldSaveEvent e) {
+        if (userDataAutoSave && AlixWorldHolder.isMain(e.getWorld())) AlixScheduler.async(UserFileManager::onAsyncSave);
+        //WarpFileManager.save(); For now disabled
     }
 
 /*    @EventHandler

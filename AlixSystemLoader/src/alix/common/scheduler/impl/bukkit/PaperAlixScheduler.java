@@ -24,8 +24,8 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
      * It also extends the AbstractAlixScheduler, which schedules the task using the
      * ScheduledThreadPoolExecutor, which relies on the contract that each tick is 50 ms.
      * This it not the case when the server is lagging - then the tasks will be scheduled
-     * faster. Thus, this implementation should not be used for tasks that rely on accurate
-     * tick delay and need to be executed synchronously.
+     * faster (in respect to the main thread). Thus, this implementation should not be used
+     * for tasks that rely on accurate tick delay and need to be executed synchronously.
      *
      * @author ShadowOfHeaven
      **/
@@ -57,7 +57,7 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
     private final class PaperSyncTickEvent implements Listener {
 
         @EventHandler(priority = EventPriority.MONITOR)
-        public void onTickEnd(ServerTickEndEvent event) {
+        public final void onTickEnd(ServerTickEndEvent event) {
             executeNow.executeAllAndClear();
         }
     }
@@ -94,12 +94,12 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
         }
 
         private void executeAllAndClear() {
-            LinkedAlixTask task = this.first;//get the current run
+            LinkedAlixTask task;
 
-            if (task == null) return;
+            if ((task = this.first) == null) return;//get the current run, and return if there is none to execute
 
             synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are extremely lightweight
-                this.first = this.last = null;
+                this.first = this.last = null;//all of the task nodes are still held by the 'task' variable
             }
 
             do {

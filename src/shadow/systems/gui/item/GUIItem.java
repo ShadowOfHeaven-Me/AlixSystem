@@ -20,11 +20,11 @@ public final class GUIItem {
         this.consumer = consumer;
     }
 
-    public final ItemStack getItem() {
+    public ItemStack getItem() {
         return item;
     }
 
-    public final Consumer<InventoryClickEvent> getConsumer() {
+    public Consumer<InventoryClickEvent> getConsumer() {
         return consumer;
     }
 }

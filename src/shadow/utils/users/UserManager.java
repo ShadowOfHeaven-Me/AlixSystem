@@ -1,32 +1,44 @@
 package shadow.utils.users;
 
 import alix.common.data.Password;
+import com.github.retrooper.packetevents.protocol.player.User;
+import io.netty.channel.ChannelHandlerContext;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import shadow.systems.login.result.LoginInfo;
-import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.users.types.AlixUser;
+import shadow.utils.users.types.TemporaryUser;
+import shadow.utils.users.types.UnverifiedUser;
+import shadow.utils.users.types.VerifiedUser;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class UserManager {
 
-    private static final Map<UUID, User> users = new ConcurrentHashMap<>();
+    private static final Map<UUID, AlixUser> USERS = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
+    private static final Map<String, User> TEMP_USERS = new ConcurrentHashMap<>();//the default size of 16 will do, since the joining players are only stored here since connection till login start
     //public static final List<User> users = new ArrayList<>();
     //public static final List<String> notVanishedUserNicknames = new ArrayList<>();
 
-    public static void addOfflineUser(Player p, PersistentUserData data, String ip, PacketInterceptor handler) { //offline as of non-premium
-        if (data != null) add0(new User(p, data.setIP(ip), handler));
-        else throw new RuntimeException("No verified user data was provided!"); //add(new User(p, PersistentUserData.createDefault(p.getName(), ip)));
+/*    public static TemporaryUser tempUser(UUID uuid) {
+        return users.
+    }*/
+
+    public static void addVerifiedUser(Player p, TemporaryUser user) {
+        putVer(new VerifiedUser(p, user));
+    }
+
+    public static void addVerifiedUser(Player p, PersistentUserData data, String ip, User retrooperUser, ChannelHandlerContext silentContext) {//offline as of non-premium
+        Objects.requireNonNull(data, "No verified user data was provided!");
+        putVer(new VerifiedUser(p, data.setIP(ip), retrooperUser, silentContext));
+        //add(new User(p, PersistentUserData.createDefault(p.getName(), ip)));
     }
 
     public static void addOnlineUser(Player p) { //online as of premium
-        add0(new User(p));
-    }
-
-    public static void addOnlineUser(Player p, LoginInfo login) {//online as of premium
-        add0(new User(p, login.getData(), login.getPacketInterceptor()));
+        putVer(new VerifiedUser(p));
     }
 
 /*    public static Channel getPremiumChannel(User user) {
@@ -45,18 +57,18 @@ public final class UserManager {
         return data;
     }*/
 
-    public static PersistentUserData register(Player p, String password, String ip, PacketInterceptor handler) {
+    public static PersistentUserData register(Player p, String password, String ip, User user, ChannelHandlerContext context) {
         //if (GeoIPTracker.disallowLogin(ip)) return false;
 
         PersistentUserData data = PersistentUserData.createDefault(p.getName(), ip, Password.fromUnhashed(password));
         //data.setPassword(password);
-        addOfflineUser(p, data, ip, handler);
+        addVerifiedUser(p, data, ip, user, context);
 
         return data;
     }
 
-    private static void add0(User u) {
-        users.put(u.getUUID(), u);
+    private static void putVer(VerifiedUser u) {
+        USERS.put(u.getUUID(), u);
     }
 
 /*    public static void disable() {
@@ -70,8 +82,28 @@ public final class UserManager {
         //AlixScheduler.async(() -> users.forEach((i, u) -> u.duplexHandler.sendOf(name)));
     }*/
 
-    public static User remove(Player p) {
-        return users.remove(p.getUniqueId());
+    static void putUnv(UnverifiedUser user) {
+        USERS.put(user.getPlayer().getUniqueId(), user);
+    }
+
+    public static void put(UUID uuid, AlixUser user) {
+        USERS.put(uuid, user);
+    }
+
+    public static AlixUser get(UUID uuid) {
+        return USERS.get(uuid);
+    }
+
+    public static AlixUser remove(Player p) {
+        return USERS.remove(p.getUniqueId());
+    }
+
+    public static void putTemp(String name, User user) {
+        TEMP_USERS.put(name, user);
+    }
+
+    public static User removeTemp(String name) {
+        return name != null ? TEMP_USERS.remove(name) : null;
     }
 
 /*    public static void remove(Player p) {
@@ -79,18 +111,19 @@ public final class UserManager {
         if (user != null) user.quit();
     }*/
 
-    public static User getVerifiedUser(Player p) {
-        User u = getNullableUserOnline(p);
+    public static VerifiedUser getVerifiedUser(Player p) {
+        VerifiedUser u = getNullableVerifiedUser(p);
         if (u == null) throw new RuntimeException("Null or unverified user access! - " + p.getName());
         return u;
     }
 
-    public static User getNullableUserOnline(Player p) {
-        return getNullableUserOnline(p.getUniqueId());
+    public static VerifiedUser getNullableVerifiedUser(Player p) {
+        return getNullableVerifiedUser(p.getUniqueId());
     }
 
-    public static User getNullableUserOnline(UUID uuid) {
-        return users.get(uuid);
+    public static VerifiedUser getNullableVerifiedUser(UUID uuid) {
+        AlixUser user = USERS.get(uuid);
+        return user instanceof VerifiedUser ? (VerifiedUser) user : null;
     }
 
     private UserManager() {

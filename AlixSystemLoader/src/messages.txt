@@ -4,9 +4,10 @@ already-logged-in: &cYou're already logged in!
 already-registered: &cYou're already registered!
 anti-bot-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a bot attack. Algorithm ID: {1}
 anti-bot-firewalled: &cYour IP has been firewalled!
+anti-bot-invalid-name-blocked: &cInvalid name! Must be within 1-16 characters long!
 anti-ddos-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a DDoS attack. Algorithm ID: {1}
 anti-vpn: &cDisable your VPN!
-auto-login: &aYour last ip was the same as before, so you've been automatically logged in! You can manage these setting at /account
+auto-login: &aYour last ip was the same as before, so you've been automatically logged in! You can manage these settings at /account
 ban-reason-absent: You've been banned!
 banned-ip-forever: Banned ip &c{0} &7forever!
 banned-ip-reason-and-time: Banned ip &c{0} &7until &c{1}&7, for {2}&7!
@@ -86,9 +87,9 @@ gamemode-survival-self: Your gamemode was set to &csurvival.
 gui-account-passwords: &aPasswords
 gui-account-login-settings: &aLogin Settings
 gui-ip-autologin-accept: &aACCEPT
-gui-ip-autologin-explanation: &7This gui asks whether you'd &n&7Want to be automatically logged in &n&7if you join with the same &n&7IP as in your previous successful &n&7login.
-gui-ip-autologin-explanation-accept: &7Accepting is usually safe, since &n&7each IP is unique as assigned &n&7by the ISP.
-gui-ip-autologin-explanation-reject: &7Rejecting is also valid, since &n&7even tho negligible, there still &n&7exists a chance that someone &n&7tries to join this server &n&7using your nickname, and &n&7has the same ip as your &n&7last successful login &n&7(for example when using a VPN, &n&7having their dynamic IP &n&7be provided by the same ISP or &n&7when using the same router).
+gui-ip-autologin-what-is-this: &7This gui asks whether you'd -nl &7Want to be automatically logged in -nl &7if you join with the same -nl &7IP as in your previous successful -nl &7login.
+gui-ip-autologin-lore-accept: &7Accepting is usually safe, since -nl &7each IP is unique as assigned -nl &7by the ISP.
+gui-ip-autologin-lore-reject: &7Rejecting is also valid, since -nl &7even tho negligible, there still -nl &7exists a chance that someone -nl &7tries to join this server -nl &7using your nickname, and -nl &7has the same ip as your -nl &7last successful login -nl &7(for example when using a VPN, -nl &7having their dynamic IP -nl &7be provided by the same ISP or -nl &7when using the same router).
 gui-ip-autologin-reject: &cREJECT
 gui-ip-autologin-question-mark: &eWhat is this?
 gui-login-settings-ip-autologin-off: &cIP AutoLogin: OFF
@@ -200,6 +201,7 @@ player-was-opped: &7Player {0} was opped by {1}.
 prevent-first-time-join: &aWe're analysing your connection. You may now join the server.
 register-reminder-command: &cRegister first!
 register-success: &aSuccessfully registered! You may now rejoin the server!
+register-time-passed: &cYou took too long to register!
 remove-warp: &6Successfully removed the warp {0}!
 renamed-item: &6Successfully renamed held item.
 server-still-starting: &cThe server still hasn't started yet!

@@ -2,8 +2,11 @@ package shadow.utils.holders;
 
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
-import com.mojang.authlib.GameProfile;
-import io.netty.channel.Channel;
+import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRemoveEntityEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTimeUpdate;
+import io.netty.buffer.ByteBuf;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
@@ -11,18 +14,22 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
+import shadow.Main;
+import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.holders.packet.constructors.OutGameStatePacketConstructor;
 import shadow.utils.holders.packet.constructors.OutMapPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
-import shadow.utils.holders.packet.getters.LoginInStartPacketGetter;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.main.AlixUtils;
+import shadow.utils.netty.NettyUtils;
+import shadow.utils.users.types.UnverifiedUser;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ReflectionUtils {
@@ -55,7 +62,7 @@ public final class ReflectionUtils {
     //public static final Object DISPLAY_NAME_UPDATE = packetPlayOutPlayerInfoClass$EnumPlayerInfoAction.getEnumConstants()[3];
     //public static final Constructor<?> packetPlayOutPlayerInfoConstructor = getConstructor(outPlayerInfoPacketClass, outPlayerInfoPacketClass$EnumPlayerInfoAction, Collection.class);
 
-    public static final Class<?> outPlayerInfoPacketClass = ReflectionUtils.nms2("network.protocol.game.PacketPlayOutPlayerInfo", "network.protocol.game.ClientboundPlayerInfoPacket", "network.protocol.game.ClientboundPlayerInfoUpdatePacket");
+    /*public static final Class<?> outPlayerInfoPacketClass = ReflectionUtils.nms2("network.protocol.game.PacketPlayOutPlayerInfo", "network.protocol.game.ClientboundPlayerInfoPacket", "network.protocol.game.ClientboundPlayerInfoUpdatePacket");
     //public static final Method getPlayerInfoDataListMethod = getMethodByReturnType(outPlayerInfoPacketClass, List.class);
     public static final Class<?> playerInfoDataClass;
     public static final Method getProfileFromPlayerInfoDataMethod;
@@ -78,7 +85,44 @@ public final class ReflectionUtils {
         getProfileFromPlayerInfoDataMethod = method;
     }
 
-    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket","network.protocol.game.ClientboundChatPacket", "network.protocol.game.PacketPlayOutChat");
+*//*    public static final Class<?> enumProtocolClass = nms2("network.EnumProtocol");
+    public static final Enum<?> FROM_CLIENT_DURING_HANDSHAKE = (Enum<?>) enumProtocolClass.getEnumConstants()[0];
+    public static final Enum<?> FROM_CLIENT_AFTER_HANDSHAKE = (Enum<?>) enumProtocolClass.getEnumConstants()[2];
+
+    public static final Class<?> enumProtocolDirectionClass = nms2("network.protocol.EnumProtocolDirection");
+
+    public static final Enum<?> SERVERBOUND_PROTOCOL_DIR = (Enum<?>) enumProtocolDirectionClass.getEnumConstants()[0];
+
+    public static final List<?> HANDSHAKE_ID_MAPPER;
+    public static final List<?> AFTER_HANDSHAKE_ID_MAPPER;
+
+    static {
+        HANDSHAKE_ID_MAPPER = packetIdMapper(enumProtocolClass, FROM_CLIENT_DURING_HANDSHAKE, SERVERBOUND_PROTOCOL_DIR);
+        AFTER_HANDSHAKE_ID_MAPPER = packetIdMapper(enumProtocolClass, FROM_CLIENT_AFTER_HANDSHAKE, SERVERBOUND_PROTOCOL_DIR);
+    }
+
+    private static List<?> packetIdMapper(Class<?> clazz, Object obj, Object protocolDir) {
+        try {
+            for (Field f : clazz.getDeclaredFields()) {
+                if (!Modifier.isStatic(f.getModifiers()) && Map.class.isAssignableFrom(f.getType())) {
+                    f.setAccessible(true);
+                    Map<?, ?> protocolDirToSubclass = (Map<?, ?>) f.get(obj);
+                    Object subclass = protocolDirToSubclass.get(protocolDir);
+                    for (Field field : subclass.getClass().getDeclaredFields()) {
+                        if (List.class.isAssignableFrom(field.getType())) {
+                            field.setAccessible(true);
+                            return (List<?>) field.get(subclass);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new AlixException(e);
+        }
+        throw new AlixError("Class: " + clazz.getSimpleName() + " obj: " + obj);
+    }*//*
+
+    public static final Class<?> outChatMessagePacketClass = nms2("network.protocol.game.ClientboundSystemChatPacket", "network.protocol.game.ClientboundChatPacket", "network.protocol.game.PacketPlayOutChat");
     public static final Class<?> chatMessageType = nms2("network.chat.ChatMessageType");
 
     public static final Class<?> outGameStatePacketClass = nms2("network.protocol.game.PacketPlayOutGameStateChange");
@@ -86,27 +130,28 @@ public final class ReflectionUtils {
     //public static final Object ADVENTURE_MODE_PACKET = newInstance(outGameStatePacketConstructor, 3, 2);//3 for gamemode, 2 for adventure
 
     public static final Class<?> outHeldItemSlotPacketClass = nms2("network.protocol.game.PacketPlayOutHeldItemSlot");
-
+*/
     //public static final Class<?> inWindowClickPacketClass = nms2("network.protocol.game.PacketPlayInWindowClick");
     //public static final Field inWindowClickSlotField = getFieldFromTypeSafe(inWindowClickPacketClass, int.class, 1);
 
-    public static final Class<?> outWindowOpenPacketClass = nms2("network.protocol.game.PacketPlayOutOpenWindow");
-    public static final Method outWindowOpenIdMethod = getMethodByReturnType(outWindowOpenPacketClass, int.class);
+    //public static final Class<?> outWindowOpenPacketClass = nms2("network.protocol.game.PacketPlayOutOpenWindow");
+    //public static final Method outWindowOpenIdMethod = getMethodByReturnType(outWindowOpenPacketClass, int.class);
     //public static final Field outWindowOpenIdField = getFieldFromTypeSafe(outWindowOpenPacketClass, int.class);
 
-    public static final Class<?> nonNullListClass = nms2("core.NonNullList");
-    public static final Class<?> craftItemStackClass = obc("inventory.CraftItemStack");
-    public static final Method itemStackToNMSCopyMethod = getMethod(craftItemStackClass, "asNMSCopy", ItemStack.class);
-    public static final Class<?> nmsItemStackClass = itemStackToNMSCopyMethod.getReturnType();
+    //public static final Class<?> nonNullListClass = nms2("core.NonNullList");
+    //public static final Class<?> craftItemStackClass = obc("inventory.CraftItemStack");
+    ///public static final Method itemStackToNMSCopyMethod = getMethod(craftItemStackClass, "asNMSCopy", ItemStack.class);
+    //public static final Class<?> nmsItemStackClass = itemStackToNMSCopyMethod.getReturnType();
 
-    public static final Class<?> outWindowItemsPacketClass = nms2("network.protocol.game.PacketPlayOutWindowItems");
+    // public static final Class<?> outWindowItemsPacketClass = nms2("network.protocol.game.PacketPlayOutWindowItems");
     //public static final Method outWindowItemsIdMethod = getMethodByReturnType(outWindowItemsPacketClass, int.class);
 
 
-    public static final Class<?> inItemNamePacketClass = nms2("network.protocol.game.PacketPlayInItemName");
-    public static final Method inItemNamePacketTextMethod = getMethodByReturnType(inItemNamePacketClass, String.class);
+    //public static final Class<?> inItemNamePacketClass = nms2("network.protocol.game.PacketPlayInItemName");
+    //public static final Method inItemNamePacketTextMethod = getMethodByReturnType(inItemNamePacketClass, String.class);
 
 
+/*
     public static final Class<?> inKeepAlivePacketClass = nms2("network.protocol.game.PacketPlayInKeepAlive", "network.protocol.common.ServerboundKeepAlivePacket");
     //public static final Class<?> outKeepAlivePacketClass = nms2("network.protocol.game.PacketPlayOutKeepAlive");
     //public static final Method getKeepAliveMethod = getMethodByReturnType(inKeepAlivePacketClass, long.class);
@@ -138,10 +183,12 @@ public final class ReflectionUtils {
     public static final Method IChatComponentArrayFromStringMethod = getMethod(craftChatMessageClass, "fromString", String.class);
     public static final Class<?> IChatBaseComponentClass = IChatComponentArrayFromStringMethod.getReturnType().getComponentType();
 
+    public static final Class<?> handshakePacketClass = nms2("network.protocol.handshake.PacketHandshakingInSetProtocol");
     public static final Class<?> loginInStartPacketClass = nms2("network.protocol.login.PacketLoginInStart");
 
     public static final Class<?> disconnectKickPlayPhasePacketClass = nms2("network.protocol.game.PacketPlayOutKickDisconnect", "network.protocol.common.ClientboundDisconnectPacket");
     public static final Class<?> disconnectLoginPhasePacketClass = nms2("network.protocol.login.PacketLoginOutDisconnect", "network.protocol.login.ClientboundLoginDisconnectPacket");
+*/
 
 
     /*public static final Class<?> enumHandClass = nms2("world.InteractionHand", "EnumHand");
@@ -159,7 +206,7 @@ public final class ReflectionUtils {
     public static final Class<?> craftPlayerClass = obc("entity.CraftPlayer");
     public static final Class<?> playerConnectionClass = nms2("server.network.PlayerConnection");
     public static final Class<?> networkManagerClass = nms2("network.NetworkManager");
-    public static final Method getProfile = getMethodByReturnType(entityPlayerClass, GameProfile.class);
+    //public static final Method getProfile = getMethodByReturnType(entityPlayerClass, GameProfile.class);
     public static final Method getHandle = getMethod(craftPlayerClass, "getHandle");
     public static final CommandMap commandMap = getCommandMap();
     public static final Map<String, Command> serverKnownCommands = getKnownCommands();
@@ -169,13 +216,13 @@ public final class ReflectionUtils {
 
     }*/
 
-    public static Object[] constructTextComponents(String text) {
+/*    public static Object[] constructTextComponents(String text) {
         try {
             return (Object[]) IChatComponentArrayFromStringMethod.invoke(null, text);
         } catch (Exception e) {
             throw new AlixException(e);
         }
-    }
+    }*/
 
     public static void replaceBansToConcurrent() {
         replaceToConcurrent0(Bukkit.getBanList(BanList.Type.NAME));
@@ -202,7 +249,7 @@ public final class ReflectionUtils {
         }
     }
 
-    public static Object createMaxedEffectPacket(int entityId, Object mobEffectList) {
+/*    public static Object createMaxedEffectPacket(int entityId, Object mobEffectList) {
         try {
             //Object mobEffectList = mobEffectFromId.toNMSEffectTypeFromId(effectId); // mobEffectFromId.invoke(null, effectId); //mobEffectListClass.getDeclaredMethod("fromId", int.class).invoke(null, effectId);
             Object mobEffect = mobEffectConstructor.newInstance(mobEffectList, 999999999, 255, false, false, false);
@@ -211,7 +258,7 @@ public final class ReflectionUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 
 /*    public static Object createPlayerAddPacket(Collection<Object> nmsPlayerList) {
         try {
@@ -229,43 +276,52 @@ public final class ReflectionUtils {
         }
     }*/
 
+    //private static final Unsafe unsafe = AlixUnsafe.getUnsafe();
+    //private static final long MAP_OFFSET = AlixUnsafe.fieldOffset(Player.class,
+
+
     public static void resetLoginEffectPackets(UnverifiedUser user) {
-        int entityId = user.getPlayer().getEntityId();
-        Channel channel = user.getPacketBlocker().getChannel();
+        Player player = user.getPlayer();
 
-        try {
-            List<Object> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
-            for (Player p : Bukkit.getOnlinePlayers()) list.add(getHandle.invoke(p));
+        //Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(player.getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
+//show players in tab
+        ByteBuf[] addPlayersBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ALL(user.reetrooperUser(), user.getPlayer(), user.silentContext());
+        //reset blindness effect
+        ByteBuf removeBlindnessBuffer = NettyUtils.dynamic(new WrapperPlayServerRemoveEntityEffect(player.getEntityId(), PotionTypes.BLINDNESS), user.silentContext());
 
-            Object addPlayersPacket = OutPlayerInfoPacketConstructor.constructADD(list);
-            channel.writeAndFlush(addPlayersPacket);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        resetBlindnessEffectPackets(entityId, channel);
+        user.getChannel().eventLoop().execute(() -> {
+            try {
+                for (ByteBuf buf : addPlayersBuffers) user.writeSilently(buf);
+                user.writeAndFlushSilently(removeBlindnessBuffer);
+            } catch (Throwable e) {
+                Main.logError("No jak chuj nie działa coś tu");
+                e.printStackTrace();
+            }
+        });
+
     }
 
-    public static void resetBlindnessEffectPackets(int entityId, Channel channel) {
-        try {
-            Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(entityId, BLINDNESS_MOB_EFFECT_LIST);
 
-            channel.writeAndFlush(removeBlindnessPacket);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final boolean isParticleCaptchaInUse = AlixUtils.captchaVerificationVisualType == CaptchaVisualType.PARTICLE;
 
+    private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
+    //private static final ByteBuf VER_POS = NettyUtils.constBuffer(new WrapperPlayServerPo);
+    //SpigotConversionUtil.
 
     /*potion effect ids:
     slowness = 2
     jump boost = 8
     */
-    public static void sendLoginEffectPacket(UnverifiedUser user) {
-        user.writeAndFlushSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
+    public static void sendLoginEffectsPackets(UnverifiedUser user) {
+        user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
+        user.writeConstSilently(TIME_NIGHT);
 
-        Object blindnessPacket = createMaxedEffectPacket(user.getPlayer().getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
+        if (!isParticleCaptchaInUse)
+            sendBlindnessPackets(user);//it's fine even if not invoked, as #flush is invoked in the CountdownTask class
+    }
 
-        user.writeAndFlushSilently(blindnessPacket);
+    private static void sendBlindnessPackets(UnverifiedUser user) {
+        user.writeAndFlushUnreadSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
     }
 
     private static Map<String, Command> getKnownCommands() {
@@ -371,14 +427,33 @@ public final class ReflectionUtils {
         }
     }
 
-    public static Field getField(Object o, String name) {
-        for (Field field : o.getClass().getDeclaredFields()) {
+    public static Field getFieldAccessible(Class<?> clazz, String name) {
+        try {
+            Field field = clazz.getDeclaredField(name);
             field.setAccessible(true);
-            if (field.getName().equals(name)) return field;
+            return field;
+        } catch (NoSuchFieldException e) {
+            throw new AlixException(e);
         }
-        throw new ExceptionInInitializerError();
     }
 
+    public static Field getDeclaredField(Class<?> clazz, String name) {
+        try {
+            return clazz.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            throw new AlixException(e);
+        }
+    }
+
+    public static Object getFieldResult(Class<?> clazz, String name, Object obj) {
+        try {
+            Field field = clazz.getDeclaredField(name);
+            field.setAccessible(true);
+            return field.get(obj);
+        } catch (Exception e) {
+            throw new AlixException(e);
+        }
+    }
 
     public static Object fieldGet(Field field, Object o) {
         try {
@@ -572,8 +647,7 @@ public final class ReflectionUtils {
     public static void init() {
         OutMapPacketConstructor.init();
         OutWindowItemsPacketConstructor.init();
-        OutPlayerInfoPacketConstructor.init();
-        LoginInStartPacketGetter.init();
+        //LoginInStartPacketGetter.init();
     }
 
     private ReflectionUtils() {

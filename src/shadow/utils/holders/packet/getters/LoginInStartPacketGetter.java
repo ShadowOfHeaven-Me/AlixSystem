@@ -1,14 +1,10 @@
 package shadow.utils.holders.packet.getters;
 
-import alix.common.utils.other.throwable.AlixException;
-import com.mojang.authlib.GameProfile;
-import shadow.utils.holders.ReflectionUtils;
-
-import java.lang.reflect.Method;
-
+/*
 public final class LoginInStartPacketGetter {
 
-    private static final Method loginInStartGameProfileMethod;
+*/
+/*    private static final Method loginInStartNameMethod;
     private static final boolean newer;
 
     static {
@@ -29,13 +25,15 @@ public final class LoginInStartPacketGetter {
         }
         if (method == null) throw new AlixException();
         newer = n;
-        loginInStartGameProfileMethod = method;
+        loginInStartNameMethod = method;
     }
 
     public static String getPlayerName(Object packet) throws Exception {
-        Object obj = loginInStartGameProfileMethod.invoke(packet);
+        Object obj = loginInStartNameMethod.invoke(packet);
         return newer ? (String) obj : ((GameProfile) obj).getName();
-    }
+    }*//*
+
+
 
     public static void init() {
     }
@@ -43,3 +41,4 @@ public final class LoginInStartPacketGetter {
     private LoginInStartPacketGetter() {
     }
 }
+*/

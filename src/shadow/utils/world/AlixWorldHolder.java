@@ -1,7 +1,7 @@
 package shadow.utils.world;
 
+import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.lang.ref.Reference;
@@ -9,7 +9,7 @@ import java.lang.ref.WeakReference;
 
 public final class AlixWorldHolder {//This class (like the bukkit Location class) allows the World object to be finalized
 
-    private static Reference<World> ref;
+    private static Reference<World> ref = newRef();
 
     public static World getMain() {
         World w = ref.get();
@@ -20,13 +20,25 @@ public final class AlixWorldHolder {//This class (like the bukkit Location class
         return getMain().getUID().equals(world.getUID());
     }
 
+    //let the world be garbage collected by holding it in a weak reference
     private static Reference<World> newRef() {
-        return new WeakReference<>(Bukkit.getWorlds().get(0));//let the world be garbage collected by holding it in a weak reference
+        World w = Bukkit.getWorld("world");
+        if (w != null) return new WeakReference<>(w);
+
+        for (World world : Bukkit.getWorlds())
+            if (world.getEnvironment() == World.Environment.NORMAL && !world.getName().equals(AlixWorld.worldName))
+                return new WeakReference<>(world);
+
+        for (World world : Bukkit.getWorlds())
+            if (!world.getName().equals(AlixWorld.worldName))
+                return new WeakReference<>(world);
+
+        w = AlixWorld.CAPTCHA_WORLD;
+        if (w == null) throw new AlixException("Couldn't find any worlds!");
+
+        return new WeakReference<>(w);//only our world is present
     }
 
-    private AlixWorldHolder() {}
-
-    static {
-        ref = newRef();
+    private AlixWorldHolder() {
     }
 }

@@ -6,8 +6,6 @@ import alix.common.data.security.HashingAlgorithm;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.LoopCharIterator;
 
-import java.util.Random;
-
 public final class Password {
 
     private static final LoopCharIterator loopCharIterator;
@@ -40,11 +38,7 @@ public final class Password {
         return this.hashedPassword.equals(hashedPassword);
     }*/
 
-    public String getHashedPassword() {
-        return hashedPassword;
-    }
-
-    public final boolean isHashed() {
+    public boolean isHashed() {
         return hashId != 0;
     }
 
@@ -57,9 +51,7 @@ public final class Password {
     }*/
 
     public static Password createRandom() {
-        Random r = AlixCommonUtils.random;
-
-        int length = 8 + r.nextInt(8);//min char length + 3 + 8 because 2^n results in a faster generation
+        int length = 8 + AlixCommonUtils.random.nextInt(8);//min char length + 3 + (0-8) because 2^n results in a faster generation
 
         return fromUnhashed(new String(loopCharIterator.next(length)));
     }

@@ -19,11 +19,11 @@ public final class ConnectionThreadManager {
         if (AlixUtils.antibotService) AlixScheduler.newAlixThread(runnable, 3000, "Connection Thread");
     }
 
-    public static void addJoinAttempt(String name, InetAddress address) {
+    public static void onJoinAttempt(String name, InetAddress address) {
         for (ConnectionAlgorithm algorithm : runnable.connectionAlgorithms) algorithm.onJoinAttempt(name, address);
     }
 
-    public static void addPingRequest(InetAddress address) {
+    public static void onPingRequest(InetAddress address) {
         for (PingRequestAlgorithm algorithm : runnable.pingRequestAlgorithms) algorithm.onPingRequest(address);
     }
 
@@ -32,6 +32,7 @@ public final class ConnectionThreadManager {
 
 
     private static final class ConnectionThreadRunnable implements Runnable {
+
 
         private final ConnectionAlgorithm[] connectionAlgorithms;
         private final PingRequestAlgorithm[] pingRequestAlgorithms;
@@ -67,6 +68,7 @@ public final class ConnectionThreadManager {
                     //new RequestAmountAlgorithm(),
                     new Name2IPAlgorithm(),
                     new JoinCounterAlgorithm()
+                    //new RequestAmountAlgorithm()
             };
             this.pingRequestAlgorithms = new PingRequestAlgorithm[]{
                     new TotalCounterPingAlgorithm()

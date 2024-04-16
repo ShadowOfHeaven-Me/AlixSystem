@@ -9,7 +9,6 @@ import alix.common.messages.Messages;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
 
@@ -18,6 +17,7 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
 
     @Override
     public void onJoinAttempt(String name, InetAddress ip) {
+        if (name == null) return; //Does not support pre-login checks
         if (this.ipMap.computeIfAbsent(ip, NameMapImpl::new).add(name)) this.ipMap.remove(ip);
     }
 
@@ -34,7 +34,9 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
-    /** @noinspection NonAtomicOperationOnVolatileField*/
+    /**
+     * @noinspection NonAtomicOperationOnVolatileField
+     */
     private static final class NameMapImpl extends NameMap {
 
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);

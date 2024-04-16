@@ -1,17 +1,18 @@
 package shadow.utils.holders.packet.constructors;
 
 
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
+import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import io.netty.buffer.ByteBuf;
 import org.bukkit.inventory.ItemStack;
-import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.netty.NettyUtils;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public final class OutWindowItemsPacketConstructor {
 
-    private static final boolean newerConstructor;
+/*    private static final boolean newerConstructor;
     private static final Constructor<?> clazzConstructor, listConstructor;
     private static final Object nullNmsItemStack;
 
@@ -48,17 +49,23 @@ public final class OutWindowItemsPacketConstructor {
         nullNmsItemStack = nullNmsItemStack0;
         newerConstructor = newerConstructor0;
         clazzConstructor = clazzConstructor0;
+    }*/
+
+    public static ByteBuf constructConst(int windowId, List<ItemStack> list) {
+        return constructConst0(windowId, list.size(), createRetrooperItemList(list));
     }
 
-    public static Object construct(int windowId, List<ItemStack> list) {
-        return construct0(windowId, list.size(), createNMSItemList(list));
+    public static ByteBuf constructConst0(int windowId, int size, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
+        return NettyUtils.constBuffer(new WrapperPlayServerWindowItems(windowId, size, retrooperList, null));
+        //return newerConstructor ? construct_1_17(windowId, size, nmsList) : construct_old(windowId, nmsList);
     }
 
-    public static Object construct0(int windowId, int size, Object nmsList) {
-        return newerConstructor ? construct_1_17(windowId, size, nmsList) : construct_old(windowId, nmsList);
+    public static ByteBuf constructDynamic0(int windowId, int size, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
+        return NettyUtils.createBuffer(new WrapperPlayServerWindowItems(windowId, size, retrooperList, null));
+        //return newerConstructor ? construct_1_17(windowId, size, nmsList) : construct_old(windowId, nmsList);
     }
 
-    public static Object construct_1_17(int windowId, int size, Object nmsList) {
+/*    public static Object construct_1_17(int windowId, int size, Object nmsList) {
         try {
             //Class<?>[] params = clazzConstructor.getParameterTypes();
             //Main.logError(params[0] + " " + params[1] + " " + params[2] + " " + params[3]);
@@ -75,23 +82,23 @@ public final class OutWindowItemsPacketConstructor {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }*/
+
+    public static List<com.github.retrooper.packetevents.protocol.item.ItemStack> createRetrooperItemList(List<ItemStack> spigotItemList) {
+        List<com.github.retrooper.packetevents.protocol.item.ItemStack> list = new ArrayList<>(spigotItemList.size());
+
+        for (ItemStack itemStack : spigotItemList) list.add(SpigotConversionUtil.fromBukkitItemStack((itemStack)));
+
+        return list;
+        //return listConstructor.newInstance(list, nullNmsItemStack);
     }
 
-    public static Object createNMSItemList(List<ItemStack> spigotItemList) {
-        List<Object> nmsItemList = new ArrayList<>(spigotItemList.size());
-        try {
-
-            for (ItemStack itemStack : spigotItemList) nmsItemList.add(itemToNMS(itemStack));
-
-            return listConstructor.newInstance(nmsItemList, nullNmsItemStack);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Object itemToNMS(ItemStack item) throws Exception {
-        return ReflectionUtils.itemStackToNMSCopyMethod.invoke(null, item);
-    }
+/*    private static com.github.retrooper.packetevents.protocol.item.ItemStack bukkitItemToRetrooper(ItemStack item) throws Exception {
+        ItemType type = ItemTypes.getByName(item.getType().name());
+        com.github.retrooper.packetevents.protocol.item.ItemStack retrooperItemStack = new com.github.retrooper.packetevents.protocol.item.ItemStack.Builder().type(type);
+        SpigotConversionUtil.fromBukkitItemStack(
+        //return ReflectionUtils.itemStackToNMSCopyMethod.invoke(null, item);
+    }*/
 
     public static void init() {
     }

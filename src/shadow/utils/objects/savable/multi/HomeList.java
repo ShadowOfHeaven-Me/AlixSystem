@@ -6,34 +6,33 @@ import static shadow.utils.main.AlixUtils.split;
 
 public final class HomeList {
 
+    private static final NamedLocation[] EMPTY_ARRAY = new NamedLocation[0];
     private NamedLocation[] homes;
-    private int currentIndex;
 
     public HomeList() {
-        this.homes = new NamedLocation[0];
+        this.homes = EMPTY_ARRAY;
     }
 
     public HomeList(String savableNamedLocations) {
         if (savableNamedLocations.equals("0")) {
-            this.homes = new NamedLocation[0];
+            this.homes = EMPTY_ARRAY;
             return;
         }
         String[] b = split(savableNamedLocations, ';');
-        final int l = b.length;
         int i = 0;
-        NamedLocation[] array = new NamedLocation[l];
+        NamedLocation[] array = new NamedLocation[b.length];
         for (String c : b) {
             NamedLocation d = NamedLocation.fromString(c);
             if (d != null) array[i++] = d;
         }
-        if (l != i) {//Some of the NamedLocations were obstructed or could not be found (usually happens when a world is deleted)
+        if (b.length != i) {//Some of the homes were obstructed or could not be found (usually happens when a world is deleted)
             this.homes = new NamedLocation[i];
             System.arraycopy(array, 0, homes, 0, i);
-            currentIndex = i;
+            //currentIndex = i;
             return;
         }
         this.homes = array;
-        currentIndex = l;
+        //currentIndex = l;
     }
 
     public String toSavable() {
@@ -45,21 +44,27 @@ public final class HomeList {
 
     public void addHome(NamedLocation home) {
         growByOne();
-        this.homes[currentIndex++] = home;
+        this.homes[homes.length - 1] = home;
     }
 
     public void removeHome(int index) {
-        NamedLocation[] array = new NamedLocation[currentIndex - 1];
-        int h = 0;
-        for (int i = 0; i < currentIndex; i++)
-            if (i != index) array[h++] = homes[i];
+        int lM1 = homes.length - 1;
+        if (lM1 == 0) {//don't write a switch case to include 1, since it's still fast af
+            this.homes = EMPTY_ARRAY;
+            return;
+        }
+        NamedLocation[] array = new NamedLocation[lM1];
+
+        if (lM1 == index) System.arraycopy(this.homes, 0, array, 0, lM1);
+        else for (int i = 0; i < homes.length; i++) array[i] = this.homes[i == index ? ++i : i];
+
         this.homes = array;
-        this.currentIndex--;
+        //this.currentIndex--;
     }
 
     private void growByOne() {
-        NamedLocation[] array = new NamedLocation[currentIndex + 1];
-        System.arraycopy(homes, 0, array, 0, currentIndex);
+        NamedLocation[] array = new NamedLocation[homes.length + 1];
+        System.arraycopy(homes, 0, array, 0, homes.length);
         this.homes = array;
     }
 
@@ -79,7 +84,7 @@ public final class HomeList {
         homes[i] = home;
     }
 
-    public NamedLocation[] asArray() {
+    public NamedLocation[] array() {
         return homes;
     }
 }

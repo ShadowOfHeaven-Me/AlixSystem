@@ -16,7 +16,7 @@ import shadow.systems.gui.item.GUIItem;
 import shadow.utils.objects.savable.data.DataChanges;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
-import shadow.utils.users.User;
+import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
 
 import java.util.Arrays;
@@ -28,7 +28,6 @@ public final class PasswordsGUI extends AlixGUI {
     private static final String
             guiTitle = get("gui-title-passwords"),
             appliedChanges = getWithPrefix("gui-passwords-applied-changes");
-
 
     private static final AlixMessage
             mainPasswordChange = getAsObject("gui-passwords-changed-main"),
@@ -75,7 +74,7 @@ public final class PasswordsGUI extends AlixGUI {
 
     @Override
     protected GUIItem[] create(Player player) {
-        User user = UserManager.getVerifiedUser(player);
+        VerifiedUser user = UserManager.getVerifiedUser(player);
 
         PersistentUserData data = user.getData();
         DataChanges changes = new DataChanges(data);

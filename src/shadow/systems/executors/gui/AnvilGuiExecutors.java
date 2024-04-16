@@ -9,7 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import shadow.systems.login.Verifications;
+import shadow.utils.users.Verifications;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.password.builders.BuilderType;
 import shadow.utils.objects.savable.data.password.builders.PasswordBuilder;

@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import shadow.Main;
 import alix.common.messages.Messages;
 import alix.common.messages.AlixMessage;
-import shadow.utils.users.User;
+import shadow.utils.users.types.VerifiedUser;
 
 public final class ChatManager {
 
@@ -22,7 +22,7 @@ public final class ChatManager {
 
     //TODO: Make two different perms for delay and off chat bypass
 
-    public static boolean cannotChat(User u) {
+    public static boolean cannotChat(VerifiedUser u) {
         if (u.canBypassChatStatus()) return false;
         if (!isChatTurnedOn) {
             u.sendMessage(chatIsOff);

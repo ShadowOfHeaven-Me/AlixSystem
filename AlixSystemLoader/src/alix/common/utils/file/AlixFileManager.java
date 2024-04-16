@@ -64,60 +64,71 @@ public abstract class AlixFileManager {
         HIGHEST_CHAR = isUtf32 ? 1 << 31 : 1 << 15;
     }*/
 
-    public static void readLines(InputStream is, Consumer<String> consumer) {
+    private static final boolean isUTF8Default = Charset.defaultCharset() == StandardCharsets.UTF_8;
+
+    /*public static String toUTF8(String s) {
+        if (isUTF8Default) return s;
+        return s.getBytes(StandardCharsets.ISO_8859_1)
+    }*/
+
+/*    public static void readNonEmptyLines(File file, Consumer<String> consumer) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, CHARSET));
-            //Files.readAllLines
+            readNonEmptyLines0(file, consumer);
+        } catch (IOException e) {
+            throw new AlixException(e);
+        }
+    }*/
+
+/*    public static void readNonEmptyLines0(File file, Consumer<String> consumer) throws IOException {
+        readLines(Files.newInputStream(file.toPath()), consumer, false);
+    }*/
+
+    public static void readLines(File file, Consumer<String> consumer, boolean acceptEmpty) throws IOException {
+        readLines(Files.newInputStream(file.toPath()), consumer, acceptEmpty);
+    }
+
+    public static void readLines(InputStream is, Consumer<String> consumer, boolean acceptEmpty) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, CHARSET))) {
+            //Files.readAllLines(
 
             String line;
 
-            while ((line = reader.readLine()) != null) if (!line.isEmpty()) consumer.accept(line);
-
-            reader.close();
-        } catch (Exception e) {
-            throw new AlixException(e);
+            while ((line = reader.readLine()) != null) if (acceptEmpty || !line.isEmpty()) consumer.accept(line);
         }
     }
 
     public static <K, V> void writeKeyAndVal(File file, Map<K, V> map, String separator, Predicate<V> shouldSave, Function<K, String> keyFormatter, Function<V, String> valueFormatter) throws IOException {
-        FileWriter stream = new FileWriter(file);
-        BufferedWriter writer = new BufferedWriter(stream);
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {
 
-        Function<V, String> valueFormatter0 = valueFormatter == null ? V::toString : valueFormatter;
-        Function<K, String> keyFormatter0 = keyFormatter == null ? K::toString : keyFormatter;
-        Predicate<V> shouldSave0 = shouldSave == null ? v -> true : shouldSave;//assume all entries should be saved if not specified
+            Function<V, String> valueFormatter0 = valueFormatter == null ? V::toString : valueFormatter;
+            Function<K, String> keyFormatter0 = keyFormatter == null ? K::toString : keyFormatter;
+            Predicate<V> shouldSave0 = shouldSave == null ? v -> true : shouldSave;//assume all entries should be saved if not specified
 
-        for (Map.Entry<K, V> e : map.entrySet()) {
-            if (!shouldSave0.test(e.getValue())) continue;
-            writer.write(keyFormatter0.apply(e.getKey()) + separator + valueFormatter0.apply(e.getValue()));
-            writer.newLine();
+            for (Map.Entry<K, V> e : map.entrySet()) {
+                if (!shouldSave0.test(e.getValue())) continue;
+                writer.write(keyFormatter0.apply(e.getKey()) + separator + valueFormatter0.apply(e.getValue()));
+                writer.newLine();
+            }
         }
-
-        writer.close();
-        stream.close();
     }
 
     public static void write(File file, Collection<?> lines) throws IOException {
-        FileWriter stream = new FileWriter(file);
-        BufferedWriter writer = new BufferedWriter(stream);
-
-        for (Object data : lines) {
-            writer.write(data.toString());
-            writer.newLine();
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {//new BufferedWriter(new FileWriter(file, CHARSET))
+            for (Object data : lines) {
+                writer.write(data.toString());
+                writer.newLine();
+            }
         }
-
-        writer.close();
-        stream.close();
     }
 
-    public static File getWithJarCompiledFile(String s, boolean internal) {
-        return getWithJarCompiledFile(getPluginFile(s, internal), s);
+    public static File writeJarCompiledFileIntoDest(String s, boolean internal) {
+        return writeJarCompiledFileIntoDest(getPluginFile(s, internal), s);
     }
 
-    public static File getWithJarCompiledFile(File copyInto, String s) {
+    public static File writeJarCompiledFileIntoDest(File copyInto, String s) {
         //tmpdir - tf is this
         try (InputStream in = BukkitAlixMain.class.getClassLoader().getResourceAsStream(s)) {
-            Files.copy(in, copyInto.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            copy(in, copyInto);
             return copyInto;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -129,7 +140,7 @@ public abstract class AlixFileManager {
     }
 
     public static File createPluginFile(String s, boolean internal) {
-        return createFileIfAbsent(getWithJarCompiledFile(s, internal));
+        return createFileIfAbsent(writeJarCompiledFileIntoDest(s, internal));
     }
 
     public static void createNewFile(File file) {
@@ -140,23 +151,29 @@ public abstract class AlixFileManager {
         }
     }
 
+    public static void copy(InputStream in, File dest) {
+        try (OutputStream out = new FileOutputStream(dest)) {
+            byte[] buffer = new byte[8 * 1024];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) out.write(buffer, 0, bytesRead);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public static List<String> getLines(File file) {
         try {
-            DataInputStream stream = new DataInputStream(Files.newInputStream(file.toPath()));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-
             List<String> lines = new ArrayList<>();
-
-            String line;
-
-            while ((line = reader.readLine()) != null) lines.add(line);
-
-            reader.close();
-            stream.close();
-
+            readLines(file, lines::add, true);
             return lines;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AlixException(e);
         }
     }
 
@@ -233,7 +250,7 @@ public abstract class AlixFileManager {
     }
 
     public void load() throws IOException {
-        readLines(Files.newInputStream(file.toPath()), this::loadLine);
+        readLines(file, this::loadLine, false);
     }
 
     protected void loadSingularValue() {

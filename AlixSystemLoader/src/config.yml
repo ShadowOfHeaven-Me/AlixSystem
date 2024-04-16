@@ -27,9 +27,6 @@ max-total-accounts: 1
 anti-vpn: true
 #Defines whether bot attack detection algorithms should be enabled in pair with the fast-blocking FireWall system. Works best with 'prevent-first-time-join' and 'anti-vpn' set to true.
 antibot-service: true
-#If set to true, Alix will immediately forcibly close connections and have the player see the automatic "Connection Refused" message.
-#If set to false, the "Your IP has been firewalled" message will be shown after waiting for login packets (a bit less optimized).
-fast-raw-firewall: true
 
 
 #----------------------------------------------#
@@ -41,23 +38,24 @@ fast-raw-firewall: true
 #Defines whether an unregistered player should be required to complete a captcha before registering (works as a safety measure against a bot attack, offline mode only)
 captcha: true
 #Defines the visual representation type of the captcha that will be shown to the tested player. Available:
-#map - (1.14+) Gives the player a map item with the given captcha (the safest one)
-#subtitle - Shows the captcha in a subtitle (mediocre in terms of safety)
-#message - Sends a message to the player with the given captcha (mediocre in terms of safety and can be missed by the user)
+#particle - Creates a particle image representing the captcha. The player is not given blindness with this captcha, as it'd be impossible to see (The safest option. It's pretty lightweight (about ~0.6ms per send ), but technically the heaviest of the options)
+#map - Gives the player a map item with the given captcha (a decently safe one)
+#subtitle - Shows the captcha with a subtitle (mediocre in terms of safety)
+#message - Sends a message to the player with the given captcha (mediocre in terms of safety, and can be missed by the user)
 captcha-visual-type: map
 #Available:
-#numeric - The captcha is a number between 0 and 9999 (referring to the default captcha length of 4)
-#text - The captcha is a four letter text (referring to the default captcha length of 4)
+#numeric - The captcha is a number between 0 and 10^5 - 1 (referring to the default captcha length of 5)
+#text - The captcha is a five letter text (referring to the default captcha length of 5)
 captcha-type: text
 #Defines the range (in ASCII) of possible symbols in the text captcha (will not work for non-literal chars & ranges greater than the total of 32767)
-#Any arguments after symbolize singular characters excluded from the ranges ";e="
-captcha-text-ascii-range: a-z, A-Z, 1-9 ;e= I, l, O
-#Defines the font used for character rendering in the map captcha (only works in a headful environment)
-map-captcha-font: Arial
+#Any arguments after ";e=" symbolize singular characters excluded from the ranges
+captcha-text-chars-range: a-z, A-Z, 1-9 ;e= I, l, O
+#Defines the font used for character rendering in a drawable captcha
+captcha-font: Arial
 #Defines how big the drawn characters are
-map-captcha-font-size: 35
-#Defines (in degrees) the maximum random rotation of the letters on a captcha map (in both directions)
-map-captcha-max-random-rotation: 30
+captcha-font-size: 30
+#Defines (in degrees) the maximum random rotation of the letters on a drawable captcha (in both directions)
+captcha-max-random-rotation: 30
 #Defines the length of the captcha (min of 1, max of 5)
 captcha-length: 5
 #Defines whether captcha should be case-sensitive (not recommended, as whether the letters are capital can sometimes be hard to tell)
@@ -65,7 +63,7 @@ captcha-case-sensitive: false
 #Defines how many times the player can enter the incorrect captcha before being kicked out (setting it to a high number could be risky because of bot attacks)
 max-captcha-attempts: 1
 #Defines (in seconds) how long should a player allowed to be on the server without completing the captcha test before being kicked out
-max-captcha-time: 30
+max-captcha-time: 45
 
 
 #----------------------------------------------#
@@ -110,10 +108,10 @@ after-auto-login-commands:
 #Config used when the player is in the login phase, either trying to login in or register, but by using a GUI
 
 #Defines the default way the users have to register/log in. Available:
-# password/command - The user registers/logs in using the traditional password typed in the login command
-# anvil_password/anvil - The user registers/logs in using an anvil rename gui
-# pin - The user have to registers/logs in using a pin gui
-password-type: password
+# command - The user registers/logs in using the traditional password typed in the login command
+# anvil - The user registers/logs in using an anvil rename gui
+# pin - The user registers/logs in using a pin gui
+password-type: command
 #Defines whether the player should have his pin checked the moment he types the last digit, without the need of clicking the CONFIRM button
 pin-auto-confirm: true
 #Defines the background item in all guis

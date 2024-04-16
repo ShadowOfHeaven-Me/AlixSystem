@@ -1,6 +1,7 @@
 package shadow.utils.objects.savable.data.gui;
 
 import alix.common.data.LoginType;
+import io.netty.buffer.ByteBuf;
 import org.bukkit.Sound;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -8,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
-import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
 
 import static shadow.utils.main.AlixUtils.maxLoginAttempts;
 
@@ -59,7 +59,7 @@ public interface AlixVerificationGui {
     @NotNull
     String getPasswordBuilt();
 
-    Object pinLeaveFeedbackKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(PasswordGui.pinLeaveFeedback);
+    ByteBuf pinLeaveFeedbackKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(PasswordGui.pinLeaveFeedback);
 
     static void onSyncClick(UnverifiedUser user, InventoryClickEvent event) {
         AlixVerificationGui builder = user.getPasswordBuilder();
@@ -75,7 +75,7 @@ public interface AlixVerificationGui {
                     if (password.isEmpty()) return;
                     if (user.isRegistered()) {
                         if (user.isPasswordCorrect(password)) {
-                            user.logInSync();
+                            user.logIn();
                             return;
                         } else if (++user.loginAttempts == maxLoginAttempts)
                             MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
@@ -83,11 +83,12 @@ public interface AlixVerificationGui {
                     }
                     String reason = AlixUtils.getInvalidityReason(password, false);
                     if (reason != null) {
-                        user.writeAndFlushSilently(OutMessagePacketConstructor.construct(reason));
+                        //user.writeAndFlushConstSilently(OutMessagePacketConstructor.constructConst(reason));
+                        user.sendDynamicMessageSilently(reason);
                         user.getPlayer().playSound(user.getCurrentLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                         return;
                     }
-                    user.writeAndFlushSilently(CommandManager.passwordRegisterMessagePacket);
+                    user.writeAndFlushConstSilently(CommandManager.passwordRegisterMessagePacket);
                     user.registerSync(password);
                     return;
             }

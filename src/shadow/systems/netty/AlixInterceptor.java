@@ -4,7 +4,6 @@ import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
 import io.netty.channel.*;
-import shadow.utils.main.AlixUtils;
 
 import java.net.InetSocketAddress;
 
@@ -12,10 +11,10 @@ public final class AlixInterceptor {
 
     private static final String name = "AlixInterceptor";//, name2 = "AlixInjector";
 
-    public static void injectIntoServerPipeline(ChannelPipeline serverPipeline, ChannelHandler firewallHandler) {//the server pipeline
+    public static void injectIntoServerPipeline(ChannelPipeline serverPipeline) {//, ChannelHandler firewallHandler) {//the server pipeline
         if (serverPipeline.get(name) != null)//the check is necessary because of a NoSuchElementException otherwise
             serverPipeline.remove(name);//remove the interceptor on reload to prevent it from stacking
-        serverPipeline.addFirst(name, new Interceptor(firewallHandler));//set up the new interceptor, possibly a more recent one if it was a reload and it's bytecode changed (a new version of this plugin was uploaded)
+        serverPipeline.addFirst(name, new Interceptor());//set up the new interceptor, possibly a more recent one if it was a reload and it's bytecode changed (a new version of this plugin was uploaded)
 
         /*if (serverPipeline.get(name2) != null)
             serverPipeline.remove(name2);
@@ -24,37 +23,39 @@ public final class AlixInterceptor {
 
     private static final class Interceptor extends ChannelInboundHandlerAdapter {
 
-        private static final String fireWallName = "AlixDelayedChannelFireWall";
-        private final ChannelHandler delayedFirewall;
-        private final boolean isImmediate;
+        private static final String delayedFireWallName = "AlixDelayedChannelFireWall";
+        //private final ChannelHandler delayedFirewall;
+        //private final boolean isImmediate;
 
-        private Interceptor(ChannelHandler delayedFirewall) {
-            this.delayedFirewall = delayedFirewall;
-            this.isImmediate = delayedFirewall == null;
+
+        private Interceptor() {
+            //this.delayedFirewall = delayedFirewall;
+            //this.isImmediate = delayedFirewall == null;
+            //Just like CompletableFuture
+            //Class<?> ensureLoaded = AlixChannelInjector.class;
+            AlixChannelHandler.init();
             if (FireWallManager.isOsFireWallInUse)
                 AlixCommonMain.logInfo("Using the optimized OS IpSet for FireWall Protection.");
             else
-                AlixCommonMain.logInfo("Using Netty for FireWall Protection initialization. Fast-Mode: " + ((delayedFirewall == null) ? "ON" : "OFF"));
+                AlixCommonMain.logInfo("Using Netty for FireWall Protection.");// + ((delayedFirewall == null) ? "ON" : "OFF"));
         }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             Channel channel = (Channel) msg;
             AntiBotStatistics.INSTANCE.incrementJoins();
-            //Main.logError("Channel creation: " + channel);
-            if (!AlixUtils.antibotService || !FireWallManager.isBlocked((InetSocketAddress) channel.unsafe().remoteAddress())) {
-                //Main.logWarning("STARTED INJECTING " + ctx.name());
-                AlixChannelInjector.inject(channel);
-                super.channelRead(ctx, msg);
-                //Main.logWarning("INJECTION LISTENER ACTIVATED " + ctx.name());
+            if (FireWallManager.isBlocked((InetSocketAddress) channel.unsafe().remoteAddress())) {
+                channel.unsafe().closeForcibly();
                 return;
             }
-            if (isImmediate) {
-                channel.unsafe().closeForcibly();//the fastest and probably the only way to close the channel in this phase
-                return;
-            }
-            channel.pipeline().addLast(fireWallName, this.delayedFirewall);//the delayed firewall handling
+                /*if (isImmediate) {
+                    channel.unsafe().closeForcibly();//the fastest and probably the only way to close the channel in this phase
+                    return;
+                }
+                channel.pipeline().addLast(delayedFireWallName, this.delayedFirewall);//the delayed firewall handling
+                super.channelRead(ctx, msg);*/
             super.channelRead(ctx, msg);
+            AlixChannelHandler.inject(channel);
         }
 
         @Override

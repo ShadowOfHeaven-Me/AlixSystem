@@ -10,13 +10,13 @@ import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.netty.buffer.ByteBuf;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.conversations.Conversable;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -95,16 +95,23 @@ public final class AlixUtils {
         }*/
         String captchaVisualType = config.getString("captcha-visual-type").toLowerCase();
         switch (captchaVisualType) {
+            case "particle":
+                if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
+                    Main.logWarning("The option 'particle' in 'captcha-visual-type' is only available in a headful graphic environment," +
+                            " with this being a headless one. Switching to 'subtitle', as default!");
+                    captchaVisualType = "subtitle";
+                }
+                break;
             case "map":
-                if (ReflectionUtils.bukkitVersion <= 13) {
+                /*if (ReflectionUtils.bukkitVersion <= 13) {
                     Main.logWarning("The option 'map' in 'captcha-visual-type' is only available for versions 1.14+, and your version is "
                             + ReflectionUtils.bukkitVersion + ". Switching to 'subtitle', as default! ");
                     captchaVisualType = "subtitle";
-                }
+                }*/
 
                 if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
-                    Main.logWarning("The option 'map' in 'captcha-visual-type' is only available in a headful environment," +
-                            " with this being a headless one. Switching to 'subtitle', as default! ");
+                    Main.logWarning("The option 'map' in 'captcha-visual-type' is only available in a headful graphic environment," +
+                            " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
                 }
 
@@ -128,11 +135,13 @@ public final class AlixUtils {
                         captchaType + "! Switching to 'text', as default.");
                 break;
         }
-        String loginType = config.getString("password-type", "password").toLowerCase();
+        String loginType = config.getString("password-type").toLowerCase();
         switch (loginType) {
             case "password":
+            case "command":
             case "pin":
             case "anvil_password":
+            case "anvil":
                 break;
             default:
                 Main.logWarning("Invalid 'password-type' parameter set in config! Available: password & pin, but instead got '" +
@@ -141,7 +150,7 @@ public final class AlixUtils {
         }
         //pluginLanguage = getPluginLanguage(language);
         isPluginLanguageEnglish = !language.equals("pl");
-        defaultLoginType = LoginType.parseConfig(loginType.toUpperCase());
+        defaultLoginType = LoginType.from(loginType.toUpperCase(), true);
         anvilPasswordGui = defaultLoginType == LoginType.ANVIL;
         pinPasswordGui = defaultLoginType == LoginType.PIN;
         captchaVerificationType = CaptchaType.from(captchaType.toUpperCase());
@@ -394,7 +403,7 @@ public final class AlixUtils {
     public static LoginType readLoginType(String s, LoginType defaultForNull) {
         if (s.equals("null")) return defaultForNull;
         if (s.equals("0")) return defaultLoginType;
-        return LoginType.parseData(s);
+        return LoginType.from(s, false);
     }
 
 /*    public static double getDamageReduced(Player player) {//some random guy made this at https://www.spigotmc.org/threads/get-armor-defense-points-from-a-player.153971/
@@ -538,7 +547,7 @@ public final class AlixUtils {
         return null; //The given text is valid
     }
 
-    public static boolean isPasswordInvalid(String text) {
+/*    public static boolean isPasswordInvalid(String text) {
         int l = text.length();
         if (l > 30 || l < 5) return true;
         char[] b = text.toCharArray();
@@ -554,27 +563,23 @@ public final class AlixUtils {
             }
         }
         return false; //The given text is valid
-    }
+    }*/
 
     public static <T> boolean contains(List<T> list, T value) {
         for (T v : list) if (v.equals(value)) return true;
         return false;
     }
 
-    public static final Object
-            notLoggedInUserMessagePacket = OutMessagePacketConstructor.construct(Messages.notLoggedInUserMessage, true),
-            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.construct(Messages.captchaNotCompletedUserMessage, true),
-            unregisteredUserMessagePacket = OutMessagePacketConstructor.construct(Messages.unregisteredUserMessage, true);
+    public static final ByteBuf
+            notLoggedInUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.notLoggedInUserMessage, true),
+            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.captchaNotCompletedUserMessage, true),
+            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.unregisteredUserMessage, true);
 
-    public static Object getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
-        if (isRegistered) return notLoggedInUserMessagePacket;
+    public static ByteBuf getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
+        if (isRegistered) return notLoggedInUserMessagePacket;//is registered - require login
         if (hasAccount)
             return unregisteredUserMessagePacket;//isn't registered, but has an account - the password must've been reset
-        return requireCaptchaVerification ? captchaNotCompletedUserMessagePacket : unregisteredUserMessagePacket;
-    }
-
-    public static void sendEmptyMessage(Conversable c) {
-        c.sendRawMessage("");
+        return requireCaptchaVerification ? captchaNotCompletedUserMessagePacket : unregisteredUserMessagePacket;//not registered - require captcha if it's ON
     }
 
     public static void sendMessage(CommandSender p, String message, Object... a) {
@@ -1161,9 +1166,9 @@ public final class AlixUtils {
         return AlixFormatter.appendPrefix(translateColors(text));
     }
 
-    public static void broadcastFast0(String info) {
+    public static void broadcastRaw(String info) {
         //Bukkit.broadcastMessage(translateColors(info));
-        Main.logInfo(info);
+        Bukkit.getServer().getLogger().info(info);
         sendToAllPlayers(info);
     }
 

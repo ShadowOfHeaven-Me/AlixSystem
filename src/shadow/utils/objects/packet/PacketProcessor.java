@@ -1,29 +1,12 @@
 package shadow.utils.objects.packet;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 
-public abstract class PacketProcessor {
+public interface PacketProcessor {
 
-    private final PacketInterceptor handler;
+    void onPacketReceive(PacketPlayReceiveEvent event);
 
-    protected PacketProcessor(PacketProcessor processor) {
-        this.handler = processor.handler;
-    }
+    void onPacketSend(PacketPlaySendEvent event);
 
-    protected PacketProcessor(PacketInterceptor handler) {
-        this.handler = handler;
-    }
-
-    public void channelRead(ChannelHandlerContext ctx, Object packet) throws Exception {
-        this.handler.channelRead0(ctx, packet);
-    }
-
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        this.handler.write0(ctx, msg, promise);
-    }
-
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        this.handler.exceptionCaught0(ctx, cause);
-    }
 }

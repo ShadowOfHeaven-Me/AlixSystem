@@ -1,6 +1,5 @@
 package shadow.utils.main;
 
-import shadow.systems.netty.AlixInterceptor;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -18,32 +17,24 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginManager;
 import shadow.Main;
-import shadow.systems.dependencies.Dependencies;
 import shadow.systems.executors.OfflineExecutors;
 import shadow.systems.executors.OnlineExecutors;
 import shadow.systems.executors.ServerPingListener;
 import shadow.systems.executors.gui.GUIExecutors;
-import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.filters.*;
-import shadow.systems.login.firewall.DelayedChannelFireWall;
 import shadow.systems.login.result.LoginInfo;
+import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.objects.AlixConsoleFilterHolder;
-import shadow.utils.objects.packet.check.PacketAffirmator;
-import shadow.utils.objects.packet.check.impl.MultiVersionPacketAffirmator;
-import shadow.utils.objects.packet.check.impl.NewerVersionedPacketAffirmator;
-import shadow.utils.objects.packet.injector.ChannelInjector;
-import shadow.utils.objects.packet.injector.ChannelInjectorNMS;
-import shadow.utils.objects.packet.injector.ChannelInjectorPacketEvents;
-import shadow.utils.objects.packet.types.unverified.PacketBlocker;
-import shadow.utils.users.User;
 import shadow.utils.users.UserManager;
-import shadow.utils.users.offline.UnverifiedUser;
-import shadow.utils.world.AlixWorld;
+import shadow.utils.users.Verifications;
+import shadow.utils.users.types.AlixUser;
+import shadow.utils.users.types.TemporaryUser;
+import shadow.utils.users.types.UnverifiedUser;
+import shadow.utils.users.types.VerifiedUser;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -70,7 +61,7 @@ public final class AlixHandler {
     private static final boolean isTeleportDelayed = teleportDelay > 0;
     private static final String delayedTeleportMessage = Messages.getWithPrefix("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
 
-    private static void initializeAlixInjector() {
+    private static void initializeAlixInterceptor() {
         try {
             Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
             Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
@@ -95,8 +86,8 @@ public final class AlixHandler {
                     List<ChannelFuture> futures = (List<ChannelFuture>) f.get(serverConnection);//it's a List only because of reused code from minecraft singleplayer (info from Emily)
                     ChannelFuture future = futures.get(0);//it should contain only one handler
 
-                    boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
-                    AlixInterceptor.injectIntoServerPipeline(future.channel().pipeline(), fastRaw ? null : DelayedChannelFireWall.INSTANCE);//make sure we handle all of the connection requests before anyone else
+                    //boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
+                    AlixInterceptor.injectIntoServerPipeline(future.channel().pipeline());//, fastRaw ? null : DelayedChannelFireWall.INSTANCE);//make sure we handle all of the connection requests before anyone else
                     break;
                 }
             }
@@ -108,13 +99,13 @@ public final class AlixHandler {
     public static void delayedConfigTeleportExecute(Runnable r, Player p) {
         if (isTeleportDelayed) AlixScheduler.runLaterSync(r, teleportDelay, TimeUnit.MILLISECONDS);
         else r.run();
-        p.sendRawMessage(delayedTeleportMessage);
+        AlixUtils.sendMessage(p, delayedTeleportMessage);
     }
 
     public static void delayedConfigTeleport(Player player, Location loc) {
         if (isTeleportDelayed) {
             AlixScheduler.runLaterSync(() -> MethodProvider.teleportAsync(player, loc), teleportDelay, TimeUnit.MILLISECONDS);
-            player.sendRawMessage(delayedTeleportMessage);
+            AlixUtils.sendMessage(player, delayedTeleportMessage);
         } else MethodProvider.teleportAsync(player, loc);
     }
 
@@ -147,7 +138,7 @@ public final class AlixHandler {
         if (isOfflineExecutorRegistered) {
             pm.registerEvents(new OfflineExecutors(), Main.plugin);
 
-            initializeAlixInjector();
+            initializeAlixInterceptor();
             //PaperAccess.initializeFireWall();
                 /*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER)
                     PaperAccess.initializeFireWall();
@@ -192,8 +183,13 @@ public final class AlixHandler {
         Logger logger = ((Logger) LogManager.getRootLogger());
         for (Iterator<Filter> it = logger.getFilters(); it.hasNext(); ) {
             Filter filter = it.next();
-            if (filter instanceof AlixConsoleFilterHolder) {
-                ((AlixConsoleFilterHolder) filter).updateInstance();//updating the instance, since it's bytecode could've changed after a reload
+            if (filter.getClass().getSimpleName().equals("AlixConsoleFilterHolder")) {
+                try {
+                    //((AlixConsoleFilterHolder) filter).updateInstance();
+                    filter.getClass().getMethod("updateInstance").invoke(filter);
+                } catch (Exception e) {
+                    throw new AlixError(e);
+                }
                 return;
             }
         }
@@ -209,81 +205,80 @@ public final class AlixHandler {
         //JavaScheduler.repeatAsync(ServerPingManager::clear, 10, TimeUnit.MINUTES);
     }
 
-    public static UnverifiedUser handleOfflinePlayerJoin(Player p, String joinMessage, LoginInfo login) {
-        if (login.getVerdict().isAutoLogin() && p.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) //tp back if there was an issue with the teleportation beforehand
-            OriginalLocationsManager.teleportBack(p, true);
+    public static UnverifiedUser handleOfflinePlayerJoin(Player p, String joinMessage, TemporaryUser user) {
+        LoginInfo login = user.getLoginInfo();
+        //Already done in the spawn location event
+        /*if (login.getVerdict().isAutoLogin() && p.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) //tp back if there was an issue with the teleportation beforehand
+            OriginalLocationsManager.teleportBack(p);*/
         switch (login.getVerdict()) {//a fast injection based on the login verdict
             case DISALLOWED_NO_DATA:
-                GeoIPTracker.addTempIP(login.getIP());
-                return Verifications.add(p, login, joinMessage);
-            case DISALLOWED_PASSWORD_RESET://needs to register
+                GeoIPTracker.addIP(login.getIP());
+                return Verifications.add(p, user, joinMessage);
+            case DISALLOWED_PASSWORD_RESET://needs to register after a password reset
             case DISALLOWED_LOGIN_REQUIRED://needs to log in
-                return Verifications.add(p, login, joinMessage);
+                return Verifications.add(p, user, joinMessage);
             case REGISTER_PREMIUM:
                 autoRegisterCommandList.invoke(p);
-                UserManager.addOnlineUser(p, login);
+                UserManager.addVerifiedUser(p, user);
                 return null;
             case LOGIN_PREMIUM:
                 autoLoginCommandList.invoke(p);
-                UserManager.addOnlineUser(p, login);
+                UserManager.addVerifiedUser(p, user);
                 return null;
             case IP_AUTO_LOGIN:
                 autoLoginCommandList.invoke(p);
-                UserManager.addOfflineUser(p, login.getData(), login.getIP(), login.getPacketInterceptor());
+                UserManager.addVerifiedUser(p, user);
                 p.sendMessage(Messages.autoLoginMessage);
                 return null;
             default:
-                throw new AssertionError("Invalid: " + login.getVerdict());
+                throw new AssertionError("Invalid verdict: " + login.getVerdict());
         }
     }
 
     public static void handleOfflinePlayerQuit(Player p, PlayerQuitEvent event) {
-        UnverifiedUser u = Verifications.remove(p);
+        AlixUser user = UserManager.remove(p);
 
-        if (u != null) {//unregistered/not logged in user removal
+        if (user == null) {
+            Main.logWarning("Could not get any User instance for the player " + p.getName() + " on quit! Report this as an error immediately!");
+            return;
+        }
+
+        if (!user.isVerified()) {//unregistered/not logged in user quit handling
+            UnverifiedUser u = (UnverifiedUser) user;
             u.uninject();//uninject the user
-            //u.getPacketBlocker().cancelLoginKickTask();
+            if (!u.hasAccount()) GeoIPTracker.removeIP(u.getIPAddress());//remove the temporary ip
             if (u.isCaptchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
-                GeoIPTracker.removeTempIP(u.getIPAddress());
                 event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
                 if (alixJoinLog) Main.logInfo(quitCaptchaUnverified.format(p.getName(), u.getIPAddress()));
             } else if (alixJoinLog) Main.logInfo(quitUnverified.format(p.getName(), u.getIPAddress()));
-        } else {
-            User user = UserManager.remove(p);//logged in user removal
-            if (user == null)
-                Main.logWarning("Could not get any User instance for the player " + p.getName() + " on quit!");
-            else Main.logInfo(quitVerified.format(user.getName(), user.getIPAddress()));
-            //return;
+        } else {//logged in user quit handling
+            VerifiedUser u = (VerifiedUser) user;
+            Main.logInfo(quitVerified.format(u.getName(), u.getIPAddress()));
         }
-        /*if (!alixJoinLog) return;
-
-        String name = p.getName();
-        String ip = u != null ? u.getIPAddress() : user.getIPAddress();
-        AlixMessage message =*/
     }
 
-    public static PacketAffirmator createPacketAffirmatorImpl() {
-        if (PacketBlocker.serverboundNameVersion) {
+/*    public static PacketAffirmator createPacketAffirmatorImpl() {
+        if (PacketBlocker.serverboundChatCommandPacketVersion) {
             Main.logInfo("Using the 1.17+ packet affirmator for packet processing.");
             return new NewerVersionedPacketAffirmator();
         }
         Main.logInfo("Using the multi-version packet affirmator for packet processing.");
         return new MultiVersionPacketAffirmator();
-    }
+    }*/
 
-    public static ChannelInjector createChannelInjectorImpl() {
+/*    public static ChannelInjector createChannelInjectorImpl() {
         if (Dependencies.isPacketEventsPresent) {
             Main.logInfo("Using PacketEvents for channel injecting (provided).");
             return new ChannelInjectorPacketEvents();
         }
-        /*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
+        *//*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
             Main.logInfo("Using Paper for channel injecting (built-in).");
             return new ChannelInjectorPaper();
-        }*/
+        }*//*
         ChannelInjector injector = new ChannelInjectorNMS();
         Main.logInfo("Using " + injector.getProvider() + " for channel injecting (built-in).");
         return injector;
-    }
+    }*/
 
 /*    public static PingCheckFactory createPingCheckFactoryImpl() {
         if (ReflectionUtils.protocolVersion) {

@@ -28,7 +28,7 @@ public final class OriginalLocationsFile extends FileManager {
         super.saveKeyAndVal(map, "|", null, null, SavableLocation::toSavableString);//l -> toSavableString(l)
     }
 
-    public final Map<UUID, Location> getMap() {
+    public Map<UUID, Location> getMap() {
         return map;
     }
 }

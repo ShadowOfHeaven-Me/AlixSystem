@@ -8,20 +8,8 @@ public enum LoginType {
     PIN,
     ANVIL;
 
-    public static LoginType parseData(String config) {
-        switch (config) {
-            case "ANVIL_PASSWORD":
-            case "ANVIL":
-                return ANVIL;
-            case "PIN":
-                return PIN;
-            default:
-                return COMMAND;
-        }
-    }
-
-    public static LoginType parseConfig(String config) {
-        switch (config) {
+    public static LoginType from(String t, boolean config) {
+        switch (t) {
             case "PASSWORD":
             case "COMMAND":
                 return COMMAND;
@@ -31,7 +19,8 @@ public enum LoginType {
             case "PIN":
                 return PIN;
             default:
-                AlixCommonMain.logWarning("Invalid login type in config: '" + config + "'! Defaulting to 'COMMAND'!");
+                if (config)
+                    AlixCommonMain.logWarning("Invalid login type in config: '" + config + "'! Defaulting to 'COMMAND'!");
                 return COMMAND;
         }
     }

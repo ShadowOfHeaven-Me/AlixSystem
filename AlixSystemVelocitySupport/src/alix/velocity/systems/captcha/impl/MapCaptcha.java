@@ -19,13 +19,13 @@ public final class MapCaptcha implements Captcha {
     private final MapDataPacket mapDataPacket;
 
     public MapCaptcha(String captcha) {
-        byte[] pixels = CaptchaImageGenerator.generatePixelsToDraw(captcha, 30);
+        byte[] pixels = CaptchaImageGenerator.generatePixelsToDraw(captcha, 30, true, true);
         MapData data = new MapData(pixels);
         this.mapDataPacket = new MapDataPacket(0, (byte) 0, data);
     }
 
     @Override
-    public final void sendPackets(Channel channel) {
+    public void sendPackets(Channel channel) {
         channel.write(itemPacket);
         channel.writeAndFlush(mapDataPacket);
 

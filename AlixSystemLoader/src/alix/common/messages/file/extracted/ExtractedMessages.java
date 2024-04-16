@@ -1,27 +1,30 @@
 package alix.common.messages.file.extracted;
 
-import alix.common.messages.file.MessagesFile;
 import alix.common.messages.Messages;
+import alix.common.messages.file.MessagesFile;
 import alix.common.utils.file.AlixFileManager;
-import alix.common.utils.file.temp.TemporaryFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-public class ExtractedMessages extends TemporaryFile {
+public class ExtractedMessages extends AlixFileManager {
 
     private final List<String> messages, syntaxes;
 
     public ExtractedMessages(MessagesFile file) {
-        super("extracted-messages.txt");
+        super("extracted-messages.txt", false, false);
         this.messages = new ArrayList<>();
         this.syntaxes = new ArrayList<>();
         this.syntaxes.addAll(file.getMap().keySet());
+        Collection<String> values = file.getMap().values();
+        List<String> list = new ArrayList<>(values.size());
+        for (String s : values) list.add(s.replaceAll("§", "&"));
         try {
-            super.save0(file.getMap().values());//writing the messages into the file
+            super.save0(list);//writing the messages into the file
         } catch (IOException e) {
             e.printStackTrace();
         }

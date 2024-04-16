@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.check.impl;
 
 import net.minecraft.network.protocol.game.PacketPlayInFlying;
@@ -42,3 +43,4 @@ public final class NewerVersionedPacketAffirmator extends AbstractPacketAffirmat
         return name.equals("ServerboundChatCommandPacket");
     }
 }
+*/

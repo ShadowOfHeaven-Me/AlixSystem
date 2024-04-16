@@ -5,10 +5,9 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.utils.file.update.UpdateChecker;
 import alix.loaders.classloader.LoaderBootstrap;
+import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,8 +15,8 @@ import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.executors.PreStartUpExecutors;
+import shadow.systems.executors.packetevents.PacketEventsManager;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
-import shadow.systems.login.Verifications;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
@@ -27,7 +26,6 @@ import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
-import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
 import shadow.utils.world.AlixWorld;
@@ -48,9 +46,27 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Slightly changed the captcha generation strategy and overall look
-    //[*] Fixed /account still sometimes not working correctly when changing passwords
-
+    //[+] Rewrote the whole plugin from the server engine-dependent NMS packet control, to the cross-platform netty byte buffer control, by utilizing PacketEvents, and rewriting some of it's methods
+    //[+] Added 1.9+ support
+    //[+] Added a new captcha type: Particle
+    //[+] Added cross-platform support - the plugin will work as long as the general packet protocol stays the same and the server engine is a spigot fork
+    //[+] Added a simple & efficient safety system to counter on-login netty crashers
+    //[+] Added a time limit for login packets to prevent empty connections from staying too long
+    //[+] Lessened the amount of threads created in the scheduler to just 1, and optimized the performance, by better utilizing the netty threads
+    //[+] Operators will now be suggested after the alix /op
+    //[*] No more than 3 captchas will now be held in the captcha pool due to handling changes
+    //[*] Fixed a generator error sometimes thrown on Paper servers
+    //[*] Fixed some symbols in the configurable files still being changed into gibberish
+    //[*] Reimplemented 1.13+ support
+    //[*] Fixed an issue related to the account limiter
+    //[*] Fixed message extraction working incorrectly
+    //[*] Fixed codes such as bold, italic etc. not working in Alix's message formatting
+    //[*] Fixed some issues related to original location saving and teleportation
+    //[*] Fixed verification commands being visible in the console on pre-1.17
+    //[*] Fixed IP autologin setting not being saved when double verification was disabled
+    //[*] 'max-captcha-time': 30 -> 45 by default
+    //[*] Changed some messages due to outdated formatting
+    //[-] Removed 'fast-raw-firewall' from config.yml. The "Fast Raw" FireWall will now always be used
 
 
     //todo: Add a custom data structure for unverified users
@@ -81,7 +97,9 @@ public final class Main implements LoaderBootstrap {
     ban-format: ""*/
 
 
-
+/*#If set to true, Alix will immediately forcibly close connections and have the player see the automatic "Connection Refused" message.
+#If set to false, the "Your IP has been firewalled" message will be shown after waiting for login packets (a bit less optimized).
+    fast-raw-firewall: true*/
 
 /*#----------------------------------------------#
         #            PING CHECK (Experimental)         #
@@ -104,18 +122,13 @@ public final class Main implements LoaderBootstrap {
     //DO NOT USE THE ALIX SCHEDULER ON LOAD, CUZ ON PAPER THIS MFO THROWS ERRORS
     @Override
     public void onLoad() {
+        //ServerLoadEvent
         //TODO: Make ip autologin ask configurable
         //if (autoRestart()) return;
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
+        PacketEventsManager.onLoad();
         config = (YamlConfiguration) plugin.getConfig();
         pm = Bukkit.getPluginManager();
-        ReflectionUtils.replaceBansToConcurrent();
-        Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
-        AlixCommandManager.init();
-        VerificationReminder.init();
-        if (anvilPasswordGui) AnvilPasswordBuilder.init();
-        MethodProvider.init();
-        IpAutoLoginGUI.init();
         this.metrics = Metrics.createMetrics();
         AlixHandler.kickAll("Reload");
         //Runtime.getRuntime().exec(
@@ -123,15 +136,22 @@ public final class Main implements LoaderBootstrap {
 
     @Override
     public void onEnable() {//TODO: Player GUI in /js commands (texture not working & items can be picked up)
-        Captcha.pregenerate(); //will not pregenerate the captcha itself if disabled, but needs to be invoked for the BufferedPackets values to pregenerate
         pm.registerEvents(this.preStartUpExecutors = new PreStartUpExecutors(), plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
+        ReflectionUtils.replaceBansToConcurrent();
+        Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
+        VerificationReminder.init();
+        if (anvilPasswordGui) AnvilPasswordBuilder.init();
+        MethodProvider.init();
+        IpAutoLoginGUI.init();
+        AlixCommandManager.init();
         Dependencies.initAdditional();
         PremiumAutoIn.checkForInit();
         FileManager.loadFiles();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         CommandManager.register();
+        PacketEventsManager.onEnable();
         AlixScheduler.sync(() -> AlixScheduler.async(this::setUp));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
     }
 
@@ -139,8 +159,10 @@ public final class Main implements LoaderBootstrap {
     public void onDisable() {//ChatColor.of(color)
         //logConsoleInfo("Saving files...");
         FileManager.saveFiles();
+        PacketEvents.getAPI().terminate();
+        Captcha.cleanUp();
         //logConsoleInfo("Saved!");
-        Verifications.disable();
+        //Verifications.disable();
         //UserManager.disable();
         //Captcha.unregister();
         AlixScheduler.shutdown();
@@ -180,9 +202,12 @@ public final class Main implements LoaderBootstrap {
         //AlixHandler.kickAll("Reload");
         UpdateChecker.checkForUpdates();
         //AlixScheduler.async(UpdateChecker::checkForUpdates);
+        //logError("BEFORE CAPTCHA LOAD");
+        Captcha.pregenerate(); //will not pregenerate the captcha itself if disabled, but needs to be invoked for the BufferedPackets values to pregenerate
+        //logError("AFTER CAPTCHA LOAD");
         if (requireCaptchaVerification) Captcha.sendInitMessage();
         PacketBlocker.init(); //load the class
-        PacketInterceptor.init();//send the init message
+        //PacketInterceptor.init();//send the init message
         //ConfigUpdater.checkForUpdates(config);
         ReflectionUtils.init();
         if (config.getBoolean("check-server-compatibility")) {
@@ -198,8 +223,8 @@ public final class Main implements LoaderBootstrap {
             }
             //logConsoleInfo(en ? "Done!" : "Ukończono!");
         }
-        String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
-        logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
+        // String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
+        //logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
         AlixHandler.initExecutors(pm);
         HandlerList.unregisterAll(preStartUpExecutors);
         this.preStartUpExecutors = null;
@@ -291,7 +316,7 @@ public final class Main implements LoaderBootstrap {
         //MessageUtils.toStdout(
     }
 
-    public void logConsoleWarning(String warning) {
+/*    public void logConsoleWarning(String warning) {
         plugin.getLogger().warning(warning);
-    }
+    }*/
 }

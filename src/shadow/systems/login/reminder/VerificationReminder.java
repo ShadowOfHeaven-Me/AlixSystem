@@ -1,31 +1,34 @@
 package shadow.systems.login.reminder;
 
-import shadow.systems.login.Verifications;
-import shadow.utils.users.offline.UnverifiedUser;
+import io.netty.buffer.ByteBuf;
+import shadow.utils.holders.packet.buffered.BufferedPackets;
+import shadow.utils.users.types.UnverifiedUser;
+
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public final class VerificationReminder {
 
-    public static final long MILLIS_UPDATE_PERIOD = 1500;
-    private static long nextSend = System.currentTimeMillis();
+    private static final long TICK_DELAY = 1000 / BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND;
+    public static final long MESSAGE_RESEND_DELAY = 1500;
 
-    public static void sendVerificationMessagesAndUpdateTimer() {
+    public static ScheduledFuture<?> reminderFor(UnverifiedUser user) {
+        return user.getChannel().eventLoop().scheduleAtFixedRate(() -> tick(user), 0, TICK_DELAY, TimeUnit.MILLISECONDS);
+    }
+
+    private static void tick(UnverifiedUser user) {
         long now = System.currentTimeMillis();
+        boolean delayPassed = now > user.nextSend;
 
-        boolean delayPassed = now > nextSend;
+        user.getPacketBlocker().getCountdownTask().tick();
 
-        if (delayPassed) nextSend = now + MILLIS_UPDATE_PERIOD;//update the next send
+        if (delayPassed) {
+            user.nextSend = now + MESSAGE_RESEND_DELAY;//update the next send
 
-        //Main.logInfo("REPEAT");
+            ByteBuf buf;
 
-        for (UnverifiedUser user : Verifications.users()) {
-
-            user.getPacketBlocker().getCountdownTask().tick();
-
-            //Main.logInfo("USER " + delayPassed + " " + !user.isGUIInitialized() + " " + (user.getVerificationMessagePacket() != null));
-
-            if (delayPassed && !user.isGUIInitialized() && user.getVerificationMessagePacket() != null)
-                //Main.logInfo("REMINDERR");
-                user.writeAndFlushSilently(user.getVerificationMessagePacket());
+            if (!user.isGUIInitialized() && (buf = user.getVerificationMessageBuffer()) != null)
+                user.writeAndFlushConstSilently(buf);
         }
     }
 

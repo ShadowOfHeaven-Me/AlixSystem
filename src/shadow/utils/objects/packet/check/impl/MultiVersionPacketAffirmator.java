@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.check.impl;
 
 import shadow.utils.holders.ReflectionUtils;
@@ -39,4 +40,4 @@ public final class MultiVersionPacketAffirmator extends AbstractPacketAffirmator
     private boolean isCommand0(String name) {
         return name.equals("PacketPlayInChat") || name.equals("PacketPlayInClientCommand");
     }
-}
+}*/

@@ -7,7 +7,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import shadow.systems.login.Verifications;
+import shadow.utils.users.Verifications;
 import shadow.utils.world.AlixWorld;
 
 import java.util.concurrent.TimeUnit;
@@ -24,15 +24,12 @@ public final class CaptchaRespawnExecutors implements Listener {
     public void onDeath(PlayerDeathEvent e) {
         if (!this.forceRespawn) return;
         Player p = e.getEntity();
-        if (p.getWorld().equals(AlixWorld.CAPTCHA_WORLD) && Verifications.has(p)) {//Manually respawn the player if the gamerule is unavailable
+        if (p.getWorld().equals(AlixWorld.CAPTCHA_WORLD) && Verifications.has(p))//Manually respawn the player if the gamerule is unavailable
             AlixScheduler.runLaterSync(() -> p.spigot().respawn(), 100, TimeUnit.MILLISECONDS);
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent e) {
-        if (Verifications.has(e.getPlayer())) {
-            e.setRespawnLocation(AlixWorld.TELEPORT_LOCATION);
-        }
+        if (Verifications.has(e.getPlayer())) e.setRespawnLocation(AlixWorld.TELEPORT_LOCATION);
     }
 }

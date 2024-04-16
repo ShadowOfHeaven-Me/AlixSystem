@@ -2,8 +2,6 @@ package alix.common.utils.formatter;
 
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.other.annotation.AlixIntrinsified;
-import org.bukkit.ChatColor;
-import org.jetbrains.annotations.Contract;
 
 import java.util.Arrays;
 
@@ -72,8 +70,7 @@ public final class AlixFormatter {
             char c = a[i];
             if (c == '{' && a[i + 1] == '0' && a[i + 2] == '}') {//the regex is "{0}"
                 int ip3 = i + 3;//the regex is 3 letters long
-                if (ip3 >= l) return sb.append(replacement).toString();
-                return sb.append(replacement).append(Arrays.copyOfRange(a, ip3, l)).toString();
+                return ip3 >= l ? sb.append(replacement).toString() : sb.append(replacement).append(Arrays.copyOfRange(a, ip3, l)).toString();
             }
             sb.append(c);
         }
@@ -100,16 +97,13 @@ public final class AlixFormatter {
         for (int i = 0; i < l; i++) {
             char c = a[i];
             if (i == lM2)
-                return sb.append(a[lM2]).append(a[l - 1]).toString();//the text was not skipped and is 2 chars long, so we can skip the character test and simply return the current text + the 2 remaining characters
+                return sb.append(a[lM2]).append(a[l - 1]).toString();//the remaining text was not skipped and is 2 chars long, so we can skip the character test and simply return the current text + the 2 remaining characters, since the regex is 3 characters long
             if (c == '{' && a[i + 2] == '}') {
                 int index = a[i + 1] - 48;//48 is '0' in ascii
                 if (index < argsLength && index >= 0) {//the given index is valid
                     sb.append(args[index].toString());
                     i += 2;//skipping '<digit>}' in the text, as the first '{' is already skipped by the default for(i) iterator
-                } else {
-                    sb.append(c);
-                    //continue, the index was invalid
-                }
+                } else sb.append(c);//continue, the index was invalid
             } else sb.append(c);
         }
         return sb.toString();
@@ -117,12 +111,12 @@ public final class AlixFormatter {
 
     @AlixIntrinsified(method = "ChatColor.translateAlternateColorCodes")
     public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
-        final char[] c = text.toCharArray();
-        final int lM1 = c.length - 1;
+        char[] c = text.toCharArray();
+        int lM1 = c.length - 1;
         for (int i = 0; i < lM1; i++)
             if (c[i] == '&') {
-                char d = c[++i];
-                if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9') c[i - 1] = '§';
+                char d = c[++i];                                   //k, l, m, n, o
+                if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9' || d >= 'k' && d <= 'o' || d == 'r') c[i - 1] = '§';
             }
         return new String(c);
     }

@@ -1,13 +1,16 @@
 package shadow.utils.holders.methods;
 
-import alix.common.utils.netty.NettyUtils;
 import alix.common.utils.other.annotation.AlixIntrinsified;
-import io.netty.channel.Channel;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import shadow.utils.users.offline.UnverifiedUser;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import shadow.utils.netty.NettyUtils;
+import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -37,18 +40,24 @@ public final class MethodProvider {
         PaperLib.isPaper();//load the class
     }
 
-    public static void kickAsync(UnverifiedUser user, Object disconnectPacket) {
-        kickAsync(user.getPacketBlocker().getChannel(), disconnectPacket);
+    private static final ByteBuf CLOSE_INVENTORY_BUFFER = NettyUtils.constBuffer(new WrapperPlayServerCloseWindow(0));
+
+    //does not fire InventoryCloseEvent
+    @AlixIntrinsified(method = "Player#closeInventory")
+    public static void closeInventoryAsyncSilently(ChannelHandlerContext silentContext) {
+        NettyUtils.writeAndFlushConst(silentContext, CLOSE_INVENTORY_BUFFER);
     }
 
     @AlixIntrinsified(method = "Player#kickPlayer")
-    public static void kickAsync(Channel channel, Object disconnectPacket) {
-        NettyUtils.writeAndFlush(channel, disconnectPacket, ChannelFutureListener.CLOSE);
+    public static void kickAsync(UnverifiedUser user, ByteBuf disconnectPacket) {
+        NettyUtils.writeAndFlushConst(user.silentContext(), disconnectPacket).addListener(ChannelFutureListener.CLOSE);
     }
+
+    public static final PlayerTeleportEvent.TeleportCause ASYNC_TP_CAUSE = PlayerTeleportEvent.TeleportCause.SPECTATE;
 
     @AlixIntrinsified(method = "Player#teleport")
     public static CompletableFuture<Boolean> teleportAsync(Player player, Location loc) {
-        return PaperLib.teleportAsync(player, loc);
+        return PaperLib.teleportAsync(player, loc, ASYNC_TP_CAUSE);
     }
 
     public static void init() {

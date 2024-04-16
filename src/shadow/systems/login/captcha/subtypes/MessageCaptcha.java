@@ -1,12 +1,13 @@
 package shadow.systems.login.captcha.subtypes;
 
+import io.netty.buffer.ByteBuf;
 import shadow.systems.login.captcha.Captcha;
 import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
 
 public final class MessageCaptcha extends Captcha {
 
-    private final Object packet = OutMessagePacketConstructor.construct("\n Captcha: §c" + captcha + "\n");
+    private final ByteBuf packet = OutMessagePacketConstructor.constructDynamic("\n Captcha: §c" + captcha + "\n");
 
     public MessageCaptcha() {
         super();

@@ -4,6 +4,7 @@
     <root id="archive" name="AlixSystem.jarinjar">
       <element id="module-output" name="AlixSystem" />
       <element id="extracted-dir" path="$USER_HOME$/Downloads/paperlib-1.0.7.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/packetevents-spigot-2.2.1.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

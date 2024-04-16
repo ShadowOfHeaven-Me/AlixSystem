@@ -1,6 +1,6 @@
 package shadow.utils.command.tpa;
 
-import shadow.utils.users.User;
+import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
 import org.bukkit.entity.Player;
 
@@ -24,7 +24,7 @@ public final class TpaManager {
     }
 
     public static boolean hasRequestsOff(Player p) {
-        User u = UserManager.getNullableUserOnline(p);
+        VerifiedUser u = UserManager.getNullableVerifiedUser(p);
         return u != null && !u.canReceiveTeleportRequests();
     }
 }

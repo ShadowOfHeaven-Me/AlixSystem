@@ -13,7 +13,7 @@ import shadow.systems.commands.CommandManager;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
 
 import static shadow.utils.main.AlixUtils.maxLoginAttempts;
 import static shadow.utils.objects.savable.data.gui.PasswordGui.*;
@@ -59,7 +59,7 @@ public final class SimplePinBuilder implements AlixVerificationGui {
 
         if (user.isRegistered()) {
             if (user.isPasswordCorrect(pin)) {
-                user.logInSync();
+                user.logIn();
                 return;
             } else if (++user.loginAttempts == maxLoginAttempts)
                 MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);

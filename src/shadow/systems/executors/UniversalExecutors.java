@@ -1,18 +1,13 @@
 package shadow.systems.executors;
 
-import shadow.systems.login.filters.ConnectionFilter;
-import alix.common.scheduler.AlixScheduler;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.world.WorldSaveEvent;
+import shadow.systems.login.filters.ConnectionFilter;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.main.AlixHandler;
-import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.users.User;
-import shadow.utils.world.AlixWorldHolder;
+import shadow.utils.users.types.VerifiedUser;
 
 import static shadow.utils.main.AlixUtils.*;
 import static shadow.utils.users.UserManager.getVerifiedUser;
@@ -22,12 +17,6 @@ public abstract class UniversalExecutors implements Listener {
     //protected static final UUID mainWorldUUID = AlixWorldHolder.getMain().getUID();
     protected final ConnectionFilter[] premiumFilters = AlixHandler.getPremiumConnectionFilters();
 
-    @EventHandler
-    public void onSave(WorldSaveEvent e) {
-        if (userDataAutoSave && AlixWorldHolder.isMain(e.getWorld())) AlixScheduler.async(UserFileManager::onAsyncSave);
-        //WarpFileManager.save(); For now disabled
-    }
-
     protected void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();
         if (interveneInChatFormat) e.setFormat(chatFormat);
@@ -35,7 +24,7 @@ public abstract class UniversalExecutors implements Listener {
             e.setMessage(translateColors(e.getMessage()));
             return;
         }
-        User u = getVerifiedUser(p);
+        VerifiedUser u = getVerifiedUser(p);
         if (ChatManager.cannotChat(u)) {
             e.setCancelled(true);
             return;

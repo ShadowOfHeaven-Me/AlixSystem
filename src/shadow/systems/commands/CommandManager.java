@@ -3,6 +3,7 @@ package shadow.systems.commands;
 import alix.common.messages.Messages;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
+import io.netty.buffer.ByteBuf;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -16,7 +17,6 @@ import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandInfo;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.commands.alix.impl.AlixCommand;
-import shadow.systems.commands.alix.verification.VerificationCommand;
 import shadow.systems.commands.tab.CommandTabCompleterAS;
 import shadow.systems.commands.tab.subtypes.*;
 import shadow.systems.gui.impl.AccountGUI;
@@ -34,9 +34,9 @@ import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.objects.savable.loc.NamedLocation;
-import shadow.utils.users.User;
 import shadow.utils.users.UserManager;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
+import shadow.utils.users.types.VerifiedUser;
 
 import java.util.Collection;
 import java.util.Date;
@@ -383,15 +383,16 @@ public final class CommandManager {
             registerCommand("unbanip", new UnbanIPCommand(), new IPBanCommandTabCompleter());
             registerCommand("tempban", new TemporaryBanCommand());
             registerCommand("tempbanip", new TemporaryIPBanCommand());
-            registerCommand("op", new OperatorSetCommand());
-            registerCommand("deop", new OperatorUnsetCommand(), new OperatorCommandTabCompleter());
+            registerCommand("op", new OperatorSetCommand(), new OpCommandTabCompleter());
+            registerCommand("deop", new OperatorUnsetCommand(), new DeopCommandTabCompleter());
             TabCompleter warpCommandTabCompleter = new WarpCommandTabCompleter();
             registerCommand("warp", new WarpTeleportCommand(), warpCommandTabCompleter);
             registerCommand("addwarp", new WarpCreateCommand(), "alixsystem.admin.warp");
             registerCommand("removewarp", new WarpRemoveCommand(), warpCommandTabCompleter, "alixsystem.admin.warp");
-            registerCommand("removehome", new HomeRemoveCommand(), "alixsystem.home");
+            TabCompleter homeCommandTabCompleted = new HomeCommandTabCompleter();
+            registerCommand("removehome", new HomeRemoveCommand(), homeCommandTabCompleted, "alixsystem.home");
             registerCommand("sethome", new HomeSetCommand(), "alixsystem.home");
-            registerCommand("home", new HomeTeleportCommand(), "alixsystem.home");
+            registerCommand("home", new HomeTeleportCommand(), homeCommandTabCompleted, "alixsystem.home");
             registerCommand("homelist", new HomeListCommand(), "alixsystem.home");
             registerCommand("tpa", new TeleportAskCommand(), "alixsystem.tpa");
             registerCommand("tpaccept", new TeleportAcceptCommand(), "alixsystem.tpa");
@@ -896,9 +897,9 @@ public final class CommandManager {
                 Player p = (Player) sender;
                 Location l = p.getLocation();
                 String name = args[0];
-                NamedLocation NamedLocation = WarpFileManager.get(name);
-                if (NamedLocation != null) {
-                    WarpFileManager.replace(new NamedLocation(l, NamedLocation.getName()));
+                NamedLocation warp = WarpFileManager.get(name);
+                if (warp != null) {
+                    WarpFileManager.replace(new NamedLocation(l, warp.getName()));
                     sendMessage(sender, warpLocationChange, name);
                     return true;
                 }
@@ -942,7 +943,7 @@ public final class CommandManager {
             if (isConsoleButPlayerRequired(sender)) return false;
             if (args.length == 0) {
                 Player p = (Player) sender;
-                NamedLocation[] homes = getVerifiedUser(p).getHomes().asArray();
+                NamedLocation[] homes = getVerifiedUser(p).getHomes().array();
                 if (homes.length != 0) {
                     sendMessage(sender, listOfHomes);
                     sendMessage(sender, "");
@@ -965,7 +966,7 @@ public final class CommandManager {
             int l = args.length;
             if (isConsoleButPlayerRequired(sender)) return false;
             Player p = (Player) sender;
-            User u = getVerifiedUser(p);
+            VerifiedUser u = getVerifiedUser(p);
             switch (l) {
                 case 0: {
                     NamedLocation home = u.getHomes().getByName("default");
@@ -1006,7 +1007,7 @@ public final class CommandManager {
             if (args.length == 1) {
                 if (isConsoleButPlayerRequired(sender)) return false;
                 Player p = (Player) sender;
-                User u = getVerifiedUser(p);
+                VerifiedUser u = getVerifiedUser(p);
                 String name = args[0];
                 int i = u.getHomes().indexOf(name);
                 if (i != -1) {
@@ -1030,8 +1031,8 @@ public final class CommandManager {
             if (isConsoleButPlayerRequired(sender)) return false;
             Player p = (Player) sender;
             Location loc = p.getLocation();
-            User u = getVerifiedUser(p);
-            int current = u.getHomes().asArray().length;
+            VerifiedUser u = getVerifiedUser(p);
+            int current = u.getHomes().array().length;
             short max = u.getMaxHomes();
             switch (l) {
                 case 0:
@@ -1379,19 +1380,20 @@ public final class CommandManager {
         sendMessage(sender, incorrectCaptcha);
     }*/
 
-    private static final Object incorrectCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(incorrectCaptcha);
-    public static final Object
-            incorrectCaptchaMessagePacket = OutMessagePacketConstructor.construct(incorrectCaptcha),
-            captchaCompleteMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("captcha-complete"));
+    private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(incorrectCaptcha);
+    public static final ByteBuf
+            incorrectCaptchaMessagePacket = OutMessagePacketConstructor.constructConst(incorrectCaptcha),
+            captchaCompleteMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-complete"));
 
     public static void onCaptchaCompletionAttempt(UnverifiedUser user, String captcha) {
+        //Main.logError("INPUT: '" + captcha + "'");
         if (user.isCaptchaCorrect(captcha)) {
             user.completeCaptcha();
-            user.writeAndFlushSilently(captchaCompleteMessagePacket);
+            user.writeAndFlushConstSilently(captchaCompleteMessagePacket);
             return;
         }
         if (++user.captchaAttempts == maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
-        else user.writeAndFlushSilently(incorrectCaptchaMessagePacket);
+        else user.writeAndFlushConstSilently(incorrectCaptchaMessagePacket);
     }
 
 /*    private static final class CaptchaVerifyCommand implements CommandExecutor {
@@ -1403,7 +1405,7 @@ public final class CommandManager {
         }
     }*/
 
-    public static void onPasswordChangeCommand(User user, String[] args) {
+    public static void onPasswordChangeCommand(VerifiedUser user, String[] args) {
         Player sender = user.getPlayer();
         if (args.length != 1) {
             sendMessage(sender, formatChangepassword);
@@ -1430,45 +1432,44 @@ public final class CommandManager {
         }
     }
 
+    public static final ByteBuf incorrectPasswordKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.getWithPrefix("incorrect-password"));
+    public static final ByteBuf
+            incorrectPasswordMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("incorrect-password")),
+            captchaReminderMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-reminder-command")),
+            registerReminderMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("register-reminder-command"));
 
-    public static final Object incorrectPasswordKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(Messages.getWithPrefix("incorrect-password"));
-    public static final Object
-            incorrectPasswordMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("incorrect-password")),
-            captchaReminderMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("captcha-reminder-command")),
-            registerReminderMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("register-reminder-command"));
-
-    public static void onSyncLoginCommand(UnverifiedUser user, String password) {
+/*    public static void onSyncLoginCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
-            user.writeAndFlushSilently(captchaReminderMessagePacket);
+            user.writeAndFlushDuplicateSilently(captchaReminderMessagePacket);
             return;
         }
         if (!user.isRegistered()) {
-            user.writeAndFlushSilently(registerReminderMessagePacket);
+            user.writeAndFlushDuplicateSilently(registerReminderMessagePacket);
             return;
         }
         if (user.isPasswordCorrect(password)) {
-            user.logInSync();
+            user.logIn();
             return;
         }
         if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
-        else user.writeAndFlushSilently(incorrectPasswordMessagePacket);
-    }
+        else user.writeAndFlushDuplicateSilently(incorrectPasswordMessagePacket);
+    }*/
 
     public static void onAsyncLoginCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
-            user.writeAndFlushSilently(captchaReminderMessagePacket);
+            user.writeAndFlushConstSilently(captchaReminderMessagePacket);
             return;
         }
         if (!user.isRegistered()) {
-            user.writeAndFlushSilently(registerReminderMessagePacket);
+            user.writeAndFlushConstSilently(registerReminderMessagePacket);
             return;
         }
         if (user.isPasswordCorrect(password)) {
-            user.logInAsync();
+            user.logIn();
             return;
         }
         if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
-        else user.writeAndFlushSilently(incorrectPasswordMessagePacket);
+        else user.writeAndFlushConstSilently(incorrectPasswordMessagePacket);
     }
 
     private static final class LoginCommand implements CommandExecutor {
@@ -1481,44 +1482,44 @@ public final class CommandManager {
     }
 
 
-    public static final Object
-            alreadyRegisteredMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("already-registered")),
-            passwordRegisterMessagePacket = OutMessagePacketConstructor.construct(Messages.getWithPrefix("password-register"));
+    public static final ByteBuf
+            alreadyRegisteredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("already-registered")),
+            passwordRegisterMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("password-register"));
 
-    public static void onSyncRegisterCommand(UnverifiedUser user, String password) {
+/*    public static void onSyncRegisterCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
-            user.writeAndFlushSilently(captchaReminderMessagePacket);
+            user.writeAndFlushDuplicateSilently(captchaReminderMessagePacket);
             return;
         }
         if (user == null || user.isRegistered()) {
-            user.writeAndFlushSilently(alreadyRegisteredMessagePacket);
+            user.writeAndFlushDuplicateSilently(alreadyRegisteredMessagePacket);
             return;
         }
         String reason = getInvalidityReason(password, false);
         if (reason == null) {
             user.registerSync(password);
-            user.writeAndFlushSilently(passwordRegisterMessagePacket);
+            user.writeAndFlushDuplicateSilently(passwordRegisterMessagePacket);
             return;
         }
-        user.writeAndFlushSilently(OutMessagePacketConstructor.construct(reason));
-    }
+        user.writeAndFlushDuplicateSilently(OutMessagePacketConstructor.constructConst(reason));
+    }*/
 
     public static void onAsyncRegisterCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
-            user.writeAndFlushSilently(captchaReminderMessagePacket);
+            user.writeAndFlushConstSilently(captchaReminderMessagePacket);
             return;
         }
-        if (user == null || user.isRegistered()) {
-            user.writeAndFlushSilently(alreadyRegisteredMessagePacket);
+        if (user.isRegistered()) {
+            user.writeAndFlushConstSilently(alreadyRegisteredMessagePacket);
             return;
         }
         String reason = getInvalidityReason(password, false);
         if (reason == null) {
             user.registerAsync(password);
-            user.writeAndFlushSilently(passwordRegisterMessagePacket);
+            user.writeAndFlushConstSilently(passwordRegisterMessagePacket);
             return;
         }
-        user.writeAndFlushSilently(OutMessagePacketConstructor.construct(reason));
+        user.sendDynamicMessageSilently(reason);
     }
 
     private static final class RegisterCommand implements CommandExecutor {

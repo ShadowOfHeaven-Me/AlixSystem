@@ -1,10 +1,12 @@
 name: AlixSystem
-version: 2.8.8
+version: 3.0.0
 main: alix.loaders.bukkit.BukkitAlixMain
 author: ShadowOfHeaven
 api-version: 1.13
+loadbefore:
+  - packetevents #override it's settings if present
 softdepend:
+  - SkinsRestorer
   - FastLogin
   - LuckPerms
-  - packetevents
-  - Essentials #to ensure it loads first and has it's commands registered first, so that we can potentially override them
+  - Essentials #to ensure it loads first, and has it's commands registered first, so that we can potentially override them

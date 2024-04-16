@@ -1,12 +1,13 @@
 package shadow.utils.objects.packet.types.unverified;
 
 import alix.common.scheduler.AlixScheduler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import shadow.utils.objects.packet.PacketInterceptor;
-import shadow.utils.users.offline.UnverifiedUser;
+import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.concurrent.TimeUnit;
+
+import static com.github.retrooper.packetevents.protocol.packettype.PacketType.Play.Server.WINDOW_ITEMS;
 
 public class GUIPacketBlocker extends PacketBlocker {
 
@@ -14,45 +15,65 @@ public class GUIPacketBlocker extends PacketBlocker {
         super(previousBlocker);
     }
 
-    GUIPacketBlocker(UnverifiedUser u, PacketInterceptor handler) {
-        super(u, handler);
+    GUIPacketBlocker(UnverifiedUser u) {
+        super(u);
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (user.hasCompletedCaptcha()) {//has completed the captcha and is currently undergoing the pin verification
-            switch (msg.getClass().getSimpleName()) {
-                case "PacketPlayInPosition"://most common packets
-                case "PacketPlayInPositionLook":
-                case "PacketPlayInLook":
-                case "d":
-                    this.trySpoofPackets();
-                    return;
-                case "PacketPlayInCloseWindow":
-                    //super.channelReadNotOverridden(ctx, msg);
-                    AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
-                    return;
-                case "PacketPlayInWindowClick":
-                case "PacketPlayInKeepAlive":
-                case "ServerboundKeepAlivePacket"://another possible name of this packet on 1.20.2+
-                    super.channelReadNotOverridden(ctx, msg); //sends packets only if they are pin-related or necessary in other ways
-                    return;
-            }
+    public void onPacketReceive(PacketPlayReceiveEvent event) {
+        if (!user.hasCompletedCaptcha()) {
+            this.onReadCaptchaVerification(event);
             return;
         }
-        super.onReadCaptchaVerification(ctx, msg);
+        //has completed the captcha and is currently undergoing the pin verification
+        switch (event.getPacketType()) {
+            case PLAYER_POSITION://most common packets
+            case PLAYER_POSITION_AND_ROTATION:
+            case PLAYER_ROTATION:
+            case PLAYER_FLYING:
+                this.trySpoofPackets();
+                event.setCancelled(true);
+                return;
+            case CLOSE_WINDOW:
+                //super.channelReadNotOverridden(ctx, msg);
+                AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
+                event.setCancelled(true);
+                return;
+            case CLICK_WINDOW:
+            case KEEP_ALIVE://will time out without this one
+                return;
+        }
+        event.setCancelled(true);
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+    public void onPacketSend(PacketPlaySendEvent event) {
         //if (spoofedWindowItems(msg)) return;
+        if (!user.hasCompletedCaptcha()) {
+            super.onWriteCaptchaVerification(event);
+            return;
+        }
+        if (event.getPacketType() == WINDOW_ITEMS) return;
+
+        super.onPacketSend(event);
+    }
+
+ /*   @Override
+    public void onPacketSend(PacketPlaySendEvent event) {
+    //if (spoofedWindowItems(msg)) return;
         if (user.hasCompletedCaptcha()) {
             switch (msg.getClass().getSimpleName()) {
                 case "PacketPlayOutChat":
                 case "ClientboundSystemChatPacket":
                 case "ClientboundDisguisedChatPacket":
-                case "ClientboundPlayerChatPacket":
+                case "PacketPlayOutTitle":
+                case "ClientboundSetTitlesAnimationPacket":
+                case "ClientboundSetTitleTextPacket":
+                case "ClientboundSetSubtitleTextPacket":
                     this.blockedChatPackets.offerLast(msg);
+                    return;
+                case "ClientboundPlayerChatPacket":
+                    this.blockedChatPackets.offerLast(ProtocolAccess.convertPlayerChatToSystemPacket(msg));
                     return;
                 case "PacketPlayOutRespawn":
                 case "ClientboundRespawnPacket":
@@ -74,10 +95,9 @@ public class GUIPacketBlocker extends PacketBlocker {
                     //Main.logInfo("BLOCKED: " + msg.getClass().getSimpleName());
                     return;
             }
-            super.writeNotOverridden(ctx, msg, promise);
             //Main.logInfo("RECEIVED: " + msg.getClass().getSimpleName());
             return;
         }
         this.onWriteCaptchaVerification(ctx, msg, promise);
-    }
+    }*/
 }

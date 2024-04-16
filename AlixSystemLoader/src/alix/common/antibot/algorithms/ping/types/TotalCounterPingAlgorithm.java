@@ -13,13 +13,13 @@ import java.util.function.BiFunction;
 
 public final class TotalCounterPingAlgorithm implements PingRequestAlgorithm {
 
-    private static final String ALGORITHM_ID = "D1";
+    private static final String ALGORITHM_ID = "D2";
     private static final AlixMessage consoleMessage = Messages.getAsObject("anti-ddos-fail-console-message", "{0}", ALGORITHM_ID);
     private final Map<InetAddress, Integer> map = new ConcurrentHashMap<>();
     private final BiFunction<InetAddress, Integer, Integer> function = (ip, i) -> {
-        int n = i - 25;
-        if (n < -200) return null;
-        if (n > 300) {
+        int n = i - 20;
+        if (n < -100) return null;
+        if (n > 200) {
             if (FireWallManager.add(ip, ALGORITHM_ID))
                 AlixCommonMain.logInfo(consoleMessage.format(ip));
             return null;

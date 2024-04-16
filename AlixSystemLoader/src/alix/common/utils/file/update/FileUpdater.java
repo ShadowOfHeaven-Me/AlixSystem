@@ -1,15 +1,11 @@
 package alix.common.utils.file.update;
 
-import alix.common.AlixCommonMain;
 import alix.common.environment.ServerEnvironment;
 import alix.common.utils.file.AlixFileManager;
 import alix.loaders.bukkit.BukkitAlixMain;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 public final class FileUpdater {
@@ -63,28 +59,18 @@ public final class FileUpdater {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            getWithJarCompiledFile(file, name);//writes the newest info into the file
+            AlixFileManager.writeJarCompiledFileIntoDest(file, name);//writes the newest info into the file
             return file;//no need to continue, the file must be up to date
         }
 
         File tempFile = new File(file.getParent(), splitName[0] + "-copy." + splitName[1]); //<file name>-copy.<extension>
 
-        File newestFile = getWithJarCompiledFile(tempFile, name);//temp file is the exact same thing as the 'newest file'
+        File newestFile = AlixFileManager.writeJarCompiledFileIntoDest(tempFile, name);//temp file is the exact same thing as the 'newest file'
 
         ensureUpdated(file, newestFile, DEFAULT_SPLITERATOR, Arrays.asList(validate));
 
         tempFile.delete();
         return file;
-    }
-
-    private static File getWithJarCompiledFile(File copyInto, String s) {
-        //tmpdir - tf is this
-        try (InputStream in = AlixCommonMain.MAIN_CLASS_INSTANCE.getClass().getClassLoader().getResourceAsStream(s)) {
-            Files.copy(in, copyInto.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            return copyInto;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 /*    private static File getPluginFile(String fileName) {
@@ -285,7 +271,7 @@ public final class FileUpdater {
     }
 
     private static String removeHashtagStart(String s) {
-        while (s.length() != 0 && s.charAt(0) == '#') s = s.substring(1);//lazy writing
+        while (!s.isEmpty() && s.charAt(0) == '#') s = s.substring(1);//lazy writing
         return s;
     }
 

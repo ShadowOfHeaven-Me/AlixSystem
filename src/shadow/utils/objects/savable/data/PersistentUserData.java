@@ -17,7 +17,6 @@ public final class PersistentUserData {
     private String ip;
     private long mutedUntil;
 
-    //name - password - ip - homes
     private PersistentUserData(String[] splitData) {
         splitData = AlixUtils.ensureSplitDataCorrectness(splitData);
         this.name = splitData[0];
@@ -27,8 +26,8 @@ public final class PersistentUserData {
         this.mutedUntil = AlixUtils.parsePureLong(splitData[4]);
         this.loginParams.initLoginTypes(splitData[5]);
         this.loginParams.initSettings(splitData[6]);
-        //TODO: sixThArgument - is using pin & add /pin command, to toggle pin-only password
-        addToMap();
+        UserFileManager.putData(this);
+        GeoIPTracker.addIP(this.ip);//Add it here, as it was loaded
     }
 
     private PersistentUserData(String name, String ip, Password password) {
@@ -36,14 +35,8 @@ public final class PersistentUserData {
         this.ip = ip;
         this.loginParams = new LoginParams(password);
         this.homes = new HomeList();
-        //this.loginParams.setLoginType(AlixUtils.defaultLoginType);
-        //storageManager = null;
-        addToMap();
-    }
-
-    private void addToMap() {
         UserFileManager.putData(this);
-        GeoIPTracker.onAccountCreation(ip);
+        //The GeoIPTracker does not need to have any changes made
     }
 
     public static PersistentUserData from(String data) {
@@ -61,42 +54,38 @@ public final class PersistentUserData {
     public static PersistentUserData createFromPremiumInfo(String name, String ip) {
         //By creating a password we ensure the account cannot be stolen in case
         //the server suddenly ever switches to offline mode, and does not use FastLogin
-        PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
+        PersistentUserData data = new PersistentUserData(name, ip, alix.common.data.Password.createRandom());
         data.setLoginType(LoginType.COMMAND);
 
         return data;
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return name + "|" + loginParams.passwordsToSavable() + "|" + ip + "|" + homes.toSavable() + "|" + mutedUntil + "|" + loginParams.settingsToSavable(); //originalWorldUUID;
     }
 
-    public final String getName() {
+    public String getName() {
         return name;
     }
 
-    public final String getHashedPassword() {
-        return this.getPassword().getHashedPassword();
-    }
-
-    public final Password getPassword() {
+    public Password getPassword() {
         return loginParams.getPassword();
     }
 
-    public final LoginParams getLoginParams() {
+    public LoginParams getLoginParams() {
         return loginParams;
     }
 
-    public final String getSavedIP() {
+    public String getSavedIP() {
         return ip;
     }
 
-    public final HomeList getHomes() {
+    public HomeList getHomes() {
         return homes;
     }
 
-    public final long getMutedUntil() {
+    public long getMutedUntil() {
         return mutedUntil;
     }
 

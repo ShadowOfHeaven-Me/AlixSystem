@@ -3,26 +3,26 @@ package shadow.systems.login.captcha;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import shadow.Main;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
-import shadow.systems.login.captcha.manager.VerificationThreadManager;
+import shadow.systems.login.captcha.manager.CountdownTask;
 import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.users.offline.UnverifiedUser;
-
-import java.util.concurrent.CompletableFuture;
+import shadow.utils.users.types.UnverifiedUser;
 
 import static shadow.utils.main.AlixUtils.captchaVerificationCaseSensitive;
 
 public abstract class Captcha {
 
+    protected static final int maxRotation = Main.config.getInt("captcha-max-random-rotation") % 360;
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
     protected final String captcha;
 
     protected Captcha() {
-        this.captcha = CaptchaGenerator.generateTextCaptcha(); //this::regenerate cannot be used because of initialization issues
+        this.captcha = CaptchaGenerator.generateTextCaptcha();
     }
 
     public static void pregenerate() {
-        VerificationThreadManager.initialize();
+        CountdownTask.pregenerate();
+        //VerificationThreadManager.initialize();
     }
 
     public static void sendInitMessage() {
@@ -31,11 +31,10 @@ public abstract class Captcha {
                 : "Wygenerowano przedwcześnie captcha w ilości " + CaptchaPoolManager.maxSize + ".");
     }
 
-/*    public static int currentPoolSize() {
-        return captchaPool.size();
-    }*/
-
     public abstract void sendPackets(UnverifiedUser user);
+
+    public void uninject() {
+    }
 
     public void onCompletion(UnverifiedUser user) {
     }
@@ -46,8 +45,13 @@ public abstract class Captcha {
 
     //private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
 
+
+    public static void cleanUp() {
+        captchaPool.uninjectAll();
+    }
+
     public static AlixFuture<Captcha> nextCaptcha() {
-        return captchaPool.next();
+        return captchaPool.poll();
     }
 
 /*    public static void unregister() {
@@ -96,5 +100,4 @@ public abstract class Captcha {
         }
         return new String(c);
     }*/
-
 }

@@ -8,12 +8,12 @@ import shadow.utils.objects.savable.data.PersistentUserData;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class UserFileManager {
 
-    private static final Map<String, PersistentUserData> map = new HashMap<>();
+    private static final Map<String, PersistentUserData> map = new ConcurrentHashMap<>();
     private static final UserFile file = new UserFile();
 
     static {

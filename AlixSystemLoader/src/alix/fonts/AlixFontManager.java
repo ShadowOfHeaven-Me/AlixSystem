@@ -11,11 +11,11 @@ public final class AlixFontManager {
     private static final Font font;
 
     static {
-        int fontSize = ConfigProvider.config.getInt("map-captcha-font-size");
-        String configFontName = ConfigProvider.config.getString("map-captcha-font");
+        int fontSize = ConfigProvider.config.getInt("captcha-font-size");
+        String configFontName = ConfigProvider.config.getString("captcha-font");
         Font font0;
 
-        if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
+        if (AlixCommonUtils.isGraphicEnvironmentHeadless) {//this class should not have been loaded
             throw new AssertionError(new HeadlessException("Report this as an error immediately!"));
             /*switch (configFontName) {
                 case "Dialog":
@@ -32,9 +32,7 @@ public final class AlixFontManager {
             Font.createFont(*/
             //FontManagerFactory.getInstance().createFont2D(
         } else {
-
             boolean valid = configFontName.equals("Arial");
-
 
             GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
 

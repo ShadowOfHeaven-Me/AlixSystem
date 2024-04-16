@@ -1,16 +1,25 @@
 package shadow.utils.holders.packet.constructors;
 
-import alix.common.utils.other.throwable.AlixException;
-import net.md_5.bungee.api.ChatMessageType;
-import net.minecraft.network.protocol.game.PacketPlayOutChat;
-import shadow.utils.holders.ReflectionUtils;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.chat.ChatType;
+import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
+import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage;
+import com.github.retrooper.packetevents.protocol.chat.message.ChatMessageLegacy;
+import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage_v1_16;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerActionBar;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
+import io.netty.buffer.ByteBuf;
+import net.kyori.adventure.text.Component;
+import shadow.utils.netty.NettyUtils;
 
-import java.lang.reflect.Constructor;
 import java.util.UUID;
 
 public final class OutMessagePacketConstructor {
 
-    private static final Constructor<?> constructor;
+/*    private static final Constructor<?> constructor;
     private static final boolean newerConstructor;
     private static final Enum<?> SYSTEM_MESSAGE_TYPE, ACTION_BAR;
 
@@ -31,27 +40,56 @@ public final class OutMessagePacketConstructor {
         newerConstructor = newerCons;
         SYSTEM_MESSAGE_TYPE = newerCons ? null : (Enum<?>) ReflectionUtils.chatMessageType.getEnumConstants()[1];
         ACTION_BAR = newerCons ? null : (Enum<?>) ReflectionUtils.chatMessageType.getEnumConstants()[2];
+    }*/
+
+    public static ByteBuf constructDynamic(String message) {
+        return constructDynamic(message, false);
     }
 
-    public static Object construct(String message) {
-        return construct(message, false);
+    public static ByteBuf constructDynamic(String message, boolean actionBar) {
+        return NettyUtils.createBuffer(packetWrapper(Component.text(message), actionBar));
+        //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 
-    public static Object construct(String message, boolean actionBar) {
-        try {
-            return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
-        } catch (Exception e) {
-            throw new AlixException(e);
+    public static ByteBuf constructConst(String message) {
+        return constructConst(message, false);
+    }
+
+    public static ByteBuf constructConst(String message, boolean actionBar) {
+        return NettyUtils.constBuffer(packetWrapper(Component.text(message), actionBar));
+        //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
+    }
+
+    public static PacketWrapper<?> packetWrapper(Component message) {
+        return packetWrapper(message, false);
+    }
+
+    private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
+
+    //From User#sendMessage(Component, ChatType)
+    public static PacketWrapper<?> packetWrapper(Component message, boolean actionBar) {
+        if (version.isNewerThanOrEquals(ServerVersion.V_1_19)) {
+            return new WrapperPlayServerSystemChatMessage(actionBar, message);
+        } else {
+            if (actionBar) return new WrapperPlayServerActionBar(message);
+
+            ChatMessage m;
+            ChatType type = ChatTypes.CHAT;
+            if (version.isNewerThanOrEquals(ServerVersion.V_1_16))
+                m = new ChatMessage_v1_16(message, type, new UUID(0L, 0L));
+            else m = new ChatMessageLegacy(message, type);
+
+            return new WrapperPlayServerChatMessage(m);
         }
     }
 
-    private static Object construct_1_19(String message, boolean actionBar) throws Exception {
+    /*private static Object construct_1_19(String message, boolean actionBar) throws Exception {
         return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], actionBar);
     }
 
     private static Object construct_old(String message, boolean actionBar) throws Exception {
         return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], actionBar ? ACTION_BAR : SYSTEM_MESSAGE_TYPE, null);
-    }
+    }*/
 
     private OutMessagePacketConstructor() {
     }

@@ -7,7 +7,7 @@ import shadow.utils.world.AlixWorldHolder;
 
 import static shadow.utils.main.AlixUtils.*;
 
-public class Spawn {
+public final class Spawn {
 
     public static final Spawn DEFAULT_SPAWN = createDefaultSpawn0();
     private final Location location;
@@ -17,12 +17,12 @@ public class Spawn {
         location.getWorld().setSpawnLocation(location);
     }
 
-    public final Location getLocation() {
+    public Location getLocation() {
         return location;
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ() + ":" + location.getWorld().getName() + ":" + location.getYaw() + ":" + location.getPitch();
     }
 

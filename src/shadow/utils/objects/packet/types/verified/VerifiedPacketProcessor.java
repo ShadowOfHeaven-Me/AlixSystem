@@ -1,91 +1,102 @@
 package shadow.utils.objects.packet.types.verified;
 
-import alix.common.antibot.captcha.CaptchaImageGenerator;
 import alix.common.data.LoginType;
 import alix.common.scheduler.AlixScheduler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import shadow.Main;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommand;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
+import io.netty.buffer.ByteBuf;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.gui.AlixGUI;
-import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.packet.PacketInterceptor;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
-import shadow.utils.users.User;
+import shadow.utils.users.types.VerifiedUser;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public final class VerifiedPacketProcessor extends PacketProcessor {
+public final class VerifiedPacketProcessor implements PacketProcessor {
 
     //private static final String packetHandlerName = "alixsystem_ver_handler";
     //private final Channel channel;
     //private final Map<String, Object> map;
-    private final User user;
+    private final VerifiedUser user;
     private boolean settingPassword;
     private AnvilPasswordBuilder builder;
     private Supplier<LoginType> loginType;
-    private Object lastItemsPacket;
+    private ByteBuf lastItemsPacket;
 
-    private VerifiedPacketProcessor(User user, PacketInterceptor handler) {
-        super(handler);
+    private VerifiedPacketProcessor(VerifiedUser user) {
         this.user = user;
         //this.map = new ConcurrentHashMap<>(16);
         //channel.pipeline().addBefore("packet_handler", packetHandlerName, this);
     }
 
     @Override
-    public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void onPacketReceive(PacketPlayReceiveEvent event) {
         if (!settingPassword) {
-            if (msg.getClass() != PacketBlocker.commandPacketClass) {
-                super.channelRead(ctx, msg);
-                return;
+            switch (event.getPacketType()) {
+                case CHAT_COMMAND:
+                    this.processCommand(new WrapperPlayClientChatCommand(event).getCommand(), event);
+                    return;
+                case CHAT_MESSAGE:
+                    if (PacketBlocker.serverboundChatCommandPacketVersion) break;
+                    WrapperPlayClientChatMessage wrapper = new WrapperPlayClientChatMessage(event);
+                    String c = wrapper.getMessage();
+                    if (c.isEmpty()) break;
+                    if (c.charAt(0) == '/') this.processCommand(c.substring(1), event);
+                    return;
             }
-
-            String cmd = (String) PacketBlocker.getStringFromCommandPacketMethod.invoke(msg);
-            String[] splet = AlixUtils.split(cmd, ' ');
-            //again, async cuz of password hashing algorithms
-            if (AlixCommandManager.isPasswordChangeCommand(splet[0]))
-                AlixScheduler.async(() -> CommandManager.onPasswordChangeCommand(user, Arrays.copyOfRange(splet, 1, splet.length)));
-            else super.channelRead(ctx, msg);
             return;
         }
-        switch (msg.getClass().getSimpleName()) {
-            case "PacketPlayInItemName":
-                this.passwordInput(msg);
+        switch (event.getPacketType()) {
+            case NAME_ITEM:
+                this.passwordInput(event);
+                event.setCancelled(true);
                 return;
-            case "PacketPlayInCloseWindow":
+            case CLOSE_WINDOW:
                 this.disablePasswordSetting();
-                super.channelRead(ctx, msg);
+                event.setCancelled(true);
                 return;
-            case "PacketPlayInWindowClick":
-                super.channelRead(ctx, msg);
+            case CLICK_WINDOW:
                 this.builder.spoofValidAccordingly();
-                return;
-            default:
-                super.channelRead(ctx, msg);
+                //event.setCancelled(true);
+        }
+    }
+
+    //String cmd = (String) PacketBlocker.getStringFromCommandPacketMethod.invoke(msg);
+    private void processCommand(String cmd, PacketReceiveEvent event) {
+        String[] splet = AlixUtils.split(cmd, ' ');
+        //again, async cuz of password hashing algorithms
+        if (AlixCommandManager.isPasswordChangeCommand(splet[0])) {
+            AlixScheduler.async(() -> CommandManager.onPasswordChangeCommand(user, Arrays.copyOfRange(splet, 1, splet.length)));
+            event.setCancelled(true);
         }
     }
 
     @Override
-    public final void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (!settingPassword) {
-            super.write(ctx, msg, promise);
-            return;
+    public void onPacketSend(PacketPlaySendEvent event) {
+        if (!settingPassword) return;
+
+        switch (event.getPacketType()) {
+            case OPEN_WINDOW:
+                this.builder.updateWindowId(new WrapperPlayServerOpenWindow(event).getContainerId());
+                return;
+            case WINDOW_ITEMS:
+                this.builder.updateWindowId(new WrapperPlayServerWindowItems(event).getWindowId());
+                if (this.lastItemsPacket != null) this.lastItemsPacket.release();
+                this.lastItemsPacket = ((ByteBuf) event.getByteBuf()).copy();
+                event.setCancelled(true);
         }
-        if (msg.getClass() == ReflectionUtils.outWindowOpenPacketClass) {//Open Inventory
-            super.write(ctx, msg, promise);
-            this.builder.onOutWindowOpenPacket(msg);
-            return;
-        }
-        //Window Items from the server
-        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) this.lastItemsPacket = msg;
-        else super.write(ctx, msg, promise);
     }
 
     /*if (msg.getClass() != PacketBlocker.commandPacketClass) {
@@ -93,19 +104,15 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
         return;
     }*/
 
-    private void passwordInput(Object packet) {
-        try {
-            String text = (String) ReflectionUtils.inItemNamePacketTextMethod.invoke(packet);
+    private void passwordInput(PacketPlayReceiveEvent event) {
+        String text = new WrapperPlayClientNameItem(event).getItemName(); //(String) ReflectionUtils.inItemNamePacketTextMethod.invoke(event);
 
-            String invalidityReason = AlixUtils.getPasswordInvalidityReason(text, this.loginType.get());
+        String invalidityReason = AlixUtils.getPasswordInvalidityReason(text, this.loginType.get());
 
-            if (invalidityReason != null) this.builder.spoofItemsInvalidIndicate();
-            else this.builder.spoofAllItems();
+        if (invalidityReason != null) this.builder.spoofItemsInvalidIndicate();
+        else this.builder.spoofAllItems();
 
-            this.builder.input(text, invalidityReason);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.builder.input(text, invalidityReason);
     }
 
     public void enablePasswordSetting(Consumer<String> onValidConfirmation, Runnable returnOriginalGui, Supplier<LoginType> loginType) {
@@ -117,7 +124,7 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
     }
 
     public void disablePasswordSetting() {
-        if (this.lastItemsPacket != null) user.getDuplexHandler().writeAndFlushSilently(lastItemsPacket);
+        if (this.lastItemsPacket != null) user.silentContext().writeAndFlush(this.lastItemsPacket);
         this.settingPassword = false;
         this.loginType = null;
         this.builder = null;
@@ -155,7 +162,7 @@ public final class VerifiedPacketProcessor extends PacketProcessor {
         });
     }*/
 
-    public static VerifiedPacketProcessor getProcessor(User user, PacketInterceptor handler) {
-        return new VerifiedPacketProcessor(user, handler); //PacketBlocker.serverboundNameVersion ? new VerifiedPacketProcessor(user, handler) : null;
+    public static VerifiedPacketProcessor getProcessor(VerifiedUser user) {
+        return new VerifiedPacketProcessor(user); //PacketBlocker.serverboundNameVersion ? new VerifiedPacketProcessor(user, handler) : null;
     }
 }

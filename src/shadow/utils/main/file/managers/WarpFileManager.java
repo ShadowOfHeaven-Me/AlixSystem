@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WarpFileManager {
+public final class WarpFileManager {
 
     private static final Map<String, NamedLocation> map = new HashMap<>();
     private static final WarpFile file = new WarpFile();

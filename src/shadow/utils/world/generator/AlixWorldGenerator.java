@@ -14,7 +14,7 @@ public final class AlixWorldGenerator extends WorldCreator {
     public AlixWorldGenerator(String name) {
         super(name);
         this.type(WorldType.FLAT);
-        this.environment(World.Environment.NORMAL);
+        //this.environment(World.Environment.NORMAL);
         this.generateStructures(false);
 
         //this.generatorSettings("2;0;1");
@@ -38,10 +38,17 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setPVP(false);
         world.setGameRule(GameRule.RANDOM_TICK_SPEED, -1);
         world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
+        world.setGameRule(GameRule.SPAWN_RADIUS, 1);
+        world.setGameRule(GameRule.DO_TILE_DROPS, false);
+        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        world.setGameRule(GameRule.DISABLE_RAIDS, true);
+        world.setGameRule(GameRule.DO_FIRE_TICK, false);
         world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
         world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
         world.setGameRule(GameRule.KEEP_INVENTORY, true);
         world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
+        world.setGameRule(GameRule.DISABLE_ELYTRA_MOVEMENT_CHECK, true);
+        world.setGameRule(GameRule.DO_ENTITY_DROPS, true);
         initCorrectRespawn(world);
     }
 

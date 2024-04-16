@@ -1,11 +1,12 @@
 package shadow.systems.commands.alix;
 
+import alix.common.utils.other.CharArray;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.file.CommandsFile;
 import shadow.systems.commands.alix.verification.VerificationCommand;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,7 +17,7 @@ import static shadow.utils.main.AlixUtils.sendMessage;
 public final class AlixCommandManager {
 
     private static final CommandsFile commandsFile = new CommandsFile();
-    private static final Map<String, VerificationCommand> verificationCommands = new HashMap<>();
+    private static final Map<CharArray, VerificationCommand> verificationCommands = new HashMap<>();
 
 /*    public static boolean isPluginCommandPresent(String cmd) {
         return commandsFile.getCommandNames().contains(cmd);
@@ -69,20 +70,21 @@ public final class AlixCommandManager {
         Player p = user.getPlayer();
         cmd = removeFallbackPrefix(cmd);
         boolean isArgSize0 = true;
-        char[] arg0Chars = cmd;
+        char[] labelChars = cmd;
         int lastIndex = 0;//the starting index point of the arguments
 
         for (int i = 0; i < cmd.length; i++) {
             if (cmd[i] == ' ') {//the space symbol separates the arguments
-                arg0Chars = Arrays.copyOfRange(cmd, 0, i);
+                labelChars = Arrays.copyOfRange(cmd, 0, i);
                 lastIndex = i + 1;
                 isArgSize0 = lastIndex == cmd.length;//the cmd ends with a space, so the arg count is still 0
                 break;
             }
         }
 
-        String arg0 = new String(arg0Chars);
-        VerificationCommand consumer = verificationCommands.get(arg0);
+        //String arg0 = new String(labelChars);
+        VerificationCommand consumer = verificationCommands.get(new CharArray(labelChars));
+        //Main.logError("COMMAND: '" + new String(cmd) + "' ARG0: '" + new String(labelChars) + "' CONSUMER: " + consumer);
 
         if (consumer == null) return;//the unverified user tried to execute a command different to a verification one
 
@@ -99,7 +101,7 @@ public final class AlixCommandManager {
                 sendMessage(p, CommandManager.formatRegister);
                 return;
             }
-            throw new AssertionError("Invalid: " + arg0 + " for " + new String(cmd));
+            throw new AssertionError("Invalid: " + new String(labelChars) + " for " + new String(cmd));
         }
         //This line of code passes the whole string as the second command argument
         //This if fine due to checks performed later on, like AlixUtils.getInvalidityReason
@@ -110,7 +112,6 @@ public final class AlixCommandManager {
 
     static {
         commandsFile.loadExceptionless();
-        Map<String, VerificationCommand> map = verificationCommands;
 
         //VerificationCommand captcha = VerificationCommand.OF_CAPTCHA;
         VerificationCommand register = VerificationCommand.OF_REGISTER;
@@ -121,15 +122,16 @@ public final class AlixCommandManager {
             if (alix == null)
                 throw new ExceptionInInitializerError("Invalid verification command: '" + commandAlias + "'!");
             String command = alix.getCommand();
+            CharArray cmd = new CharArray(commandAlias.toCharArray());
             switch (command) {
                 /*case "captcha":
                     map.put(commandAlias, captcha);
                     continue;*/
                 case "register":
-                    map.put(commandAlias, register);
+                    verificationCommands.put(cmd, register);
                     continue;
                 case "login":
-                    map.put(commandAlias, login);
+                    verificationCommands.put(cmd, login);
                     continue;
                 default:
                     throw new AssertionError("Invalid verification command: '" + commandAlias + "' - '" + command + "'!");

@@ -2,21 +2,22 @@ package shadow.systems.executors.gui;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
-import shadow.systems.login.Verifications;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.Verifications;
+import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.UUID;
 
 public final class GUIExecutors implements Listener {
 
-    @EventHandler
-    public final void onInvClick(InventoryClickEvent event) {
+    @EventHandler(priority = EventPriority.MONITOR)//can be
+    public void onInvClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
 
         UUID uuid = event.getWhoClicked().getUniqueId();
@@ -25,7 +26,7 @@ public final class GUIExecutors implements Listener {
         if (user == null) {
             AbstractAlixGUI gui = AlixGUI.MAP.get(uuid);
             if (gui != null) {
-                event.setCancelled(true);
+                event.setCancelled(true);//have this be set first, in case an error occurs in the latter method
                 gui.onClick(event);
             }
             return;
@@ -40,9 +41,11 @@ public final class GUIExecutors implements Listener {
     }
 
     //do not remove the gui if the closed inventory exists and is different from the closed one, since a gui could've just opened another gui
-    @EventHandler
-    public final void onInvClose(InventoryCloseEvent event) {
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInvClose(InventoryCloseEvent event) {
+        //Main.logError("GUI OPEN: " + AlixGUI.MAP.get(event.getPlayer().getUniqueId()));
         AlixGUI.MAP.compute(event.getPlayer().getUniqueId(), (u, g) -> g != null && !g.getGUI().equals(event.getInventory()) ? g : null);
+        //Main.logError("GUI OPEN 2: " + AlixGUI.MAP.get(event.getPlayer().getUniqueId()));
     }
 
     //if (!(event.getPlayer() instanceof Player)) return;

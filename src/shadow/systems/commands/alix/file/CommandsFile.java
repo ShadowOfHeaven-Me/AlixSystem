@@ -28,7 +28,7 @@ public final class CommandsFile extends FileManager {
         boolean registered = cmd.charAt(0) != '#';
         if (!registered) cmd = cmd.substring(1);
 
-        boolean fallbackRegistered = cmd.length() != 0 && cmd.charAt(0) != '#';
+        boolean fallbackRegistered = !cmd.isEmpty() && cmd.charAt(0) != '#';
         if (!fallbackRegistered) cmd = cmd.substring(1);
 
         String aliasLine = a[1];
@@ -48,11 +48,11 @@ public final class CommandsFile extends FileManager {
             for (String alias : aliases) this.alixCommands.put(alias, alix);
     }
 
-    public final Map<String, AlixCommandInfo> getAlixCommands() {
+    public Map<String, AlixCommandInfo> getAlixCommands() {
         return alixCommands;
     }
 
-    public final Set<String> getLoginCommands() {
+    public Set<String> getLoginCommands() {
         return loginCommands;
     }
 

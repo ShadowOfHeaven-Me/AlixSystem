@@ -18,7 +18,7 @@ public final class AlixCommand extends Command {
     private final TabCompleter completer;
 
     public AlixCommand(AlixCommandInfo info, String permission, CommandExecutor executor, TabCompleter completer) {
-        super(info.getCommand(), "An AlixSystem Custom Command ", "/" + info.getCommand(), info.createAliasesList());
+        super(info.getCommand(), "An AlixSystem Command ", "/" + info.getCommand(), info.createAliasesList());
         this.executor = executor;
         this.completer = completer;
         this.setPermission(permission);
@@ -43,10 +43,10 @@ public final class AlixCommand extends Command {
     }
 
     private static List<String> tidyUp(List<String> list, String[] args) {
-        if (list == null) return NO_SUGGESTIONS;//un-nullify
+        if (list == null) return NO_SUGGESTIONS;//un-nullify the list
         if (args.length != 1) return list;
         String arg1 = args[0];
-        List<String> p = new ArrayList<>(list);
+        List<String> p = list.getClass() == ArrayList.class ? list : new ArrayList<>(list);//instantiate a copy if the list is not an ArrayList, since it usually holds constant elements for one, and for two is probably unmodifiable, and for three you wouldn't want to modify it even it was modifiable
         p.removeIf(s -> !s.startsWith(arg1));
         return p;
     }

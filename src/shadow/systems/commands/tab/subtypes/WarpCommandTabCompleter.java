@@ -7,7 +7,7 @@ import org.bukkit.command.TabCompleter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WarpCommandTabCompleter implements TabCompleter {
+public final class WarpCommandTabCompleter implements TabCompleter {
 
     private static final List<String> warps = new ArrayList<>();
 

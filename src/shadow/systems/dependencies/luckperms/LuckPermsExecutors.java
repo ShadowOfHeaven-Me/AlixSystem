@@ -2,13 +2,10 @@ package shadow.systems.dependencies.luckperms;
 
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
-import net.luckperms.api.context.ContextSet;
 import net.luckperms.api.event.EventBus;
 import net.luckperms.api.event.user.UserDataRecalculateEvent;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import shadow.utils.users.User;
+import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
 
 public class LuckPermsExecutors implements Listener {
@@ -18,7 +15,7 @@ public class LuckPermsExecutors implements Listener {
         EventBus bus = api.getEventBus();
 
         bus.subscribe(UserDataRecalculateEvent.class, event -> {
-            User user = UserManager.getNullableUserOnline(event.getUser().getUniqueId());
+            VerifiedUser user = UserManager.getNullableVerifiedUser(event.getUser().getUniqueId());
 
             //event.getData().getPermissionData().getPermissionMap()
 

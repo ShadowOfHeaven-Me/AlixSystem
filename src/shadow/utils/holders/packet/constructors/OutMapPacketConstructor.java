@@ -1,14 +1,11 @@
 package shadow.utils.holders.packet.constructors;
 
-import shadow.utils.holders.ReflectionUtils;
-
-import java.lang.reflect.Constructor;
-import java.util.Collection;
-import java.util.Collections;
+import io.netty.buffer.ByteBuf;
+import shadow.utils.holders.packet.custom.AlixMapDataPacketWrapper;
 
 public final class OutMapPacketConstructor {
 
-    private static final Class<?> packetClass = ReflectionUtils.outMapPacketClass;
+/*    private static final Class<?> packetClass = ReflectionUtils.outMapPacketClass;
     private static final Constructor<?> packetClassConstructor;
 
     private static final Class<?> packetDimensionClass;
@@ -40,13 +37,14 @@ public final class OutMapPacketConstructor {
             packetClassConstructor = ReflectionUtils.getConstructor(packetClass, int.class, byte.class, boolean.class, boolean.class, Collection.class, byte[].class, int.class, int.class, int.class, int.class);
             packetDimensionClassConstructor = null;
         }
+    }*/
+
+    public static ByteBuf constructDynamic(int viewId, byte[] toDrawBytes) {
+        return AlixMapDataPacketWrapper.createBuffer(viewId, toDrawBytes);
+        //return newerConstructor ? construct_1_17(viewId, toDrawBytes) : construct_old(viewId, toDrawBytes);
     }
 
-    public static Object construct(int viewId, byte[] toDrawBytes) {
-        return newerConstructor ? construct_1_17(viewId, toDrawBytes) : construct_old(viewId, toDrawBytes);
-    }
-
-    private static Object construct_1_17(int viewId, byte[] toDrawBytes) {
+/*    private static Object construct_1_17(int viewId, byte[] toDrawBytes) {
         try {
             Object dimensionObj = packetDimensionClassConstructor.newInstance(0, 0, 128, 128, toDrawBytes);
 
@@ -62,7 +60,7 @@ public final class OutMapPacketConstructor {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 
     public static void init() {
     }

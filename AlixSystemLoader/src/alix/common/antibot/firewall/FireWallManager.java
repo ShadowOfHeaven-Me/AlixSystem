@@ -5,7 +5,6 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.other.throwable.AlixException;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -25,7 +24,7 @@ public final class FireWallManager {
     static {
         AlixScheduler.async(() -> {
             try (InputStream is = FireWallManager.class.getResourceAsStream("bad_ips.txt")) {
-                AlixFileManager.readLines(is, ip -> add0(fromAddress(ip), new FireWallEntry(null)));
+                AlixFileManager.readLines(is, ip -> add0(fromAddress(ip), new FireWallEntry(null)), false);
                 file.load();
                 AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Total blacklisted IPs: " + map.size());
                 //if(isOsFireWallInUse) osFireWall.blacklist("");

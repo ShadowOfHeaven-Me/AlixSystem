@@ -5,19 +5,17 @@ import alix.common.utils.config.ConfigParams;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class GeoIPTracker implements ConnectionFilter {
 
     public static final GeoIPTracker INSTANCE = ConfigParams.maximumTotalAccounts > 0 ? new GeoIPTracker() : null;
     private static final boolean initialized = INSTANCE != null;
     private static final String maxAccountsReached = Messages.get("account-limit-reached", ConfigParams.maximumTotalAccounts);
-    private final TempIPCounter tempIPCounter;
+    //private final TempIPCounter tempIPCounter;
     private final Map<String, Integer> map;//existing accounts
 
     public GeoIPTracker() {
-        this.map = new ConcurrentHashMap<>();
-        this.tempIPCounter = new TempIPCounter();
+        this.map = new HashMap<>();
         //Main.debug(JavaUtils.isPluginLanguageEnglish ? "GeoIpTracker is being initialized..." : "GeoIpTracker został zainitializowany!");
     }
 
@@ -35,11 +33,10 @@ public final class GeoIPTracker implements ConnectionFilter {
     @Override
     public boolean disallowJoin(String address, String name) {//counts both: existing accounts and unregistered players currently on the server with that ip
         //CommonAlixMain.logInfo(tempIPCounter.getAccountsOf(address) + " " + getAccountsOf(address));
-        return getAccountsOf(address) + tempIPCounter.getAccountsOf(address) >= ConfigParams.maximumTotalAccounts;
+        return getAccountsOf(address) >= ConfigParams.maximumTotalAccounts;//invoked only if registered, so non-negatives to negative comparison won't occur
     }
 
     private int getAccountsOf(String ip) {
-        //for (AccountData data : list) if (data.matches(ip)) return data.getAccounts();
         Integer i = map.get(ip);
         return i != null ? i : 0;
     }
@@ -49,7 +46,7 @@ public final class GeoIPTracker implements ConnectionFilter {
         return getAccountsOf(ip) >= JavaUtils.maximumTotalAccounts;
     }*/
 
-    private static final class TempIPCounter {
+    /*private static final class TempIPCounter {
 
         private final Map<String, Integer> map;//not registered user ips currently on the server
 
@@ -69,31 +66,26 @@ public final class GeoIPTracker implements ConnectionFilter {
         private void removeIP(String ip) {
             map.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
         }
-    }
+    }*/
 
-    private void updateMap(String ip) {
+    private void add0(String ip) {
         map.compute(ip, (k, v) -> v == null ? 1 : v + 1);
-        tempIPCounter.removeIP(ip);//an account was created
-        //map.compute(
-/*        for (int i = 0; i < list.size(); i++) {
-            AccountData data = list.get(i);
-            if (data.matches(ip)) {
-                list.set(i, data.enlarge());
-                return;
-            }
-        }
-        list.add(new AccountData(ip));*/
-/*        Integer i = map.get(ip);
-        if (i != null) map.replace(ip, i, i + 1);
-        else map.put(ip, 1);*/
+        //tempIPCounter.removeIP(ip);//an account was created
     }
 
-    public static void addTempIP(String ip) {//unregistered player joined the server
-        if (initialized) INSTANCE.tempIPCounter.addIP(ip);
+    private void remove0(String ip) {
+        map.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
+        //tempIPCounter.removeIP(ip);//an temporary ip quit
     }
 
-    public static void removeTempIP(String ip) {//unregistered player left the server
-        if (initialized) INSTANCE.tempIPCounter.removeIP(ip);
+    //added either on data loading from a file or unregistered user joining
+    public static void addIP(String ip) {
+        if (initialized) INSTANCE.add0(ip);
+    }
+
+    //removed only on quit of unregistered users
+    public static void removeIP(String ip) {
+        if (initialized) INSTANCE.remove0(ip);
     }
 
     public static boolean disallowLogin(String ip) {
@@ -105,6 +97,6 @@ public final class GeoIPTracker implements ConnectionFilter {
     }
 
     public static void onAccountCreation(String ip) {
-        if (initialized) INSTANCE.updateMap(ip);
+        if (initialized) INSTANCE.add0(ip);
     }
 }

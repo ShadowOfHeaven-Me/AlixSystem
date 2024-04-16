@@ -37,16 +37,14 @@ public final class AlixCommonUtils {
     }
 
     public static Character[] toObject(char... a) {
-        int l = a.length;
-        Character[] b = new Character[l];
-        for (int c = 0; c < l; c++) b[c] = a[c];
+        Character[] b = new Character[a.length];
+        for (int c = 0; c < a.length; c++) b[c] = a[c];
         return b;
     }
 
     public static char[] toPrimitive(Character... a) {
-        int l = a.length;
-        char[] b = new char[l];
-        for (int c = 0; c < l; c++) b[c] = a[c];
+        char[] b = new char[a.length];
+        for (int c = 0; c < a.length; c++) b[c] = a[c];
         return b;
     }
 
@@ -72,9 +70,7 @@ public final class AlixCommonUtils {
     }
 
     private static boolean isPrime0(int n) {
-        for (int i = 3; i < n; i++) {
-            if (n % i == 0) return false;
-        }
+        for (int i = 3; i < n; i++) if (n % i == 0) return false;
         return true;
     }
 
@@ -94,7 +90,7 @@ public final class AlixCommonUtils {
     }
 
     public static void logException(Throwable e) {
-        AlixCommonMain.logError("An AlixTask has thrown an exception - Report this immediately!");
+        AlixCommonMain.logError("An Alix task has thrown an exception - Report this immediately!");
         e.printStackTrace();
     }
 

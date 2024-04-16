@@ -1,3 +1,4 @@
+/*
 package shadow.utils.holders.packet.getters;
 
 import alix.common.utils.other.throwable.AlixException;
@@ -21,4 +22,4 @@ public final class InChatPacketGetter {
             throw new AlixException(e);
         }
     }
-}
+}*/

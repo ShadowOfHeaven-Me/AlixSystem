@@ -1,5 +1,6 @@
 package shadow.utils.holders.packet.buffered;
 
+import io.netty.buffer.ByteBuf;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -8,6 +9,7 @@ import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 
 import java.util.Arrays;
+import java.util.List;
 
 public final class PacketConstructor {
 
@@ -19,12 +21,13 @@ public final class PacketConstructor {
 
     public static final class AnvilGUI {
 
-        private static final Object ALL_ITEMS, ALL_ITEMS_VERIFIED, INVALID_INDICATE_ITEMS, INVALID_INDICATE_ITEMS_VERIFIED;
-        private static final Object[]
-                allItemsPackets = new Object[128],
-                allItemsVerifiedPackets = new Object[128],
-                invalidItemsPackets = new Object[128],
-                invalidItemsVerifiedPackets = new Object[128];
+        public static final short MAX_CACHED = 100;
+        //private static final List<com.github.retrooper.packetevents.protocol.item.ItemStack> ALL_ITEMS, ALL_ITEMS_VERIFIED, INVALID_INDICATE_ITEMS, INVALID_INDICATE_ITEMS_VERIFIED;
+        private static final ByteBuf[]
+                allItemsPackets = new ByteBuf[MAX_CACHED],
+                allItemsVerifiedPackets = new ByteBuf[MAX_CACHED],
+                invalidItemsPackets = new ByteBuf[MAX_CACHED],
+                invalidItemsVerifiedPackets = new ByteBuf[MAX_CACHED];
 
         static {
             ItemStack USER_INPUT = new ItemStack(Material.PAPER);
@@ -39,36 +42,36 @@ public final class PacketConstructor {
             rename(INVALID_PASSWORD, PasswordGui.invalidPassword);
             //rename(CANCEL, "§cCancel");
 
-            ALL_ITEMS = OutWindowItemsPacketConstructor.createNMSItemList(Arrays.asList(USER_INPUT, LEAVE_BUTTON, CONFIRM_BUTTON));
-            ALL_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createNMSItemList(Arrays.asList(USER_INPUT, CANCEL, CONFIRM_BUTTON));
-            INVALID_INDICATE_ITEMS = OutWindowItemsPacketConstructor.createNMSItemList(Arrays.asList(USER_INPUT, LEAVE_BUTTON, INVALID_PASSWORD));
-            INVALID_INDICATE_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createNMSItemList(Arrays.asList(USER_INPUT, CANCEL, INVALID_PASSWORD));
+            List<com.github.retrooper.packetevents.protocol.item.ItemStack>
+                    ALL_ITEMS = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, LEAVE_BUTTON, CONFIRM_BUTTON)),
+                    ALL_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, CANCEL, CONFIRM_BUTTON)),
+                    INVALID_INDICATE_ITEMS = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, LEAVE_BUTTON, INVALID_PASSWORD)),
+                    INVALID_INDICATE_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, CANCEL, INVALID_PASSWORD));
 
-            for (int i = 0; i < 128; i++) {
-                allItemsPackets[i] = OutWindowItemsPacketConstructor.construct0(i + 1, 3, ALL_ITEMS);
-                allItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.construct0(i + 1, 3, ALL_ITEMS_VERIFIED);
-                invalidItemsPackets[i] = OutWindowItemsPacketConstructor.construct0(i + 1, 3, INVALID_INDICATE_ITEMS);
-                invalidItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.construct0(i + 1, 3, INVALID_INDICATE_ITEMS_VERIFIED);
+            for (int i = 0; i < MAX_CACHED; i++) {
+                allItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS);
+                allItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS_VERIFIED);
+                invalidItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS);
+                invalidItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS_VERIFIED);
             }
         }
 
-        public static Object allItems(int id) {
-            return id < 129 ? allItemsPackets[id - 1] : OutWindowItemsPacketConstructor.construct0(id, 3, ALL_ITEMS);
+        public static ByteBuf allItems(int id) {
+            return allItemsPackets[id - 1];
         }
 
-        public static Object allItemsVerified(int id) {
-            return id < 129 ? allItemsVerifiedPackets[id - 1] : OutWindowItemsPacketConstructor.construct0(id, 3, ALL_ITEMS_VERIFIED);
+        public static ByteBuf allItemsVerified(int id) {
+            return allItemsVerifiedPackets[id - 1];
         }
 
-        public static Object invalidIndicate(int id) {
-            return id < 129 ? invalidItemsPackets[id - 1] : OutWindowItemsPacketConstructor.construct0(id, 3, INVALID_INDICATE_ITEMS);
+        public static ByteBuf invalidIndicate(int id) {
+            return invalidItemsPackets[id - 1];
         }
 
-        public static Object invalidIndicateVerified(int id) {
-            return id < 129 ? invalidItemsVerifiedPackets[id - 1] : OutWindowItemsPacketConstructor.construct0(id, 3, INVALID_INDICATE_ITEMS_VERIFIED);
+        public static ByteBuf invalidIndicateVerified(int id) {
+            return invalidItemsVerifiedPackets[id - 1];
         }
     }
-
 
     private PacketConstructor() {
     }

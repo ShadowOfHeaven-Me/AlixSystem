@@ -10,12 +10,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.packet.types.unverified.GUIPacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
 import shadow.utils.objects.savable.data.gui.builders.SimplePinBuilder;
-import shadow.utils.users.offline.UnverifiedUser;
+import shadow.utils.users.types.UnverifiedUser;
 
-public class PasswordGui {
+public final class PasswordGui {
 
     static {
         String config = Main.config.getString("background-item").toUpperCase();
@@ -213,7 +212,7 @@ public class PasswordGui {
             ItemStack item = skull ? ofDigit(i, itemType) : new ItemStack(m);
             if (i == 0) item.setAmount(itemAmountZero);
             else item.setAmount(digitEquivalent ? i : itemAmount);
-            a[i] = item;
+            a[i] = rename(item, "&e" + i);
         }
         return a;
     }

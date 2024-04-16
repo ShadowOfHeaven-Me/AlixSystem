@@ -20,7 +20,7 @@ public final class TpaRequest { //extends AlixIdentifiable {
     private final SchedulerTask autoExpireTask;
     private final String fromName;
 
-    protected TpaRequest(Player from, Player to, String fromName) {
+    TpaRequest(Player from, Player to, String fromName) {
         this.from = from; //teleporting
         this.to = to; //accepting - the destination
         this.fromName = fromName;

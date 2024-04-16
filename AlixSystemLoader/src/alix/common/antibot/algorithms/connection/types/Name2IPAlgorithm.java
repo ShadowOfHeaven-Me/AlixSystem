@@ -5,7 +5,6 @@ import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
-import alix.common.utils.other.AtomicFloat;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -14,12 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
     //private final String userMessage = Messages.get("anti-bot-fail-suspect-message","{0}", this.getAlgorithmID());
-
     private static final String ALGORITHM_ID = "B2";
     private final Map<InetAddress, NameMapImpl> ipMap = new ConcurrentHashMap<>();//<ip, Name to join attempt map>
 
     @Override
     public void onJoinAttempt(String name, InetAddress ip) {
+        if (name == null) return; //Does not support pre-login checks
         if (this.ipMap.computeIfAbsent(ip, NameMapImpl::new).add(name)) this.ipMap.remove(ip);
     }
 
@@ -36,7 +35,11 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
-    /** @noinspection NonAtomicOperationOnVolatileField*/
+    //the atomic operations are performed by the ConcurrentHashMap
+
+    /**
+     * @noinspection NonAtomicOperationOnVolatileField
+     */
     private static final class NameMapImpl extends NameMap {
 
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
@@ -62,8 +65,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
         }
 
         private int tick() {
-            this.vl -= 3;
-            return vl;
+            return this.vl -= 3;
         }
     }
 

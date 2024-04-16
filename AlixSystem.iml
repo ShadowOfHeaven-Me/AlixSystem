@@ -29,8 +29,6 @@
     <orderEntry type="library" scope="PROVIDED" name="spigot 1.17" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="LuckPerms-Bukkit-5.4.71" level="project" />
     <orderEntry type="library" name="org.jetbrains:annotations:24.0.0" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="packetevents-spigot-2.0.2" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="spigot-1.20.2-R0.1-SNAPSHOT" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="paper-1.20.2" level="project" />
     <orderEntry type="module-library">
       <library>
@@ -43,5 +41,8 @@
     </orderEntry>
     <orderEntry type="library" name="spigot-api-1.18.2-R0.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
+    <orderEntry type="library" name="spigot-1.20.4-R0.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="packetevents-spigot-2.2.1" level="project" />
+    <orderEntry type="library" name="SkinsRestorer" level="project" />
   </component>
 </module>

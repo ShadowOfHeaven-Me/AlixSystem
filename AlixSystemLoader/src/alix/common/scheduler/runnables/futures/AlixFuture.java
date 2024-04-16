@@ -8,13 +8,14 @@ public interface AlixFuture<T> {
 
     void whenCompleted(Consumer<T> consumer);
 
-    void whenCompletedAsync(Consumer<T> consumer);
+    void whenCompleted(Consumer<T> consumer, Executor withExecutor);
 
     boolean hasCompleted();
 
+    //Returns the current value for the future, null if not completed yet
     T value();
 
     static <T> AlixFuture<T> singleFuture(Executor e, Supplier<T> s) {
-        return AbstractAlixFuture.singledFuture(e, s);
+        return AbstractAlixFuture.newSingleFuture(e, s);
     }
 }

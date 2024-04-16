@@ -42,7 +42,7 @@ public final class LoginParams {
     }
 
     public String settingsToSavable() {
-        if (extraLoginType == null) return loginType.name();
+        if (extraLoginType == null) return loginType + "|" + ipAutoLogin;
         return loginType + ";" + extraLoginType + "|" + ipAutoLogin;
     }
 

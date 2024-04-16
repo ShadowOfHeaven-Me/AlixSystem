@@ -10,7 +10,7 @@ import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
 import shadow.utils.objects.savable.data.PersistentUserData;
-import shadow.utils.users.User;
+import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
 
 import java.util.Arrays;
@@ -36,7 +36,7 @@ public final class LoginSettingsGUI extends AlixGUI {
         GUIItem[] items = new GUIItem[9];
         Arrays.fill(items, BACKGROUND_ITEM);
 
-        User user = UserManager.getVerifiedUser(player);
+        VerifiedUser user = UserManager.getVerifiedUser(player);
         PersistentUserData data = user.getData();
 
         ItemStack i1 = IP_AUTOLOGIN_GET.apply(data);

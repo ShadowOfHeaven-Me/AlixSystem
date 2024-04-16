@@ -7,44 +7,42 @@ import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.captcha.subtypes.MapCaptcha;
 import shadow.systems.login.captcha.subtypes.MessageCaptcha;
+import shadow.systems.login.captcha.subtypes.ParticleCaptcha;
 import shadow.systems.login.captcha.subtypes.SubtitleCaptcha;
 import shadow.utils.main.AlixUtils;
 
-import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
+import java.util.Random;
 import java.util.function.Supplier;
 
 import static shadow.utils.main.AlixUtils.captchaVerificationType;
 import static shadow.utils.main.AlixUtils.captchaVerificationVisualType;
 
-public abstract class CaptchaGenerator {
+public final class CaptchaGenerator {
 
-    private static final CaptchaGenerator generator = createGenerator();
-    private static final Supplier<Captcha> SUPPLIER = generator::generate;
-    private final CaptchaTextGenerator textGenerator;
+    private static final Supplier<Captcha> SUPPLIER = createSupplier();
+    private static final CaptchaTextGenerator textGenerator = createTextGenerator();
 
     private CaptchaGenerator() {
-        this.textGenerator = createTextGenerator();
     }
 
-    abstract Captcha generate();
-
     public static String generateTextCaptcha() {
-        return generator.textGenerator.generateTextCaptcha();
+        return textGenerator.generateTextCaptcha0();
     }
 
     public static AlixFuture<Captcha> generateCaptchaFuture() {
         return AlixScheduler.singleAlixFuture(SUPPLIER);
     }
 
-    private static CaptchaGenerator createGenerator() {
+    private static Supplier<Captcha> createSupplier() {
         switch (captchaVerificationVisualType) {
+            case PARTICLE:
+                return ParticleCaptcha::new;
             case MAP:
-                return new MapCaptchaGenerator();
+                return MapCaptcha::new;
             case SUBTITLE:
-                return new SubtitleCaptchaGenerator();
+                return SubtitleCaptcha::new;
             case MESSAGE:
-                return new MessageCaptchaGenerator();
+                return MessageCaptcha::new;
             default:
                 throw new InternalError(captchaVerificationVisualType.name());
         }
@@ -63,24 +61,24 @@ public abstract class CaptchaGenerator {
 
     private interface CaptchaTextGenerator {
 
-        String generateTextCaptcha();
+        String generateTextCaptcha0();//IntelliJ often got confused, so I added the little 0 at the end
 
     }
 
     private static final class CaptchaTextGenImpl implements CaptchaTextGenerator {
 
         //private final LoopCharIterator iterator;
-        private final ConcurrentRandom random;
+        private final Random random;
         private final char[] chars;
         private final byte length;
 
         private CaptchaTextGenImpl() {
             StringBuilder builder = new StringBuilder();
-            String config = Main.config.getString("captcha-text-ascii-range").replaceAll(" ", "");
+            String config = Main.config.getString("captcha-text-chars-range").replaceAll(" ", "");
 
             String[] configArgs = config.split(";e=");
             String[] ranges = AlixUtils.split(configArgs[0], ',');
-            StringBuilder excludedChars = new StringBuilder();
+            StringBuilder excludedChars = new StringBuilder("wWmM");//always exclude w and m since they're too big
             if (configArgs.length == 2) {
                 String[] excluded = configArgs[1].split(",");
                 for (String ex : excluded) excludedChars.append(ex);
@@ -99,18 +97,31 @@ public abstract class CaptchaGenerator {
             this.chars = chars.toString().toCharArray();
 
             //probably the longest single-line statement I've ever written
+            //Nvm it doesn't work
             //this.chars = AlixUtils.toPrimitive(Stream.of(AlixUtils.toObject(generalIncluded)).filter(c -> excluded.anyMatch(c2 -> c == c2)).toList().toArray(new Character[0]));
 
             //this.iterator = new LoopCharIterator(AlixCommonUtils.shuffle(chars));
-            this.random = ConcurrentRandom.getInstance();
+            this.random = AlixUtils.random;
             this.length = AlixUtils.captchaLength;
         }
 
+        private char nextChar() {
+            return this.chars[this.random.nextInt(this.chars.length)];
+        }
+
         @Override
-        public String generateTextCaptcha() {
-            char[] c = new char[length];
-            for (int i = 0; i < length; i++) c[i] = chars[random.nextInt(chars.length)];
-            return new String(c);
+        public String generateTextCaptcha0() {
+            char[] a = new char[length];
+            for (byte i = 0; i < length; i++) {
+                char c = this.nextChar();
+                /*if (i == length - 1 && (c == 'w' || c == 'W')) {//do not let W be the last character, since it won't fit
+                    do {
+                        c = this.nextChar();
+                    } while (c == 'w' || c == 'W');
+                }*/
+                a[i] = c;
+            }
+            return new String(a);
             //return new String(iterator.next(length));
         }
     }
@@ -118,16 +129,16 @@ public abstract class CaptchaGenerator {
     private static final class CaptchaNumericGenImpl implements CaptchaTextGenerator {
 
         private final ConcurrentRandom random;
-        private final int numericBoundary;
+        //private final int numericBoundary;
         private final byte length;
 
         private CaptchaNumericGenImpl() {
             this.random = ConcurrentRandom.getInstance();
             this.length = AlixUtils.captchaLength;
-            this.numericBoundary = AlixUtils.powerIntegers(10, length);
+            //this.numericBoundary = AlixUtils.powerIntegers(10, length);
         }
 
-        private String format(int i) {
+        /*private String format(int i) {
             String s = Integer.toString(i);
             int d = this.length - s.length();
 
@@ -137,45 +148,14 @@ public abstract class CaptchaGenerator {
             Arrays.fill(c, '0');
 
             return new String(c) + s; //new StringBuilder(JavaUtils.captchaLength).append(c).append(s).toString();
-        }
+        }*/
 
         @Override
-        public String generateTextCaptcha() {
-            return this.format(random.nextInt(numericBoundary)); //formatNumericCaptcha(String.valueOf(nextNumericCaptcha()));
-        }
-    }
-
-
-    private static final class MapCaptchaGenerator extends CaptchaGenerator {
-
-        private MapCaptchaGenerator() {
-        }
-
-        @Override
-        Captcha generate() {
-            return new MapCaptcha();
-        }
-    }
-
-    private static final class SubtitleCaptchaGenerator extends CaptchaGenerator {
-
-        private SubtitleCaptchaGenerator() {
-        }
-
-        @Override
-        Captcha generate() {
-            return new SubtitleCaptcha();
-        }
-    }
-
-    private static final class MessageCaptchaGenerator extends CaptchaGenerator {
-
-        private MessageCaptchaGenerator() {
-        }
-
-        @Override
-        Captcha generate() {
-            return new MessageCaptcha();
+        public String generateTextCaptcha0() {
+            char[] c = new char[length];
+            for (byte i = 0; i < length; i++) c[i] = (char) (random.nextInt(10) + 48);
+            return new String(c);
+            //return this.format(random.nextInt(numericBoundary)); //formatNumericCaptcha(String.valueOf(nextNumericCaptcha()));
         }
     }
 }

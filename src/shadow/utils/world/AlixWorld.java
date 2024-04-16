@@ -9,7 +9,7 @@ import shadow.utils.world.generator.AlixWorldGenerator;
 
 public final class AlixWorld {
 
-    private static final String worldName = "world_alix_captcha";
+    public static final String worldName = "world_alix_captcha";
     private static final AlixWorld instance = !AlixUtils.isOnlineModeEnabled ? new AlixWorld() : null;
     public static final Location TELEPORT_LOCATION = instance != null ? instance.teleportLocation : null;
     public static final World CAPTCHA_WORLD = instance != null ? instance.world : null;
@@ -17,12 +17,12 @@ public final class AlixWorld {
     private final World world;
     private final Location teleportLocation;
 
-    public AlixWorld() {
+    private AlixWorld() {
         World world = Bukkit.getWorld(worldName);
-        if (world == null) this.world = new AlixWorldGenerator(worldName).createWorld();
-        else this.world = world;
 
-        this.teleportLocation = new Location(this.world, 0.5, 2, 0.5, 0, 45);
+        this.world = world != null ? world : new AlixWorldGenerator(worldName).createWorld();
+
+        this.teleportLocation = new ConstLocation(this.world, 0.5, 2, 0.5, 180, 45);
         this.prepareSpawnCube();
     }
 
@@ -48,9 +48,9 @@ public final class AlixWorld {
     }
 
     public static boolean preload() {
-        boolean b = instance != null;
-        if (b) instance.forceloadSpawnChunks();
-        return b;
+        boolean nn = instance != null;
+        if (nn) instance.forceloadSpawnChunks();
+        return nn;
     }
 
 /*    public static Location getOriginalLocation(UnverifiedUser user, Location joinedWithLoc) {

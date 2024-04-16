@@ -10,7 +10,7 @@ public final class AlixMessage {
         this.message = message;
     }
 
-    public final String format(Object... args) {
+    public String format(Object... args) {
         return AlixFormatter.format(this.message, args);
     }
 }

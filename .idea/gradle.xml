@@ -6,6 +6,11 @@
       <GradleProjectSettings>
         <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$USER_HOME$/eclipse-workspace/PaperLibJar" />
+        <option name="modules">
+          <set>
+            <option value="$USER_HOME$/eclipse-workspace/PaperLibJar" />
+          </set>
+        </option>
       </GradleProjectSettings>
     </option>
   </component>

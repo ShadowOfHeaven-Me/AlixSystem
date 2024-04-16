@@ -1,10 +1,8 @@
 package shadow.systems.commands.tab;
 
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;
 
@@ -43,6 +41,6 @@ public final class CommandTabCompleterAS implements TabCompleter {
         list = new ArrayList<>(list);
         //if (ServerPingManager.isRegistered()) list.add("pings");
         Collections.sort(list);
-        return list;
+        return Arrays.asList(list.toArray(new String[0]));
     }
 }

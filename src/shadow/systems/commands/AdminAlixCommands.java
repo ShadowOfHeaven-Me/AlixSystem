@@ -145,6 +145,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
                             sendMessage(sender, "IP: &c" + data.getSavedIP());
                             //sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
+                            sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
                             sendMessage(sender, "Login Type: &c" + data.getLoginType());
                             if (dVer)
                                 sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
@@ -299,7 +300,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     if (ABStats.reversePresence(UserManager.getVerifiedUser(player))) {
                         sendMessage(sender, "&aAdded to AntiBot Statistics view!");
                         if (FireWallManager.isOsFireWallInUse)
-                            sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the OS FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the OS beforehand.");
+                            sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the OS IpSet FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the OS beforehand.");
                     } else sendMessage(sender, "&cRemoved from AntiBot Statistics view!");
                     break;
                 case "connection-setup":

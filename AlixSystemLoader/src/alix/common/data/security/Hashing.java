@@ -3,34 +3,21 @@ package alix.common.data.security;
 import alix.common.data.security.types.Sha256;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.other.throwable.AlixException;
-import org.bukkit.Chunk;
-import org.bukkit.block.Biome;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 
 public final class Hashing {
 
     public static final byte CONFIG_HASH_ID;
-    private static final HashingAlgorithm hash0, hash1, hash2, hash3, configHash;//Maybe an array of these hashes types in the future?
+    private static final HashingAlgorithm[] hashingAlgoritms;
+    private static final HashingAlgorithm configHash;
 
     public static HashingAlgorithm ofHashId(byte hashId) {
-        switch (hashId) {
-            case 0:
-                return hash0;
-            case 1:
-                return hash1;
-            case 2:
-                return hash2;
-            case 3:
-                return hash3;
-            default:
-                throw new Error("Invalid hashId: " + hashId + " with the max being: 3");
-        }
+        return hashingAlgoritms[hashId];//will throw the error regardless if the index is messed up
+        /*if (hashId < hashingAlgoritms.length && hashId >= 0) return hashingAlgoritms[hashId];
+        throw new AlixError("Invalid hashId: " + hashId + " with the max being: " + hashingAlgoritms.length);*/
     }
 
     public static HashingAlgorithm getConfigHashingAlgorithm() {
@@ -40,7 +27,7 @@ public final class Hashing {
     private static final class Hash0 implements HashingAlgorithm {
 
         @Override
-        public final String hash(String s) {
+        public String hash(String s) {
             return s;//no hash
         }
     }
@@ -48,7 +35,7 @@ public final class Hashing {
     private static final class Hash1 implements HashingAlgorithm {
 
         @Override
-        public final String hash(String s) {//pretty fast, but possibly repeatable
+        public String hash(String s) {//pretty fast, but possibly repeatable
             int hashCode = 0;
             char[] a = s.toCharArray();
 
@@ -64,7 +51,7 @@ public final class Hashing {
         private final MessageDigest md5 = getDigest("MD5");
 
         @Override
-        public final String hash(String s) {//md5 encryption into an uuid
+        public String hash(String s) {//md5 encryption into an uuid
             byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
             byte[] hashedBytes = md5.digest(bytes);
 
@@ -77,7 +64,7 @@ public final class Hashing {
         private final Sha256 sha256 = new Sha256();
 
         @Override
-        public final String hash(String s) {
+        public String hash(String s) {
             byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
             byte[] hashedBytes = sha256.hash(bytes);
 
@@ -88,7 +75,7 @@ public final class Hashing {
     private static final class Hash4 implements HashingAlgorithm {
 
         @Override
-        public final String hash(String s) {
+        public String hash(String s) {
             byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
             int mask = bytes.length - 1;
             byte[] bytesToHash = new byte[16];
@@ -162,10 +149,7 @@ public final class Hashing {
         /*if (false) {//only get the hashing instance in a cracked server, no need for getting the algorithms to generate in a premium server
             hash0 = hash1 = hash2 = hash3 = defaultHash = null;
         } else {*/
-        hash0 = new Hash0();
-        hash1 = new Hash1();
-        hash2 = new Hash2();
-        hash3 = new Hash3();
+        hashingAlgoritms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3()};
 
         configHash = ofHashId(CONFIG_HASH_ID);
         //}

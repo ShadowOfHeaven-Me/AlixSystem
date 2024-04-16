@@ -28,21 +28,21 @@ public final class AlixConsoleFilterHolder implements Filter {
 
     private static final class ConsoleFilter {
 
-        private final char[] regex = "logged in with entity id".toCharArray();
-        private final char[] regex2 = "lost connection".toCharArray();
+        private final char[]
+                regex = "logged in with entity id".toCharArray(),
+                regex2 = "lost connection".toCharArray();
 
         private Result filter(LogEvent e) {
+            //if (e.getLevel() == Level.WARN) Main.logInfo("WARNNNNNN: " + e.getThrownProxy() + " " + e.getSource() + " " + e.getMessage().getFormattedMessage() + " " + e.getContextData());
             String message = e.getMessage().getFormattedMessage();
             if (message.isEmpty()) return Result.ACCEPT;
-            /*if (Thread.currentThread() == Main.mainServerThread) {
-                AlixScheduler.async(() -> Main.logInfo("THREAD MAIN - " + e.getMessage()));
-                return Result.ACCEPT;
-            }*/
+
+            char[] msgChars = null;
             if (AlixUtils.hideFailedJoinAttempts && (AlixUtils.startsWith(message, "UUID of player",
-                    "Disconnecting com.mojang.authlib.GameProfile", "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()") || this.isLostCon0(message)))
+                    "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()") || this.isLostCon0(msgChars = message.toCharArray())))
                 return Result.DENY;
             if (AlixUtils.alixJoinLog && Thread.currentThread() == Main.mainServerThread) {
-                char[] msg = message.toCharArray();
+                char[] msg = msgChars != null ? msgChars : message.toCharArray();
                 //AlixScheduler.async(() -> Main.logError("mmmmm '" + new String(msg) + "' - " + Main.mainServerThread.getName()));
                 for (int i = 0; i < msg.length; i++)
                     if (msg[i] == ' ') return isRegexPresent(msg, regex, i) ? Result.DENY : Result.NEUTRAL;
@@ -50,14 +50,13 @@ public final class AlixConsoleFilterHolder implements Filter {
             return Result.NEUTRAL;
         }
 
-        private static final boolean waitFor2ndSpace = ServerEnvironment.isPaper();
+        private static final boolean waitFor2ndSpace = ServerEnvironment.isPaper();//for some reason Paper just added a space there
 
         //Checks for the connection lost messages
         //_ShadowOfHeaven_ (/IP) lost connection: We're analysing your connection. You may now join the server.
 
         //[18:30:53] [Server thread/INFO]: /177.244.29.74:54974 lost connection: Internal Exception: io.netty.handler.codec.DecoderException: java.lang.IndexOutOfBoundsException: readerIndex(18) + length(8) exceeds writerIndex(19): PooledUnsafeDirectByteBuf(ridx: 18, widx: 19, cap: 256)
-        private boolean isLostCon0(String message) {
-            char[] chars = message.toCharArray();
+        private boolean isLostCon0(char[] chars) {
             boolean wait = chars[0] != '/' && waitFor2ndSpace;
             for (int i = 0; i < chars.length; i++)
                 if (chars[i] == ' ') {
@@ -159,7 +158,8 @@ public final class AlixConsoleFilterHolder implements Filter {
     }
 
     @Override
-    public Result filter(Logger logger, Level level, Marker marker, Message message, Throwable throwable) {
+    public Result filter(Logger logger, Level level, Marker marker, Message message, Throwable t) {
+        //Main.logWarning("SEXXXXXXXX: " + t.getClass().getSimpleName() + " " + t.getMessage());
         return Result.NEUTRAL;
     }
 

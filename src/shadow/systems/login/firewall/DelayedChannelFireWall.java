@@ -1,14 +1,9 @@
 package shadow.systems.login.firewall;
 
-import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.Messages;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderException;
-import shadow.Main;
-import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 
 @Sharable
@@ -42,7 +37,7 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
     }*/
 
     @Override
-    public final void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         //Main.logError("ACTIVE: " + ctx);
         //ctx.writeAndFlush(ctx.alloc().buffer().writeBytes("'mimimimimxxxw'".getBytes()));
 
@@ -66,15 +61,16 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
     private static final class DelayedInterceptor extends ChannelDuplexHandler {
 
         //private static final ChannelFutureListener CLOSE_FORCIBLY = future -> future.channel().unsafe().closeForcibly();
-        private final Object kickPacket = OutDisconnectKickPacketConstructor.constructAtLoginPhase(Messages.get("anti-bot-firewalled"));
+        private final Object kickPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-firewalled"));
 
-        @Override
-        public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //TODO: This was included \/
+        /*@Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             //Main.logError("REAAADD: " + msg.getClass().getSimpleName());
             if (msg.getClass() == ReflectionUtils.loginInStartPacketClass)
                 ctx.channel().writeAndFlush(kickPacket).addListener(ChannelFutureListener.CLOSE);
             else super.channelRead(ctx, msg);
-        }
+        }*/
 
         ///212.88.124.174:58009 lost connection: Internal Exception: io.netty.handler.codec.DecoderException: java.lang.IndexOutOfBoundsException: readerIndex(18) + length(8) exceeds writerIndex(19): PooledUnsafeDirectByteBuf(ridx: 18, widx: 19, cap: 256)
         @Override

@@ -1,18 +1,14 @@
 package shadow.utils.holders.packet.constructors;
 
-import alix.common.utils.other.throwable.AlixError;
-import alix.common.utils.other.throwable.AlixException;
-import org.bukkit.GameMode;
-import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.holders.packet.access.ProtocolAccess;
-
-import java.lang.reflect.Constructor;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
+import io.netty.buffer.ByteBuf;
+import shadow.utils.netty.NettyUtils;
 
 public final class OutGameStatePacketConstructor {
 
-    public static final Object ADVENTURE_GAMEMODE_PACKET;
+    public static final ByteBuf ADVENTURE_GAMEMODE_PACKET = NettyUtils.constBuffer(new WrapperPlayServerChangeGameState(WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE, 2));
 
-    static {
+    /*static {
         Class<?> packetClazz = ReflectionUtils.outGameStatePacketClass;
         Object adventurePacket = null;
         try {
@@ -32,7 +28,7 @@ public final class OutGameStatePacketConstructor {
             adventurePacket = ProtocolAccess.newGameModePacket(GameMode.ADVENTURE);
         if (adventurePacket == null) throw new AlixError();
         ADVENTURE_GAMEMODE_PACKET = adventurePacket;
-    }
+    }*/
 
     private OutGameStatePacketConstructor() {
     }

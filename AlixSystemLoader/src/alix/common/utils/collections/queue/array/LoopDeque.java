@@ -1,20 +1,22 @@
 package alix.common.utils.collections.queue.array;
 
 import alix.common.AlixCommonMain;
+import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.other.throwable.AlixException;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public abstract class LoopDeque<T> {
 
     private final Object[] array;
 
     private LoopDeque(int fixedSize) {
-        this.array = new Object[fixedSize];
         if (fixedSize <= 0)
             throw new AlixException("Fixed pointer deque size must be greater than zero! Got: " + fixedSize);
         if (fixedSize == 1)
             AlixCommonMain.logWarning("For the size 1 in " + this.getClass().getSuperclass().getSimpleName() + " the class is unnecessary!");
+        this.array = new Object[fixedSize];
     }
 
     public final T getAndReplaceWith(T replacement) {
@@ -31,6 +33,31 @@ public abstract class LoopDeque<T> {
 
     abstract int nextSetterIndex();
 
+    public final void forEachNonNull(Consumer<T> consumer) {
+        for (Object o : array) if (o != null) consumer.accept((T) o);
+    }
+
+    private static final class NormalLoopDeque<T> extends LoopDeque<T> {
+
+        private final int maxIndex;
+        private int getterIndex, setterIndex;
+
+        private NormalLoopDeque(int fixedSize) {
+            super(fixedSize);
+            this.maxIndex = fixedSize - 1;
+        }
+
+        @Override
+        int nextGetterIndex() {
+            return this.getterIndex = LoopList.nextLoopIndex(this.getterIndex, this.maxIndex);
+        }
+
+        @Override
+        int nextSetterIndex() {
+            return this.setterIndex = LoopList.nextLoopIndex(this.setterIndex, this.maxIndex);
+        }
+    }
+
     private static final class ConcurrentLoopDeque<T> extends LoopDeque<T> {
 
         private final AtomicInteger getterIndex, setterIndex;
@@ -45,23 +72,24 @@ public abstract class LoopDeque<T> {
 
         @Override
         int nextGetterIndex() {
-            return getterIndex.get() != maxIndex ? getterIndex.getAndIncrement() : setAndGet(getterIndex, 0);
+            return LoopList.nextLoopIndex(this.getterIndex, this.maxIndex);
         }
 
         @Override
         int nextSetterIndex() {
-            return setterIndex.get() != maxIndex ? setterIndex.getAndIncrement() : setAndGet(setterIndex, 0);
+            return LoopList.nextLoopIndex(this.setterIndex, this.maxIndex);
         }
+    }
 
-        private int setAndGet(AtomicInteger o, int v) {
-            o.set(v);
-            return v;
-        }
+    public static <T> LoopDeque<T> ofSize(int size) {
+        return new NormalLoopDeque<>(size);
     }
 
     public static <T> LoopDeque<T> concurrentOfSize(int size) {
         return new ConcurrentLoopDeque<>(size);
     }
+
+
     /*private static final class NormalAlixPointerDeque<T> extends AlixPointerDeque<T> {
 
         private int getterIndex, setterIndex;

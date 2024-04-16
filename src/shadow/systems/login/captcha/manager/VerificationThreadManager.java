@@ -1,14 +1,14 @@
+/*
 package shadow.systems.login.captcha.manager;
 
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
-import alix.common.scheduler.AlixScheduler;
 import shadow.systems.login.reminder.VerificationReminder;
 
 public final class VerificationThreadManager {
 
     public static void initialize() {
         CountdownTask.pregenerate();
-        AlixScheduler.newAlixThread(new VerificationThreadRunnable(), 200, "Verification Thread"); //todo: proportional 3
+        //AlixScheduler.newAlixThread(new VerificationThreadRunnable(), 200, "Verification Thread"); //todo: proportional 3
         //the "todos" are for the sole purpose of code visibility
     }
 
@@ -31,4 +31,4 @@ public final class VerificationThreadManager {
         private VerificationThreadRunnable() {
         }
     }
-}
+}*/

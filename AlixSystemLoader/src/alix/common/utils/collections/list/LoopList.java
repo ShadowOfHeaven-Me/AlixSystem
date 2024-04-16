@@ -7,13 +7,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class LoopList<T> {
 
     private final T[] values;
-    final int size;
     final int maxIndex;
 
     private LoopList(T[] values) {
         this.values = values;
-        this.size = values.length;
-        this.maxIndex = size - 1;
+        this.maxIndex = values.length - 1;
+        if (maxIndex == -1) throw new AlixException("Cannot pass an empty array into a LoopList!");
     }
 
     abstract int nextIndex();
@@ -25,7 +24,8 @@ public abstract class LoopList<T> {
     //public abstract int getCurrentIndex();
 
     public final void setCurrentIndex(int index) {
-        if (index > size || index < 0) throw new AlixException("Index: " + index + " for size " + size);
+        if (index > values.length || index < 0)
+            throw new AlixException("Index: " + index + " for size " + values.length);
         this.setCurrentIndex0(index);
     }
 
@@ -59,7 +59,7 @@ public abstract class LoopList<T> {
     }
 
     public final int indexOf(T v) {
-        for (int i = 0; i < size; i++) if (v.equals(values[i])) return i;
+        for (int i = 0; i < values.length; i++) if (v.equals(values[i])) return i;
         return -1;
     }
 
@@ -72,7 +72,7 @@ public abstract class LoopList<T> {
     }
 
     public final int size() {
-        return size;
+        return values.length;
     }
 
     private static final class NormalLoopList<T> extends LoopList<T> {
@@ -85,23 +85,18 @@ public abstract class LoopList<T> {
 
         @Override
         int nextIndex() {
-            return currentIndex != maxIndex ? ++currentIndex : (currentIndex = 0);
+            return currentIndex = nextLoopIndex(currentIndex, maxIndex);
         }
 
         @Override
         int previousIndex() {
-            return currentIndex != 0 ? --currentIndex : (currentIndex = maxIndex);
+            return currentIndex = previousLoopIndex(currentIndex, maxIndex);
         }
 
         @Override
         void setCurrentIndex0(int index) {
             this.currentIndex = index;
         }
-
-/*        @Override
-        public int getCurrentIndex() {
-            return currentIndex;
-        }*/
     }
 
     private static final class ConcurrentLoopList<T> extends LoopList<T> {
@@ -114,28 +109,39 @@ public abstract class LoopList<T> {
 
         @Override
         int nextIndex() {
-            return currentIndex.get() != maxIndex ? currentIndex.getAndIncrement() : setAndGet(0);
+            return nextLoopIndex(this.currentIndex, this.maxIndex);
         }
 
         @Override
         int previousIndex() {
-            return currentIndex.get() != 0 ? currentIndex.decrementAndGet() : setAndGet(maxIndex);
+            return previousLoopIndex(this.currentIndex, this.maxIndex);
         }
 
         @Override
         void setCurrentIndex0(int index) {
             this.currentIndex.set(index);
         }
+    }
 
-        private int setAndGet(int i) {
-            this.currentIndex.set(i);
-            return i;
-        }
+    public static int previousLoopIndex(int i, int maxIndex) {
+        return i != 0 ? i - 1 : maxIndex;
+    }
 
-/*        @Override
-        public int getCurrentIndex() {
-            return currentIndex.get();
-        }*/
+    public static int previousLoopIndex(AtomicInteger i, int maxIndex) {
+        return i.get() != 0 ? i.decrementAndGet() : setAndGet(i, maxIndex);
+    }
+
+    public static int nextLoopIndex(int i, int maxIndex) {
+        return i != maxIndex ? i + 1 : 0;
+    }
+
+    public static int nextLoopIndex(AtomicInteger i, int maxIndex) {
+        return i.get() != maxIndex ? i.incrementAndGet() : setAndGet(i, 0);
+    }
+
+    private static int setAndGet(AtomicInteger o, int v) {
+        o.set(v);
+        return v;
     }
 
     @SafeVarargs

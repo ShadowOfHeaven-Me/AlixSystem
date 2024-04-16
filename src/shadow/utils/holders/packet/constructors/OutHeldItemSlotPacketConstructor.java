@@ -1,23 +1,23 @@
 package shadow.utils.holders.packet.constructors;
 
-import shadow.utils.holders.ReflectionUtils;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerHeldItemChange;
+import io.netty.buffer.ByteBuf;
+import shadow.utils.netty.NettyUtils;
 
 public final class OutHeldItemSlotPacketConstructor {
 
     //public static final Object SLOT_0 = construct(0);
-    private static final Constructor<?> constructor;
+/*    private static final Constructor<?> constructor;
 
     static {
         Class<?> packetClazz = ReflectionUtils.outHeldItemSlotPacketClass;
         constructor = ReflectionUtils.getConstructor(packetClazz, int.class);
-    }
+    }*/
 
-    public static Object construct(int slot) {
+    public static ByteBuf construct(int slot) {
         try {
-            return constructor.newInstance(slot);
+            return NettyUtils.constBuffer(new WrapperPlayServerHeldItemChange(slot));
+            //return constructor.newInstance(slot);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

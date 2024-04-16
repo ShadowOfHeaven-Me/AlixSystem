@@ -2,7 +2,7 @@ package shadow.systems.login.captcha.types;
 
 public enum CaptchaVisualType {
 
-    MAP, SUBTITLE, MESSAGE;
+    PARTICLE, MAP, SUBTITLE, MESSAGE;
 
     public static CaptchaVisualType from(String type) {
         try {
