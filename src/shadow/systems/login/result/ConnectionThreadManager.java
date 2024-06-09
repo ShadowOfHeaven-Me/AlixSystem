@@ -33,7 +33,6 @@ public final class ConnectionThreadManager {
 
     private static final class ConnectionThreadRunnable implements Runnable {
 
-
         private final ConnectionAlgorithm[] connectionAlgorithms;
         private final PingRequestAlgorithm[] pingRequestAlgorithms;
         //private final AlixDeque<JoinAttempt> joins = new ConcurrentAlixDeque<>();

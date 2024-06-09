@@ -34,6 +34,8 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
+    //the atomic operations are performed by the ConcurrentHashMap
+
     /**
      * @noinspection NonAtomicOperationOnVolatileField
      */
@@ -61,5 +63,4 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
             return false;
         }
     }
-
 }

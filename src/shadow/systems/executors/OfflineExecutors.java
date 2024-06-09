@@ -1,18 +1,16 @@
 package shadow.systems.executors;
 
 import alix.common.antibot.firewall.FireWallManager;
-import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.multiengine.ban.BukkitBanList;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldSaveEvent;
-import org.spigotmc.event.player.PlayerSpawnLocationEvent;
-import shadow.Main;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.filters.ConnectionFilter;
 import shadow.systems.login.result.ConnectionThreadManager;
@@ -23,8 +21,6 @@ import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.UserFileManager;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.users.Verifications;
-import shadow.utils.users.types.TemporaryUser;
-import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.world.AlixWorld;
 import shadow.utils.world.AlixWorldHolder;
 
@@ -34,20 +30,23 @@ public final class OfflineExecutors extends UniversalExecutors {
 
     //private final LoginAuthenticator authenticator = PremiumAutoIn.support;
     private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
-    private final String playerAlreadyOnlineMessage = Messages.get("player-already-online");
-    private final AlixMessage
-            joinCaptchaUnverified = Messages.getAsObject("log-player-join-captcha-unverified"),
-            joinUnverified = Messages.getAsObject("log-player-join-unverified"),
-            joinVerified = Messages.getAsObject("log-player-join-verified");
+    private final String
+            playerAlreadyOnlineMessage = Messages.get("player-already-online"),
+            serverIsFull = Messages.get("server-is-full");
     //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
+        //Main.logInfo("ASYNC PRE LOGIN EVENT");
         String name = e.getName();
         String ip = e.getAddress().getHostAddress();
         //The FireWall should handle unnecessary connections from being processed
         if (antibotService) ConnectionThreadManager.onJoinAttempt(name, e.getAddress());
         if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
+        /*if (Bukkit.getMaxPlayers() <= UserManager.userCount()) {//we have to perform this check due to semi-virtualization problems - the server does not really know how many players there currently are on the server
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_FULL, this.serverIsFull);
+            return;
+        }*/
         //Intentional concurrent check, as the ban Maps are overridden to their
         //concurrent equivalent in ReflectionUtils.replaceBansToConcurrent
         //Also, do not change the login result to let the server show the actual ban message
@@ -66,6 +65,8 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
 
         PersistentUserData data = UserFileManager.get(name);
+
+        //Main.logInfo("PREMIUM " + PremiumAutoIn.getPremiumPlayers().contains(name) + " DATA EXISTS " + (data != null));
 
         if (data != null) {//the account exists
             if (PremiumAutoIn.remove(name)) LoginVerdictManager.addOnline(name, ip, data, false, e);
@@ -93,12 +94,12 @@ public final class OfflineExecutors extends UniversalExecutors {
         LoginVerdictManager.addOffline(name, ip, data, e);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    /*@EventHandler(priority = EventPriority.MONITOR)
     public void onSpawnLocInit(PlayerSpawnLocationEvent event) {
         Player player = event.getPlayer();
         Location joinLoc = event.getSpawnLocation();
 
-        boolean verified = LoginVerdictManager.getExistingTempUser(event.getPlayer()).isVerified();
+        boolean verified = LoginVerdictManager.get(event.getPlayer()).isVerified();
 
         //the join location is in the captcha world
         if (joinLoc.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) {
@@ -118,7 +119,7 @@ public final class OfflineExecutors extends UniversalExecutors {
             OriginalLocationsManager.add(player, originLoc);//remember the original spawn location
 
         event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world location as the spawn location (a faster onJoin teleport alternative)
-    }
+    }*/
 
     //The contract is that both of these are constant - the exact same, but are not the very same instance - they just contain the exact same contents
     //Normally this is done by comparing the values when converted to bits, so that no inaccuracies created by computer math occur
@@ -128,20 +129,22 @@ public final class OfflineExecutors extends UniversalExecutors {
                 && loc1.getZ() == loc2.getZ() && loc1.getPitch() == loc2.getPitch() && loc1.getYaw() == loc2.getYaw();
     }*/
 
-    private static boolean exactRotation(Location loc1, Location loc2) {
+/*    private static boolean exactRotation(Location loc1, Location loc2) {
         return loc1.getPitch() == loc2.getPitch() && loc1.getYaw() == loc2.getYaw();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent e) {
-        Player p = e.getPlayer();
-        TemporaryUser tempUser = LoginVerdictManager.getExistingTempUser(p);
-        UnverifiedUser user = AlixHandler.handleOfflinePlayerJoin(p, e.getJoinMessage(), tempUser);//the user can be null if the verification was not initialized - the user was premium or was auto-logged in by ip
+        Main.logInfo("ON ORIGINAL JOIN");
+        *//*Player p = e.getPlayer();
+        TemporaryUser tempUser = LoginVerdictManager.get(p);
+        UnverifiedUser user = AlixHandler.handleVirtualPlayerJoin(p, , tempUser);//the user can be null if the verification was not initialized - the user was premium or was auto-logged in by ip
 
         if (user != null && !user.hasCompletedCaptcha()) {
             e.setJoinMessage(null);//take priority in removing the join message for captcha unverified users
             //teleport once to the ideal rotation, since PlayerSpawnLocationEvent doesn't do it for some reason
-            if (!exactRotation(p.getLocation(), AlixWorld.TELEPORT_LOCATION)) MethodProvider.teleportAsync(p, AlixWorld.TELEPORT_LOCATION);
+            if (!exactRotation(p.getLocation(), AlixWorld.TELEPORT_LOCATION))
+                MethodProvider.teleportAsync(p, AlixWorld.TELEPORT_LOCATION);
         }
 
         if (!alixJoinLog) return;
@@ -150,8 +153,8 @@ public final class OfflineExecutors extends UniversalExecutors {
         String ip = tempUser.getLoginInfo().getIP(); //user != null ? user.getIPAddress() : e.getPlayer().getAddress().getAddress().getHostAddress();
         AlixMessage message = user != null ? !user.hasCompletedCaptcha() ? this.joinCaptchaUnverified : this.joinUnverified : this.joinVerified;
 
-        Main.logInfo(message.format(name, ip));
-    }
+        Main.logInfo(message.format(name, ip));*//*
+    }*/
     /*        if (user != null) {
             if (!user.hasCompletedCaptcha()) {
                 e.setJoinMessage(null);//take priority in removing the join message for captcha unverified users
@@ -169,16 +172,18 @@ public final class OfflineExecutors extends UniversalExecutors {
             event.setCancelled(false);//look at me, saying how uncancelling an event is bad writing, and then doing it myself
             return;
         }
-        if (!event.isCancelled() && !event.getTo().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && event.getCause() != MethodProvider.ASYNC_TP_CAUSE && Verifications.has(event.getPlayer())) {
+        if (!event.isCancelled() && !event.getTo().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && event.getFrom().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && event.getCause() != MethodProvider.ASYNC_TP_CAUSE && Verifications.has(event.getPlayer())) {
             OriginalLocationsManager.add(event.getPlayer(), event.getTo());
             event.setCancelled(true);
+            //Bukkit.broadcastMessage("CANCELLED - " + UserManager.get(event.getPlayer().getUniqueId()).getClass().getSimpleName());
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+/*    @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerQuitEvent e) {
-        AlixHandler.handleOfflinePlayerQuit(e.getPlayer(), e);
-    }
+        Main.logInfo("ON KNOWN QUIT");
+        //AlixHandler.handleVirtualPlayerQuit(e.getPlayer(), e);
+    }*/
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onCommand(PlayerCommandPreprocessEvent e) {

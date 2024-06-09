@@ -30,27 +30,81 @@ public final class PacketEventsManager {
 
         @Override
         public void onPacketReceive(PacketReceiveEvent event) {
-            if (event.getClass() == PacketPlayReceiveEvent.class) {
-                AlixUser user = UserManager.get(event.getUser().getUUID());
-                if (user != null) user.getPacketProcessor().onPacketReceive((PacketPlayReceiveEvent) event);//Main.logInfo("IN NONNULL: " + event.getPacketType().getName());
-            }
-            //Main.logInfo("IN: " + event.getPacketType().getName());
+            //if (event.getUser().getUUID() == null) return;
+            AlixUser user;/* = UserManager.get(event.getUser().getUUID());
+            if (user instanceof TemporaryUser) {
+                ((TemporaryUser) user).getTempProcessor().onPacketReceive(event);
+            }*/
+            if (event.getClass() == PacketPlayReceiveEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
+                user.getPacketProcessor().onPacketReceive((PacketPlayReceiveEvent) event);//Main.logInfo("IN NONNULL: " + event.getPacketType().getName());
+
+            //Main.logInfo("PACKET IN: " + event.getPacketType().getName());
+            /*if(event.getPacketType() == PacketType.Play.Client.PLUGIN_MESSAGE) {
+                Main.logError("MSG CLIENT: " + new WrapperPlayClientPluginMessage(event).getChannelName() + " " + new String(new WrapperPlayClientPluginMessage(event).getData()));
+            }*/
         }
 
         @Override
         public void onPacketSend(PacketSendEvent event) {
-            if (event.getClass() == PacketPlaySendEvent.class) {
-                AlixUser user = UserManager.get(event.getUser().getUUID());
-                if (user != null) user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
+            //if (event.getUser().getUUID() == null) return;
+            AlixUser user;/* = UserManager.get(event.getUser().getUUID());
+            if (user instanceof TemporaryUser) {
+                ((TemporaryUser) user).getTempProcessor().onPacketSend(event);
+            }*/
+            if (event.getClass() == PacketPlaySendEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
+                user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
+            /*else if (event.getPacketType() == PacketType.Status.Server.RESPONSE) {
+                WrapperStatusServerResponse wrapper = new WrapperStatusServerResponse(event);
+                JsonObject obj = wrapper.getComponent();
+                JsonObject playersObj = obj.get("players").getAsJsonObject();
+                playersObj.addProperty("online", UserManager.userCount());
+                wrapper.setComponent(obj);
+                event.markForReEncode(true);
+            }*/
+            //Main.logInfo("PACKET OUT: " + event.getPacketType().getName());
+            /*if(event.getPacketType() == PacketType.Play.Server.PLUGIN_MESSAGE) {
+                Main.logError("MSG: " + new WrapperPlayServerPluginMessage(event).getChannelName() + " " + new String(new WrapperPlayServerPluginMessage(event).getData()));
+            }*/
+            /*if(event.getPacketType() == PacketType.Login.Server.LOGIN_SUCCESS) {
+                event.getTasksAfterSend().add(() -> UserVirtualization.spoofPackets(event.getUser()));
             }
-            //Main.logInfo("OUT: " + event.getPacketType().getName());
+            if(event.getPacketType() == BUNDLE) {
+                event.setCancelled(true);
+            }*/
+            /*if (event.getPacketType() == JOIN_GAME) {
+                WrapperPlayServerJoinGame c = new WrapperPlayServerJoinGame(event);
+                NettyUtils.getSilentContext((Channel) event.getUser().getChannel()).writeAndFlush(NettyUtils.createBuffer(c));
+                event.setCancelled(true);
+                *//*Main.logInfo("OUT JOIN GAME: " + AlixUtils.getFields(c));
+                Main.logInfo("OUT JOIN GAME TAGS: " + c.getDimensionCodec().getTags());
+                for (Map.Entry<String, NBT> e : c.getDimensionCodec().getTags().entrySet())
+                    Main.logInfo("OUT JOIN GAME TAGS LISTED: KEY: " + e.getKey() + " VALUE: " + NBTCodec.nbtToJson(e.getValue(), false));
+                Main.logInfo("OUT JOIN GAME DIMENSION ATTRIBUTES " + NBTCodec.nbtToJson(c.getDimension().getAttributes(), false));*//*
+            }*/
+            /*if (event.getPacketType() == CHUNK_DATA) {
+                Column c = new WrapperPlayServerChunkData(event).getColumn();
+                Main.logInfo("OUT: X " + c.getX() + " Z " + c.getZ() + " HAS BIOME DATA " + c.hasBiomeData() + " IS FULL " + c.isFullChunk()
+                        + " TILE ENTITIES LENGTH " + c.getTileEntities().length + " CHUNKS LENGTH " + c.getChunks().length);
+            }*/
+            //if(event.getPacketType() == TAGS) Main.logInfo("OUT: " + new WrapperPlaySe`rverTags(event).getTags());
         }
+
+//        @Override
+//        public void onUserLogin(UserLoginEvent event) {
+//            super.onUserLogin(event);
+//        }
 
         @Override
         public void onUserDisconnect(UserDisconnectEvent event) {
-            //Main.logInfo("DISCONNECTED: " + event.getUser().getName());
-            AlixChannelHandler.onDisconnect(event.getUser());
-            UserManager.removeTemp(event.getUser().getName());
+            String name = event.getUser().getName();
+
+            if (name == null) return;
+            //Main.logError("DISCONNECTED: " + event.getUser().getName());
+            UserManager.removeConnecting(name);
+            //AlixChannelHandler.onDisconnect(event.getUser());
+            /*AlixUser user = LoginVerdictManager.getNullable(event.getUser().getUUID());
+            if (user == null) UserManager.removeConnecting(event.getUser().getName());*/
+            //else //if (user.isVerified()) UserSemiVirtualization.invokeQuit0(user);
         }
 
         private GeneralListener() {

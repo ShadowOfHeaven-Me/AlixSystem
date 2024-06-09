@@ -11,27 +11,24 @@ public final class Password {
     private static final LoopCharIterator loopCharIterator;
     private final String hashedPassword;
     private final HashingAlgorithm hashing;
-    private final byte hashId;
     //private final String savablePassword;
 
     private Password(String hashedPassword, byte hashId) {
         this.hashedPassword = hashedPassword;
-        this.hashId = hashId;
         this.hashing = Hashing.ofHashId(hashId);
     }
 
-    private Password(String hashedPassword, byte hashId, HashingAlgorithm hashing) {
+    private Password(String hashedPassword, HashingAlgorithm hashing) {
         this.hashedPassword = hashedPassword;
-        this.hashId = hashId;
         this.hashing = hashing;
     }
 
     public String toSavable() {
-        return hashedPassword + ":" + hashId;
+        return hashedPassword + ":" + hashing.hashId();
     }
 
     public boolean isEqualTo(String unhashedPassword) {
-        return this.hashedPassword.equals(hashing.hash(unhashedPassword));
+        return this.hashedPassword.equals(this.hashing.hash(unhashedPassword));
     }
 
 /*    public boolean isCorrectLiteral(String hashedPassword) {
@@ -39,7 +36,7 @@ public final class Password {
     }*/
 
     public boolean isHashed() {
-        return hashId != 0;
+        return hashing.hashId() != 0;
     }
 
     public boolean isSet() {
@@ -70,7 +67,7 @@ public final class Password {
 
     public static Password fromUnhashed(String unhashedPassword) {
         String hashed = CONFIG_HASH.hash(unhashedPassword);
-        return new Password(hashed, Hashing.CONFIG_HASH_ID, CONFIG_HASH);
+        return new Password(hashed, CONFIG_HASH);
     }
 
     public static Password readFromSaved(String savablePassword) {

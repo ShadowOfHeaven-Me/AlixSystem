@@ -89,22 +89,23 @@ public final class AlixFormatter {
      */
 
     public static String formatMultiple(String s, Object... args) {//For {<digit>} > 1
-        final int argsLength = args.length; //n << 2 is n * 4                  \/
-        StringBuilder sb = new StringBuilder(s.length() + (argsLength << 2)); //assume each arg is about 7 characters long (3 in {<digit>}, 4 in argLength * 4)
+        //n << 2 is n * 4                                                     \/
+        StringBuilder sb = new StringBuilder(s.length() + (args.length << 2)); //assume each arg is about 7 characters long (3 in {<digit>}, 4 in argLength * 4)
         char[] a = s.toCharArray();
-        final int l = a.length;
-        final int lM2 = l - 2;
-        for (int i = 0; i < l; i++) {
+        int lM2 = a.length - 2;
+        for (int i = 0; i < a.length; i++) {
             char c = a[i];
             if (i == lM2)
-                return sb.append(a[lM2]).append(a[l - 1]).toString();//the remaining text was not skipped and is 2 chars long, so we can skip the character test and simply return the current text + the 2 remaining characters, since the regex is 3 characters long
+                return sb.append(a[lM2]).append(a[a.length - 1]).toString();//the remaining text was not skipped and is 2 chars long, so we can skip the character test and simply return the current text + the 2 remaining characters, since the regex is 3 characters long
             if (c == '{' && a[i + 2] == '}') {
                 int index = a[i + 1] - 48;//48 is '0' in ascii
-                if (index < argsLength && index >= 0) {//the given index is valid
+                if (index < args.length && index >= 0) {//the given index is valid
                     sb.append(args[index].toString());
                     i += 2;//skipping '<digit>}' in the text, as the first '{' is already skipped by the default for(i) iterator
-                } else sb.append(c);//continue, the index was invalid
-            } else sb.append(c);
+                    continue;//continue to the next loop and stop this
+                }//continue, the index was invalid
+            }
+            sb.append(c);
         }
         return sb.toString();
     }

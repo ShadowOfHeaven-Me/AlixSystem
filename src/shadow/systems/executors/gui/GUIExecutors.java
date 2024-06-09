@@ -8,11 +8,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
-import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
-import shadow.utils.users.Verifications;
-import shadow.utils.users.types.UnverifiedUser;
-
-import java.util.UUID;
 
 public final class GUIExecutors implements Listener {
 
@@ -20,24 +15,11 @@ public final class GUIExecutors implements Listener {
     public void onInvClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
 
-        UUID uuid = event.getWhoClicked().getUniqueId();
-        UnverifiedUser user = Verifications.get(uuid);
-
-        if (user == null) {
-            AbstractAlixGUI gui = AlixGUI.MAP.get(uuid);
-            if (gui != null) {
-                event.setCancelled(true);//have this be set first, in case an error occurs in the latter method
-                gui.onClick(event);
-            }
-            return;
+        AbstractAlixGUI gui = AlixGUI.MAP.get(event.getWhoClicked().getUniqueId());
+        if (gui != null) {
+            event.setCancelled(true);//have this be set first, in case an error occurs in the latter method
+            gui.onClick(event);
         }
-
-        event.setCancelled(true);
-
-        if (!user.isGuiUser() || !user.isGUIInitialized()) //not a pin user or the gui has not been initialized yet
-            return;
-
-        AlixVerificationGui.onSyncClick(user, event);
     }
 
     //do not remove the gui if the closed inventory exists and is different from the closed one, since a gui could've just opened another gui
@@ -48,8 +30,8 @@ public final class GUIExecutors implements Listener {
         //Main.logError("GUI OPEN 2: " + AlixGUI.MAP.get(event.getPlayer().getUniqueId()));
     }
 
-    //if (!(event.getPlayer() instanceof Player)) return;
-    //AlixGUI.MAP.remove(event.getPlayer().getUniqueId());
+//if (!(event.getPlayer() instanceof Player)) return;
+//AlixGUI.MAP.remove(event.getPlayer().getUniqueId());
 
     /*UnverifiedUser user = Verifications.get(event.getPlayer().getUniqueId());
 

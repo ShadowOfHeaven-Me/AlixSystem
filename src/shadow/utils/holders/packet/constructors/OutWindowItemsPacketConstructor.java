@@ -55,14 +55,14 @@ public final class OutWindowItemsPacketConstructor {
         return constructConst0(windowId, list.size(), createRetrooperItemList(list));
     }
 
-    public static ByteBuf constructConst0(int windowId, int size, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
-        return NettyUtils.constBuffer(new WrapperPlayServerWindowItems(windowId, size, retrooperList, null));
-        //return newerConstructor ? construct_1_17(windowId, size, nmsList) : construct_old(windowId, nmsList);
+    public static ByteBuf constructConst0(int windowId, int stateId, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
+        return NettyUtils.constBuffer(new WrapperPlayServerWindowItems(windowId, stateId, retrooperList, null));
+        //return newerConstructor ? construct_1_17(windowId, stateId, nmsList) : construct_old(windowId, nmsList);
     }
 
-    public static ByteBuf constructDynamic0(int windowId, int size, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
-        return NettyUtils.createBuffer(new WrapperPlayServerWindowItems(windowId, size, retrooperList, null));
-        //return newerConstructor ? construct_1_17(windowId, size, nmsList) : construct_old(windowId, nmsList);
+    public static WrapperPlayServerWindowItems constructDynamic0(int windowId, int stateId, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
+        return new WrapperPlayServerWindowItems(windowId, stateId, retrooperList, null);
+        //return newerConstructor ? construct_1_17(windowId, stateId, nmsList) : construct_old(windowId, nmsList);
     }
 
 /*    public static Object construct_1_17(int windowId, int size, Object nmsList) {

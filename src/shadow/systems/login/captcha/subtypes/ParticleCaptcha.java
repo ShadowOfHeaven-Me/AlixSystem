@@ -1,59 +1,77 @@
 package shadow.systems.login.captcha.subtypes;
 
 import alix.common.antibot.captcha.CaptchaImageGenerator;
+import alix.common.scheduler.AlixScheduler;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.bukkit.Location;
 import shadow.systems.login.captcha.Captcha;
 import shadow.utils.holders.captcha.ParticleRenderer;
+import shadow.utils.netty.NettyUtils;
+import shadow.utils.netty.unsafe.UnsafeNettyUtils;
+import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.users.types.UnverifiedUser;
-import shadow.utils.world.AlixWorld;
 
 import java.awt.image.BufferedImage;
 import java.util.concurrent.TimeUnit;
 
 public final class ParticleCaptcha extends Captcha {
 
-    private static final Location CENTER = AlixWorld.TELEPORT_LOCATION.clone().add(0, -2, -2.5);
     private final ByteBuf[] buffers;
     //private final ByteBuf buffer;
-    private volatile ScheduledFuture<?> task;
-    private volatile boolean cancelled, cleanedUp;
+    private ScheduledFuture<?> task;
+    private boolean cancelled;//, cleanedUp;
+    private RawAlixPacket packet;
 
     public ParticleCaptcha() {
-        BufferedImage image = CaptchaImageGenerator.generateCaptchaImage(captcha, maxRotation, false, false, CaptchaImageGenerator::getParticleColor);//aliasing is necessary for us, since it shows more contrast
-        this.buffers = ParticleRenderer.renderingBuffers(image, CENTER);//Unreleasable(ReadOnly(Direct)))
-        //Main.logError("BUFFERS HASH: " + ParticleRenderer.renderingBuffers(image, CENTER).length);// + " NORMALLY: " + ParticleRenderer.list(image, CENTER).length);
+        BufferedImage image = CaptchaImageGenerator.generateCaptchaImage(captcha, maxRotation, false, false);//aliasing is necessary for us, since it shows more contrast
+        this.buffers = ParticleRenderer.captchaRenderingBuffers(image);//Unreleasable(ReadOnly(Direct)))
+        //Main.logError("BUFFERS HASH: " + ParticleRenderer.captchaRenderingBuffers(image).length + " NORMALLY: " + ParticleRenderer.list(image).length);
         //this.buffer = Unpooled.buffer();
         //for (ByteBuf buf : buffers) buffer.writeBytes(buf);
     }
 
     @Override
     public void sendPackets(UnverifiedUser user) {
-        //Main.logError("SENT: ");
+        //Main.logError("SENT: " + user.silentContext().pipeline().names());
         if (cancelled) return;
-        this.task = user.getChannel().eventLoop().scheduleAtFixedRate(() -> {
-            if (cancelled) return;
-            //long t = System.nanoTime();
-            for (ByteBuf buf : buffers) user.writeSilently(buf.duplicate());
-            //Main.logError("TIME: " + (System.nanoTime() - t) / Math.pow(10, 6) + "ms");
-        }, 0, 400, TimeUnit.MILLISECONDS);
+
+        //already on the eventLoop
+        //long t0 = System.nanoTime();
+        UnsafeNettyUtils.setRaw(user.silentContext(), user.bufHarvester, b -> b, this.buffers);
+        //long diff0 = System.nanoTime() - t0;
+        //Main.logError("ALLOCATING TIME: " + diff0 / Math.pow(10, 6) + "ms");
+
+        //no need to make it direct, since that here only dictates what ByteBuf is preferred when allocating unspecified
+        AlixScheduler.async(() -> {
+            this.packet = RawAlixPacket.of(user.getChannel(), this.buffers, NettyUtils::constBuffer, buf -> buf.unwrap().release());
+
+            //no need to release the array, since it's already done so per the CompositeByteBuf#addComponents method
+            //for (ByteBuf buf : buffers) buf.release(buf.refCnt());
+
+            this.task = user.getChannel().eventLoop().scheduleAtFixedRate(() -> {
+                if (cancelled) return;
+                //long t = System.nanoTime();
+
+                //for (ByteBuf buf : buffers)
+                //Main.logError("INDEX " + buf.get().component(0).readerIndex() + " " + buf.get().component(0).writerIndex());
+                this.packet.write();//the flush is already performed quite often by the VerificationReminder
+
+                //long diff = System.nanoTime() - t;
+                //Main.logError("TIME: " + diff / Math.pow(10, 6) + "ms");
+            }, 0, 400L, TimeUnit.MILLISECONDS);
+        });
     }
 
     @Override
     public void uninject() {
+        //Main.logError("UNINJECTED " + Arrays.toString(Thread.currentThread().getStackTrace()));
+        //AlixUnsafe.getUnsafe().throwException(new AlixException(""));
         if (cancelled) return;
         this.cancelled = true;
         try {
             if (task != null) this.task.cancel(true);
         } finally {
-            //Main.logInfo("Released " + buffers[0].refCnt());
-            //Should always be 1 and work, but you never know
-            int refCnt;
-            for (ByteBuf buf : buffers)
-                if ((refCnt = buf.refCnt()) != 0)
-                    buf.unwrap().release(refCnt);//unwrap, since it's wrapped with an unreleasable buffer
-            //this.buffer.release();
+            if (this.packet != null) this.packet.release();
         }
     }
 
@@ -62,6 +80,28 @@ public final class ParticleCaptcha extends Captcha {
         this.uninject();
         //ReflectionUtils.sendBlindnessPackets(user);
     }
+
+    //Encodes by all
+/*    public static ByteBuf encodeByAll(ByteBuf original, ChannelHandlerContext silentContext) {
+        ByteBuf out = original;
+        for (String name : silentContext.pipeline().names()) {
+            if (name.equals(silentContext.name())) return out;
+            ChannelHandlerContext ctx = silentContext.pipeline().context(name);
+            ChannelHandler handler = ctx.handler();
+            Main.logError("HANDLER: " + handler.getClass().getSimpleName() + " " + name + " BYTE " + (handler instanceof MessageToByteEncoder) + " MESSAGE: " + (handler instanceof MessageToMessageEncoder));
+            if(handler instanceof MessageToMessageEncoder) {
+                Main.logError("HANDLER IS MESSAGE ENCODER!");
+                Method method = ReflectionUtils.getMethod(handler.getClass(), "encode", ChannelHandlerContext.class, ByteBuf.class, List.class);
+                method.invoke(handler, ctx, out, original)
+            }
+            if (handler instanceof MessageToByteEncoder) {
+                Main.logError("HANDLER IS BYTE ENCODER!");
+                Method method = ReflectionUtils.getMethod(handler.getClass(), "encode", ChannelHandlerContext.class, ByteBuf.class, ByteBuf.class);
+
+            }
+        }
+        return out;
+    }*/
 
 /*    @Override
     protected void finalize() throws Throwable {//On reload deallocation primitive fix

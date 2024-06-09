@@ -3,16 +3,26 @@ package shadow.utils.objects.savable.data.gui;
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.utils.formatter.AlixFormatter;
+import com.github.retrooper.packetevents.protocol.sound.Sounds;
+import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import io.netty.buffer.ByteBuf;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import shadow.Main;
+import shadow.utils.holders.packet.constructors.OutSoundPacketConstructor;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
-import shadow.utils.objects.savable.data.gui.builders.SimplePinBuilder;
+import shadow.utils.objects.savable.data.gui.builders.VirtualPinBuilder;
+import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
 import shadow.utils.users.types.UnverifiedUser;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public final class PasswordGui {
 
@@ -31,6 +41,18 @@ public final class PasswordGui {
 
     public static final ItemStack BACKGROUND_ITEM;
 
+    public static final ByteBuf
+            villagerNoSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.ENTITY_VILLAGER_NO),
+            playerLevelUpSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.ENTITY_PLAYER_LEVELUP),
+            itemBreakSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.ENTITY_ITEM_BREAK),
+            noteBlockSnareSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.BLOCK_NOTE_BLOCK_SNARE),
+            noteBlockHarpSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.BLOCK_NOTE_BLOCK_HARP);
+
+    public static final TextComponent
+            //pinGUITitle = Component.text(Messages.get("pin-gui-title")),
+            guiTitleLogin = Component.text(Messages.get("gui-title-login")),
+            guiTitleRegister = Component.text(Messages.get("gui-title-register"));
+
     public static final String
             pinConfirm = Messages.get("pin-confirm"),
             pinRemoveLast = Messages.get("pin-remove-last"),
@@ -38,18 +60,19 @@ public final class PasswordGui {
             pinLeave = Messages.get("pin-leave"),
             pinLeaveFeedback = Messages.get("pin-leave-feedback"),
             pinInvalidLength = Messages.get("pin-invalid-length"),
-            pinGUITitle = Messages.get("pin-gui-title"),
-            guiTitleLogin = Messages.get("gui-title-login"),
-            guiTitleRegister = Messages.get("gui-title-register"),
             invalidPassword = Messages.get("password-invalid-gui");
+
     public static final ItemStack[] digits = getDigits();
+    public static final com.github.retrooper.packetevents.protocol.item.ItemStack[] retrooperDigits = toRetrooperItems(getDigits());
+
     public static final ItemStack BARRIER = rename(new ItemStack(Material.BARRIER), "§f");
+    public static final com.github.retrooper.packetevents.protocol.item.ItemStack RETROOPER_BARRIER = SpigotConversionUtil.fromBukkitItemStack(BARRIER);
     public static final int[] EMPTY_DIGIT_SLOTS = new int[]{13, 14, 15, 16};
     public static final int FIRST_EMPTY_DIGIT_SLOT = EMPTY_DIGIT_SLOTS[0];
     public static final int[] PIN_DIGIT_SLOTS = new int[]{28, 0, 1, 2, 9, 10, 11, 18, 19, 20};
+    //public static final Map<Integer, Byte>
     public static final int //slots, an array in the future maybe? - Yes.
-/*
-            DIGIT_0 = 28,
+/*          DIGIT_0 = 28,
             DIGIT_1 = 0,
             DIGIT_2 = 1,
             DIGIT_3 = 2,
@@ -64,6 +87,19 @@ public final class PasswordGui {
             ACTION_RESET = 24,
             ACTION_LEAVE = 25;
     private static final ItemStack[] pinVerificationGuiItems = createPINVerificationItems();
+    public static final List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperPinVerificationGuiItems = Arrays.asList(toRetrooperItems(pinVerificationGuiItems));
+
+    public static com.github.retrooper.packetevents.protocol.item.ItemStack[] toRetrooperItems(ItemStack[] bukkit) {
+        com.github.retrooper.packetevents.protocol.item.ItemStack[] retrooper = new com.github.retrooper.packetevents.protocol.item.ItemStack[bukkit.length];
+        for (int i = 0; i < bukkit.length; i++) retrooper[i] = SpigotConversionUtil.fromBukkitItemStack(bukkit[i]);
+        return retrooper;
+    }
+
+    public static List<com.github.retrooper.packetevents.protocol.item.ItemStack> toRetrooperItems(List<ItemStack> bukkit) {
+        List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooper = new ArrayList<>(bukkit.size());
+        for (ItemStack itemStack : bukkit) retrooper.add(SpigotConversionUtil.fromBukkitItemStack(itemStack));
+        return retrooper;
+    }
 
     public static AlixVerificationGui newBuilder(UnverifiedUser user, LoginType type) {
         AlixVerificationGui builder = create(user, type);
@@ -74,9 +110,9 @@ public final class PasswordGui {
     private static AlixVerificationGui create(UnverifiedUser user, LoginType type) {
         switch (type) {
             case PIN:
-                return new SimplePinBuilder(user);
+                return new VirtualPinBuilder(user);
             case ANVIL:
-                return new AnvilPasswordBuilder(user);
+                return new VirtualAnvilPasswordBuilder(user);
             default:
                 throw new AssertionError("Invalid: " + type);
         }
@@ -140,11 +176,9 @@ public final class PasswordGui {
 
         for (int i : EMPTY_DIGIT_SLOTS) items[i] = BARRIER;
 
-
-        ItemStack background = BACKGROUND_ITEM;
         for (byte i = 0; i < 36; i++) {
             ItemStack item = items[i];
-            if (item == null || item.getType().isAir()) items[i] = background;
+            if (item == null || item.getType().isAir()) items[i] = BACKGROUND_ITEM;
         }
         return items;
     }

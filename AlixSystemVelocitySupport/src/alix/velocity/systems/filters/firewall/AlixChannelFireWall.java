@@ -18,8 +18,8 @@ public final class AlixChannelFireWall extends ServerChannelInitializer {
     }
 
     @Override
-    protected final void initChannel(Channel ch) {
-        if (FireWallManager.isBlocked((InetSocketAddress) ch.unsafe().remoteAddress())) ch.close();
+    protected void initChannel(Channel ch) {
+        if (FireWallManager.isBlocked((InetSocketAddress) ch.unsafe().remoteAddress())) ch.unsafe().closeForcibly();
         else super.initChannel(ch);
     }
 

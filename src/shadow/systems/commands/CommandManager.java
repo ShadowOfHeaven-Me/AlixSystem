@@ -1481,7 +1481,6 @@ public final class CommandManager {
         }
     }
 
-
     public static final ByteBuf
             alreadyRegisteredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("already-registered")),
             passwordRegisterMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("password-register"));

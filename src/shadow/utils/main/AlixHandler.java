@@ -5,7 +5,13 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixError;
+import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRemoveEntityEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTimeUpdate;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Logger;
@@ -22,12 +28,17 @@ import shadow.systems.executors.OnlineExecutors;
 import shadow.systems.executors.ServerPingListener;
 import shadow.systems.executors.gui.GUIExecutors;
 import shadow.systems.login.autoin.PremiumAutoIn;
+import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.systems.login.filters.*;
 import shadow.systems.login.result.LoginInfo;
 import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.methods.MethodProvider;
+import shadow.utils.holders.packet.constructors.OutGameStatePacketConstructor;
+import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
+import shadow.utils.netty.NettyUtils;
 import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.Verifications;
@@ -52,16 +63,71 @@ public final class AlixHandler {
             chatSetOn = Messages.getAsObject("chat-set-on"),
             playerWasDeopped = Messages.getAsObject("player-was-deopped"),
             playerWasOpped = Messages.getAsObject("player-was-opped"),
-            quitCaptchaUnverified = Messages.getAsObject("log-player-quit-captcha-unverified"),
-            quitUnverified = Messages.getAsObject("log-player-quit-unverified"),
-            quitVerified = Messages.getAsObject("log-player-quit-verified");
-
+            playerQuit = Messages.getAsObject("log-player-quit");
 
     private static final long teleportDelay = Main.config.getLong("user-teleportation-delay");
     private static final boolean isTeleportDelayed = teleportDelay > 0;
     private static final String delayedTeleportMessage = Messages.getWithPrefix("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
+    public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
+    public static final boolean isEpollTransport = SERVER_CHANNEL_FUTURE.channel().getClass() == EpollServerSocketChannel.class;
+
+    public static void resetLoginEffectPackets(UnverifiedUser user) {
+        Player player = user.getPlayer();
+
+        //Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(player.getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
+//show players in tab
+        ByteBuf[] addPlayersBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ALL_VISIBLE(user.getPlayer(), user.silentContext());
+        boolean blindnessSent = !isParticleCaptchaInUse || !user.isCaptchaInitialized();
+        //reset blindness effect
+        ByteBuf removeBlindnessBuffer = NettyUtils.dynamic(new WrapperPlayServerRemoveEntityEffect(player.getEntityId(), PotionTypes.BLINDNESS), user.silentContext());
+
+        //synchronize the tab information for the unverified user
+        user.getChannel().eventLoop().execute(() -> {
+            try {
+                for (ByteBuf buf : addPlayersBuffers) user.writeSilently(buf);
+                if (blindnessSent) user.writeAndFlushSilently(removeBlindnessBuffer);
+            } catch (Throwable e) {
+                Main.logError("No jak chuj nie działa coś tu");
+                e.printStackTrace();
+            }
+        });
+
+        //show the verified users the unverified user in tab
+        ByteBuf[] addUnvPlayerBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ONE_VISIBLE(user.reetrooperUser(), user.getPlayer());
+
+        //Not the most optimized way, that's for sure, but otherwise many problems can occur
+        for (AlixUser u : UserManager.users())
+            if (u instanceof VerifiedUser /*&& u.silentContext() != user.silentContext()*/ && OutPlayerInfoPacketConstructor.isVisible(((VerifiedUser) u).getPlayer(), user.getPlayer()))
+                for (ByteBuf buf : addUnvPlayerBuffers) u.silentContext().write(buf.copy());
+        for (ByteBuf buf : addUnvPlayerBuffers) buf.release();
+    }
+
+    private static final boolean isParticleCaptchaInUse = AlixUtils.captchaVerificationVisualType == CaptchaVisualType.PARTICLE;
+    private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
+    //private static final ByteBuf VER_POS = NettyUtils.constBuffer(new WrapperPlayServerPo);
+    //SpigotConversionUtil.
+
+    /*potion effect ids:
+    slowness = 2
+    jump boost = 8
+    */
+    public static void sendLoginEffectsPackets(UnverifiedUser user) {
+        user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
+        user.writeConstSilently(TIME_NIGHT);
+
+        if (!isParticleCaptchaInUse || !user.isCaptchaInitialized())//
+            sendBlindnessPackets(user);//it's fine even if not invoked, since flush is invoked in the CountdownTask class
+    }
+
+    private static void sendBlindnessPackets(UnverifiedUser user) {
+        user.writeAndFlushDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
+    }
 
     private static void initializeAlixInterceptor() {
+        AlixInterceptor.injectIntoServerPipeline(SERVER_CHANNEL_FUTURE.channel().pipeline());
+    }
+
+    private static ChannelFuture getServerChannelFuture() {
         try {
             Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
             Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
@@ -84,16 +150,13 @@ public final class AlixHandler {
                 if (f.getType() == List.class && ((ParameterizedType) f.getGenericType()).getActualTypeArguments()[0] == ChannelFuture.class) {//we know it's a parameterized type since it's a List
                     f.setAccessible(true);
                     List<ChannelFuture> futures = (List<ChannelFuture>) f.get(serverConnection);//it's a List only because of reused code from minecraft singleplayer (info from Emily)
-                    ChannelFuture future = futures.get(0);//it should contain only one handler
-
-                    //boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
-                    AlixInterceptor.injectIntoServerPipeline(future.channel().pipeline());//, fastRaw ? null : DelayedChannelFireWall.INSTANCE);//make sure we handle all of the connection requests before anyone else
-                    break;
+                    return futures.get(0);//it should contain only one handler
                 }
             }
         } catch (Exception e) {
             throw new AlixError(e);
         }
+        throw new AlixError("No Server Channel found!");
     }
 
     public static void delayedConfigTeleportExecute(Runnable r, Player p) {
@@ -205,7 +268,9 @@ public final class AlixHandler {
         //JavaScheduler.repeatAsync(ServerPingManager::clear, 10, TimeUnit.MINUTES);
     }
 
-    public static UnverifiedUser handleOfflinePlayerJoin(Player p, String joinMessage, TemporaryUser user) {
+    private static final ByteBuf autoLoginMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.autoLoginMessage);
+
+    public static UnverifiedUser handleVirtualPlayerJoin(Player p, TemporaryUser user) {
         LoginInfo login = user.getLoginInfo();
         //Already done in the spawn location event
         /*if (login.getVerdict().isAutoLogin() && p.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) //tp back if there was an issue with the teleportation beforehand
@@ -213,10 +278,10 @@ public final class AlixHandler {
         switch (login.getVerdict()) {//a fast injection based on the login verdict
             case DISALLOWED_NO_DATA:
                 GeoIPTracker.addIP(login.getIP());
-                return Verifications.add(p, user, joinMessage);
+                return Verifications.add(p, user);
             case DISALLOWED_PASSWORD_RESET://needs to register after a password reset
             case DISALLOWED_LOGIN_REQUIRED://needs to log in
-                return Verifications.add(p, user, joinMessage);
+                return Verifications.add(p, user);
             case REGISTER_PREMIUM:
                 autoRegisterCommandList.invoke(p);
                 UserManager.addVerifiedUser(p, user);
@@ -227,34 +292,37 @@ public final class AlixHandler {
                 return null;
             case IP_AUTO_LOGIN:
                 autoLoginCommandList.invoke(p);
-                UserManager.addVerifiedUser(p, user);
-                p.sendMessage(Messages.autoLoginMessage);
+                UserManager.addVerifiedUser(p, user).writeAndFlushConstSilently(autoLoginMessageBuffer);
                 return null;
             default:
                 throw new AssertionError("Invalid verdict: " + login.getVerdict());
         }
     }
 
-    public static void handleOfflinePlayerQuit(Player p, PlayerQuitEvent event) {
+    //returns true if the virtual player is unverified (currently disabled)
+    public static void handleVirtualPlayerQuit(PlayerQuitEvent event) {
+        Player p = event.getPlayer();
         AlixUser user = UserManager.remove(p);
 
         if (user == null) {
-            Main.logWarning("Could not get any User instance for the player " + p.getName() + " on quit! Report this as an error immediately!");
-            return;
+            Main.logError("Could not get any User instance for the player " + p.getName() + " on quit! Report this as an error immediately!");
+            return;//true
         }
 
         if (!user.isVerified()) {//unregistered/not logged in user quit handling
             UnverifiedUser u = (UnverifiedUser) user;
             u.uninject();//uninject the user
-            if (!u.hasAccount()) GeoIPTracker.removeIP(u.getIPAddress());//remove the temporary ip
+            if (!u.hasAccount()) GeoIPTracker.removeIP(u.getIPAddress());//remove the ip, if it's temporary
             if (u.isCaptchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
                 event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
-                if (alixJoinLog) Main.logInfo(quitCaptchaUnverified.format(p.getName(), u.getIPAddress()));
-            } else if (alixJoinLog) Main.logInfo(quitUnverified.format(p.getName(), u.getIPAddress()));
-        } else {//logged in user quit handling
-            VerifiedUser u = (VerifiedUser) user;
-            Main.logInfo(quitVerified.format(u.getName(), u.getIPAddress()));
+                //if (alixJoinLog) Main.logInfo(quitCaptchaUnverified.format(p.getName(), u.getIPAddress()));
+            }// else if (alixJoinLog) Main.logInfo(quitUnverified.format(p.getName(), u.getIPAddress()));
+            return;//true
         }
+        //logged in user quit handling
+        VerifiedUser u = (VerifiedUser) user;
+        Main.logInfo(playerQuit.format(u.getName(), u.getIPAddress()));
+        //false
     }
 
 /*    public static PacketAffirmator createPacketAffirmatorImpl() {

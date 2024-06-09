@@ -63,7 +63,7 @@ public final class JarInJarClassLoader<E extends AbstractLoaderBootstrap> extend
     }
 
     @Override
-    public final void close() {
+    public void close() {
         try {
             super.close();
         } catch (IOException e) {

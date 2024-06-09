@@ -4,11 +4,20 @@ import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 public final class ConstLocation extends Location {
 
+    public ConstLocation(Location loc) {
+        super(loc.getWorld(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+    }
+
     public ConstLocation(World world, double x, double y, double z, float yaw, float pitch) {
         super(world, x, y, z, yaw, pitch);
+    }
+
+    public Location asModifiableCopy() {
+        return new Location(getWorld(), getX(), getY(), getZ(), getYaw(), getPitch());
     }
 
     @Override
@@ -45,5 +54,53 @@ public final class ConstLocation extends Location {
     @Override
     public void setPitch(float pitch) {
         if (Float.compare(super.getPitch(), pitch) != 0) throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location add(@NotNull Vector vec) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location add(@NotNull Location vec) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location add(double x, double y, double z) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location subtract(@NotNull Vector vec) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location subtract(@NotNull Location vec) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location subtract(double x, double y, double z) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location multiply(double m) {
+        throw new AlixException("Cannot modify a Constant Location!");
+    }
+
+    @NotNull
+    @Override
+    public Location zero() {
+        throw new AlixException("Cannot modify a Constant Location!");
     }
 }

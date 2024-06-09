@@ -20,11 +20,11 @@ public final class AuthAPI {
         return null;
     }
 
-    public final LoginAuthenticator getAuthenticator() {
+    public LoginAuthenticator getAuthenticator() {
         return authenticator;
     }
 
-    public final Listener getListener() {
+    public Listener getListener() {
         return listener;
     }
 }

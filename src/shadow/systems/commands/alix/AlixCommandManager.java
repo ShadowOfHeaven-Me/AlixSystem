@@ -2,17 +2,16 @@ package shadow.systems.commands.alix;
 
 import alix.common.utils.other.CharArray;
 import alix.common.utils.other.annotation.AlixIntrinsified;
-import org.bukkit.entity.Player;
+import io.netty.buffer.ByteBuf;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.file.CommandsFile;
 import shadow.systems.commands.alix.verification.VerificationCommand;
+import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import static shadow.utils.main.AlixUtils.sendMessage;
 
 public final class AlixCommandManager {
 
@@ -63,11 +62,14 @@ public final class AlixCommandManager {
         return b;
     }
 
+    private static final ByteBuf
+            formatRegisterMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatRegister),
+            formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin);
+
     //This is a custom verification command handling implementation
     //I've deemed to be the fastest so far
     @AlixIntrinsified(method = "CommandExecutor#onCommand")
     public static void handleVerificationCommand(char[] cmd, UnverifiedUser user) {
-        Player p = user.getPlayer();
         cmd = removeFallbackPrefix(cmd);
         boolean isArgSize0 = true;
         char[] labelChars = cmd;
@@ -93,12 +95,12 @@ public final class AlixCommandManager {
                 sendMessage(p, CommandManager.formatCaptcha);
                 return;
             }*/
-            if (consumer == VerificationCommand.OF_LOGIN) {
-                sendMessage(p, CommandManager.formatLogin);
+            if (consumer == VerificationCommand.OF_REGISTER) {
+                user.writeAndFlushConstSilently(formatRegisterMessagePacket);
                 return;
             }
-            if (consumer == VerificationCommand.OF_REGISTER) {
-                sendMessage(p, CommandManager.formatRegister);
+            if (consumer == VerificationCommand.OF_LOGIN) {
+                user.writeAndFlushConstSilently(formatLoginMessagePacket);
                 return;
             }
             throw new AssertionError("Invalid: " + new String(labelChars) + " for " + new String(cmd));

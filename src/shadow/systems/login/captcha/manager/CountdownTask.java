@@ -7,7 +7,7 @@ import shadow.utils.holders.packet.buffered.BufferedPackets;
 import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 
-public final class CountdownTask {//shows countdown and kicks out
+public final class CountdownTask {//shows xp countdown and kicks out
 
     private static final ByteBuf
             captchaTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-time-passed")),

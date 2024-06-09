@@ -35,12 +35,20 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="paper-1.20.2" level="project" />
     <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/../../../../Server/alix_firewall/AlixOSFireWall.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/Downloads/FastLoginVelocity.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

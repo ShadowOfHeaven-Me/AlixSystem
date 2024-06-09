@@ -16,6 +16,7 @@ import net.kyori.adventure.text.Component;
 import shadow.utils.netty.NettyUtils;
 
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 public final class OutMessagePacketConstructor {
 
@@ -60,27 +61,39 @@ public final class OutMessagePacketConstructor {
         //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 
+    public static ByteBuf constructConst(String message, boolean actionBar, boolean direct) {
+        return NettyUtils.constBuffer(packetWrapper(Component.text(message), actionBar), direct);
+        //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
+    }
+
     public static PacketWrapper<?> packetWrapper(Component message) {
         return packetWrapper(message, false);
     }
 
     private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
+    private static final BiFunction<Component, Boolean, PacketWrapper<?>> packetWrapperFunc = createPacketWrapperFunc0();
 
     //From User#sendMessage(Component, ChatType)
     public static PacketWrapper<?> packetWrapper(Component message, boolean actionBar) {
+        return packetWrapperFunc.apply(message, actionBar);
+    }
+
+    //From User#sendMessage(Component, ChatType)
+    private static BiFunction<Component, Boolean, PacketWrapper<?>> createPacketWrapperFunc0() {
         if (version.isNewerThanOrEquals(ServerVersion.V_1_19)) {
-            return new WrapperPlayServerSystemChatMessage(actionBar, message);
-        } else {
+            return (message, actionBar) -> new WrapperPlayServerSystemChatMessage(actionBar, message);
+        } else return (message, actionBar) -> {
             if (actionBar) return new WrapperPlayServerActionBar(message);
 
             ChatMessage m;
             ChatType type = ChatTypes.CHAT;
+
             if (version.isNewerThanOrEquals(ServerVersion.V_1_16))
                 m = new ChatMessage_v1_16(message, type, new UUID(0L, 0L));
             else m = new ChatMessageLegacy(message, type);
 
             return new WrapperPlayServerChatMessage(m);
-        }
+        };
     }
 
     /*private static Object construct_1_19(String message, boolean actionBar) throws Exception {

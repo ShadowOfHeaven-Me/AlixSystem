@@ -23,16 +23,12 @@ public final class OriginalLocationsManager {
     }*/
 
     static {
-        try {
-            file.load();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        file.loadExceptionless();
     }
 
     public static Location getOriginalLocation(Player player) {
         Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
-        return originalLoc != null ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none was found
+        return originalLoc != null && !originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none was found
     }
 
     public static CompletableFuture<Boolean> teleportBack(Player player) {
@@ -41,7 +37,7 @@ public final class OriginalLocationsManager {
 
     public static void add(Player player, @NotNull Location originalLocation) {
         file.getMap().put(player.getUniqueId(), originalLocation);
-        if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) throw new AlixException("SEX");
+        if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) throw new AlixException(":>");
     }
 
 /*    public static Location remove(Player player) {

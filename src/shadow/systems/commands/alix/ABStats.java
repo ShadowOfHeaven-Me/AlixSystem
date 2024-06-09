@@ -60,7 +60,7 @@ public final class ABStats {
                         this.reset = !this.reset;
                         if (reset) AntiBotStatistics.INSTANCE.reset();
                     }
-                }, 500, TimeUnit.MILLISECONDS);
+                }, 250, TimeUnit.MILLISECONDS);
                 break;
         }
         return v;

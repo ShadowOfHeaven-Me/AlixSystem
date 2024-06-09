@@ -7,6 +7,7 @@ public final class CharArray {
     private final char[] value;
     private final int hashCode;
 
+    //Serves as a fast Map key substitute for String
     public CharArray(char[] value) {
         this.value = value;
         this.hashCode = Arrays.hashCode(this.value);

@@ -1,3 +1,4 @@
+/*
 package shadow.utils.holders.packet.access;
 
 import net.minecraft.network.protocol.game.ClientboundPlayerChatPacket;
@@ -17,4 +18,4 @@ final class Ver17To21AccessImpl implements VersionAccess {
         ClientboundPlayerChatPacket c = (ClientboundPlayerChatPacket) p;
         return new ClientboundSystemChatPacket(c.g(), false);
     }
-}
+}*/

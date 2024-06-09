@@ -12,7 +12,7 @@ import java.util.Map;
 public final class ParticleHashCompressor {//Removes on average 30 unnecessary buffers, so not that much
 
     private static final int INITIAL_CAPACITY = 1 << 10;//1024 (there's usually 500-1000 buffers generated)
-    private final Map<Long, WrapperPlayServerParticle> map = new HashMap<>(INITIAL_CAPACITY);
+    private final Map<Long, WrapperPlayServerParticle> map = new HashMap<>(INITIAL_CAPACITY);//capacity needs to be a power of 2
 
     public void tryAdd(WrapperPlayServerParticle packet) {
         Vector3d v = packet.getPosition();
@@ -24,14 +24,13 @@ public final class ParticleHashCompressor {//Removes on average 30 unnecessary b
         Collection<WrapperPlayServerParticle> c = this.map.values();
         ByteBuf[] buffers = new ByteBuf[c.size()];
         int i = 0;
-        for (WrapperPlayServerParticle wrapper : c) buffers[i++] = NettyUtils.constBuffer(wrapper, true);
+        for (WrapperPlayServerParticle wrapper : c) buffers[i++] = NettyUtils.createBuffer(wrapper);
         return buffers;
     }
 
     //My own hashing method
     private static long hash(double x, double y, double z) {
-        double maxOffset = 0.12;//0.1 changes nothing, while 0.2 removes about half
-        double multiplier = 1 / maxOffset;
+        double multiplier = 7.5;//10 changes nothing, while 5 removes about half
         long iX = (long) (x * multiplier);
         long iY = (long) (y * multiplier);
         long iZ = (long) (z * multiplier);

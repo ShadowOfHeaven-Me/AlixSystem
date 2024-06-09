@@ -11,7 +11,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.logging.Logger;
 
@@ -29,11 +28,12 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     public BukkitAlixMain() {
         instance = this;
         //CommonAlixMain.loggerManager = this;
-        this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
-        this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, JavaPlugin.class, this);
-        //this.alixLogger = new AlixPluginLogger();
         this.logger = AlixLoggerProvider.createServerAdequateLogger(super.getLogger());
         this.loggerAdapter = LoggerAdapter.createAdapter(this.getLogger());
+
+        this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
+        this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, BukkitAlixMain.class, this);
+        //this.alixLogger = new AlixPluginLogger();
         //CommonAlixMain.bootstrap = this.plugin;
 
         saveDefaultConfig();
@@ -139,6 +139,10 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     @Override
     public LoaderBootstrap getBootstrap() {
         return bootstrap;
+    }
+
+    public void setEnabledStatus(boolean on) {
+        this.setEnabled(on);
     }
 
     /*    private static final class AlixPluginLogger extends PluginLogger {

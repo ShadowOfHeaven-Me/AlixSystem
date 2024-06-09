@@ -42,8 +42,9 @@ public class PacketBlocker implements PacketProcessor {
     //uncaughtExceptionKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(AlixUtils.isDebugEnabled ? "§cUncaught exception: Check the console for errors!" : "§cUncaught exception: Enable 'debug' in config.yml if you want to see the error in the console!");
 
     //loginTimePassed = Messages.get("login-time-passed"),
-    protected static final byte WAIT_PACKETS_INCREASE = 5,//(byte) (ServerEnvironment.isPaper() ? 0 : 3),
-            WAIT_PACKETS_THRESHOLD = 8;//(byte) (WAIT_PACKETS_INCREASE + 5);
+    protected static final byte
+            WAIT_PACKETS_INCREASE = 4,//(byte) (ServerEnvironment.isPaper() ? 0 : 3),
+            WAIT_PACKETS_THRESHOLD = 5;//(byte) (WAIT_PACKETS_INCREASE + 5);
     //public static final Class<?> commandPacketClass;
     //public static final Method getStringFromCommandPacketMethod;
     private static final ByteBuf movementForbiddenCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("movement-forbidden-captcha")), packetLimitReachedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("packet-limit-reached-verification"));//,
@@ -157,7 +158,7 @@ public class PacketBlocker implements PacketProcessor {
     }*/
 
     protected final void trySpoofPackets() {
-        if (!this.packetsSent && ++this.waitPackets >= WAIT_PACKETS_THRESHOLD && (this.packetsSent = true))//8 - at least 5 move packets and one out respawn packet from the server
+        if (!this.packetsSent && ++this.waitPackets >= WAIT_PACKETS_THRESHOLD && (this.packetsSent = true))//6 - at least 5 move packets and one out respawn packet from the server
             this.user.spoofVerificationPackets(); //AlixScheduler.async(user::spoofVerificationPackets);// /\ setting the boolean in a branchless if statement for a very slight performance boost
         //Main.logError("wwwwww " + waitPackets);
     }
@@ -165,7 +166,7 @@ public class PacketBlocker implements PacketProcessor {
     @Override
     public void onPacketReceive(PacketPlayReceiveEvent event) {
         if (!user.hasCompletedCaptcha()) {
-            this.onReadCaptchaVerification(event);
+            this.onReceiveCaptchaVerification(event);
             return;
         }
         //during login/register, the captcha verification was passed so we lift the packet limitations
@@ -229,14 +230,14 @@ public class PacketBlocker implements PacketProcessor {
     public void onPacketSend(PacketPlaySendEvent event) {
         //Main.logError("READ: " + event.getPacketType().name());
         if (!user.hasCompletedCaptcha()) {
-            this.onWriteCaptchaVerification(event);
+            this.onSendCaptchaVerification(event);
             return;
         }
         switch (event.getPacketType()) {
             case CHAT_MESSAGE://From the now deprecated ProtocolAccess.convertPlayerChatToSystemPacket
                 WrapperPlayServerChatMessage playerChat = new WrapperPlayServerChatMessage(event);
                 //Main.logError("CHAT MSG " + playerChat.getMessage().getChatContent().decorate(TextDecoration.STRIKETHROUGH));
-                this.blockedChatMessages.offerLast(playerChat.getMessage().getChatContent().decorate(TextDecoration.STRIKETHROUGH));
+                this.blockedChatMessages.offerLast(playerChat.getMessage().getChatContent());
                 event.setCancelled(true);
                 break;
             //case PLAYER_CHAT_HEADER:
@@ -248,6 +249,7 @@ public class PacketBlocker implements PacketProcessor {
             case SYSTEM_CHAT_MESSAGE:
                 //Main.logError("SYSTEM CHAT: " + new WrapperPlayServerSystemChatMessage(event).getMessage().decorate(TextDecoration.STRIKETHROUGH));
                 Component component = new WrapperPlayServerSystemChatMessage(event).getMessage();
+                //A fix for the "message not delivered" stuff
                 if (component instanceof TranslatableComponent && ((TranslatableComponent) component).key().equals("multiplayer.message_not_delivered")) {
                     event.setCancelled(true);
                     return;
@@ -257,9 +259,14 @@ public class PacketBlocker implements PacketProcessor {
                 event.setCancelled(true);
                 break;
             case CHANGE_GAME_STATE:
-                this.waitPackets += WAIT_PACKETS_INCREASE;
-                if (new WrapperPlayServerChangeGameState(event).getReason() == WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE)
-                    event.setCancelled(true);
+                switch (new WrapperPlayServerChangeGameState(event).getReason()) {
+                    case START_LOADING_CHUNKS:
+                        this.waitPackets += WAIT_PACKETS_INCREASE;
+                        this.trySpoofPackets();
+                        break;
+                    case CHANGE_GAME_MODE:
+                        event.setCancelled(true);
+                }
                 break;
             //case "PacketPlayOutGameStateChange":
             case TIME_UPDATE:
@@ -267,6 +274,8 @@ public class PacketBlocker implements PacketProcessor {
             case SET_TITLE_SUBTITLE://
             case SET_TITLE_TEXT://
             case SET_TITLE_TIMES://
+            case ENTITY_EFFECT:
+            case EFFECT:
             case SERVER_DATA:
             case SCOREBOARD_OBJECTIVE:
             case RESET_SCORE:
@@ -298,7 +307,7 @@ public class PacketBlocker implements PacketProcessor {
         //if (!event.isCancelled()) Main.logError("READ: " + event.getPacketType().name());
     }
 
-    protected final void onWriteCaptchaVerification(PacketPlaySendEvent event) {
+    protected final void onSendCaptchaVerification(PacketPlaySendEvent event) {
         switch (event.getPacketType()) {
             case CHAT_MESSAGE://From the now deprecated ProtocolAccess.convertPlayerChatToSystemPacket
                 WrapperPlayServerChatMessage playerChat = new WrapperPlayServerChatMessage(event);
@@ -320,9 +329,14 @@ public class PacketBlocker implements PacketProcessor {
                 event.setCancelled(true);
                 break;
             case CHANGE_GAME_STATE:
-                this.waitPackets += WAIT_PACKETS_INCREASE;
-                if (new WrapperPlayServerChangeGameState(event).getReason() == WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE)
-                    event.setCancelled(true);
+                switch (new WrapperPlayServerChangeGameState(event).getReason()) {
+                    case START_LOADING_CHUNKS:
+                        this.waitPackets += WAIT_PACKETS_INCREASE;
+                        this.trySpoofPackets();
+                        break;
+                    case CHANGE_GAME_MODE:
+                        event.setCancelled(true);
+                }
                 break;
             //case "PacketPlayOutGameStateChange":
             case TIME_UPDATE:
@@ -330,6 +344,8 @@ public class PacketBlocker implements PacketProcessor {
             case SET_TITLE_SUBTITLE://
             case SET_TITLE_TEXT://
             case SET_TITLE_TIMES://
+            case ENTITY_EFFECT:
+            case EFFECT:
             case SERVER_DATA:
             case SCOREBOARD_OBJECTIVE:
             case RESET_SCORE:
@@ -368,7 +384,7 @@ public class PacketBlocker implements PacketProcessor {
         if (AlixUtils.isDebugEnabled) cause.printStackTrace();
     }*/
 
-    protected final void onReadCaptchaVerification(PacketPlayReceiveEvent event) {
+    protected final void onReceiveCaptchaVerification(PacketPlayReceiveEvent event) {
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
             case PLAYER_POSITION_AND_ROTATION:
@@ -445,5 +461,28 @@ public class PacketBlocker implements PacketProcessor {
     }
 
     public void updateBuilder() {
+    }
+
+    public static final PacketBlocker EMPTY = new EmptyPacketBlocker();
+
+    private static final class EmptyPacketBlocker extends PacketBlocker {
+
+        private EmptyPacketBlocker() {
+            super();
+        }
+
+        @Override
+        public void onPacketReceive(PacketPlayReceiveEvent event) {
+        }
+
+        @Override
+        public void onPacketSend(PacketPlaySendEvent event) {
+        }
+    }
+
+    private PacketBlocker() {
+        this.user = null;
+        this.blockedChatMessages = null;
+        this.countdownTask = null;
     }
 }

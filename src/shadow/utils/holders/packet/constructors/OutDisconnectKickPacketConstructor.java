@@ -49,7 +49,6 @@ public final class OutDisconnectKickPacketConstructor {
     public static ByteBuf constructConstAtPlayPhase(String message) {
         try {
             return NettyUtils.constBuffer(new WrapperPlayServerDisconnect(Component.text(message)));
-            //return new WrapperPlayServerSystemChatMessage(false, Component.text(message));
             //Object chatComponent = ReflectionUtils.constructTextComponents(message)[0];
             //return playPhasePacketConstructor.newInstance(chatComponent);
         } catch (Exception e) {

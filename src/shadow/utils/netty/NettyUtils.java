@@ -10,6 +10,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 
 public final class NettyUtils {
@@ -23,7 +24,8 @@ public final class NettyUtils {
         Main.logError("MAPPED: " + mapper.get(packetId));
     }*/
 
-    private static final ByteBufAllocator ALLOC = new UnpooledByteBufAllocator(false, true);
+    private static final ByteBufAllocator ALLOC = new UnpooledByteBufAllocator(false, true);//remember to never explicitly enable 'no cleaner'
+    //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
 
 /*    static {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
@@ -43,7 +45,7 @@ public final class NettyUtils {
     }
 
     private static ByteBuf prepareConstToSend(ByteBuf constByteBuf) {
-        return constByteBuf.duplicate();//we only need to duplicate it, since the contents of a constant ByteBuf are unmodifiable as per the constBuffer method
+        return constByteBuf.duplicate();//we only need to duplicate it (so not copy), since the contents of a constant ByteBuf are unmodifiable as per the constBuffer method
     }
 
     public static void writeConst(ChannelHandlerContext context, ByteBuf constByteBuf) {
@@ -54,6 +56,10 @@ public final class NettyUtils {
     public static ChannelFuture writeAndFlushConst(ChannelHandlerContext context, ByteBuf constByteBuf) {
         //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
         return context.writeAndFlush(prepareConstToSend(constByteBuf));
+    }
+
+    public static void closeAfterConstSend(Channel channel, ByteBuf constBuf) {
+        writeAndFlushConst(getSilentContext(channel), constBuf).addListener(ChannelFutureListener.CLOSE);
     }
 
 /*    public static ByteBuf newBuffer(int initialCapacity) {
@@ -84,13 +90,14 @@ public final class NettyUtils {
 
     @SuppressWarnings("UnstableApiUsage")
     private static ByteBuf createBuffer0(PacketWrapper<?> wrapper, ByteBuf emptyByteBuf) {
-        if (wrapper.buffer != null) throw new AlixException("Incorrect invocation of NettyUtils.createBuffer - buffer exists");
+        if (wrapper.buffer != null)
+            throw new AlixException("Incorrect invocation of NettyUtils.createBuffer - buffer exists");
 
         wrapper.buffer = emptyByteBuf;
         wrapper.writeVarInt(wrapper.getPacketTypeData().getNativePacketId());
         wrapper.write();
 
-        return (ByteBuf) wrapper.buffer;
+        return emptyByteBuf;//(ByteBuf) wrapper.buffer;
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper) {
@@ -98,7 +105,11 @@ public final class NettyUtils {
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return Unpooled.unreleasableBuffer(createBuffer(wrapper, direct).asReadOnly());
+        return constBuffer(createBuffer(wrapper, direct));
+    }
+
+    public static ByteBuf constBuffer(ByteBuf dynamicBuf) {//Unreleasable(ReadOnly(ByteBuf)))
+        return Unpooled.unreleasableBuffer(dynamicBuf.asReadOnly());
     }
 
     //From PacketDataSerializer#j

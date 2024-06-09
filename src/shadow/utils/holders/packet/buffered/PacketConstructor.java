@@ -21,12 +21,13 @@ public final class PacketConstructor {
 
     public static final class AnvilGUI {
 
-        public static final short MAX_CACHED = 100;
+        public static final short MAX_CACHED = 100;//the inventory id counter is always between 0-99
         //private static final List<com.github.retrooper.packetevents.protocol.item.ItemStack> ALL_ITEMS, ALL_ITEMS_VERIFIED, INVALID_INDICATE_ITEMS, INVALID_INDICATE_ITEMS_VERIFIED;
+        public static final ByteBuf allItemsPacket, invalidItemsPacket;
         private static final ByteBuf[]
-                allItemsPackets = new ByteBuf[MAX_CACHED],
+                //allItemsPackets = new ByteBuf[MAX_CACHED],
                 allItemsVerifiedPackets = new ByteBuf[MAX_CACHED],
-                invalidItemsPackets = new ByteBuf[MAX_CACHED],
+                //invalidItemsPackets = new ByteBuf[MAX_CACHED],
                 invalidItemsVerifiedPackets = new ByteBuf[MAX_CACHED];
 
         static {
@@ -49,24 +50,26 @@ public final class PacketConstructor {
                     INVALID_INDICATE_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, CANCEL, INVALID_PASSWORD));
 
             for (int i = 0; i < MAX_CACHED; i++) {
-                allItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS);
+                //allItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS);
                 allItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS_VERIFIED);
-                invalidItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS);
+                //invalidItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS);
                 invalidItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS_VERIFIED);
             }
+            allItemsPacket = OutWindowItemsPacketConstructor.constructConst0(1, 3, ALL_ITEMS);
+            invalidItemsPacket = OutWindowItemsPacketConstructor.constructConst0(1, 3, INVALID_INDICATE_ITEMS);
         }
 
-        public static ByteBuf allItems(int id) {
+/*        public static ByteBuf allItems(int id) {
             return allItemsPackets[id - 1];
-        }
+        }*/
 
         public static ByteBuf allItemsVerified(int id) {
             return allItemsVerifiedPackets[id - 1];
         }
 
-        public static ByteBuf invalidIndicate(int id) {
+/*        public static ByteBuf invalidIndicate(int id) {
             return invalidItemsPackets[id - 1];
-        }
+        }*/
 
         public static ByteBuf invalidIndicateVerified(int id) {
             return invalidItemsVerifiedPackets[id - 1];

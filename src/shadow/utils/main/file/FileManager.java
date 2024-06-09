@@ -2,7 +2,6 @@ package shadow.utils.main.file;
 
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.Messages;
-import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.file.AlixFileManager;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
@@ -35,12 +34,12 @@ public abstract class FileManager extends AlixFileManager {
     public static void loadFiles() {
         try {
             Messages.init();
-            AlixScheduler.async(UserFileManager::init);
+            UserFileManager.init();
             FireWallManager.init();
             WarpFileManager.initialize();
-            AlixScheduler.async(OriginalLocationsManager::init);
+            OriginalLocationsManager.init();
             SpawnFileManager.initialize();
-            Main.debug(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded (pre-enable)!" : "Poprawnie wczytano wszystkie pliki (przed-włączeniem)!");
+            Main.logInfo(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded!" : "Poprawnie wczytano wszystkie pliki!");
         } catch (IOException e) {
             Main.logError(AlixUtils.isPluginLanguageEnglish ? "An error occurred whilst trying to load the " + e.getMessage() + " file!"
                     : "Napotkano error przy próbie wczytania pliku " + e.getMessage() + "!");

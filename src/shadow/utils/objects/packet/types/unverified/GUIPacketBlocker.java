@@ -1,13 +1,8 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import alix.common.scheduler.AlixScheduler;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import shadow.utils.users.types.UnverifiedUser;
-
-import java.util.concurrent.TimeUnit;
-
-import static com.github.retrooper.packetevents.protocol.packettype.PacketType.Play.Server.WINDOW_ITEMS;
 
 public class GUIPacketBlocker extends PacketBlocker {
 
@@ -22,7 +17,7 @@ public class GUIPacketBlocker extends PacketBlocker {
     @Override
     public void onPacketReceive(PacketPlayReceiveEvent event) {
         if (!user.hasCompletedCaptcha()) {
-            this.onReadCaptchaVerification(event);
+            this.onReceiveCaptchaVerification(event);
             return;
         }
         //has completed the captcha and is currently undergoing the pin verification
@@ -32,31 +27,31 @@ public class GUIPacketBlocker extends PacketBlocker {
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
                 this.trySpoofPackets();
-                event.setCancelled(true);
-                return;
+                break;
             case CLOSE_WINDOW:
-                //super.channelReadNotOverridden(ctx, msg);
-                AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
-                event.setCancelled(true);
-                return;
-            case CLICK_WINDOW:
+                event.getPostTasks().add(user::openPasswordBuilderGUI);
+                break;
+            case CLICK_WINDOW://order of these is important \/
+                this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());
+                this.user.getVerificationGUI().getVirtualGUI().spoofAllItems();
+                break;
             case KEEP_ALIVE://will time out without this one
                 return;
         }
         event.setCancelled(true);
     }
 
-    @Override
+    /*@Override
     public void onPacketSend(PacketPlaySendEvent event) {
         //if (spoofedWindowItems(msg)) return;
         if (!user.hasCompletedCaptcha()) {
-            super.onWriteCaptchaVerification(event);
+            super.onSendCaptchaVerification(event);
             return;
         }
-        if (event.getPacketType() == WINDOW_ITEMS) return;
+        //if (event.getPacketType() == WINDOW_ITEMS) return;
 
         super.onPacketSend(event);
-    }
+    }*/
 
  /*   @Override
     public void onPacketSend(PacketPlaySendEvent event) {

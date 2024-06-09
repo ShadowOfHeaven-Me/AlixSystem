@@ -57,7 +57,7 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
     private final class PaperSyncTickEvent implements Listener {
 
         @EventHandler(priority = EventPriority.MONITOR)
-        public final void onTickEnd(ServerTickEndEvent event) {
+        public void onTickEnd(ServerTickEndEvent event) {
             executeNow.executeAllAndClear();
         }
     }
@@ -73,7 +73,6 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
          * <p>
          * last - The temporary holder responsible for linking
          * further task nodes;
-         *
          * </p>
          **/
 

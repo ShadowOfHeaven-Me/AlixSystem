@@ -3,6 +3,8 @@ package shadow.utils.objects.savable.data;
 import alix.common.data.LoginType;
 import alix.common.data.Password;
 import alix.common.data.security.Hashing;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import shadow.utils.main.AlixUtils;
 
 public final class LoginParams {
@@ -29,7 +31,7 @@ public final class LoginParams {
     void initLoginTypes(String data) {
         String[] a = data.split(";");
         this.loginType = AlixUtils.readLoginType(a[0], AlixUtils.defaultLoginType);
-        if(a.length == 2) this.extraLoginType = AlixUtils.readLoginType(a[1], null);
+        if (a.length == 2) this.extraLoginType = AlixUtils.readLoginType(a[1], null);
     }
 
     void initSettings(String settings) {
@@ -66,19 +68,21 @@ public final class LoginParams {
         this.defaultingPasswordHash = defaultingPasswordHash;
     }
 
+    @NotNull
     public Password getPassword() {
         return password;
     }
 
-    public void setPassword(Password password) {
+    public void setPassword(@NotNull Password password) {
         this.password = password;
     }
 
+    @Nullable
     public Password getExtraPassword() {
         return extraPassword;
     }
 
-    public void setExtraPassword(Password extraPassword) {
+    public void setExtraPassword(@Nullable Password extraPassword) {
         this.extraPassword = extraPassword;
     }
 

@@ -54,7 +54,7 @@ public final class PersistentUserData {
     public static PersistentUserData createFromPremiumInfo(String name, String ip) {
         //By creating a password we ensure the account cannot be stolen in case
         //the server suddenly ever switches to offline mode, and does not use FastLogin
-        PersistentUserData data = new PersistentUserData(name, ip, alix.common.data.Password.createRandom());
+        PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
         data.setLoginType(LoginType.COMMAND);
 
         return data;
@@ -110,7 +110,7 @@ public final class PersistentUserData {
     }
 
     public void resetPasswords() {
-        this.loginParams.setPassword(Password.empty());
+        this.loginParams.setPassword(Password.empty());//
         this.loginParams.setExtraPassword(null);
         this.loginParams.setExtraLoginType(null);
     }

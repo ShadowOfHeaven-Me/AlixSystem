@@ -2,6 +2,7 @@ package shadow.utils.users.types;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.entity.Player;
@@ -33,6 +34,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     public VerifiedUser(Player player, PersistentUserData data, User retrooperUser, ChannelHandlerContext silentContext) {
         Objects.requireNonNull(data);//require the data to be non-null
+        //Main.logError("VERIFIED MADE");
         this.player = player;
         this.data = data;
         this.retrooperUser = retrooperUser;
@@ -63,6 +65,31 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     public VerifiedUser(Player player) {
         this(player, PacketEvents.getAPI().getPlayerManager().getUser(player));
+    }
+
+    public void writeSilently(ByteBuf buffer) {
+        //DEBUG_TIME();
+        this.silentContext.write(buffer);
+    }
+
+    public void writeAndFlushSilently(ByteBuf buffer) {
+        //DEBUG_TIME();
+        this.silentContext.writeAndFlush(buffer);
+    }
+
+    public void flushSilently() {
+        //DEBUG_TIME();
+        this.silentContext.flush();
+    }
+
+    public void writeConstSilently(ByteBuf buf) {
+        //DEBUG_TIME();
+        NettyUtils.writeConst(this.silentContext, buf);
+    }
+
+    public void writeAndFlushConstSilently(ByteBuf buf) {
+        //DEBUG_TIME();
+        NettyUtils.writeAndFlushConst(this.silentContext, buf);
     }
 
     public Player getPlayer() {
@@ -241,7 +268,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     @Override
     public Channel getChannel() {
-        return null;
+        return this.silentContext.channel();
     }
 
     @Override

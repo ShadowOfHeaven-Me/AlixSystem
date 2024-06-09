@@ -11,8 +11,8 @@ public final class Verifications {
     //private static final AlixMap<UUID, UnverifiedUser> map = new KeyedIdentityMap<>(Bukkit.getMaxPlayers());
 
     //not done async, because introducing a delay on packet blocking can prove fatal
-    public static UnverifiedUser add(Player p, TemporaryUser tempUser, String joinMessage) {
-        UnverifiedUser user = new UnverifiedUser(p, tempUser, joinMessage);
+    public static UnverifiedUser add(Player p, TemporaryUser tempUser) {
+        UnverifiedUser user = new UnverifiedUser(p, tempUser);
         UserManager.putUnv(user);
         return user;//Map#put returns the previous Value, thus it cannot be used instead for short
     }
@@ -23,6 +23,10 @@ public final class Verifications {
 
     public static boolean has(UUID uuid) {
         return !UserManager.get(uuid).isVerified();
+    }
+
+    public static boolean remove(Player p) {
+        return !UserManager.remove(p).isVerified();
     }
 
     public static UnverifiedUser get(Player p) {

@@ -4,6 +4,7 @@ import alix.common.data.security.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.utils.file.update.UpdateChecker;
+import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
@@ -21,13 +22,14 @@ import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.systems.metrics.Metrics;
+import shadow.systems.virtualization.manager.UserSemiVirtualization;
 import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
-import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
+import shadow.utils.objects.savable.data.gui.builders.BukkitAnvilPasswordBuilder;
 import shadow.utils.world.AlixWorld;
 
 import java.util.logging.Level;
@@ -40,33 +42,28 @@ public final class Main implements LoaderBootstrap {
     public static Thread mainServerThread;
     public static JavaPlugin plugin;
     public static YamlConfiguration config;
-    public static PluginManager pm;
-    private PreStartUpExecutors preStartUpExecutors;
+    public static final PluginManager pm = Bukkit.getPluginManager();
     private Metrics metrics;
     private boolean en = true;
 
     //UPDATE:
-    //[+] Rewrote the whole plugin from the server engine-dependent NMS packet control, to the cross-platform netty byte buffer control, by utilizing PacketEvents, and rewriting some of it's methods
-    //[+] Added 1.9+ support
-    //[+] Added a new captcha type: Particle
-    //[+] Added cross-platform support - the plugin will work as long as the general packet protocol stays the same and the server engine is a spigot fork
-    //[+] Added a simple & efficient safety system to counter on-login netty crashers
-    //[+] Added a time limit for login packets to prevent empty connections from staying too long
-    //[+] Lessened the amount of threads created in the scheduler to just 1, and optimized the performance, by better utilizing the netty threads
-    //[+] Operators will now be suggested after the alix /op
-    //[*] No more than 3 captchas will now be held in the captcha pool due to handling changes
-    //[*] Fixed a generator error sometimes thrown on Paper servers
-    //[*] Fixed some symbols in the configurable files still being changed into gibberish
-    //[*] Reimplemented 1.13+ support
-    //[*] Fixed an issue related to the account limiter
-    //[*] Fixed message extraction working incorrectly
-    //[*] Fixed codes such as bold, italic etc. not working in Alix's message formatting
-    //[*] Fixed some issues related to original location saving and teleportation
-    //[*] Fixed verification commands being visible in the console on pre-1.17
-    //[*] Fixed IP autologin setting not being saved when double verification was disabled
-    //[*] 'max-captcha-time': 30 -> 45 by default
-    //[*] Changed some messages due to outdated formatting
-    //[-] Removed 'fast-raw-firewall' from config.yml. The "Fast Raw" FireWall will now always be used
+    //[+] Immensely increased the performance of particle captcha - it's now about ~200 times faster (from ~2ms to ~0.01ms per refresh or ~0.03ms with Epoll transport)
+    //[+] Greatly optimized gui operations thanks to buffer utilization
+    //[+] Potion effects will no longer take effect during verification
+    //[+] Optimized the scheduler used on spigot servers
+    //[*] Fixed incorrect timeout task handling
+    //[*] Fixed players being disconnected upon join on certain servers
+    //[*] Fixed buffer error
+    //[*] User joins will no longer be logged into console on every join. Instead, join logs will only occur on successful register/login
+    //[*] Fixed player nbt not being saved sometimes
+    //[*] Captcha unverified users will now no longer be visible in tab
+    //[*] Fixed the alix world settings not being correctly set-up after the world's generation
+    //[*] captcha-visual-type: 'map' -> 'particle' by default
+    //[*] Temporarily disabled 'map' captcha
+    //[*] Fixed a critical flaw, that would always disconnect the user
+    //[*] Fixed faulty connecting user storing
+    //[*] Now all files need to finish loading before a join can happen due to possible issues
+    //[-] Temporarily disabled map captcha
 
 
     //todo: Add a custom data structure for unverified users
@@ -115,8 +112,16 @@ public final class Main implements LoaderBootstrap {
     /**/
 
 
-    public Main(JavaPlugin instance) {
+    public Main(BukkitAlixMain instance) {
         plugin = instance;
+/*        try {
+            Field f = JavaPlugin.class.getDeclaredField("isEnabled");
+            f.setBoolean(instance, true);
+            Bukkit.getServer().getPluginManager().registerEvents(new WorldLoadListener(), instance);
+            f.setBoolean(instance, false);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }*/
     }
 
     //DO NOT USE THE ALIX SCHEDULER ON LOAD, CUZ ON PAPER THIS MFO THROWS ERRORS
@@ -128,36 +133,41 @@ public final class Main implements LoaderBootstrap {
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
         PacketEventsManager.onLoad();
         config = (YamlConfiguration) plugin.getConfig();
-        pm = Bukkit.getPluginManager();
         this.metrics = Metrics.createMetrics();
         AlixHandler.kickAll("Reload");
-        //Runtime.getRuntime().exec(
     }
 
     @Override
     public void onEnable() {//TODO: Player GUI in /js commands (texture not working & items can be picked up)
-        pm.registerEvents(this.preStartUpExecutors = new PreStartUpExecutors(), plugin);
+        //AlixScheduler.repeatAsync(() -> logInfo("Size: " + Bukkit.getOnlinePlayers().size() + " Ver: " + UserManager.userCount()), 1L, TimeUnit.SECONDS);
+        PreStartUpExecutors preStartUpExecutors = new PreStartUpExecutors();
+        pm.registerEvents(preStartUpExecutors, plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
         ReflectionUtils.replaceBansToConcurrent();
         Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
         VerificationReminder.init();
-        if (anvilPasswordGui) AnvilPasswordBuilder.init();
+        if (anvilPasswordGui) BukkitAnvilPasswordBuilder.init();
         MethodProvider.init();
         IpAutoLoginGUI.init();
         AlixCommandManager.init();
+        //AlixScheduler.async(UserVirtualization::init);
+        //MappingHolder.CHAT_TYPE_119.type();
         Dependencies.initAdditional();
         PremiumAutoIn.checkForInit();
-        FileManager.loadFiles();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         CommandManager.register();
         PacketEventsManager.onEnable();
-        AlixScheduler.sync(() -> AlixScheduler.async(this::setUp));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
+        AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
+        UserSemiVirtualization.init();
+        //AlixScheduler.sync(UserVirtualization::init);
     }
 
     @Override
     public void onDisable() {//ChatColor.of(color)
         //logConsoleInfo("Saving files...");
+        //UserVirtualization.RETURN_ORIGINAL_PLAYER_LIST.run();
+        UserSemiVirtualization.RETURN_ORIGINAL_SETUP.run();
         FileManager.saveFiles();
         PacketEvents.getAPI().terminate();
         Captcha.cleanUp();
@@ -197,7 +207,7 @@ public final class Main implements LoaderBootstrap {
         if (AlixUtils.isDebugEnabled) plugin.getLogger().log(Level.CONFIG, info);
     }
 
-    private void setUp() {
+    private void setUp(PreStartUpExecutors preStartUpExecutors) {
         en = AlixUtils.isPluginLanguageEnglish;
         //AlixHandler.kickAll("Reload");
         UpdateChecker.checkForUpdates();
@@ -217,8 +227,8 @@ public final class Main implements LoaderBootstrap {
                 logWarning("");
                 logWarning("The connection throttle in bukkit.yml settings is " + Bukkit.getConnectionThrottle() + ",");
                 logWarning("with the recommended number being 500 or below, with the reason of it being annoying for");
-                logWarning("unregistered players when combined with Alix's safety measures. If you wish to have it overridden");
-                logWarning("automatically type /alixsystem connection-setup or /as c-s for short.");
+                logWarning("unregistered players when combined with Alix's 'prevent-first-time-join' safety measure. If you wish to have");
+                logWarning("it overridden automatically type /alixsystem connection-setup or /as c-s for short.");
                 logWarning("");
             }
             //logConsoleInfo(en ? "Done!" : "Ukończono!");
@@ -226,8 +236,8 @@ public final class Main implements LoaderBootstrap {
         // String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         //logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
         AlixHandler.initExecutors(pm);
+        FileManager.loadFiles();//load all the classes before enabling the ability to join
         HandlerList.unregisterAll(preStartUpExecutors);
-        this.preStartUpExecutors = null;
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");
     }
 

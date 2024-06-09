@@ -1,28 +1,30 @@
 package shadow.utils.world;
 
+import com.github.retrooper.packetevents.util.Vector3d;
+import com.github.retrooper.packetevents.util.Vector3i;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import shadow.utils.main.AlixUtils;
 import shadow.utils.world.generator.AlixWorldGenerator;
 
 public final class AlixWorld {
 
     public static final String worldName = "world_alix_captcha";
-    private static final AlixWorld instance = !AlixUtils.isOnlineModeEnabled ? new AlixWorld() : null;
-    public static final Location TELEPORT_LOCATION = instance != null ? instance.teleportLocation : null;
+    private static final AlixWorld instance = !Bukkit.getServer().getOnlineMode() ? new AlixWorld() : null;
+    public static final ConstLocation TELEPORT_LOCATION = instance != null ? instance.teleportLocation : null;
+    public static final Vector3d TELEPORT_VEC3D = instance != null ? instance.vec3d : null;
+    public static final Vector3i TELEPORT_VEC3I = instance != null ? instance.vec3d.toVector3i() : null;
     public static final World CAPTCHA_WORLD = instance != null ? instance.world : null;
     //private final List<Integer> playerIds = new ArrayList<>();
     private final World world;
-    private final Location teleportLocation;
+    private final ConstLocation teleportLocation;
+    private final Vector3d vec3d;
 
     private AlixWorld() {
-        World world = Bukkit.getWorld(worldName);
-
-        this.world = world != null ? world : new AlixWorldGenerator(worldName).createWorld();
+        this.world = new AlixWorldGenerator(worldName).createWorld();
 
         this.teleportLocation = new ConstLocation(this.world, 0.5, 2, 0.5, 180, 45);
+        this.vec3d = new Vector3d(this.teleportLocation.getX(), this.teleportLocation.getY(), this.teleportLocation.getZ());
         this.prepareSpawnCube();
     }
 

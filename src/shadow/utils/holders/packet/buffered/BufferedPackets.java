@@ -14,28 +14,22 @@ public final class BufferedPackets {
     public static final ByteBuf[] loginOutExperiencePackets = new ByteBuf[loginPacketArraySize];
 
     public static void init() {
-        for (int i = 0; i < loginPacketArraySize; i++) {
+        preGen(loginOutExperiencePackets);
+        if (AlixUtils.requireCaptchaVerification) preGen(captchaOutExperiencePackets);
+    }
 
-            float xpBar = ((float) i) / loginPacketArraySize;
+    private static void preGen(ByteBuf[] buffers) {
+        for (int i = 0; i < buffers.length; i++) {
+
+            float xpBar = ((float) i) / buffers.length;
             int lvl = i / EXPERIENCE_UPDATES_PER_SECOND; //todo: proportional 2
             // /\ proportional to the repeating captcha task manager delay & packet array size: lvl = i / x; & delay = 1000 millis / x; packetArraySize = captcha time * x;
             int totalExp = lvl <= 16 ? lvl * lvl + 6 * lvl : lvl <= 30 ? 5 * lvl - 38 : 9 * lvl - 158; //from the minecraft wiki
 
-            loginOutExperiencePackets[i] = NettyUtils.constBuffer(new WrapperPlayServerSetExperience(xpBar, lvl, totalExp)); //ReflectionUtils.outExperienceConstructor.newInstance(xpBar, totalExp, lvl);
-        }
-
-        if (!AlixUtils.requireCaptchaVerification) return;
-
-        for (int i = 0; i < captchaPacketArraySize; i++) {
-
-            float xpBar = ((float) i) / captchaPacketArraySize;
-            int lvl = i / EXPERIENCE_UPDATES_PER_SECOND; //todo: proportional 2
-            // /\ proportional to the repeating captcha task manager delay & packet array size: lvl = i / x; & delay = 1000 millis / x; packetArraySize = captcha time * x;
-            int totalExp = lvl <= 16 ? lvl * lvl + 6 * lvl : lvl <= 30 ? 5 * lvl - 38 : 9 * lvl - 158; //from the minecraft wiki
-
-            captchaOutExperiencePackets[i] = NettyUtils.constBuffer(new WrapperPlayServerSetExperience(xpBar, lvl, totalExp));// ReflectionUtils.outExperienceConstructor.newInstance(xpBar, totalExp, lvl);
+            buffers[i] = NettyUtils.constBuffer(new WrapperPlayServerSetExperience(xpBar, lvl, totalExp)); //ReflectionUtils.outExperienceConstructor.newInstance(xpBar, totalExp, lvl);
         }
     }
+
 
     private BufferedPackets() {
     }

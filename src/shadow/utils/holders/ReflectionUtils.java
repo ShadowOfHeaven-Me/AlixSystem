@@ -2,10 +2,6 @@ package shadow.utils.holders;
 
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
-import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRemoveEntityEffect;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTimeUpdate;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
@@ -14,19 +10,10 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import shadow.Main;
-import shadow.systems.login.captcha.types.CaptchaVisualType;
-import shadow.utils.holders.packet.constructors.OutGameStatePacketConstructor;
 import shadow.utils.holders.packet.constructors.OutMapPacketConstructor;
-import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
-import shadow.utils.main.AlixUtils;
-import shadow.utils.netty.NettyUtils;
-import shadow.utils.users.types.UnverifiedUser;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -163,11 +150,8 @@ public final class ReflectionUtils {
 
 
     public static final Class<?> outEntityEffectPacketClass = nms2("network.protocol.game.PacketPlayOutEntityEffect");
-    public static final Class<?> mobEffectClass = nmsClazz("net.minecraft.server.%s.MobEffect", "net.minecraft.world.effect.MobEffect");
     public static final Constructor<?> outEntityEffectConstructor = getConstructor(outEntityEffectPacketClass, int.class, mobEffectClass);
 
-
-    public static final Class<?> mobEffectListClass = nmsClazz("net.minecraft.server.%s.MobEffectList", "net.minecraft.world.effect.MobEffectList");
     public static final Constructor<?> mobEffectConstructor = getConstructor(mobEffectClass, mobEffectListClass, int.class, int.class, boolean.class, boolean.class, boolean.class);
     public static final MobEffectSupplier mobEffectFromId = MobEffectLookup.getSupplier(() -> getMethodByReturnType(mobEffectListClass, mobEffectListClass, int.class));
     private static final Object BLINDNESS_MOB_EFFECT_LIST = mobEffectFromId.toNMSEffectTypeFromId(15); //invoke(mobEffectListFromIdMethod, null, 15);
@@ -200,14 +184,28 @@ public final class ReflectionUtils {
     public static final Class<?> outDestroyEntityPacketClass = nms2("network.protocol.game.PacketPlayOutEntityDestroy");
     public static final Constructor<?> outDestroyEntityConstructor = getConstructor(outDestroyEntityPacketClass, int[].class);
 */
+    public static final Class<?> packetClazz = ReflectionUtils.nms2("network.protocol.Packet");
 
+    public static final Class<?> enumProtocolDirectionClazz = ReflectionUtils.nms2("network.protocol.EnumProtocolDirection");
+    //https://mappings.cephx.dev/1.20.6/net/minecraft/network/protocol/PacketFlow.html
+    public static final Enum clientboundProtocolDirection = (Enum) ReflectionUtils.enumProtocolDirectionClazz.getEnumConstants()[1];
 
+    public static final Class<?> packetDataSerializerClass = nms2("network.PacketDataSerializer");
+    public static final Constructor<ByteBuf> packetDataSerializerConstructor = (Constructor<ByteBuf>) getConstructor(packetDataSerializerClass, ByteBuf.class);
+
+    public static final Class<?> mobEffectClass = nmsClazz("net.minecraft.server.%s.MobEffect", "net.minecraft.world.effect.MobEffect");
+    public static final Class<?> mobEffectListClass = nmsClazz("net.minecraft.server.%s.MobEffectList", "net.minecraft.world.effect.MobEffectList");
+
+    public static final Class<?> entityLivingClass = nms2("world.entity.EntityLiving");
     public static final Class<?> entityPlayerClass = nms2("server.level.EntityPlayer");
     public static final Class<?> craftPlayerClass = obc("entity.CraftPlayer");
     public static final Class<?> playerConnectionClass = nms2("server.network.PlayerConnection");
     public static final Class<?> networkManagerClass = nms2("network.NetworkManager");
+
+
     //public static final Method getProfile = getMethodByReturnType(entityPlayerClass, GameProfile.class);
-    public static final Method getHandle = getMethod(craftPlayerClass, "getHandle");
+    public static final Method getHandle = getMethod(craftPlayerClass, "getHandle");//CraftPlayer -> EntityPlayer
+    public static final Method getBukkitEntity_CraftPlayer = getMethod(entityPlayerClass, "getBukkitEntity");//EntityPlayer -> CraftPlayer
     public static final CommandMap commandMap = getCommandMap();
     public static final Map<String, Command> serverKnownCommands = getKnownCommands();
     public static final YamlConfiguration serverConfiguration = getServerConfiguration();
@@ -223,6 +221,14 @@ public final class ReflectionUtils {
             throw new AlixException(e);
         }
     }*/
+
+    public static Object getHandle(Player player) {
+        try {
+            return getHandle.invoke(player);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static void replaceBansToConcurrent() {
         replaceToConcurrent0(Bukkit.getBanList(BanList.Type.NAME));
@@ -279,51 +285,6 @@ public final class ReflectionUtils {
     //private static final Unsafe unsafe = AlixUnsafe.getUnsafe();
     //private static final long MAP_OFFSET = AlixUnsafe.fieldOffset(Player.class,
 
-
-    public static void resetLoginEffectPackets(UnverifiedUser user) {
-        Player player = user.getPlayer();
-
-        //Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(player.getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
-//show players in tab
-        ByteBuf[] addPlayersBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ALL(user.reetrooperUser(), user.getPlayer(), user.silentContext());
-        //reset blindness effect
-        ByteBuf removeBlindnessBuffer = NettyUtils.dynamic(new WrapperPlayServerRemoveEntityEffect(player.getEntityId(), PotionTypes.BLINDNESS), user.silentContext());
-
-        user.getChannel().eventLoop().execute(() -> {
-            try {
-                for (ByteBuf buf : addPlayersBuffers) user.writeSilently(buf);
-                user.writeAndFlushSilently(removeBlindnessBuffer);
-            } catch (Throwable e) {
-                Main.logError("No jak chuj nie działa coś tu");
-                e.printStackTrace();
-            }
-        });
-
-    }
-
-
-    private static final boolean isParticleCaptchaInUse = AlixUtils.captchaVerificationVisualType == CaptchaVisualType.PARTICLE;
-
-    private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
-    //private static final ByteBuf VER_POS = NettyUtils.constBuffer(new WrapperPlayServerPo);
-    //SpigotConversionUtil.
-
-    /*potion effect ids:
-    slowness = 2
-    jump boost = 8
-    */
-    public static void sendLoginEffectsPackets(UnverifiedUser user) {
-        user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
-        user.writeConstSilently(TIME_NIGHT);
-
-        if (!isParticleCaptchaInUse)
-            sendBlindnessPackets(user);//it's fine even if not invoked, as #flush is invoked in the CountdownTask class
-    }
-
-    private static void sendBlindnessPackets(UnverifiedUser user) {
-        user.writeAndFlushUnreadSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
-    }
-
     private static Map<String, Command> getKnownCommands() {
         try {
             Method m = commandMap.getClass().getMethod("getKnownCommands");
@@ -354,7 +315,7 @@ public final class ReflectionUtils {
         }
     }
 
-    public static void setConnectionThrottle(long value) {
+    public static void setConnectionThrottle(Long value) {
         serverConfiguration.set("settings.connection-throttle", value);
         Server s = Bukkit.getServer();
         try {
@@ -416,14 +377,6 @@ public final class ReflectionUtils {
             return method.invoke(obj, args);
         } catch (Exception e) {
             throw new ExceptionInInitializerError(e);
-        }
-    }
-
-    private static Method getMethod(Class<?> clazz, String method) {
-        try {
-            return clazz.getMethod(method);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -579,6 +532,21 @@ public final class ReflectionUtils {
         throw new ExceptionInInitializerError("Not found: " + Arrays.toString(names));
     }
 
+    public static Field getFieldByTypeAndParams(Class<?> instClass, Class<?> fieldType, Class<?>... params) {
+        for (Field field : instClass.getDeclaredFields())
+            if (field.getType() == fieldType) {
+                Type t = field.getGenericType();
+                if (t instanceof ParameterizedType) {
+                    ParameterizedType type = (ParameterizedType) t;
+                    if (Arrays.equals(type.getActualTypeArguments(), params)) {
+                        field.setAccessible(true);
+                        return field;
+                    }
+                }
+            }
+        throw new ExceptionInInitializerError("No valid field with " + fieldType + " in " + instClass);
+    }
+
     private static Field getFieldByType(Class<?> instClass, Class<?> typeClass) {
         for (Field field : instClass.getDeclaredFields())
             if (field.getType() == typeClass) {
@@ -597,17 +565,40 @@ public final class ReflectionUtils {
         return field;
     }
 
-    public static Method getMethod(Class<?> clazz, String name, Class<?>... classes) {
+    public static Method getMethodByName(Class<?> clazz, String name) {
         try {
-            return clazz.getMethod(name, classes);
+            for (Method m : clazz.getDeclaredMethods()) {
+                if (m.getName().equals(name)) {
+                    m.setAccessible(true);
+                    return m;
+                }
+            }
         } catch (Exception e) {
-            throw new AlixError(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(classes) + ")");
+            throw new AlixError(e, "No method: " + clazz.getSimpleName() + "." + name);
+        }
+        throw new AlixError("No method: " + clazz.getSimpleName() + "." + name);
+    }
+
+    public static Method getMethod(Class<?> clazz, String name, Class<?>... params) {
+        try {
+            Method method = clazz.getMethod(name, params);
+            method.setAccessible(true);
+            return method;
+        } catch (Exception e) {
+            throw new AlixError(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(params) + ")");
         }
     }
 
     public static Method getMethodByReturnType(Class<?> clazz, Class<?> returnType, Class<?>... parameterTypes) {
-        for (Method method : clazz.getMethods()) {
+        for (Method method : clazz.getMethods())
             if (method.getReturnType() == returnType && equalsArrayCheck(parameterTypes, method.getParameterTypes()))
+                return method;
+        throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + clazz));
+    }
+
+    public static Method getMethodByReturnTypeByFirstParams(Class<?> clazz, Class<?> returnType, Class<?>... parameterTypes) {
+        for (Method method : clazz.getMethods()) {
+            if (method.getReturnType() == returnType && equalsArrayCheck(parameterTypes, Arrays.copyOf(method.getParameterTypes(), parameterTypes.length)))
                 return method;
         }
         throw new ExceptionInInitializerError(new NoSuchMethodException("No valid method returning: " + returnType + " in " + clazz));

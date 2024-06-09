@@ -21,9 +21,12 @@ public final class AlixInterceptor {
         serverPipeline.addAfter(name, name2, new AlixChannelInjector());*/
     }
 
+
+
+
     private static final class Interceptor extends ChannelInboundHandlerAdapter {
 
-        private static final String delayedFireWallName = "AlixDelayedChannelFireWall";
+        //private static final String delayedFireWallName = "AlixDelayedChannelFireWall";
         //private final ChannelHandler delayedFirewall;
         //private final boolean isImmediate;
 

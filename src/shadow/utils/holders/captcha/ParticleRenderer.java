@@ -1,6 +1,6 @@
 package shadow.utils.holders.captcha;
 
-import alix.common.antibot.captcha.CaptchaImageGenerator;
+import alix.common.antibot.captcha.ColorGenerator;
 import com.github.retrooper.packetevents.protocol.particle.Particle;
 import com.github.retrooper.packetevents.protocol.particle.data.ParticleDustData;
 import com.github.retrooper.packetevents.protocol.particle.type.ParticleTypes;
@@ -10,8 +10,11 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPa
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.VisibleForTesting;
 import shadow.utils.holders.packet.custom.ParticleHashCompressor;
 import shadow.utils.netty.NettyUtils;
+import shadow.utils.world.AlixWorld;
+import shadow.utils.world.ConstLocation;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -22,14 +25,15 @@ import static java.lang.Math.*;
 
 public final class ParticleRenderer {
 
-    private static final Quaternion ROTATION = new Quaternion(new Vec3f(1, 0, 0),60);
+    private static final ConstLocation CENTER = new ConstLocation(AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, -4, -4));
+    private static final Quaternion ROTATION = new Quaternion(new Vec3f(1, 0, 0),45);
     private static final Vector3f OFFSET = new Vector3f(0, 0, 0);
 
     //Source code: https://github.com/whileSam/bukkit-image-renderer/blob/master/src/main/java/me/trysam/imagerenderer/particle/ImageRenderer.java
 
-    public static ByteBuf[] renderingBuffers(BufferedImage image, Location center) {
+    public static ByteBuf[] captchaRenderingBuffers(BufferedImage image) {
         //The scaling factor determines how dense the particles should be together (the higher the denominator, the less the space between the particles/pixels)
-        float scalingFactor = 1f / 8f;
+        float scalingFactor = 1f / 5.5f;//było 1/8f
         boolean far = false;
         ParticleHashCompressor compressor = new ParticleHashCompressor();
 
@@ -52,16 +56,16 @@ public final class ParticleRenderer {
 
                 //Set the renderer's location to the center + the calculated pixel coordinates.
                 //TODO: Threadsafe location modification.
-                Vector3d rendererLoc = new Vector3d(center.getX() + px, center.getY() + py, center.getZ() + pz);
+                Vector3d rendererLoc = new Vector3d(CENTER.getX() + px, CENTER.getY() + py, CENTER.getZ() + pz);
 
                 Color color = new Color(image.getRGB(x, y), true);
 
                 //If there is some transparency in the pixel, go to the next pixel if there is some.
-                if (color.getAlpha() < 255 || !CaptchaImageGenerator.PARTICLE_COLOR_LIST.contains(color)) continue;
+                if (color.getAlpha() < 255 || !ColorGenerator.PARTICLE_COLOR_LIST.contains(color)) continue;
 
                 //Set the color of the particle param to the pixel color
 
-                Particle particle = new Particle(ParticleTypes.DUST, new ParticleDustData(1.5f, color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f));
+                Particle particle = new Particle(ParticleTypes.DUST, new ParticleDustData(1.75f, color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f));
                 WrapperPlayServerParticle wrapper = new WrapperPlayServerParticle(particle, far, rendererLoc, OFFSET, 0f, 0);
                 compressor.tryAdd(wrapper);
             }
@@ -69,7 +73,8 @@ public final class ParticleRenderer {
         return compressor.buffers();
     }
 
-    public static ByteBuf[] list(BufferedImage image, Location center) {
+    @VisibleForTesting
+    public static ByteBuf[] list(BufferedImage image) {
         //The scaling factor determines how dense the particles should be together (the higher the denominator, the less the space between the particles/pixels)
         float scalingFactor = 1f / 8f;
         boolean far = false;
@@ -94,12 +99,12 @@ public final class ParticleRenderer {
 
                 //Set the renderer's location to the center + the calculated pixel coordinates.
                 //TODO: Threadsafe location modification.
-                Vector3d rendererLoc = new Vector3d(center.getX() + px, center.getY() + py, center.getZ() + pz);
+                Vector3d rendererLoc = new Vector3d(CENTER.getX() + px, CENTER.getY() + py, CENTER.getZ() + pz);
 
                 Color color = new Color(image.getRGB(x, y), true);
 
                 //If there is some transparency in the pixel, go to the next pixel if there is some.
-                if (color.getAlpha() < 255 || !CaptchaImageGenerator.PARTICLE_COLOR_LIST.contains(color)) continue;
+                if (color.getAlpha() < 255 || !ColorGenerator.PARTICLE_COLOR_LIST.contains(color)) continue;
 
                 //Set the color of the particle param to the pixel color
 

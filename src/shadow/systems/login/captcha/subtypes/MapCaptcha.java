@@ -18,7 +18,7 @@ public final class MapCaptcha extends ItemBasedCaptcha {
     private final ByteBuf mapBuffer;
 
     public MapCaptcha() {
-        byte[] pixelsToDraw = CaptchaImageGenerator.generatePixelsToDraw(captcha, maxRotation, true, true);
+        byte[] pixelsToDraw = CaptchaImageGenerator.generateMapPixelsToDraw(captcha, maxRotation, true, true);
 
         this.mapBuffer = OutMapPacketConstructor.constructDynamic(MAP_ID, pixelsToDraw);
     }

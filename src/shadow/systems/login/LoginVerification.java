@@ -20,5 +20,4 @@ public final class LoginVerification {
     public boolean isPhase1() {
         return phase1;
     }
-
 }

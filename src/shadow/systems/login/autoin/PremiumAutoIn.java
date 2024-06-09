@@ -4,7 +4,6 @@ import org.bukkit.event.Listener;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +45,10 @@ public final class PremiumAutoIn {
 
     public static void add(String username) {
         if (initialized) premiumPlayers.add(username);
+    }
+
+    public static Set<String> getPremiumPlayers() {
+        return premiumPlayers;
     }
 
     public static boolean isPremium(UUID uuid) {

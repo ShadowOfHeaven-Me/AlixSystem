@@ -40,7 +40,6 @@ abstract class AbstractAlixFuture<T> implements AlixFuture<T>, Runnable {
         void postComplete(T value) {
             this.value = value;
             if (this.consumer != null) {
-                this.consumer.accept(value);
                 if (executor != null) executor.execute(() -> this.consumer.accept(this.value));
                 else this.consumer.accept(this.value);
             }

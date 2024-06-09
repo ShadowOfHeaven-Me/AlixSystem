@@ -15,11 +15,11 @@ public final class MapCaptcha implements Captcha {
 
     //private static final Limbo limbo = AlixServer.getLimbo();
     private static final VirtualItem MAP = SimpleItem.fromItem(Item.FILLED_MAP);
-    private static final SetSlotPacket itemPacket = new SetSlotPacket(0, 36, MAP, 1, 0, null);
+    private static final SetSlotPacket itemPacket = null;//new SetSlotPacket(0, 36, MAP, 1, 0, null);
     private final MapDataPacket mapDataPacket;
 
     public MapCaptcha(String captcha) {
-        byte[] pixels = CaptchaImageGenerator.generatePixelsToDraw(captcha, 30, true, true);
+        byte[] pixels = CaptchaImageGenerator.generateMapPixelsToDraw(captcha, 30, true, true);
         MapData data = new MapData(pixels);
         this.mapDataPacket = new MapDataPacket(0, (byte) 0, data);
     }

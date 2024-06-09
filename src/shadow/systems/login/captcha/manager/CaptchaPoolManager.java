@@ -7,7 +7,7 @@ import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 
 public final class CaptchaPoolManager {
 
-    //generate 10-20 captchas max
+    //generate 3 captchas
     public static final int maxSize = 3;//Math.min(Math.max(Bukkit.getMaxPlayers() >> 6, 10), 20);//(int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.05, 1.1)) + 1;
     private final LoopDeque<AlixFuture<Captcha>> deque = LoopDeque.ofSize(maxSize);
     //private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();

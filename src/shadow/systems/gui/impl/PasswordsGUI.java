@@ -150,7 +150,7 @@ public final class PasswordsGUI extends AlixGUI {
         }, changes::getExtraLoginType));
 
         items[8] = new GUIItem(GO_BACK_ITEM, event -> {
-            MAP.put(user.getUUID(), this.originalGui);//set this gui as used
+            MAP.put(user.getUUID(), this.originalGui);//set the original gui as used
             user.getPlayer().openInventory(this.originalGui.getGUI());
         });
 

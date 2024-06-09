@@ -24,15 +24,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="AlixSystemLoader" />
     <orderEntry type="module-library">
-      <library name="velocity-3.2.0-SNAPSHOT-265">
-        <CLASSES>
-          <root url="jar://$USER_HOME$/Downloads/velocity-3.2.0-SNAPSHOT-265.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/Downloads/FastLoginVelocity.jar!/" />
@@ -41,6 +32,15 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="limboapi-1.1.18" level="project" />
+    <orderEntry type="library" name="limboapi-1.1.23" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/Downloads/velocity-3.3.0-SNAPSHOT-388.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>

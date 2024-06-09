@@ -1,9 +1,6 @@
 package shadow.utils.world.generator;
 
-import org.bukkit.GameRule;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
-import org.bukkit.WorldType;
+import org.bukkit.*;
 import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.executors.captcha.CaptchaRespawnExecutors;
@@ -24,7 +21,8 @@ public final class AlixWorldGenerator extends WorldCreator {
     @Nullable
     @Override
     public World createWorld() {
-        World world = super.createWorld();
+        World w = Bukkit.getWorld(this.name());
+        World world = w != null ? w : super.createWorld();
         init(world);
         return world;
     }
@@ -49,6 +47,7 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
         world.setGameRule(GameRule.DISABLE_ELYTRA_MOVEMENT_CHECK, true);
         world.setGameRule(GameRule.DO_ENTITY_DROPS, true);
+        world.setGameRule(GameRule.NATURAL_REGENERATION, false);
         initCorrectRespawn(world);
     }
 

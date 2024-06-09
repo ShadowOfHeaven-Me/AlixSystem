@@ -3,7 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/AlixSystemVelocitySupport</output-path>
     <root id="archive" name="AlixSystemVelocity.jarinjar">
       <element id="module-output" name="AlixSystemVelocitySupport" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/limboapi-1.1.18.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/limboapi-1.1.23.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

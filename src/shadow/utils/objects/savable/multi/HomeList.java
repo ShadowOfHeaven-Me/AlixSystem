@@ -49,7 +49,7 @@ public final class HomeList {
 
     public void removeHome(int index) {
         int lM1 = homes.length - 1;
-        if (lM1 == 0) {//don't write a switch case to include 1, since it's still fast af
+        if (lM1 == 0) {//don't write a switch case to include 1 as well, since it's still fast af
             this.homes = EMPTY_ARRAY;
             return;
         }

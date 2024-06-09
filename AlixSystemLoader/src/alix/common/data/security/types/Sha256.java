@@ -8,6 +8,8 @@ public final class Sha256 {
     //copied from the internet
     //Link: https://github.com/meyfa/java-sha256/blob/master/src/main/java/net/meyfa/sha256/Sha256.java
 
+    public static final Sha256 INSTANCE = new Sha256();
+
     private final int[] K = {
             0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
             0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -66,7 +68,6 @@ public final class Sha256 {
             for (int t = 0; t < H.length; ++t) {
                 H[t] += TEMP[t];
             }
-
         }
 
         return toByteArray(H);
@@ -156,5 +157,8 @@ public final class Sha256 {
         return Integer.rotateRight(x, 17)
                 ^ Integer.rotateRight(x, 19)
                 ^ (x >>> 10);
+    }
+
+    private Sha256() {
     }
 }

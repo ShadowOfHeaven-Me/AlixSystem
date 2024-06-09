@@ -11,11 +11,11 @@ import java.security.NoSuchAlgorithmException;
 public final class Hashing {
 
     public static final byte CONFIG_HASH_ID;
-    private static final HashingAlgorithm[] hashingAlgoritms;
+    private static final HashingAlgorithm[] hashingAlgorithms;
     private static final HashingAlgorithm configHash;
 
     public static HashingAlgorithm ofHashId(byte hashId) {
-        return hashingAlgoritms[hashId];//will throw the error regardless if the index is messed up
+        return hashingAlgorithms[hashId];//will throw the error if the index is messed up regardless
         /*if (hashId < hashingAlgoritms.length && hashId >= 0) return hashingAlgoritms[hashId];
         throw new AlixError("Invalid hashId: " + hashId + " with the max being: " + hashingAlgoritms.length);*/
     }
@@ -29,6 +29,11 @@ public final class Hashing {
         @Override
         public String hash(String s) {
             return s;//no hash
+        }
+
+        @Override
+        public byte hashId() {
+            return 0;
         }
     }
 
@@ -44,6 +49,11 @@ public final class Hashing {
 
             return Integer.toString(hashCode);
         }
+
+        @Override
+        public byte hashId() {
+            return 1;
+        }
     }
 
     private static final class Hash2 implements HashingAlgorithm {
@@ -57,11 +67,16 @@ public final class Hashing {
 
             return uuidBitHash(hashedBytes);
         }
+
+        @Override
+        public byte hashId() {
+            return 2;
+        }
     }
 
     private static final class Hash3 implements HashingAlgorithm {
 
-        private final Sha256 sha256 = new Sha256();
+        private final Sha256 sha256 = Sha256.INSTANCE;
 
         @Override
         public String hash(String s) {
@@ -69,6 +84,11 @@ public final class Hashing {
             byte[] hashedBytes = sha256.hash(bytes);
 
             return uuidBitHash(hashedBytes);
+        }
+
+        @Override
+        public byte hashId() {
+            return 3;
         }
     }
 
@@ -83,6 +103,11 @@ public final class Hashing {
             for (byte i = 0; i < 16; i++) bytesToHash[i] = bytes[i & mask];
 
             return uuidBitHash(bytesToHash);
+        }
+
+        @Override
+        public byte hashId() {
+            return 4;
         }
     }
 
@@ -149,7 +174,7 @@ public final class Hashing {
         /*if (false) {//only get the hashing instance in a cracked server, no need for getting the algorithms to generate in a premium server
             hash0 = hash1 = hash2 = hash3 = defaultHash = null;
         } else {*/
-        hashingAlgoritms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3()};
+        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3()};
 
         configHash = ofHashId(CONFIG_HASH_ID);
         //}

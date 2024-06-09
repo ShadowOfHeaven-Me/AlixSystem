@@ -30,7 +30,7 @@ public final class AlixChannelHandler {
     //public static final Map<String, Channel> CHANNELS = new MapMaker().weakValues().makeMap();//ensure we do not hold the Channel reference captive by using weak values
     private static final Map<Channel, ScheduledFuture<?>> TIMEOUT_TASKS = new ConcurrentHashMap<>();//we fully control this map, so no need for weak reference usage
     private static final String
-            CHANNEL_ACTIVE_LISTENER_NAME = "AlixChannelActiveListener",
+            CHANNEL_ACTIVE_LISTENER_NAME = "alix-active-listener",
             PACKET_INJECTOR_NAME = "AlixChannelInjectListener";//,
     //PACKET_ANALYSER_NAME = "AlixPacketAnalyser",
     //PACKET_ANALYSER_NAME = "AlixPacketAnalyser";
@@ -44,7 +44,7 @@ public final class AlixChannelHandler {
 
     public static void inject(Channel channel) {
         channel.pipeline().addFirst(CHANNEL_ACTIVE_LISTENER_NAME, channelActiveListener);//wait for channel active, as we cannot inject out packet listener before that, since the server hasn't injected the channel yet
-        //Main.logWarning("INJECTED  " + channel.pipeline().names());
+        //Main.logError("INJECTED  " + channel.pipeline().names());
     }
 
     public static void uninject(ChannelPipeline pipeline) {
@@ -56,9 +56,9 @@ public final class AlixChannelHandler {
         //pipeline.remove(PACKET_ANALYSER_NAME);
     }
 
-    public static void onDisconnect(User user) {
-        ScheduledFuture<?> future = TIMEOUT_TASKS.remove(user.getChannel());
-        if (future != null) future.cancel(true);
+    public static void removeFromTimeOut(Channel channel) {
+        ScheduledFuture<?> future = TIMEOUT_TASKS.remove(channel);
+        if (future != null) future.cancel(false);
     }
 
     /*private static final class PacketAnalyser extends ByteToMessageDecoder {
@@ -73,6 +73,7 @@ public final class AlixChannelHandler {
     @Sharable
     private static final class ChannelActiveListener extends ChannelDuplexHandler {
 
+        private static final ByteBuf timeOutError = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("§cError TimeOut. If you're seeing this message, report this immediately - AlixSystem");
         private final String injectBefore;//, afterDecoder;
 
         private ChannelActiveListener() {
@@ -86,20 +87,28 @@ public final class AlixChannelHandler {
             super.channelActive(ctx);
             Channel channel = ctx.channel();
             //channel.pipeline().addFirst(PACKET_ANALYSER_NAME, packetAnalyser);
+            //Main.logError("CHANNEL ACTIVE  " + channel.pipeline().names());
             channel.pipeline().addBefore(this.injectBefore, PACKET_INJECTOR_NAME, packetMonitor);//now we can add the temporary packet listener
             //channel.pipeline().addAfter(this.afterDecoder, PACKET_ANALYSER_NAME, new PacketAnalyser());//the exception prevention safety measure
             //channel.pipeline().addAfter("prepender", PACKET_ANALYSER_NAME, EXCEPTION_PREVENTER);
             //channel.pipeline().addLast(PACKET_ANALYSER_NAME, packetAnalyser);//the exception prevention safety measure
             TIMEOUT_TASKS.put(channel, channel.eventLoop().schedule(() -> {
                 //ConnectionThreadManager.onPingRequest(((InetSocketAddress) channel.remoteAddress()).getAddress());
+                Main.logError("wyjebao timeout");
                 TIMEOUT_TASKS.remove(channel);
-                channel.close();
+                NettyUtils.closeAfterConstSend(channel, timeOutError);
             }, 3, TimeUnit.SECONDS));
             //Main.logWarning("LISTENER ACTIVUH " + ctx.pipeline().names());
             //time = System.currentTimeMillis();
         }
 
-/*        @Override
+        @Override
+        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+            removeFromTimeOut(ctx.channel());
+            super.close(ctx, promise);
+        }
+
+        /*        @Override
         public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
             super.handlerRemoved(ctx);
             Main.logError("HANDLER UNREGISTERED: " + ctx.handler());
@@ -167,15 +176,18 @@ public final class AlixChannelHandler {
         }
     }*/
 
-    private static final ByteBuf invalidNamePacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked"));
+    private static final ByteBuf
+            invalidNamePacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked")),
+            alreadyConnectingPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("already-connecting"));
+    //private static final ByteBuf invalidNamePacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked"));
+
     private static final InvalidLoginInStartWrapper INVALID_LOGIN_WRAPPER = new InvalidLoginInStartWrapper();
     //private static final String REASON = "LoginInStart sent twice";
 
     public static void onLoginStart(PacketReceiveEvent event) {
         User user = event.getUser();
         Channel channel = (Channel) user.getChannel();
-        ScheduledFuture<?> task = TIMEOUT_TASKS.remove(channel);
-        if (task != null) task.cancel(false);
+        removeFromTimeOut(channel);
         /*else {//it's impossible for a legit client to send this packet twice - assume it's a hacked one, and immediately firewall the ip
             //FireWallManager.add(((InetSocketAddress) channel.remoteAddress()).getAddress(), REASON);
             channel.close();
@@ -184,12 +196,16 @@ public final class AlixChannelHandler {
         String name = LoginInStartGetter.getName(event);
         //Main.logError("NAME: " + name);
         if (name == null) {
-            NettyUtils.writeAndFlushConst(NettyUtils.getSilentContext(channel), invalidNamePacket).addListener(ChannelFutureListener.CLOSE);
-            event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls
+            NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
+            event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
             event.setCancelled(true);//cancel to indicate to others to not process this packet
             return;
         }
-        UserManager.putTemp(name, user);
+        user.getProfile().setName(name);//set the user's name prematurely, since I 
+        User cU = UserManager.putConnecting(name, user);//get the currently already connecting user (or this very user if he doesn't exist, that being mostly the case) close the connection of the one trying to connect in this very method execution
+        //identity equality check
+        //fix for a race condition caused by two players connecting with the same nickname
+        if (cU != user) NettyUtils.closeAfterConstSend(channel, alreadyConnectingPacket);
     }
 
     private static final class InvalidLoginInStartWrapper extends WrapperLoginClientLoginStart {
@@ -223,11 +239,14 @@ public final class AlixChannelHandler {
 
         //private static final JavaLangAccess javaLangAccess = SharedSecrets.getJavaLangAccess();
         private static final Unsafe UNSAFE = AlixUnsafe.getUnsafe();
-        private static final long CAUSE_OFFSET = AlixUnsafe.fieldOffset(Throwable.class, "cause");
+        private static final long CAUSE_OFFSET = AlixUnsafe.objectFieldOffset(Throwable.class, "cause");
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             if (exceptionValidator.isInvalid(cause)) {
+                //Main.logError("WYJEBAO ERROR: " + cause.getMessage());
+                //cause.printStackTrace();
+
                 //Main.logError("MSG: " + cause.getClass().getSimpleName() + " " + cause.getCause());
                 UNSAFE.putObject(cause, CAUSE_OFFSET, cause); //A PacketEvents error printing prevention - sets the cause of the exception to itself, which removes the PacketProcessException as the cause
                 //Main.logError("AFTER SET: " + cause.getClass().getSimpleName() + " " + cause.getCause());

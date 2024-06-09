@@ -9,18 +9,25 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCh
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 import io.netty.buffer.ByteBuf;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.gui.AlixGUI;
+import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
-import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
+import shadow.utils.objects.savable.data.gui.builders.BukkitAnvilPasswordBuilder;
 import shadow.utils.users.types.VerifiedUser;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -31,7 +38,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     //private final Map<String, Object> map;
     private final VerifiedUser user;
     private boolean settingPassword;
-    private AnvilPasswordBuilder builder;
+    private BukkitAnvilPasswordBuilder builder;
     private Supplier<LoginType> loginType;
     private ByteBuf lastItemsPacket;
 
@@ -65,7 +72,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
                 return;
             case CLOSE_WINDOW:
                 this.disablePasswordSetting();
-                event.setCancelled(true);
+                //event.setCancelled(true);
                 return;
             case CLICK_WINDOW:
                 this.builder.spoofValidAccordingly();
@@ -85,6 +92,36 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
 
     @Override
     public void onPacketSend(PacketPlaySendEvent event) {
+        switch (event.getPacketType()) {
+            case PLAYER_INFO: {
+                WrapperPlayServerPlayerInfo info = new WrapperPlayServerPlayerInfo(event);
+                List<WrapperPlayServerPlayerInfo.PlayerData> list = new ArrayList<>(info.getPlayerDataList().size());//since the List in the packet can not support modifications
+                for (WrapperPlayServerPlayerInfo.PlayerData data : info.getPlayerDataList()) {
+                    Player p = Bukkit.getPlayer(data.getUser().getUUID());
+                    if (OutPlayerInfoPacketConstructor.isVisible(this.user.getPlayer(), p)) list.add(data);
+                }
+
+                if (list.size() != info.getPlayerDataList().size()) {
+                    info.setPlayerDataList(list);
+                    event.markForReEncode(true);
+                }
+                return;
+            }
+            case PLAYER_INFO_UPDATE: {
+                WrapperPlayServerPlayerInfoUpdate info = new WrapperPlayServerPlayerInfoUpdate(event);
+                List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> list = new ArrayList<>(info.getEntries().size());//since the List in the packet can not support modifications
+                for (WrapperPlayServerPlayerInfoUpdate.PlayerInfo data : info.getEntries()) {
+                    Player p = Bukkit.getPlayer(data.getGameProfile().getUUID());
+                    if (OutPlayerInfoPacketConstructor.isVisible(this.user.getPlayer(), p)) list.add(data);
+                }
+
+                if (list.size() != info.getEntries().size()) {
+                    info.setEntries(list);
+                    event.markForReEncode(true);
+                }
+                return;
+            }
+        }
         if (!settingPassword) return;
 
         switch (event.getPacketType()) {
@@ -118,7 +155,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     public void enablePasswordSetting(Consumer<String> onValidConfirmation, Runnable returnOriginalGui, Supplier<LoginType> loginType) {
         this.settingPassword = true;
         this.loginType = loginType;
-        this.builder = new AnvilPasswordBuilder(this.user, this.loginType.get() == LoginType.PIN, onValidConfirmation, returnOriginalGui);
+        this.builder = new BukkitAnvilPasswordBuilder(this.user, this.loginType.get() == LoginType.PIN, onValidConfirmation, returnOriginalGui);
         AlixGUI.MAP.put(user.getUUID(), this.builder);//temporarily switch the used gui
         this.user.getPlayer().openInventory(builder.getGUI());
     }

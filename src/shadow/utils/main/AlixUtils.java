@@ -32,6 +32,8 @@ import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.world.AlixWorldHolder;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -60,7 +62,7 @@ public final class AlixUtils {
     public static final byte captchaLength;
     public static final boolean isOperatorCommandRestricted, playerIPAutoLogin, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
-            requirePingCheckVerification, //repeatedVerificationReminderMessages,
+            requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
             anvilPasswordGui, pinPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
 
     private static final String
@@ -113,6 +115,12 @@ public final class AlixUtils {
                     Main.logWarning("The option 'map' in 'captcha-visual-type' is only available in a headful graphic environment," +
                             " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
+                }
+
+                if (captchaVisualType.equals("map")) {
+                    Main.logWarning("The option 'map' in 'captcha-visual-type' is currently disabled." +
+                            "Switching to 'particle', as it's visual equivalent.");
+                    captchaVisualType = "particle";
                 }
 
                 break;
@@ -173,6 +181,7 @@ public final class AlixUtils {
         autoRegisterCommandList = new ExecutableCommandList(config.getStringList("after-auto-register-commands"));
         autoLoginCommandList = new ExecutableCommandList(config.getStringList("after-auto-login-commands"));
         captchaLength = captchaLength0;
+        forcefullyDisableIpAutoLogin = config.getBoolean("forcefully-disable-auto-login");
         captchaVerificationCaseSensitive = config.getBoolean("captcha-case-sensitive");
         //verificationReminderDelay = config.getLong("verification-reminder-message-delay");
         //repeatedVerificationReminderMessages = verificationReminderDelay > 0;
@@ -224,6 +233,23 @@ public final class AlixUtils {
         doubledDefaultFlySpeed = 0.1F;
         if (config.getBoolean("ping-before-join")) AlixHandler.initializeServerPingManager();
         AlixHandler.updateConsoleFilter();
+    }
+
+    public static String getFields(Object o) {
+        StringBuilder sb = new StringBuilder();
+        Class<?> c = o.getClass();
+        do {
+            for (Field f : c.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers())) continue;
+                f.setAccessible(true);
+                try {
+                    sb.append(f.getName()).append(": ").append(f.get(o)).append(", ");
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } while ((c = c.getSuperclass()) != Object.class);
+        return sb.toString();
     }
 
 /*    public static void change(Player player) {
@@ -571,9 +597,9 @@ public final class AlixUtils {
     }
 
     public static final ByteBuf
-            notLoggedInUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.notLoggedInUserMessage, true),
-            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.captchaNotCompletedUserMessage, true),
-            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.unregisteredUserMessage, true);
+            notLoggedInUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.notLoggedInUserMessage, true, true),
+            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.captchaNotCompletedUserMessage, true, true),
+            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.unregisteredUserMessage, true, true);
 
     public static ByteBuf getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
         if (isRegistered) return notLoggedInUserMessagePacket;//is registered - require login
@@ -752,7 +778,7 @@ public final class AlixUtils {
     public static String getRandomMathematicalOperation() {
         String operation = getRandomMathematicalOperation(getRandom(3, 7), getRandom(3, 10), getRandom(10, 30));
         String result = split(operation, " = ")[1];
-        int n = result.contains(".") ? split(result, '.')[1].length() : 0;
+        int n = result.contains(".") ? split(result, '.')[1].length() : 0;//amount of decimal places
         if (n > 2) return getRandomMathematicalOperation();//Too complex, try again
         return operation;
     }
@@ -846,7 +872,7 @@ public final class AlixUtils {
     @AlixIntrinsified(method = "String#split")
     public static String[] split(String a, char b) {
         char[] c = a.toCharArray();
-        final int lM1 = c.length - 1;
+        int lM1 = c.length - 1;
         int regexes = getCharsCount(c, b);//it's usually faster to count the array's size rather than resize it
         int j = 0, k = 0, n = c.length - regexes;//'n' is the known amount of chars left
         String[] d = new String[regexes + 1];//we already know how big the array should be
@@ -1209,7 +1235,7 @@ public final class AlixUtils {
 
     public static void sendToAllPermittedPlayers(String message) {
         for (Player p : Bukkit.getOnlinePlayers())
-            if (p.isOp() || p.hasPermission("javasystem.info")) p.sendMessage(message);
+            if (p.isOp()/* || p.hasPermission("alixsystem.info")*/) p.sendMessage(message);
     }
 
     public static String setAsClearNumber(Object a) {

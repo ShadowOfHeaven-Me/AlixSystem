@@ -7,10 +7,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public final class AlixCommonUtils {
 
+    public static final Consumer EMPTY_CONSUMER = e -> {};
     public static final Random random = new Random();
     public static final boolean isGraphicEnvironmentHeadless;
 
@@ -45,6 +47,20 @@ public final class AlixCommonUtils {
     public static char[] toPrimitive(Character... a) {
         char[] b = new char[a.length];
         for (int c = 0; c < a.length; c++) b[c] = a[c];
+        return b;
+    }
+
+    public static Integer[] toObject(int... a) {
+        int l = a.length;
+        Integer[] b = new Integer[l];
+        for(int c = 0; c < l; c++) b[c] = a[c];
+        return b;
+    }
+
+    public static int[] toPrimitive(Integer... a) {
+        int l = a.length;
+        int[] b = new int[l];
+        for(int c = 0; c < l; c++) b[c] = a[c];
         return b;
     }
 

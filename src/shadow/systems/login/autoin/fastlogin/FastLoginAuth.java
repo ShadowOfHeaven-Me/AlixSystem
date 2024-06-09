@@ -7,7 +7,7 @@ import shadow.systems.login.autoin.LoginAuthenticator;
 
 import java.util.UUID;
 
-public class FastLoginAuth implements LoginAuthenticator {
+public final class FastLoginAuth implements LoginAuthenticator {
 
     private final FastLoginBukkit base;
 

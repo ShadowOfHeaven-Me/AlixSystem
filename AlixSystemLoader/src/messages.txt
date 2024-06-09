@@ -1,4 +1,5 @@
 account-limit-reached: &cYou've reached the maximum amount of accounts! ({0})
+already-connecting: &cAnother login from the same nickname is registered to be already happening!
 already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
 already-logged-in: &cYou're already logged in!
 already-registered: &cYou're already registered!
@@ -136,18 +137,18 @@ incorrect-password: &cIncorrect password!
 invalid-command: &cInvalid command!
 invalid-name: &cInvalid name, please use another one!
 ip-autologin-accept: &aYou will now be always automatically logged in by IP! You can manage these settings at /account
+ip-autologin-forcefully-disabled: &cThis parameter has been forcefully -nl disabled via the server's config, and will -nl currently have no effect whatsoever.
 ip-autologin-reject: &aYou will now always not be automatically logged in by IP! You can manage these settings at /account
 ip-info-absent-ban: &cNo ip information about {0} was found, therefore the ip ban was unsuccessful.
 ip-not-banned: &cERROR: IP {0} is not banned!
 item-absent-during-renaming: &cYou have to hold the item you want to rename!
 item-name-reset: &6Successfully reset last item name.
 list-of-homes: List of existing homes:
-log-player-join-captcha-unverified: Captcha unverified player {0} joined with the ip {1}
-log-player-join-unverified: Unverified player {0} joined with the ip {1}
-log-player-join-verified: Player {0} joined with the ip {1}
-log-player-quit-captcha-unverified: Captcha unverified player {0} left with the ip {1}
-log-player-quit-unverified: Unverified player {0} left with the ip {1}
-log-player-quit-verified: Player {0} left with the ip {1}
+log-player-join-auto-verified: Player {0}[{1}] joined and was automatically verified for: {2}
+log-player-join-captcha-verified: Player {0}[{1}] joined, completed the captcha and registered
+log-player-join-logged-in: Player {0}[{1}] joined and logged in
+log-player-join-registered: Player {0}[{1}] joined and registered
+log-player-quit: Player {0}[{1}] disconnected
 login-reminder-command: &cLog in first!
 login-success: &aYou've successfully logged in!
 login-time-passed: &cYou took too long to log in!
@@ -204,6 +205,7 @@ register-success: &aSuccessfully registered! You may now rejoin the server!
 register-time-passed: &cYou took too long to register!
 remove-warp: &6Successfully removed the warp {0}!
 renamed-item: &6Successfully renamed held item.
+server-is-full: &cThe server is full!
 server-still-starting: &cThe server still hasn't started yet!
 spawn-location-set: &6Spawn location was successfully set!
 spawn-teleport: &6Successfully teleported to spawn!

@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
+import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
@@ -23,6 +24,11 @@ public final class LoginSettingsGUI extends AlixGUI {
             IP_AUTOLOGIN_ON = create(Material.GREEN_CONCRETE, Messages.get("gui-login-settings-ip-autologin-on")),
             IP_AUTOLOGIN_OFF = create(Material.RED_CONCRETE, Messages.get("gui-login-settings-ip-autologin-off"));
     private static final Function<PersistentUserData, ItemStack> IP_AUTOLOGIN_GET = data -> data.getLoginParams().getIpAutoLogin() ? IP_AUTOLOGIN_ON : IP_AUTOLOGIN_OFF;
+
+    static {
+        if (AlixUtils.forcefullyDisableIpAutoLogin)
+            addLore(IP_AUTOLOGIN_ON, Messages.get("ip-autologin-forcefully-disabled").split(" -nl "));
+    }
 
     private final AbstractAlixGUI originalGui;
 

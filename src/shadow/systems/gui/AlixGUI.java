@@ -15,9 +15,7 @@ import shadow.systems.gui.item.GUIItem;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public abstract class AlixGUI implements AbstractAlixGUI {
 
@@ -65,6 +63,17 @@ public abstract class AlixGUI implements AbstractAlixGUI {
         ItemMeta meta = item.getItemMeta();
         meta.addEnchant(Enchantment.DURABILITY, 10, true);
         meta.addItemFlags(ItemFlag.values());
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    protected static ItemStack addLore(ItemStack item, String... lore) {
+        ItemMeta meta = item.getItemMeta();
+        List<String> newLore = new ArrayList<>();
+        List<String> existingLore = meta.getLore();
+        if (existingLore != null) newLore.addAll(existingLore);
+        newLore.addAll(AlixUtils.getItemLore(lore));
+        meta.setLore(newLore);
         item.setItemMeta(meta);
         return item;
     }

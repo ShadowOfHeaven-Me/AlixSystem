@@ -29,7 +29,6 @@ public final class AlixCommonHandler {
                 AlixCommonMain.logInfo("Using VelocityAlixScheduler for task execution.");
                 return new VelocityAlixScheduler();
             case SPIGOT:
-                AlixCommonMain.logInfo("Using the unoptimized BukkitAlixScheduler for task execution - Paper is suggested for better performance.");
                 return new BukkitAlixScheduler();
             default:
                 throw new InternalError("Invalid: " + ServerEnvironment.getEnvironment());

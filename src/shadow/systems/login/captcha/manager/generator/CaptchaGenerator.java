@@ -78,7 +78,7 @@ public final class CaptchaGenerator {
 
             String[] configArgs = config.split(";e=");
             String[] ranges = AlixUtils.split(configArgs[0], ',');
-            StringBuilder excludedChars = new StringBuilder("wWmM");//always exclude w and m since they're too big
+            StringBuilder excludedChars = new StringBuilder("WM");//always exclude 'W' and 'M', since they're too big
             if (configArgs.length == 2) {
                 String[] excluded = configArgs[1].split(",");
                 for (String ex : excluded) excludedChars.append(ex);
@@ -112,15 +112,12 @@ public final class CaptchaGenerator {
         @Override
         public String generateTextCaptcha0() {
             char[] a = new char[length];
-            for (byte i = 0; i < length; i++) {
-                char c = this.nextChar();
-                /*if (i == length - 1 && (c == 'w' || c == 'W')) {//do not let W be the last character, since it won't fit
-                    do {
-                        c = this.nextChar();
-                    } while (c == 'w' || c == 'W');
-                }*/
-                a[i] = c;
-            }
+            for (byte i = 0; i < length; i++) a[i] = this.nextChar();
+            /*if (i == length - 1 && (c == 'w' || c == 'W')) {//do not let W be the last character, since it won't fit
+                do {
+                    c = this.nextChar();
+                } while (c == 'w' || c == 'W');
+            }*/
             return new String(a);
             //return new String(iterator.next(length));
         }

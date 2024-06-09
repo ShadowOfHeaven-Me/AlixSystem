@@ -4,10 +4,13 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerPreLoginEvent;
+import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
+
+import java.util.UUID;
 
 public final class LoginVerdictManager {
 
@@ -39,7 +42,7 @@ public final class LoginVerdictManager {
             event.disallow(PlayerPreLoginEvent.Result.KICK_OTHER, "§cSomething went wrong! (No handler)");
             return;
         }*/
-        User user = UserManager.removeTemp(name);
+        User user = UserManager.removeConnecting(name);
 
         if (user == null) {
             event.disallow(PlayerPreLoginEvent.Result.KICK_OTHER, "§cSomething went wrong! (No user)");
@@ -60,7 +63,7 @@ public final class LoginVerdictManager {
         //MAP.put(name, info);
         UserManager.put(event.getUniqueId(), new TemporaryUser(user, info));
         //UserManager.
-        //Main.logInfo("[DEBUG] CREATED A VERDICT");
+        //Main.logError("CREATED A VERDICT: " + info.getVerdict().readableName());
     }
 
     private static LoginVerdict getVerdict(String ip, PersistentUserData data) {
@@ -70,25 +73,35 @@ public final class LoginVerdictManager {
         if (!data.getPassword().isSet())//not registered - password was reset
             return LoginVerdict.DISALLOWED_PASSWORD_RESET;
 
-        if (data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip))//ip auto login
+        if (!AlixUtils.forcefullyDisableIpAutoLogin && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip))//ip auto login
             return LoginVerdict.IP_AUTO_LOGIN;
 
         return LoginVerdict.DISALLOWED_LOGIN_REQUIRED; //not logged in
     }
 
-    public static TemporaryUser getExistingTempUser(Player p) {
-        AlixUser user = UserManager.get(p.getUniqueId());
-        return ensureExists(p, user instanceof TemporaryUser ? (TemporaryUser) user : null);//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
+    public static TemporaryUser get(Player p) {
+        return get(p.getUniqueId());
+    }
+
+    public static TemporaryUser getNullable(UUID uuid) {
+        AlixUser user = UserManager.get(uuid);
+        return user instanceof TemporaryUser ? (TemporaryUser) user : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
+    }
+
+    public static TemporaryUser get(UUID uuid) {
+        AlixUser user = UserManager.get(uuid);
+        return ensureExists(user instanceof TemporaryUser ? (TemporaryUser) user : null);//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
     }
 
 /*    public static LoginInfo getExisting(Player p) {
         return getExistingTempUser(p).getLoginInfo();
     }*/
 
-    private static TemporaryUser ensureExists(Player player, TemporaryUser user) {
+    private static TemporaryUser ensureExists(TemporaryUser user) {
         if (user == null) {
-            player.kickPlayer("§cNo Temporary User was found! Report this to the staff immediately!");
-            throw new RuntimeException("No Temporary User was found for the player " + player.getName() + "! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
+            user.reetrooperUser().closeConnection();
+            //player.kickPlayer("§cNo Temporary User was found! Report this to the staff immediately!");
+            throw new RuntimeException("No Temporary User was found for the player " + user.reetrooperUser().getName() + "! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
         }
         return user;
     }

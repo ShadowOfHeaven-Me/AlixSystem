@@ -11,6 +11,7 @@ import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.users.types.VerifiedUser;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class UserManager {
 
     private static final Map<UUID, AlixUser> USERS = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
-    private static final Map<String, User> TEMP_USERS = new ConcurrentHashMap<>();//the default size of 16 will do, since the joining players are only stored here since connection till login start
+    private static final Map<String, User> CONNECTING_USERS = new ConcurrentHashMap<>();//the default size of 16 will do, since the joining players are only stored here since connection till login start
     //public static final List<User> users = new ArrayList<>();
     //public static final List<String> notVanishedUserNicknames = new ArrayList<>();
 
@@ -27,8 +28,8 @@ public final class UserManager {
         return users.
     }*/
 
-    public static void addVerifiedUser(Player p, TemporaryUser user) {
-        putVer(new VerifiedUser(p, user));
+    public static VerifiedUser addVerifiedUser(Player p, TemporaryUser user) {
+        return putVer(new VerifiedUser(p, user));
     }
 
     public static void addVerifiedUser(Player p, PersistentUserData data, String ip, User retrooperUser, ChannelHandlerContext silentContext) {//offline as of non-premium
@@ -57,18 +58,19 @@ public final class UserManager {
         return data;
     }*/
 
-    public static PersistentUserData register(Player p, String password, String ip, User user, ChannelHandlerContext context) {
+    public static PersistentUserData register(Player p, String password, String ip, User user, ChannelHandlerContext silentContext) {
         //if (GeoIPTracker.disallowLogin(ip)) return false;
 
         PersistentUserData data = PersistentUserData.createDefault(p.getName(), ip, Password.fromUnhashed(password));
         //data.setPassword(password);
-        addVerifiedUser(p, data, ip, user, context);
+        addVerifiedUser(p, data, ip, user, silentContext);
 
         return data;
     }
 
-    private static void putVer(VerifiedUser u) {
+    private static VerifiedUser putVer(VerifiedUser u) {
         USERS.put(u.getUUID(), u);
+        return u;
     }
 
 /*    public static void disable() {
@@ -98,12 +100,12 @@ public final class UserManager {
         return USERS.remove(p.getUniqueId());
     }
 
-    public static void putTemp(String name, User user) {
-        TEMP_USERS.put(name, user);
+    public static User putConnecting(String name, User user) {
+        return CONNECTING_USERS.compute(name, (n, alreadyConnecting) -> alreadyConnecting != null ? alreadyConnecting : user);
     }
 
-    public static User removeTemp(String name) {
-        return name != null ? TEMP_USERS.remove(name) : null;
+    public static User removeConnecting(String name) {
+        return CONNECTING_USERS.remove(name);
     }
 
 /*    public static void remove(Player p) {
@@ -124,6 +126,14 @@ public final class UserManager {
     public static VerifiedUser getNullableVerifiedUser(UUID uuid) {
         AlixUser user = USERS.get(uuid);
         return user instanceof VerifiedUser ? (VerifiedUser) user : null;
+    }
+
+    /*public static int userCount() {
+        return USERS.size();
+    }*/
+
+    public static Collection<AlixUser> users() {
+        return USERS.values();
     }
 
     private UserManager() {

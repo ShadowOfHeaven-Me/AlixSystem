@@ -1,7 +1,6 @@
 package shadow.utils.holders.packet.constructors;
 
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
@@ -13,8 +12,10 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import shadow.utils.netty.NettyUtils;
+import shadow.utils.users.Verifications;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -87,26 +88,26 @@ public final class OutPlayerInfoPacketConstructor {
             WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, WrapperPlayServerPlayerInfo.Action.UPDATE_DISPLAY_NAME, WrapperPlayServerPlayerInfo.Action.UPDATE_GAME_MODE
     };
 
-    public static ByteBuf[] construct_ADD_OF_ALL(User user, Player player, ChannelHandlerContext context) {
+    public static ByteBuf[] construct_ADD_OF_ALL_VISIBLE(Player sendTo, ChannelHandlerContext context) {
         if (version.isNewerThanOrEquals(ServerVersion.V_1_19_3)) {
             List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
 
-            for (User u : ProtocolManager.USERS.values()) {
-                Player p = Bukkit.getPlayer(u.getUUID());
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                User u = PacketEvents.getAPI().getPlayerManager().getUser(p);
 
-                if (p != null && player.canSee(p))
-                    list.add(new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(user.getProfile(), true, 0, SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), Component.text(p.getDisplayName()), null));
+                if (isVisible(sendTo, p))
+                    list.add(new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(u.getProfile(), true, 0, SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), Component.text(p.getDisplayName()), null));
             }
             return new ByteBuf[]{NettyUtils.dynamic(new WrapperPlayServerPlayerInfoUpdate(UPDATE_ACTIONS, list), context)};
         }
 
         List<WrapperPlayServerPlayerInfo.PlayerData> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
 
-        for (User u : ProtocolManager.USERS.values()) {
-            Player p = Bukkit.getPlayer(u.getUUID());
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            User u = PacketEvents.getAPI().getPlayerManager().getUser(p);
 
-            if (p != null && player.canSee(p))
-                list.add(new WrapperPlayServerPlayerInfo.PlayerData(Component.text(p.getDisplayName()), user.getProfile(), SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), null, 0));
+            if (isVisible(sendTo, p))
+                list.add(new WrapperPlayServerPlayerInfo.PlayerData(Component.text(p.getDisplayName()), u.getProfile(), SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), null, 0));
         }
 
         ByteBuf[] buffers = new ByteBuf[INFO_ACTIONS.length];
@@ -116,6 +117,29 @@ public final class OutPlayerInfoPacketConstructor {
             buffers[i] = NettyUtils.dynamic(new WrapperPlayServerPlayerInfo(action, list), context);
         }
         return buffers;
+    }
+
+    public static ByteBuf[] construct_ADD_OF_ONE_VISIBLE(User addToTab, Player p) {
+        if (version.isNewerThanOrEquals(ServerVersion.V_1_19_3)) {
+            WrapperPlayServerPlayerInfoUpdate.PlayerInfo info = new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(addToTab.getProfile(), true, 0, SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), Component.text(p.getDisplayName()), null);
+
+            return new ByteBuf[]{NettyUtils.createBuffer(new WrapperPlayServerPlayerInfoUpdate(UPDATE_ACTIONS, Collections.singletonList(info)))};
+        }
+
+        WrapperPlayServerPlayerInfo.PlayerData info = new WrapperPlayServerPlayerInfo.PlayerData(Component.text(p.getDisplayName()), addToTab.getProfile(), SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), null, 0);
+
+        List<WrapperPlayServerPlayerInfo.PlayerData> list = Collections.singletonList(info);
+        ByteBuf[] buffers = new ByteBuf[INFO_ACTIONS.length];
+
+        for (int i = 0; i < buffers.length; i++) {
+            WrapperPlayServerPlayerInfo.Action action = INFO_ACTIONS[i];
+            buffers[i] = NettyUtils.createBuffer(new WrapperPlayServerPlayerInfo(action, list));
+        }
+        return buffers;
+    }
+
+    public static boolean isVisible(Player looker, Player target) {
+        return target != null && looker.canSee(target) && !Verifications.has(target);
     }
 
     public static void init() {

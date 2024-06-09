@@ -39,6 +39,9 @@ public final class OutMapPacketConstructor {
         }
     }*/
 
+
+
+
     public static ByteBuf constructDynamic(int viewId, byte[] toDrawBytes) {
         return AlixMapDataPacketWrapper.createBuffer(viewId, toDrawBytes);
         //return newerConstructor ? construct_1_17(viewId, toDrawBytes) : construct_old(viewId, toDrawBytes);

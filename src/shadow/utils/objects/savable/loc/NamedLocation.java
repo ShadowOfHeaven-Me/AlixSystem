@@ -5,22 +5,18 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.main.AlixHandler;
-import shadow.utils.main.file.managers.SpawnFileManager;
 
 import static shadow.utils.main.AlixUtils.parsePureInteger;
 import static shadow.utils.main.AlixUtils.split;
 
-public class NamedLocation {//extends SavableLocation {
+public final class NamedLocation {//extends SavableLocation {
 
     private final String name, toString, readable;
     private final Location loc;
 
     public NamedLocation(Location loc, String name) {
-        //super(location);
         this.name = name;
         this.loc = loc;
-        //toString = super.toString() + ":" + name;
         int x = loc.getBlockX(), y = loc.getBlockY(), z = loc.getBlockZ();
         String worldName = loc.getWorld().getName();
         this.toString = x + ":" + y + ":" + z + ":" + worldName + ":" + loc.getYaw() + ":" + loc.getPitch()+ ":" + name;
@@ -28,15 +24,15 @@ public class NamedLocation {//extends SavableLocation {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return toString;
     }
 
-    public final String toUserReadable() {
+    public String toUserReadable() {
         return readable;
     }
 
-    public final String getName() {
+    public String getName() {
         return name;
     }
 

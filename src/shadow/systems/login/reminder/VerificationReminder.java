@@ -13,7 +13,7 @@ public final class VerificationReminder {
     public static final long MESSAGE_RESEND_DELAY = 1500;
 
     public static ScheduledFuture<?> reminderFor(UnverifiedUser user) {
-        return user.getChannel().eventLoop().scheduleAtFixedRate(() -> tick(user), 0, TICK_DELAY, TimeUnit.MILLISECONDS);
+        return user.getChannel().eventLoop().scheduleAtFixedRate(() -> tick(user), 0L, TICK_DELAY, TimeUnit.MILLISECONDS);
     }
 
     private static void tick(UnverifiedUser user) {
@@ -27,8 +27,8 @@ public final class VerificationReminder {
 
             ByteBuf buf;
 
-            if (!user.isGUIInitialized() && (buf = user.getVerificationMessageBuffer()) != null)
-                user.writeAndFlushConstSilently(buf);
+            if (!user.isGUIInitialized() && (buf = user.getRawVerificationMessageBuffer()) != null)
+                user.writeAndFlushRaw(buf);
         }
     }
 

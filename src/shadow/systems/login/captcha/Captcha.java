@@ -47,7 +47,7 @@ public abstract class Captcha {
 
 
     public static void cleanUp() {
-        captchaPool.uninjectAll();
+        if (AlixUtils.requireCaptchaVerification) captchaPool.uninjectAll();
     }
 
     public static AlixFuture<Captcha> nextCaptcha() {

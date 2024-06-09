@@ -34,8 +34,8 @@ public final class AlixMapDataPacketWrapper {/*extends PacketWrapper<AlixMapData
 
     public static ByteBuf createBuffer(int mapId, byte[] pixels) {
         ByteBuf buffer = NettyUtils.buffer();
-        ByteBufHelper.writeVarInt(buffer, PACKET_ID);
-        ByteBufHelper.writeVarInt(buffer, mapId);
+        ByteBufHelper.writeVarInt(buffer, PACKET_ID);//packed id
+        ByteBufHelper.writeVarInt(buffer, mapId);//map id
         ByteBufHelper.writeByte(buffer, 3);//scale
         ByteBufHelper.writeBoolean(buffer, false);//has icons/locked
         ByteBufHelper.writeBoolean(buffer, false);//locked/tracking positions
@@ -43,8 +43,8 @@ public final class AlixMapDataPacketWrapper {/*extends PacketWrapper<AlixMapData
         //Only difference in protocol after 1.8.8 is between these two versions
         //https://wiki.vg/index.php?title=Protocol&oldid=17753#Map_Data 1.19
         //https://wiki.vg/index.php?title=Protocol&oldid=18067#Map_Data 1.19.2
-        if (serverVersion.isOlderThanOrEquals(ServerVersion.V_1_19))//the array is not optional on 1.19 and below
-            ByteBufHelper.writeVarInt(buffer, 0);//just say that the length is 0, so that we don't have to provide the array
+        /*if (serverVersion.isOlderThanOrEquals(ServerVersion.V_1_19))//the array is not optional on 1.19 and below
+            ByteBufHelper.writeVarInt(buffer, 0);//just say that the length is 0, so that we don't have to provide the array*/
 
         ByteBufHelper.writeByte(buffer, 128);//updated columns
         ByteBufHelper.writeByte(buffer, 128);//updated rows

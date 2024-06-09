@@ -1,7 +1,6 @@
 package shadow.utils.objects.packet.injector.nms_impl;
 
 import io.netty.channel.Channel;
-import net.minecraft.server.network.ServerCommonPacketListenerImpl;
 import org.bukkit.entity.Player;
 import shadow.utils.holders.ReflectionUtils;
 
@@ -46,12 +45,16 @@ final class NewerNmsChannelGetter implements NmsChannelGetter {
 
         Class<?> managerClazz = ReflectionUtils.networkManagerClass;
         Field managerField = null;
-        for (Field field : ServerCommonPacketListenerImpl.class.getDeclaredFields()) {
-            if (managerClazz.isAssignableFrom(field.getType())) {
-                field.setAccessible(true);
-                managerField = field;
-                break;
+        try {
+            for (Field field : Class.forName("net.minecraft.server.network.ServerCommonPacketListenerImpl").getDeclaredFields()) {
+                if (managerClazz.isAssignableFrom(field.getType())) {
+                    field.setAccessible(true);
+                    managerField = field;
+                    break;
+                }
             }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
         if (managerField == null) throw new AssertionError();
         getNetworkManager = managerField;

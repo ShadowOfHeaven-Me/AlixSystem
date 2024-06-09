@@ -1,22 +1,17 @@
 package shadow.utils.objects.packet.types.unverified;
 
 import alix.common.data.LoginType;
-import alix.common.scheduler.AlixScheduler;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.savable.data.gui.builders.AnvilPasswordBuilder;
+import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
 import shadow.utils.users.types.UnverifiedUser;
-
-import java.util.concurrent.TimeUnit;
 
 public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
 
     //private static final Set<Integer> WINDOW_IDS = new ConcurrentSet<>();
-    private AnvilPasswordBuilder builder;
+    private VirtualAnvilPasswordBuilder builder;
 
     AnvilGUIPacketBlocker(PacketBlocker previousBlocker) {
         super(previousBlocker);
@@ -24,13 +19,13 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
 
     AnvilGUIPacketBlocker(UnverifiedUser u) {
         super(u);
-        this.builder = (AnvilPasswordBuilder) u.getPasswordBuilder();
+        this.builder = (VirtualAnvilPasswordBuilder) u.getPasswordBuilder();
     }
 
     @Override
     public void onPacketReceive(PacketPlayReceiveEvent event) {
         if (!user.hasCompletedCaptcha()) {
-            this.onReadCaptchaVerification(event);
+            this.onReceiveCaptchaVerification(event);
             return;
         }
         //has completed the captcha and is currently undergoing the pin verification
@@ -40,23 +35,21 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
                 this.trySpoofPackets();
-                event.setCancelled(true);
-                return;
+                break;
             case NAME_ITEM:
                 this.updateText(new WrapperPlayClientNameItem(event).getItemName());
-                //event.setCancelled(true);
-                return;
+                break;
             case CLICK_WINDOW:
                 this.builder.spoofValidAccordingly();
-                //event.setCancelled(true);
-                return;
+                this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());
+                break;
             case CLOSE_WINDOW:
-                AlixScheduler.runLaterSync(user::openPasswordBuilderGUI, 100, TimeUnit.MILLISECONDS);
-                //event.setCancelled(true);
-/*                return;
+                event.getPostTasks().add(user::openPasswordBuilderGUI);
+                break;
             case KEEP_ALIVE:
-                return;*/
+                return;
         }
+        event.setCancelled(true);
     }
 
     private void updateText(String text) {
@@ -80,7 +73,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
 
     @Override
     public void updateBuilder() {
-        this.builder = (AnvilPasswordBuilder) user.getPasswordBuilder();
+        this.builder = (VirtualAnvilPasswordBuilder) user.getPasswordBuilder();
     }
 
 /*    private static int getWindowOpenID(Object packet) {
@@ -100,14 +93,14 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
     }*/
 
 
-    @Override
+/*    @Override
     public void onPacketSend(PacketPlaySendEvent event) {
         //if (spoofedWindowItems(msg)) return;
         if (!user.hasCompletedCaptcha()) {
-            super.onWriteCaptchaVerification(event);
+            super.onSendCaptchaVerification(event);
             return;
         }
-        switch (event.getPacketType()) {
+        *//*switch (event.getPacketType()) {
             case OPEN_WINDOW:
                 this.builder.updateWindowId(new WrapperPlayServerOpenWindow(event).getContainerId());
                 return;
@@ -115,10 +108,10 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
                 this.builder.updateWindowId(new WrapperPlayServerWindowItems(event).getWindowId());
                 //event.setCancelled(true);
                 return;
-        }
+        }*//*
 
         super.onPacketSend(event);
-    }
+    }*/
 
     /*        if (msg.getClass() == ReflectionUtils.outWindowItemsPacketClass) {//Items
             Integer id = getWindowItemsID(msg);
