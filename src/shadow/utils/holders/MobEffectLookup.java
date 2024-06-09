@@ -1,3 +1,4 @@
+/*
 package shadow.utils.holders;
 
 import org.bukkit.potion.PotionEffectType;
@@ -11,6 +12,7 @@ public final class MobEffectLookup {
     //This method looks for a back-up id to
     //mob effect method by looking for a
     //IRegistry<MobEffectList> in the IRegistry class
+*/
 /*    protected static Method find0() {
         Class<?> c = ReflectionUtils.forName("net.minecraft.core.registries.BuiltInRegistries");
         Class<?> registryNewerClass = ReflectionUtils.forName("net.minecraft.core.Registry");
@@ -29,10 +31,14 @@ public final class MobEffectLookup {
                         for (Method m : mobEffectIRegistry.getClass().getMethods()) {
                             Class<?>[] params = m.getParameterTypes();
                             Class<?> returnType = m.getReturnType();
-                            *//*if (params.length == 1 && params[0] == int.class && m.getGenericReturnType() instanceof ParameterizedType) {
+                            *//*
+*/
+/*if (params.length == 1 && params[0] == int.class && m.getGenericReturnType() instanceof ParameterizedType) {
                                 ParameterizedType paramReturnType = (ParameterizedType) m.getGenericReturnType();
                                 Main.logError("TYPE-UH " + returnType.toGenericString() + " TYPE " + m.getGenericReturnType() + " " + paramReturnType.getActualTypeArguments()[0]);
                             }*//*
+*/
+/*
                             //ReflectionUtils.mobEffectListClass.isAssignableFrom(returnType)
                             // && ((ParameterizedType) m.getGenericReturnType()).getActualTypeArguments()[0]
                             if (returnType == Optional.class && params.length == 1 && params[0] == int.class) {//Is is the Optional<Holder.Reference<
@@ -52,7 +58,8 @@ public final class MobEffectLookup {
         }
         //AlixUtils.debug(c.getDeclaredFields(), Field::toGenericString, '\n');
         throw new Error("Not found at - " + c.getSimpleName());//+ " - Methods: " + Arrays.toString(c.getMethods()));
-    }*/
+    }*//*
+
 
     private static MobEffectSupplier get_1_20_2() {
         Class<?> c = ReflectionUtils.obc("potion.CraftPotionEffectType");
@@ -107,4 +114,4 @@ public final class MobEffectLookup {
 
     private MobEffectLookup() {
     }
-}
+}*/

@@ -196,7 +196,8 @@ public final class ReflectionUtils {
     public static final Class<?> mobEffectClass = nmsClazz("net.minecraft.server.%s.MobEffect", "net.minecraft.world.effect.MobEffect");
     public static final Class<?> mobEffectListClass = nmsClazz("net.minecraft.server.%s.MobEffectList", "net.minecraft.world.effect.MobEffectList");
 
-    public static final Class<?> entityLivingClass = nms2("world.entity.EntityLiving");
+    //always get what the CraftBukkit implementation uses
+    public static final Class<?> entityLivingClass = ReflectionUtils.getMethod(obc("entity.CraftLivingEntity"), "getHandle").getReturnType();
     public static final Class<?> entityPlayerClass = nms2("server.level.EntityPlayer");
     public static final Class<?> craftPlayerClass = obc("entity.CraftPlayer");
     public static final Class<?> playerConnectionClass = nms2("server.network.PlayerConnection");
@@ -380,14 +381,19 @@ public final class ReflectionUtils {
         }
     }
 
-    public static Field getFieldAccessible(Class<?> clazz, String name) {
-        try {
-            Field field = clazz.getDeclaredField(name);
-            field.setAccessible(true);
-            return field;
-        } catch (NoSuchFieldException e) {
-            throw new AlixException(e);
+    public static Field getFieldAccessible(Class<?> clazz, String... names) {
+        Field field = null;
+        for (String name : names) {
+            try {
+                field = clazz.getDeclaredField(name);
+            } catch (NoSuchFieldException ignored) {
+            }
+            if (field != null) {
+                field.setAccessible(true);
+                return field;
+            }
         }
+        return null;
     }
 
     public static Field getDeclaredField(Class<?> clazz, String name) {
@@ -532,9 +538,9 @@ public final class ReflectionUtils {
         throw new ExceptionInInitializerError("Not found: " + Arrays.toString(names));
     }
 
-    public static Field getFieldByTypeAndParams(Class<?> instClass, Class<?> fieldType, Class<?>... params) {
+    public static Field getFieldByTypeAndParams(Class<?> instClass, Class<?> fieldTypeSuperclass, Class<?>... params) {
         for (Field field : instClass.getDeclaredFields())
-            if (field.getType() == fieldType) {
+            if (fieldTypeSuperclass.isAssignableFrom(field.getType())) {
                 Type t = field.getGenericType();
                 if (t instanceof ParameterizedType) {
                     ParameterizedType type = (ParameterizedType) t;
@@ -544,7 +550,8 @@ public final class ReflectionUtils {
                     }
                 }
             }
-        throw new ExceptionInInitializerError("No valid field with " + fieldType + " in " + instClass);
+        return null;
+        //throw new ExceptionInInitializerError("No valid field with " + fieldTypeSuperclass + " in " + instClass);
     }
 
     private static Field getFieldByType(Class<?> instClass, Class<?> typeClass) {

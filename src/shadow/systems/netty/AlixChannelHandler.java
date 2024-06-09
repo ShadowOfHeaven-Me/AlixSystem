@@ -94,7 +94,7 @@ public final class AlixChannelHandler {
             //channel.pipeline().addLast(PACKET_ANALYSER_NAME, packetAnalyser);//the exception prevention safety measure
             TIMEOUT_TASKS.put(channel, channel.eventLoop().schedule(() -> {
                 //ConnectionThreadManager.onPingRequest(((InetSocketAddress) channel.remoteAddress()).getAddress());
-                Main.logError("wyjebao timeout");
+                //Main.logError("wyjebao timeout");
                 TIMEOUT_TASKS.remove(channel);
                 NettyUtils.closeAfterConstSend(channel, timeOutError);
             }, 3, TimeUnit.SECONDS));

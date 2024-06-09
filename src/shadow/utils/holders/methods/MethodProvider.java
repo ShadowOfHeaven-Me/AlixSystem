@@ -7,7 +7,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.types.UnverifiedUser;
@@ -56,8 +56,8 @@ public final class MethodProvider {
     public static final PlayerTeleportEvent.TeleportCause ASYNC_TP_CAUSE = PlayerTeleportEvent.TeleportCause.SPECTATE;
 
     @AlixIntrinsified(method = "Player#teleport")
-    public static CompletableFuture<Boolean> teleportAsync(Player player, Location loc) {
-        return PaperLib.teleportAsync(player, loc, ASYNC_TP_CAUSE);
+    public static CompletableFuture<Boolean> teleportAsync(Entity entity, Location loc) {
+        return PaperLib.teleportAsync(entity, loc, ASYNC_TP_CAUSE);
     }
 
     public static void init() {

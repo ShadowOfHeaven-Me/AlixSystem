@@ -35,7 +35,7 @@ public final class Verifications {
 
     public static UnverifiedUser get(UUID uuid) {
         AlixUser u = UserManager.get(uuid);
-        return u.isVerified() ? null : (UnverifiedUser) u;
+        return u instanceof UnverifiedUser ? (UnverifiedUser) u : null;
     }
 
 /*    public static void forEach(BiConsumer<UUID, UnverifiedUser> consumer) {

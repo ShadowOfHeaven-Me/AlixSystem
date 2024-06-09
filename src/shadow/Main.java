@@ -47,24 +47,8 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Immensely increased the performance of particle captcha - it's now about ~200 times faster (from ~2ms to ~0.01ms per refresh or ~0.03ms with Epoll transport)
-    //[+] Greatly optimized gui operations thanks to buffer utilization
-    //[+] Potion effects will no longer take effect during verification
-    //[+] Optimized the scheduler used on spigot servers
-    //[*] Fixed incorrect timeout task handling
-    //[*] Fixed players being disconnected upon join on certain servers
-    //[*] Fixed buffer error
-    //[*] User joins will no longer be logged into console on every join. Instead, join logs will only occur on successful register/login
-    //[*] Fixed player nbt not being saved sometimes
-    //[*] Captcha unverified users will now no longer be visible in tab
-    //[*] Fixed the alix world settings not being correctly set-up after the world's generation
-    //[*] captcha-visual-type: 'map' -> 'particle' by default
-    //[*] Temporarily disabled 'map' captcha
-    //[*] Fixed a critical flaw, that would always disconnect the user
-    //[*] Fixed faulty connecting user storing
-    //[*] Now all files need to finish loading before a join can happen due to possible issues
-    //[-] Temporarily disabled map captcha
-
+    //[*] Fixed a critical error on 1.20.4+
+    //[*] Removed a debug message
 
     //todo: Add a custom data structure for unverified users
     //TODO: fix pin gui's location sounds bugs

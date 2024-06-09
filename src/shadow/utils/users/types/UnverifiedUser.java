@@ -5,14 +5,10 @@ import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
-import alix.common.utils.collections.map.InvisibleStorageMap;
-import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -22,17 +18,15 @@ import shadow.systems.gui.impl.IpAutoLoginGUI;
 import shadow.systems.login.LoginVerification;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
-import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.holders.effect.PotionEffectHandler;
 import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.main.AlixHandler;
-import shadow.utils.main.AlixUnsafe;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.unsafe.ByteBufHarvester;
 import shadow.utils.netty.unsafe.UnsafeNettyUtils;
-import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.PersistentUserData;
@@ -40,12 +34,7 @@ import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
-import sun.misc.Unsafe;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 
@@ -55,8 +44,6 @@ import static shadow.utils.main.AlixUtils.requireCaptchaVerification;
 public final class UnverifiedUser implements AlixUser {
 
     //private static final String registerSuccess = Messages.get("register-success");
-    private static final Unsafe UNSAFE;
-    private static final long MOB_MAP_OFFSET;
     private static final ByteBuf loginSuccessMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("login-success"));
     private final Player player;
     private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
@@ -78,9 +65,7 @@ public final class UnverifiedUser implements AlixUser {
     private final String ipAddress;
     private final boolean captchaInitialized, originalCollidableState;
     private final boolean joinedRegistered;
-    public final Object entityPlayer;
-    private final InvisibleStorageMap temporaryMobEffectMap;
-    //private final Map potionEffectsScreenshot;
+    public final PotionEffectHandler potionEffectHandler;
     private LoginType loginType;
     private LoginVerification loginVerification;
     private AlixVerificationGui alixGui;
@@ -99,11 +84,10 @@ public final class UnverifiedUser implements AlixUser {
         this.retrooperUser = tempUser.reetrooperUser();
         this.bufHarvester = tempUser.getBufHarvester();
         this.silentContext = NettyUtils.getSilentContext(tempUser.getChannel());
-        this.entityPlayer = ReflectionUtils.getHandle(this.player);
 
         //potion effect saving
-        Map potionEffectsScreenshot = (Map) UNSAFE.getObject(this.entityPlayer, MOB_MAP_OFFSET);
-        UNSAFE.putObject(this.entityPlayer, MOB_MAP_OFFSET, this.temporaryMobEffectMap = new InvisibleStorageMap(potionEffectsScreenshot));
+        this.potionEffectHandler = PotionEffectHandler.newHandlerFor(this);
+        this.potionEffectHandler.resetEffects();
 
         //this.player.setPersistent(false); //Do not save the player
 
@@ -146,66 +130,10 @@ public final class UnverifiedUser implements AlixUser {
     }
 
     /*private static void DEBUG_TIME() {
-        *//*StringBuilder sb = new StringBuilder();
+     *//*StringBuilder sb = new StringBuilder();
         for (StackTraceElement element : Thread.currentThread().getStackTrace()) sb.append('\n').append(element);
         Main.logError("INVOKED STACKTRACE (send this to shadow): " + sb);*//*
     }*/
-
-    public void writeDynamicMessageSilently(Component message) {
-        //DEBUG_TIME();
-        NettyUtils.writeDynamicWrapper(OutMessagePacketConstructor.packetWrapper(message), this.silentContext);
-    }
-
-    public void sendDynamicMessageSilently(String message) {
-        //DEBUG_TIME();
-        NettyUtils.writeAndFlushDynamicWrapper(OutMessagePacketConstructor.packetWrapper(Component.text(message)), this.silentContext);
-    }
-
-    //According to PacketTransformationUtil.transform(PacketWrapper<?>), this way of sending the packets silently is just fine
-    public void writeDynamicSilently(PacketWrapper<?> packet) {
-        NettyUtils.writeDynamicWrapper(packet, this.silentContext);
-    }
-
-    public void writeAndFlushDynamicSilently(PacketWrapper<?> packet) {
-        //DEBUG_TIME();
-        NettyUtils.writeAndFlushDynamicWrapper(packet, this.silentContext);
-    }
-
-    public void writeRaw(ByteBuf rawBuffer) {
-        //DEBUG_TIME();
-        RawAlixPacket.writeRaw(rawBuffer, this.getChannel());
-    }
-
-    public void writeAndFlushRaw(ByteBuf rawBuffer) {
-        //DEBUG_TIME();
-        this.writeRaw(rawBuffer);
-        this.getChannel().unsafe().flush();
-    }
-
-    public void writeSilently(ByteBuf buffer) {
-        //DEBUG_TIME();
-        this.silentContext.write(buffer);
-    }
-
-    public void writeAndFlushSilently(ByteBuf buffer) {
-        //DEBUG_TIME();
-        this.silentContext.writeAndFlush(buffer);
-    }
-
-    public void flushSilently() {
-        //DEBUG_TIME();
-        this.silentContext.flush();
-    }
-
-    public void writeConstSilently(ByteBuf buf) {
-        //DEBUG_TIME();
-        NettyUtils.writeConst(this.silentContext, buf);
-    }
-
-    public void writeAndFlushConstSilently(ByteBuf buf) {
-        //DEBUG_TIME();
-        NettyUtils.writeAndFlushConst(this.silentContext, buf);
-    }
 
     public void spoofVerificationPackets() {
         //DEBUG_TIME();
@@ -222,7 +150,7 @@ public final class UnverifiedUser implements AlixUser {
         this.releaseVerificationMessageBuffer();
 
         //give back the effects
-        UNSAFE.putObject(this.entityPlayer, MOB_MAP_OFFSET, this.temporaryMobEffectMap.getStorage());
+        this.potionEffectHandler.returnEffects();
 
         if (isGUIInitialized) this.alixGui.getVirtualGUI().destroy();
     }
@@ -386,10 +314,6 @@ public final class UnverifiedUser implements AlixUser {
 
     //Verifications.remove(this.player);//remove the player immediately because of possible complications later, such as teleportation in OfflineExecutors
 
-    private static final AlixMessage
-            captchaJoinMessage = Messages.getAsObject("log-player-join-captcha-verified"),
-            registerJoinMessage = Messages.getAsObject("log-player-join-registered"),
-            loginJoinMessage = Messages.getAsObject("log-player-join-logged-in");
 
     private CompletableFuture<Boolean> unvirtualizeAndTeleportBack() {//must be invoked sync
         this.blocker = PacketBlocker.EMPTY;//important for the user to receive refresh packets from the server, as a side effect of a world change
@@ -401,12 +325,29 @@ public final class UnverifiedUser implements AlixUser {
         CompletableFuture<Boolean> future = loc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? OriginalLocationsManager.teleportBack(player) : MethodProvider.teleportAsync(player, loc);
         //future.thenAccept(b -> UserSemiVirtualization.invokeVirtualizedJoinEvent(this));//unvirtualize join event
 
-        AlixMessage msg = captchaInitialized ? captchaJoinMessage : joinedRegistered ? loginJoinMessage : registerJoinMessage;
+        return future;
+    }
+
+    private static final AlixMessage
+            captchaJoinMessage = Messages.getAsObject("log-player-join-captcha-verified"),
+            registerJoinMessage = Messages.getAsObject("log-player-join-registered"),
+            loginJoinMessage = Messages.getAsObject("log-player-join-logged-in");
+
+    private void sendJoinMessage() {
+        AlixMessage msg = this.captchaInitialized ? captchaJoinMessage : this.joinedRegistered ? loginJoinMessage : registerJoinMessage;
         Main.logInfo(msg.format(this.player.getName(), this.ipAddress));
 
-        if (originalJoinMessage != null) AlixUtils.broadcastRaw(originalJoinMessage);
+        if (this.originalJoinMessage != null) {
+            //AlixUtils.broadcastRaw(this.originalJoinMessage);
+            AlixUtils.serverLog(this.originalJoinMessage);
+            ByteBuf constMsgBuf = OutMessagePacketConstructor.constructConst(this.originalJoinMessage);
+            for (AlixUser u : UserManager.users())
+                if (u.isVerified() && u.silentContext() != this.silentContext && u.silentContext() != null)
+                    u.writeAndFlushConstSilently(constMsgBuf);
 
-        return future;
+            this.writeAndFlushConstSilently(constMsgBuf);
+            constMsgBuf.unwrap().release();//maybe optimize this later?
+        }
     }
 
     public void logIn() {
@@ -432,13 +373,13 @@ public final class UnverifiedUser implements AlixUser {
         //AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
     }
 
-    public void registerSync(String password) {//invoked sync
+/*    public void registerSync(String password) {//invoked sync
         try {
             this.register0(password);
         } finally {
             this.register1();//invoke this method at all cost
         }
-    }
+    }*/
 
     public void registerAsync(String password) {//invoked async
         try {
@@ -475,6 +416,7 @@ public final class UnverifiedUser implements AlixUser {
 
     private void onSuccessfulVerification() {
         this.uninject();
+        this.sendJoinMessage();
         this.blocker.sendBlockedPackets();
         //this.player.setPersistent(true); //Start saving the verified player
     }
@@ -514,23 +456,5 @@ public final class UnverifiedUser implements AlixUser {
     @Override
     public ChannelHandlerContext silentContext() {
         return this.silentContext;
-    }
-
-    static {
-        UNSAFE = AlixUnsafe.getUnsafe();
-
-        Field mobEffectMapField = null;
-        for (Field f : ReflectionUtils.entityLivingClass.getDeclaredFields()) {
-            if (Map.class.isAssignableFrom(f.getType())) {
-                Type[] params = ((ParameterizedType) f.getGenericType()).getActualTypeArguments();
-                //Map<MobEffectList, MobEffect>
-                if (params[0] == ReflectionUtils.mobEffectListClass && params[1] == ReflectionUtils.mobEffectClass) {
-                    mobEffectMapField = f;
-                    break;
-                }
-            }
-        }
-        if (mobEffectMapField == null) throw new AlixException();
-        MOB_MAP_OFFSET = UNSAFE.objectFieldOffset(mobEffectMapField);
     }
 }

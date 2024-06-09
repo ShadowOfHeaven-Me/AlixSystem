@@ -1192,6 +1192,10 @@ public final class AlixUtils {
         return AlixFormatter.appendPrefix(translateColors(text));
     }
 
+    public static void serverLog(String info) {
+        Bukkit.getServer().getLogger().info(info);
+    }
+
     public static void broadcastRaw(String info) {
         //Bukkit.broadcastMessage(translateColors(info));
         Bukkit.getServer().getLogger().info(info);
