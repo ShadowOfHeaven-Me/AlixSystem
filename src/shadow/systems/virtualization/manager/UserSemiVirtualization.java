@@ -2,7 +2,6 @@ package shadow.systems.virtualization.manager;
 
 import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -11,11 +10,9 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.spigotmc.event.player.PlayerSpawnLocationEvent;
-import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.main.AlixUnsafe;
+import shadow.utils.misc.ReflectionUtils;
+import alix.common.utils.other.AlixUnsafe;
 import shadow.utils.users.Verifications;
-import shadow.utils.users.types.UnverifiedUser;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
@@ -88,13 +85,13 @@ public final class UserSemiVirtualization {
         quitEventManager.invokeOriginalListeners(new PlayerQuitEvent());
     }*/
 
-    public static Location invokeVirtualizedSpawnLocationEventNoTeleport(UnverifiedUser user) {
+/*    public static Location invokeVirtualizedSpawnLocationEventNoTeleport(UnverifiedUser user) {
         PlayerSpawnLocationEvent spawnLocationEvent = new PlayerSpawnLocationEvent(user.getPlayer(), user.originalSpawnEventLocation);
         spawnLocEventManager.invokeOriginalListeners(spawnLocationEvent);
         //CompletableFuture<Boolean> tp = MethodProvider.teleportAsync(user.player, spawnLocationEvent.getSpawnLocation());
 
         return spawnLocationEvent.getSpawnLocation();
-    }
+    }*/
 
 /*    private static final AlixMessage
             captchaJoinMessage = Messages.getAsObject("log-player-join-captcha-verified"),

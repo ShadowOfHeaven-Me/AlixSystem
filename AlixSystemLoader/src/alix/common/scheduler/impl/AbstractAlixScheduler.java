@@ -18,8 +18,8 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     protected AbstractAlixScheduler() {
         int parallelisms = 2;//Math.max(Runtime.getRuntime().availableProcessors(), 2);//at least two threads
         AlixCommonMain.logInfo("Async scheduler parallelisms: " + parallelisms);
-         //parallelisms == 1 ?//no need to create a ForkJoinPool for only one thread
-                //new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>()) ://the default returned with Executors.newSingleThreadExecutor, but without the unnecessary extra delegation
+        //parallelisms == 1 ?//no need to create a ForkJoinPool for only one thread
+        //new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>()) ://the default returned with Executors.newSingleThreadExecutor, but without the unnecessary extra delegation
         this.asyncExecutor = new ForkJoinPool(parallelisms, ForkJoinPool.defaultForkJoinWorkerThreadFactory, (t, e) -> AlixCommonUtils.logException(e), false);
         this.poolExecutor = new ScheduledThreadPoolExecutor(1);
         this.poolExecutor.setRemoveOnCancelPolicy(true);
@@ -28,7 +28,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
 
     @Override
     public void async(Runnable r) {
-        this.asyncExecutor.execute(r);
+        this.asyncExecutor.execute(new ErrorReportingRunnable(r));
     }
 
     @Override
@@ -43,13 +43,13 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
 
     @Override
     public SchedulerTask runLaterAsync(Runnable r, long delay, TimeUnit unit) {
-        ScheduledFuture<?> future = this.poolExecutor.schedule(() -> async(r), delay, unit);
+        ScheduledFuture<?> future = this.poolExecutor.schedule(new ErrorReportingRunnable(r), delay, unit);
         return () -> future.cancel(false);
     }
 
     @Override
     public SchedulerTask repeatAsync(Runnable r, long interval, TimeUnit unit) {
-        ScheduledFuture<?> future = this.poolExecutor.scheduleAtFixedRate(() -> async(r), interval, interval, unit);
+        ScheduledFuture<?> future = this.poolExecutor.scheduleAtFixedRate(new ErrorReportingRunnable(r), interval, interval, unit);
         return () -> future.cancel(false);
     }
 
@@ -62,6 +62,24 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
             this.poolExecutor.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static final class ErrorReportingRunnable implements Runnable {
+
+        private final Runnable delegate;
+
+        private ErrorReportingRunnable(Runnable delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() {
+            try {
+                this.delegate.run();
+            } catch (Throwable e) {
+                AlixCommonUtils.logException(e);
+            }
         }
     }
 

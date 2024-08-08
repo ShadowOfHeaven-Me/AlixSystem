@@ -3,11 +3,12 @@ package shadow.utils.main.file;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.Messages;
 import alix.common.utils.file.AlixFileManager;
+import alix.common.utils.file.managers.IpsCacheFileManager;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.SpawnFileManager;
-import shadow.utils.main.file.managers.UserFileManager;
+import alix.common.data.file.UserFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
 
 import java.io.File;
@@ -36,6 +37,7 @@ public abstract class FileManager extends AlixFileManager {
             Messages.init();
             UserFileManager.init();
             FireWallManager.init();
+            IpsCacheFileManager.init();
             WarpFileManager.initialize();
             OriginalLocationsManager.init();
             SpawnFileManager.initialize();

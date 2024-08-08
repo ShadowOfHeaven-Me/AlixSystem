@@ -5,7 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import shadow.Main;
-import shadow.utils.holders.methods.MethodProvider;
+import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.subtypes.OriginalLocationsFile;
 import shadow.utils.world.AlixWorld;

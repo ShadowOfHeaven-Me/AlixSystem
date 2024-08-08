@@ -3,9 +3,9 @@ package shadow.utils.objects.savable.data.gui.builders;
 import alix.common.data.LoginType;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
-import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.holders.packet.buffered.PacketConstructor;
-import shadow.utils.holders.packet.constructors.AlixInventoryType;
+import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.buffered.PacketConstructor;
+import shadow.utils.misc.packet.constructors.AlixInventoryType;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
@@ -28,7 +28,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
         super(user.silentContext(), user.isRegistered(), i -> PacketConstructor.AnvilGUI.allItemsPacket, i -> PacketConstructor.AnvilGUI.invalidItemsPacket);
         this.user = user;
         this.gui = new EmptyVirtualInventory(user.silentContext(), AlixInventoryType.ANVIL, user.isRegistered() ? PasswordGui.guiTitleLogin : PasswordGui.guiTitleRegister);
-        this.updateWindowId(1);
+        //this.updateWindowId(1);
     }
 
     @Override

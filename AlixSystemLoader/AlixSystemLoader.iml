@@ -26,6 +26,7 @@
     <orderEntry type="library" name="gson-2.9.0" level="project" />
     <orderEntry type="library" name="BungeeCord" level="project" />
     <orderEntry type="library" name="org.jetbrains:annotations:24.0.0" level="project" />
+    <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
     <orderEntry type="module-library">
       <library name="velocity-3.2.0-SNAPSHOT-265">
         <CLASSES>
@@ -35,7 +36,6 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -54,5 +54,16 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/Downloads/paperlib-1.0.7.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="library" name="fastutil-8.5.9" level="project" />
+    <orderEntry type="library" name="packetevents-spigot-2.4.1-SNAPSHOT" level="project" />
   </component>
 </module>

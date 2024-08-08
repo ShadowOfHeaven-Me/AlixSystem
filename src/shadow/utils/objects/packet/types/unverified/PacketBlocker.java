@@ -8,23 +8,24 @@ import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommand;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommandUnsigned;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.*;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
-import shadow.systems.login.captcha.manager.CountdownTask;
-import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.systems.login.captcha.consumer.CaptchaConsumer;
+import shadow.systems.login.captcha.manager.VirtualCountdown;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.netty.NettyUtils;
 import shadow.utils.objects.packet.PacketProcessor;
+import shadow.utils.objects.packet.check.fall.VirtualFallPhase;
+import shadow.utils.objects.packet.map.BlockedPacketsMap;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.Arrays;
@@ -42,9 +43,9 @@ public class PacketBlocker implements PacketProcessor {
     //uncaughtExceptionKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase(AlixUtils.isDebugEnabled ? "§cUncaught exception: Check the console for errors!" : "§cUncaught exception: Enable 'debug' in config.yml if you want to see the error in the console!");
 
     //loginTimePassed = Messages.get("login-time-passed"),
-    protected static final byte
+    /*protected static final byte
             WAIT_PACKETS_INCREASE = 4,//(byte) (ServerEnvironment.isPaper() ? 0 : 3),
-            WAIT_PACKETS_THRESHOLD = 5;//(byte) (WAIT_PACKETS_INCREASE + 5);
+            WAIT_PACKETS_THRESHOLD = 5;//(byte) (WAIT_PACKETS_INCREASE + 5);*/
     //public static final Class<?> commandPacketClass;
     //public static final Method getStringFromCommandPacketMethod;
     private static final ByteBuf movementForbiddenCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("movement-forbidden-captcha")), packetLimitReachedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("packet-limit-reached-verification"));//,
@@ -77,10 +78,13 @@ public class PacketBlocker implements PacketProcessor {
     //private final PingCheck pingCheck;//null only if "initPingCheck" is false
     //private final Channel channel;
     protected final UnverifiedUser user;
+    private final CaptchaConsumer captchaConsumer;
+
     private final AlixDeque<Component> blockedChatMessages;
-    private final CountdownTask countdownTask;
-    protected byte waitPackets;
-    protected boolean packetsSent;
+    private final BlockedPacketsMap packetMap;
+
+    private final VirtualCountdown virtualCountdown;
+    protected final VirtualFallPhase virtualFallPhase;
     //protected PacketWrapper<?> lastPlayerInfoUpdate;
     //private SchedulerTask loginKickTask;
     private long lastMovementPacket;
@@ -89,20 +93,23 @@ public class PacketBlocker implements PacketProcessor {
     PacketBlocker(PacketBlocker previousBlocker) {
         this.user = previousBlocker.user;
         //this.channel = previousBlocker.channel;
-        this.countdownTask = previousBlocker.countdownTask;
-        this.countdownTask.restartAsLogin(); //restart the countdown
+        this.virtualCountdown = previousBlocker.virtualCountdown;
+        this.virtualCountdown.restartAsLogin(); //restart the countdown
         this.blockedChatMessages = previousBlocker.blockedChatMessages;
-        this.waitPackets = previousBlocker.waitPackets;
-        this.packetsSent = previousBlocker.packetsSent;
+        this.virtualFallPhase = previousBlocker.virtualFallPhase;
+        this.packetMap = previousBlocker.packetMap;
+        this.captchaConsumer = null;// CaptchaConsumer.adequateFor(this.user);
     }
 
     PacketBlocker(UnverifiedUser user) {
         this.user = user;
         //this.channel = channelInjector.inject(user.getPlayer(), handler, packetHandlerName);
         //this.channel = handler.getChannel();
-        this.countdownTask = new CountdownTask(user);
+        this.virtualCountdown = new VirtualCountdown(user);
         this.blockedChatMessages = new AlixDeque<>();
-        this.packetsSent = false;
+        this.packetMap = new BlockedPacketsMap();
+        this.virtualFallPhase = new VirtualFallPhase(user);
+        this.captchaConsumer = null;// CaptchaConsumer.adequateFor(this.user);
     }
 
     public static PacketBlocker getPacketBlocker(PacketBlocker previousBlocker, LoginType type) {
@@ -137,7 +144,7 @@ public class PacketBlocker implements PacketProcessor {
     }
 
     public final void startLoginKickTask() {
-        this.countdownTask.restartAsLogin();
+        this.virtualCountdown.restartAsLogin();
     }
 
 /*    protected final boolean spoofedWindowItems(ChannelHandlerContext context, Object msg, ChannelPromise promise) throws Exception {
@@ -157,12 +164,6 @@ public class PacketBlocker implements PacketProcessor {
         return false;
     }*/
 
-    protected final void trySpoofPackets() {
-        if (!this.packetsSent && ++this.waitPackets >= WAIT_PACKETS_THRESHOLD && (this.packetsSent = true))//6 - at least 5 move packets and one out respawn packet from the server
-            this.user.spoofVerificationPackets(); //AlixScheduler.async(user::spoofVerificationPackets);// /\ setting the boolean in a branchless if statement for a very slight performance boost
-        //Main.logError("wwwwww " + waitPackets);
-    }
-
     @Override
     public void onPacketReceive(PacketPlayReceiveEvent event) {
         if (!user.hasCompletedCaptcha()) {
@@ -175,10 +176,14 @@ public class PacketBlocker implements PacketProcessor {
             case PLAYER_POSITION_AND_ROTATION:
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
-                this.trySpoofPackets();
+                this.virtualFallPhase.trySpoofPackets();
                 event.setCancelled(true);
                 return;
             case KEEP_ALIVE://will time out without this one
+                return;
+            case CHAT_COMMAND_UNSIGNED:
+                this.processCommand(new WrapperPlayClientChatCommandUnsigned(event).getCommand().toCharArray());
+                event.setCancelled(true);
                 return;
             case CHAT_COMMAND:
                 this.processCommand(new WrapperPlayClientChatCommand(event).getCommand().toCharArray());
@@ -243,12 +248,17 @@ public class PacketBlocker implements PacketProcessor {
             //case PLAYER_CHAT_HEADER:
             case DISGUISED_CHAT:
                 //Main.logError("DISGUISED CHAT " + new WrapperPlayServerDisguisedChat(event).getMessage().decorate(TextDecoration.STRIKETHROUGH));
-                this.blockedChatMessages.offerLast(new WrapperPlayServerDisguisedChat(event).getMessage().decorate(TextDecoration.STRIKETHROUGH));
+                this.blockedChatMessages.offerLast(new WrapperPlayServerDisguisedChat(event).getMessage());
                 event.setCancelled(true);
                 break;
             case SYSTEM_CHAT_MESSAGE:
                 //Main.logError("SYSTEM CHAT: " + new WrapperPlayServerSystemChatMessage(event).getMessage().decorate(TextDecoration.STRIKETHROUGH));
-                Component component = new WrapperPlayServerSystemChatMessage(event).getMessage();
+                WrapperPlayServerSystemChatMessage wrapper = new WrapperPlayServerSystemChatMessage(event);
+                if (wrapper.isOverlay()) {//action bar
+                    event.setCancelled(true);
+                    return;
+                }
+                Component component = wrapper.getMessage();
                 //A fix for the "message not delivered" stuff
                 if (component instanceof TranslatableComponent && ((TranslatableComponent) component).key().equals("multiplayer.message_not_delivered")) {
                     event.setCancelled(true);
@@ -259,14 +269,14 @@ public class PacketBlocker implements PacketProcessor {
                 event.setCancelled(true);
                 break;
             case CHANGE_GAME_STATE:
-                switch (new WrapperPlayServerChangeGameState(event).getReason()) {
-                    case START_LOADING_CHUNKS:
-                        this.waitPackets += WAIT_PACKETS_INCREASE;
-                        this.trySpoofPackets();
-                        break;
-                    case CHANGE_GAME_MODE:
-                        event.setCancelled(true);
-                }
+                if (new WrapperPlayServerChangeGameState(event).getReason() != WrapperPlayServerChangeGameState.Reason.START_LOADING_CHUNKS)
+                    event.setCancelled(true);
+                break;
+            case PLAYER_ABILITIES:
+                this.user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
+                //this.packetMap.addDynamic(event);
+                //this.packetMap.putOverriding(AlixPacketType.ABILITIES, event);
+                event.setCancelled(true);
                 break;
             //case "PacketPlayOutGameStateChange":
             case TIME_UPDATE:
@@ -277,10 +287,6 @@ public class PacketBlocker implements PacketProcessor {
             case ENTITY_EFFECT:
             case EFFECT:
             case SERVER_DATA:
-            case SCOREBOARD_OBJECTIVE:
-            case RESET_SCORE:
-            case UPDATE_SCORE:
-            case DISPLAY_SCOREBOARD:
             case WINDOW_ITEMS:
             case SPAWN_PLAYER:
             case SPAWN_LIVING_ENTITY:
@@ -303,9 +309,18 @@ public class PacketBlocker implements PacketProcessor {
             case PLAYER_INFO_UPDATE:
                 event.setCancelled(true);
                 break;
+            case RESET_SCORE:
+            case UPDATE_SCORE:
+            case SCOREBOARD_OBJECTIVE:
+            case DISPLAY_SCOREBOARD:
+                this.packetMap.addDynamic(event);
+                event.setCancelled(true);
+                break;
         }
         //if (!event.isCancelled()) Main.logError("READ: " + event.getPacketType().name());
     }
+
+    private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.05f, 0.1f));
 
     protected final void onSendCaptchaVerification(PacketPlaySendEvent event) {
         switch (event.getPacketType()) {
@@ -320,7 +335,12 @@ public class PacketBlocker implements PacketProcessor {
                 event.setCancelled(true);
                 break;
             case SYSTEM_CHAT_MESSAGE:
-                Component component = new WrapperPlayServerSystemChatMessage(event).getMessage();
+                WrapperPlayServerSystemChatMessage wrapper = new WrapperPlayServerSystemChatMessage(event);
+                if (wrapper.isOverlay()) {//action bar
+                    event.setCancelled(true);
+                    return;
+                }
+                Component component = wrapper.getMessage();
                 if (component instanceof TranslatableComponent && ((TranslatableComponent) component).key().equals("multiplayer.message_not_delivered")) {
                     event.setCancelled(true);
                     return;
@@ -329,16 +349,16 @@ public class PacketBlocker implements PacketProcessor {
                 event.setCancelled(true);
                 break;
             case CHANGE_GAME_STATE:
-                switch (new WrapperPlayServerChangeGameState(event).getReason()) {
-                    case START_LOADING_CHUNKS:
-                        this.waitPackets += WAIT_PACKETS_INCREASE;
-                        this.trySpoofPackets();
-                        break;
-                    case CHANGE_GAME_MODE:
-                        event.setCancelled(true);
-                }
+                if (new WrapperPlayServerChangeGameState(event).getReason() != WrapperPlayServerChangeGameState.Reason.START_LOADING_CHUNKS)
+                    event.setCancelled(true);
                 break;
-            //case "PacketPlayOutGameStateChange":
+            case PLAYER_ABILITIES:
+                this.user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
+                //this.packetMap.addDynamic(event);
+                //this.packetMap.putOverriding(AlixPacketType.ABILITIES, event);
+                event.setCancelled(true);
+                break;
+            case UPDATE_ATTRIBUTES:
             case TIME_UPDATE:
             case TITLE://
             case SET_TITLE_SUBTITLE://
@@ -347,10 +367,6 @@ public class PacketBlocker implements PacketProcessor {
             case ENTITY_EFFECT:
             case EFFECT:
             case SERVER_DATA:
-            case SCOREBOARD_OBJECTIVE:
-            case RESET_SCORE:
-            case UPDATE_SCORE:
-            case DISPLAY_SCOREBOARD:
             case WINDOW_ITEMS:
             case SPAWN_PLAYER:
             case SPAWN_LIVING_ENTITY:
@@ -374,6 +390,13 @@ public class PacketBlocker implements PacketProcessor {
             case BUNDLE:
                 event.setCancelled(true);
                 break;
+            case UPDATE_SCORE:
+            case RESET_SCORE:
+            case SCOREBOARD_OBJECTIVE:
+            case DISPLAY_SCOREBOARD:
+                this.packetMap.addDynamic(event);
+                event.setCancelled(true);
+                break;
         }
         //if (!event.isCancelled()) Main.logError("READ: " + event.getPacketType().name());
     }
@@ -385,12 +408,18 @@ public class PacketBlocker implements PacketProcessor {
     }*/
 
     protected final void onReceiveCaptchaVerification(PacketPlayReceiveEvent event) {
+        //Main.logInfo(event.getPacketType() + " ");
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
             case PLAYER_POSITION_AND_ROTATION:
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
-                this.trySpoofPackets();
+                if (captchaConsumer != null) this.captchaConsumer.onMove(event);
+                if (this.virtualFallPhase.isOngoing()) {
+                    this.virtualFallPhase.trySpoofPackets();
+                    event.setCancelled(true);
+                    return;
+                }
 
                 long now = System.currentTimeMillis();
 
@@ -405,6 +434,11 @@ public class PacketBlocker implements PacketProcessor {
 
                 this.lastMovementPacket = now;
                 break;
+            case PLAYER_BLOCK_PLACEMENT:
+                //WrapperPlayClientPlayerBlockPlacement wrapper = new WrapperPlayClientPlayerBlockPlacement(event);
+                if (captchaConsumer != null) this.captchaConsumer.onClick();
+                //this.user.sendDynamicMessageSilently("CURSOR: " + wrapper.getCursorPosition() + " " + wrapper.getBlockPosition());
+                break;
             case CHAT_MESSAGE:
                 CommandManager.onCaptchaCompletionAttempt(this.user, new WrapperPlayClientChatMessage(event).getMessage().trim());
                 break;
@@ -412,8 +446,12 @@ public class PacketBlocker implements PacketProcessor {
                 this.processCommand(new WrapperPlayClientChatCommand(event).getCommand().toCharArray());
                 event.setCancelled(true);
                 break;*/
+            case TELEPORT_CONFIRM:
+                this.virtualFallPhase.tpConfirm(event);
+                break;
             case KEEP_ALIVE:
                 return;//exempt keep alive from the total packet count limitation
+
             //keep alive is exempt because other plugins may use it to measure ping, and keep alive spam will very much likely get the player kicked out automatically, thus the exemption
         }
         event.setCancelled(true);
@@ -428,8 +466,13 @@ public class PacketBlocker implements PacketProcessor {
     }
 
     public final void sendBlockedPackets() {
-        AlixDeque.forEach(this.user::writeDynamicMessageSilently, this.blockedChatMessages);
+        this.blockedChatMessages.forEach(this.user::writeDynamicMessageSilently);
+        this.packetMap.sendTo(this.user);
         this.user.flushSilently();
+    }
+
+    public final void releaseBlocked() {
+        this.packetMap.release();
     }
 
 /*    protected void syncedKick(String reason) {
@@ -456,8 +499,13 @@ public class PacketBlocker implements PacketProcessor {
     }*/
 
     @NotNull
-    public final CountdownTask getCountdownTask() {
-        return countdownTask;
+    public final VirtualCountdown getCountdown() {
+        return virtualCountdown;
+    }
+
+    @NotNull
+    public VirtualFallPhase getFallPhase() {
+        return virtualFallPhase;
     }
 
     public void updateBuilder() {
@@ -483,6 +531,9 @@ public class PacketBlocker implements PacketProcessor {
     private PacketBlocker() {
         this.user = null;
         this.blockedChatMessages = null;
-        this.countdownTask = null;
+        this.virtualCountdown = null;
+        this.captchaConsumer = null;
+        this.packetMap = null;
+        this.virtualFallPhase = null;
     }
 }

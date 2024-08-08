@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
-import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.objects.packet.PacketProcessor;
@@ -23,17 +23,29 @@ public interface AlixUser {
 
     ChannelHandlerContext silentContext();
 
+    //does not account for the TemporaryUser
     default boolean isAssignable(AlixUser user) {
         return this.silentContext() == user.silentContext();
     }
 
+/*    static void DEBUG_TIME() {
+        StringBuilder sb = new StringBuilder("START");
+        int c = 0;
+        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+            sb.append('\n').append(element);
+            if (++c == 10) {
+                sb.append('\n').append("(almost) END");
+                break;
+            }
+        }
+        Main.logError("INVOKED STACKTRACE (send this to shadow): " + sb);
+    }*/
+
     default void writeDynamicMessageSilently(Component message) {
-        //DEBUG_TIME();
         NettyUtils.writeDynamicWrapper(OutMessagePacketConstructor.packetWrapper(message), this.silentContext());
     }
 
     default void sendDynamicMessageSilently(String message) {
-        //DEBUG_TIME();
         NettyUtils.writeAndFlushDynamicWrapper(OutMessagePacketConstructor.packetWrapper(Component.text(message)), this.silentContext());
     }
 
@@ -43,7 +55,6 @@ public interface AlixUser {
     }
 
     default void writeAndFlushDynamicSilently(PacketWrapper<?> packet) {
-        //DEBUG_TIME();
         NettyUtils.writeAndFlushDynamicWrapper(packet, this.silentContext());
     }
 
@@ -74,13 +85,10 @@ public interface AlixUser {
     }
 
     default void writeConstSilently(ByteBuf buf) {
-        //DEBUG_TIME();
         NettyUtils.writeConst(this.silentContext(), buf);
     }
 
     default void writeAndFlushConstSilently(ByteBuf buf) {
-        //DEBUG_TIME();
         NettyUtils.writeAndFlushConst(this.silentContext(), buf);
     }
-    
 }

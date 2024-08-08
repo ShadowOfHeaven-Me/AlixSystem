@@ -1,9 +1,12 @@
 package shadow.utils.main;
 
+import alix.common.connection.filters.AntiVPN;
+import alix.common.connection.filters.ConnectionFilter;
+import alix.common.connection.filters.GeoIPTracker;
+import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
@@ -15,7 +18,6 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.Logger;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -29,15 +31,14 @@ import shadow.systems.executors.ServerPingListener;
 import shadow.systems.executors.gui.GUIExecutors;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
-import shadow.systems.login.filters.*;
 import shadow.systems.login.result.LoginInfo;
 import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.command.managers.ChatManager;
-import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.holders.packet.constructors.OutGameStatePacketConstructor;
-import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
-import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
+import shadow.utils.misc.ReflectionUtils;
+import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.constructors.OutGameStatePacketConstructor;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.misc.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.users.UserManager;
@@ -77,17 +78,16 @@ public final class AlixHandler {
         //Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(player.getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
 //show players in tab
         ByteBuf[] addPlayersBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ALL_VISIBLE(user.getPlayer(), user.silentContext());
-        boolean blindnessSent = !isParticleCaptchaInUse || !user.isCaptchaInitialized();
         //reset blindness effect
-        ByteBuf removeBlindnessBuffer = NettyUtils.dynamic(new WrapperPlayServerRemoveEntityEffect(player.getEntityId(), PotionTypes.BLINDNESS), user.silentContext());
-
+        ByteBuf removeBlindnessBuffer = user.blindnessSent ? NettyUtils.dynamic(new WrapperPlayServerRemoveEntityEffect(player.getEntityId(), PotionTypes.BLINDNESS), user.silentContext()) : null;
         //synchronize the tab information for the unverified user
         user.getChannel().eventLoop().execute(() -> {
             try {
                 for (ByteBuf buf : addPlayersBuffers) user.writeSilently(buf);
-                if (blindnessSent) user.writeAndFlushSilently(removeBlindnessBuffer);
+                if (removeBlindnessBuffer != null) user.writeSilently(removeBlindnessBuffer);
+                user.flushSilently();
             } catch (Throwable e) {
-                Main.logError("No jak chuj nie działa coś tu");
+                Main.logError("No jak chuj coś tu nie działa");
                 e.printStackTrace();
             }
         });
@@ -97,12 +97,12 @@ public final class AlixHandler {
 
         //Not the most optimized way, that's for sure, but otherwise many problems can occur
         for (AlixUser u : UserManager.users())
-            if (u instanceof VerifiedUser /*&& u.silentContext() != user.silentContext()*/ && OutPlayerInfoPacketConstructor.isVisible(((VerifiedUser) u).getPlayer(), user.getPlayer()))
+            if (u instanceof VerifiedUser && OutPlayerInfoPacketConstructor.isVisible(((VerifiedUser) u).getPlayer(), user.getPlayer()))
                 for (ByteBuf buf : addUnvPlayerBuffers) u.silentContext().write(buf.copy());
         for (ByteBuf buf : addUnvPlayerBuffers) buf.release();
     }
 
-    private static final boolean isParticleCaptchaInUse = AlixUtils.captchaVerificationVisualType == CaptchaVisualType.PARTICLE;
+    private static final boolean sendBlindness = CaptchaVisualType.shouldSendBlindness();
     private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
     //private static final ByteBuf VER_POS = NettyUtils.constBuffer(new WrapperPlayServerPo);
     //SpigotConversionUtil.
@@ -115,12 +115,13 @@ public final class AlixHandler {
         user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
         user.writeConstSilently(TIME_NIGHT);
 
-        if (!isParticleCaptchaInUse || !user.isCaptchaInitialized())//
+        if (sendBlindness || !user.isCaptchaInitialized())
             sendBlindnessPackets(user);//it's fine even if not invoked, since flush is invoked in the CountdownTask class
     }
 
     private static void sendBlindnessPackets(UnverifiedUser user) {
-        user.writeAndFlushDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
+        user.writeDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
+        user.blindnessSent = true;
     }
 
     private static void initializeAlixInterceptor() {
@@ -132,7 +133,7 @@ public final class AlixHandler {
             Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
             Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
 
-            Class<?> serverConnectionClass = ReflectionUtils.nms2("server.network.ServerConnection");
+            Class<?> serverConnectionClass = ReflectionUtils.nms2("server.network.ServerConnection", "server.network.ServerConnectionListener");
             Object serverConnection = null;
 
             //ServerConnection c;
@@ -184,8 +185,9 @@ public final class AlixHandler {
     public static ConnectionFilter[] getConnectionFilters() {//set up in the most efficient way
         List<ConnectionFilter> filters = new ArrayList<>();
         if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.INSTANCE);
-        if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
-        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
+        //Moved to AlixChannelHandler
+        //if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
+        //if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
         if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
         return filters.toArray(new ConnectionFilter[0]);
     }
@@ -249,16 +251,16 @@ public final class AlixHandler {
             if (filter.getClass().getSimpleName().equals("AlixConsoleFilterHolder")) {
                 try {
                     //((AlixConsoleFilterHolder) filter).updateInstance();
-                    filter.getClass().getMethod("updateInstance").invoke(filter);
+                    filter.getClass().getMethod("makeObsolete").invoke(filter);
+                    //make sure to not use any 'break;' statements
                 } catch (Exception e) {
                     throw new AlixError(e);
                 }
-                return;
             }
         }
         if (hideFailedJoinAttempts || alixJoinLog) {
-            logger.addFilter(new AlixConsoleFilterHolder());
-            Main.debug(isPluginLanguageEnglish ? "Successfully implemented AlixConsoleFilter to console!" :
+            logger.addFilter(AlixConsoleFilterHolder.INSTANCE);
+            Main.debug(isPluginLanguageEnglish ? "Successfully added AlixConsoleFilter to console!" :
                     "Poprawnie zaimplementowano AlixConsoleFilter dla konsoli! ");
         }
     }
@@ -305,13 +307,18 @@ public final class AlixHandler {
         AlixUser user = UserManager.remove(p);
 
         if (user == null) {
+            if (AlixUtils.isFakePlayer(p)) return;
             Main.logError("Could not get any User instance for the player " + p.getName() + " on quit! Report this as an error immediately!");
             return;//true
         }
 
+        if (user instanceof TemporaryUser) {
+            return;//
+        }
+
         if (!user.isVerified()) {//unregistered/not logged in user quit handling
             UnverifiedUser u = (UnverifiedUser) user;
-            u.uninject();//uninject the user
+            u.uninjectOnQuit();//uninject the user
             if (!u.hasAccount()) GeoIPTracker.removeIP(u.getIPAddress());//remove the ip, if it's temporary
             if (u.isCaptchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
                 event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
@@ -321,7 +328,7 @@ public final class AlixHandler {
         }
         //logged in user quit handling
         VerifiedUser u = (VerifiedUser) user;
-        Main.logInfo(playerQuit.format(u.getName(), u.getIPAddress()));
+        Main.logInfo(playerQuit.format(u.getName(), u.getIPAddress().getHostAddress()));
         //false
     }
 
@@ -463,11 +470,6 @@ public final class AlixHandler {
         }
         sendMessage(sender, "&cWystąpił błąd przy odbieraniu operatora dla " + arg1 + "! Proszę sprawdzić czy w konsoli ukazały się jakiekolwiek errory!");
     }*/
-
-    public static void kickAll(String reason) {
-        String kickMessage = AlixFormatter.appendPrefix(reason);
-        for (Player p : Bukkit.getOnlinePlayers()) p.kickPlayer(kickMessage);
-    }
 
     private AlixHandler() {
     }

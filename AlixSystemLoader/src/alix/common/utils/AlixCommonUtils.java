@@ -1,6 +1,7 @@
 package alix.common.utils;
 
 import alix.common.AlixCommonMain;
+import alix.common.data.LoginType;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import static alix.common.utils.config.ConfigParams.defaultLoginType;
 
 public final class AlixCommonUtils {
 
@@ -25,6 +28,12 @@ public final class AlixCommonUtils {
             isGraphicEnvironmentHeadless0 = true;
         }
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
+    }
+
+    public static LoginType readLoginType(String s, LoginType defaultForNull) {
+        if (s.equals("null")) return defaultForNull;
+        if (s.equals("0")) return defaultLoginType;
+        return LoginType.from(s, false);
     }
 
     public static boolean startsWith(String a, String... b) {
@@ -106,7 +115,7 @@ public final class AlixCommonUtils {
     }
 
     public static void logException(Throwable e) {
-        AlixCommonMain.logError("An Alix task has thrown an exception - Report this immediately!");
+        AlixCommonMain.logError("AlixSystem has thrown an exception - Report this immediately!");
         e.printStackTrace();
     }
 

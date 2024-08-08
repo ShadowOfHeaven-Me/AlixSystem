@@ -6,15 +6,18 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import shadow.utils.world.generator.AlixWorldGenerator;
+import shadow.utils.world.location.ConstLocation;
 
 public final class AlixWorld {
 
     public static final String worldName = "world_alix_captcha";
-    private static final AlixWorld instance = !Bukkit.getServer().getOnlineMode() ? new AlixWorld() : null;
-    public static final ConstLocation TELEPORT_LOCATION = instance != null ? instance.teleportLocation : null;
-    public static final Vector3d TELEPORT_VEC3D = instance != null ? instance.vec3d : null;
-    public static final Vector3i TELEPORT_VEC3I = instance != null ? instance.vec3d.toVector3i() : null;
-    public static final World CAPTCHA_WORLD = instance != null ? instance.world : null;
+    private static final AlixWorld instance = new AlixWorld();
+    public static final ConstLocation TELEPORT_LOCATION = instance.teleportLocation;
+    public static final ConstLocation TELEPORT_FALL_LOCATION = instance.teleportLocation.asModifiableCopy().add(0, 100, 0).toConst();
+    public static final Vector3d TELEPORT_VEC3D = instance.vec3d;
+    public static final Vector3i TELEPORT_VEC3I = instance.vec3d.toVector3i();
+    public static final World CAPTCHA_WORLD = instance.world;
+
     //private final List<Integer> playerIds = new ArrayList<>();
     private final World world;
     private final ConstLocation teleportLocation;
@@ -39,9 +42,16 @@ public final class AlixWorld {
                 }
             }
         }
+        this.world.getBlockAt(0, 2, 0).setType(Material.COBWEB);
     }
 
     private void forceloadSpawnChunks() {
+        try {
+            World.class.getMethod("setChunkForceLoaded", int.class, int.class, boolean.class);
+        } catch (Exception ignored) {//the method doesn't exist on lower versions
+            return;
+        }
+
         int min = Math.max(Bukkit.getViewDistance(), 2);
 
         for (int i = -min; i <= min; i++)

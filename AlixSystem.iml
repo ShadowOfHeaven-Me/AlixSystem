@@ -22,7 +22,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="gson-2.9.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="gson-2.9.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="FastLoginBukkit" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="spigot-1.14.4" level="project" />
     <orderEntry type="module" module-name="AlixSystemLoader" />
@@ -38,14 +38,12 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="paper-api-1.20.1-R0.1-20230806.024035-90" level="project" />
-    <orderEntry type="library" name="SkinsRestorer" level="project" />
-    <orderEntry type="library" name="asm-9.4" level="project" />
-    <orderEntry type="library" name="spigot-1.20.1-R0.1-SNAPSHOT" level="project" />
-    <orderEntry type="library" name="commons-io-2.11.0" level="project" />
-    <orderEntry type="library" name="packetevents-spigot-2.3.0" level="project" />
-    <orderEntry type="library" name="ViaVersion-4.10.2" level="project" />
-    <orderEntry type="library" name="paper-1.20.4" level="project" />
-    <orderEntry type="module-library">
+    <orderEntry type="library" scope="PROVIDED" name="SkinsRestorer" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="spigot-1.20.1-R0.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="commons-io-2.11.0" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="ViaVersion-4.10.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="paper-1.20.4" level="project" />
+    <orderEntry type="module-library" scope="PROVIDED">
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/Downloads/FastLoginVelocity.jar!/" />
@@ -54,5 +52,21 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="packetevents-spigot-2.4.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="byte-buddy-agent-1.14.18" level="project" />
+    <orderEntry type="library" name="asm-9.7" level="project" />
+    <orderEntry type="library" name="asm-tree-9.7" level="project" />
+    <orderEntry type="library" name="asm-commons-9.7" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="library" scope="PROVIDED" name="fastutil-8.5.9" level="project" />
+    <orderEntry type="library" name="spigot-1.12.2" level="project" />
   </component>
 </module>

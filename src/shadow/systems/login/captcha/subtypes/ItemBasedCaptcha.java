@@ -4,8 +4,8 @@ import io.netty.buffer.ByteBuf;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import shadow.systems.login.captcha.Captcha;
-import shadow.utils.holders.packet.constructors.OutHeldItemSlotPacketConstructor;
-import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutHeldItemSlotPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.ArrayList;

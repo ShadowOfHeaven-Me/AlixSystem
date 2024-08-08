@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.injector;
 
 import com.github.retrooper.packetevents.PacketEvents;
@@ -18,4 +19,4 @@ public final class ChannelInjectorPacketEvents implements ChannelInjector {
     public String getProvider() {
         return "PacketEvents";
     }
-}
+}*/

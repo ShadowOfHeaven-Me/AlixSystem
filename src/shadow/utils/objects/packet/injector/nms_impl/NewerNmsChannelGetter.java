@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.injector.nms_impl;
 
 import io.netty.channel.Channel;
@@ -14,7 +15,8 @@ final class NewerNmsChannelGetter implements NmsChannelGetter {
             getConnection, getNetworkManager, getChannel;
 
     static {
-        /*Field packetListenerField = null;
+        */
+/*Field packetListenerField = null;
         Class<?> packetListenerClazz = ServerCommonPacketListenerImpl.class;
         //EntityPlayer
         for (Field field : ReflectionUtils.getHandle.getReturnType().getDeclaredFields()) {//EntityPlayer class
@@ -28,7 +30,8 @@ final class NewerNmsChannelGetter implements NmsChannelGetter {
         assert packetListenerField != null;
         getPacketListener = packetListenerField;
         Main.logError("dfgtyhjuikol " + getPacketListener + " " + ReflectionUtils.getHandle.getReturnType());
-        AlixUtils.debug(ReflectionUtils.getHandle.getReturnType().getDeclaredFields());*/
+        AlixUtils.debug(ReflectionUtils.getHandle.getReturnType().getDeclaredFields());*//*
+
 
 
         Class<?> connectionClazz = ReflectionUtils.playerConnectionClass;
@@ -86,4 +89,4 @@ final class NewerNmsChannelGetter implements NmsChannelGetter {
     public String getVersion() {
         return "1.20.2+";
     }
-}
+}*/

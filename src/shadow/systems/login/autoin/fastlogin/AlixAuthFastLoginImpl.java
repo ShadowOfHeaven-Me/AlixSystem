@@ -2,7 +2,7 @@ package shadow.systems.login.autoin.fastlogin;
 
 import com.github.games647.fastlogin.core.hooks.AuthPlugin;
 import org.bukkit.entity.Player;
-import shadow.utils.main.file.managers.UserFileManager;
+import alix.common.data.file.UserFileManager;
 
 //This implementation does nothing except showing
 //FastLogin that an authentication plugin is

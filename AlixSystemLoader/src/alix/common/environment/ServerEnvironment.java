@@ -19,6 +19,7 @@ public enum ServerEnvironment {
     private static ServerEnvironment establishEnv0() {
         if (AlixCommonUtils.isValidClass("com.destroystokyo.paper.PaperConfig")) return PAPER;
         if (AlixCommonUtils.isValidClass("com.velocitypowered.proxy.VelocityServer")) return VELOCITY;
+        if (AlixCommonUtils.isValidClass("net.md_5.bungee.api.ProxyServer")) return BUNGEE;
         return SPIGOT;
     }
 }

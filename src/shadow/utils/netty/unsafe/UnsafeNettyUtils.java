@@ -4,6 +4,7 @@ import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import shadow.utils.netty.unsafe.fast.FastNettyUtils;
 
 import java.util.function.Function;
 
@@ -40,15 +41,17 @@ public final class UnsafeNettyUtils {
         }
     }*/
 
-    public static void setRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, Function<ByteBuf, ByteBuf> outputTransformer, ByteBuf[] buffers) {
+    public static void sendAndSetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, Function<ByteBuf, ByteBuf> outputTransformer, ByteBuf[] buffers) {
         Channel channel = silentContext.channel();
-        if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in eventLoop");
+        if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in an eventLoop");
 
         harvester.harvest = true;
 
         for (int i = 0; i < buffers.length; i++) {
             silentContext.write(buffers[i]);
+            if (harvester.harvested == null) throw new AlixException("setRaw - no output from harvester! - " + silentContext.pipeline().names());
             buffers[i] = outputTransformer.apply(harvester.harvested);
+            harvester.harvested = null;
         }
 
         harvester.harvest = false;
@@ -56,19 +59,26 @@ public final class UnsafeNettyUtils {
         //channel.unsafe().outboundBuffer().addMessage(byteBuf0, byteBuf0.readableBytes(), channel.voidPromise());
     }
 
-    public static ByteBuf getRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, Function<ByteBuf, ByteBuf> outputTransformer, ByteBuf buffer) {
+    public static ByteBuf sendAndGetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, Function<ByteBuf, ByteBuf> outputTransformer, ByteBuf buffer) {
         Channel channel = silentContext.channel();
-        if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in eventLoop");
+        if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in an eventLoop");
 
         harvester.harvest = true;
 
         silentContext.write(buffer);
         ByteBuf harvested = harvester.harvested;
 
+        if (harvested == null)
+            throw new AlixException("getRaw - no output from harvester! - " + silentContext.pipeline().names());
+
         harvester.harvest = false;
         harvester.harvested = null;
 
         return outputTransformer.apply(harvested);
+    }
+
+    public static void fastUnsafeRemove(Channel channel, String handlerName) {
+        FastNettyUtils.remove(channel, handlerName);
     }
 
     /*private static final int COMPRESSION_THRESHOLD;

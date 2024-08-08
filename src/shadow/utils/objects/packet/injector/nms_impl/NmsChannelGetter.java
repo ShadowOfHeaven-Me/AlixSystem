@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.injector.nms_impl;
 
 import io.netty.channel.Channel;
@@ -21,4 +22,4 @@ public interface NmsChannelGetter {
             return new NewerNmsChannelGetter();
         }
     }
-}
+}*/

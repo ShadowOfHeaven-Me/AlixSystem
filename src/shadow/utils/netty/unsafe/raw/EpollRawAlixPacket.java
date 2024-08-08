@@ -27,7 +27,7 @@ final class EpollRawAlixPacket extends AbstractRawAlixPacket {
     }
 
     private static ByteBuf[] getRawBuffers(Channel channel, ByteBuf[] buffers, Function<ByteBuf, ByteBuf> transformer) {
-        List<ByteBuf> raws = new ArrayList<>((buffers.length >> 4) + 10);//roughly guess the size
+        List<ByteBuf> raws = new ArrayList<>((buffers.length >> 4) + 10);//roughly guess the size (based on values seen in testing)
         int threshold = ((InetSocketAddress) channel.remoteAddress()).getAddress().getClass() == Inet4Address.class ? IPV4_SIZE_THRESHOLD : IPV6_SIZE_THRESHOLD;
 
         int currentSize = 0;

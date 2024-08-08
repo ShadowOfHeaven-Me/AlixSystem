@@ -26,7 +26,7 @@ public class GUIPacketBlocker extends PacketBlocker {
             case PLAYER_POSITION_AND_ROTATION:
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
-                this.trySpoofPackets();
+                this.virtualFallPhase.trySpoofPackets();
                 break;
             case CLOSE_WINDOW:
                 event.getPostTasks().add(user::openPasswordBuilderGUI);

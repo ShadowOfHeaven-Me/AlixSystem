@@ -21,7 +21,15 @@ public final class PacketEventsManager {
     }
 
     public static void onEnable() {
-        PacketEvents.getAPI().getEventManager().registerListeners(new GeneralListener(), new LoginInStartListener());
+        //https://github.com/Tofaa2/EntityLib
+/*        SpigotEntityLibPlatform platform = new SpigotEntityLibPlatform(Main.plugin);
+        APIConfig settings = new APIConfig(PacketEvents.getAPI())
+                .debugMode()
+                .usePlatformLogger();
+        EntityLib.init(platform, settings);*/
+
+
+        PacketEvents.getAPI().getEventManager().registerListeners(new GeneralListener());//, new LoginInStartListener());
         PacketEvents.getAPI().init();
         //Main.logInfo("Initialized additional functionality thanks to PacketEvents: Command Hiding");
     }
@@ -35,10 +43,20 @@ public final class PacketEventsManager {
             if (user instanceof TemporaryUser) {
                 ((TemporaryUser) user).getTempProcessor().onPacketReceive(event);
             }*/
+
+            //Main.logInfo("PACKET IN: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
+
+            if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
+                AlixChannelHandler.onLoginStart(event);
+                return;
+            }
+
             if (event.getClass() == PacketPlayReceiveEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
                 user.getPacketProcessor().onPacketReceive((PacketPlayReceiveEvent) event);//Main.logInfo("IN NONNULL: " + event.getPacketType().getName());
 
-            //Main.logInfo("PACKET IN: " + event.getPacketType().getName());
+            /*if (event.getPacketType() == PacketType.Play.Client.CHAT_PREVIEW || event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE || event.getPacketType() == PacketType.Play.Client.CHAT_ACK) {
+                Main.logInfo("PACKET IN: " + event.getPacketType().getName() + " CANCELLED: " + event.isCancelled());
+            }*/
             /*if(event.getPacketType() == PacketType.Play.Client.PLUGIN_MESSAGE) {
                 Main.logError("MSG CLIENT: " + new WrapperPlayClientPluginMessage(event).getChannelName() + " " + new String(new WrapperPlayClientPluginMessage(event).getData()));
             }*/
@@ -51,6 +69,15 @@ public final class PacketEventsManager {
             if (user instanceof TemporaryUser) {
                 ((TemporaryUser) user).getTempProcessor().onPacketSend(event);
             }*/
+
+
+/*            if (event.getPacketType() == PacketType.Play.Server.PLAYER_ABILITIES) {
+                Main.logError("ABILITIIIESSS SENNDD " + AlixUtils.getFields(new WrapperPlayServerPlayerAbilities(event)));
+            }*/
+
+            //Main.logInfo("PACKET OUT: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
+            //Bukkit.broadcastMessage("PACKET OUT: " + event.getPacketType().getName());
+
             if (event.getClass() == PacketPlaySendEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
                 user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
             /*else if (event.getPacketType() == PacketType.Status.Server.RESPONSE) {
@@ -61,7 +88,6 @@ public final class PacketEventsManager {
                 wrapper.setComponent(obj);
                 event.markForReEncode(true);
             }*/
-            //Main.logInfo("PACKET OUT: " + event.getPacketType().getName());
             /*if(event.getPacketType() == PacketType.Play.Server.PLUGIN_MESSAGE) {
                 Main.logError("MSG: " + new WrapperPlayServerPluginMessage(event).getChannelName() + " " + new String(new WrapperPlayServerPluginMessage(event).getData()));
             }*/
@@ -94,10 +120,20 @@ public final class PacketEventsManager {
 //            super.onUserLogin(event);
 //        }
 
+
+/*        @Override
+        public void onUserConnect(UserConnectEvent event) {
+            //Main.logInfo("NAMES CONNECT: " + ((Channel) event.getUser().getChannel()).pipeline().names());
+            Main.logInfo("NAMES CONNECT: " + ((Channel) event.getUser().getChannel()).pipeline().names());
+            User user = event.getUser();
+            Channel channel = (Channel) user.getChannel();
+            //BufPreProcessor processor = (BufPreProcessor) channel.pipeline().context(BufPreProcessor.BUF_PRE_PROCESSOR_NAME).handler();
+            //processor.setUser(user);
+        }*/
+
         @Override
         public void onUserDisconnect(UserDisconnectEvent event) {
             String name = event.getUser().getName();
-
             if (name == null) return;
             //Main.logError("DISCONNECTED: " + event.getUser().getName());
             UserManager.removeConnecting(name);
@@ -111,18 +147,26 @@ public final class PacketEventsManager {
             super(PacketListenerPriority.MONITOR);
         }
     }
-
+/*
     private static final class LoginInStartListener extends PacketListenerAbstract {
 
         @Override
         public void onPacketReceive(PacketReceiveEvent event) {
+            //Main.logInfo("PACKET TYPE: " + event.getPacketType() + " NAMES: " + ((Channel) (event.getUser().getChannel())).pipeline().names());
             if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) AlixChannelHandler.onLoginStart(event);
         }
+
+*//*        @Override
+        public void onUserConnect(UserConnectEvent event) {
+            User user = event.getUser();
+            Channel channel = (Channel) user.getChannel();
+            BufPreProcessor.addPreProcessor(channel, user);
+        }*//*
 
         private LoginInStartListener() {
             super(PacketListenerPriority.LOWEST);//make sure we read the LoginInStart packet first to indicate to other plugins that this packet might be invalid
         }
-    }
+    }*/
 
     private PacketEventsManager() {
     }

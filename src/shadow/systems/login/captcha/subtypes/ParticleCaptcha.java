@@ -5,7 +5,7 @@ import alix.common.scheduler.AlixScheduler;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.ScheduledFuture;
 import shadow.systems.login.captcha.Captcha;
-import shadow.utils.holders.captcha.ParticleRenderer;
+import shadow.utils.misc.captcha.CaptchaRenderer;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.unsafe.UnsafeNettyUtils;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
@@ -24,7 +24,8 @@ public final class ParticleCaptcha extends Captcha {
 
     public ParticleCaptcha() {
         BufferedImage image = CaptchaImageGenerator.generateCaptchaImage(captcha, maxRotation, false, false);//aliasing is necessary for us, since it shows more contrast
-        this.buffers = ParticleRenderer.captchaRenderingBuffers(image);//Unreleasable(ReadOnly(Direct)))
+        this.buffers = CaptchaRenderer.particleBuffers(image);//Unreleasable(ReadOnly(Direct)))
+        //Main.logError("CREATED: " + buffers.length);
         //Main.logError("BUFFERS HASH: " + ParticleRenderer.captchaRenderingBuffers(image).length + " NORMALLY: " + ParticleRenderer.list(image).length);
         //this.buffer = Unpooled.buffer();
         //for (ByteBuf buf : buffers) buffer.writeBytes(buf);
@@ -37,7 +38,10 @@ public final class ParticleCaptcha extends Captcha {
 
         //already on the eventLoop
         //long t0 = System.nanoTime();
-        UnsafeNettyUtils.setRaw(user.silentContext(), user.bufHarvester, b -> b, this.buffers);
+        UnsafeNettyUtils.sendAndSetRaw(user.silentContext(), user.bufHarvester, b -> b, this.buffers);
+        //int size = 0;
+        //for (ByteBuf buf : buffers) size += buf.readableBytes();
+        //Main.logError("OF SIZE: " + size);
         //long diff0 = System.nanoTime() - t0;
         //Main.logError("ALLOCATING TIME: " + diff0 / Math.pow(10, 6) + "ms");
 
@@ -58,12 +62,12 @@ public final class ParticleCaptcha extends Captcha {
 
                 //long diff = System.nanoTime() - t;
                 //Main.logError("TIME: " + diff / Math.pow(10, 6) + "ms");
-            }, 0, 400L, TimeUnit.MILLISECONDS);
+            }, 300L, 300L, TimeUnit.MILLISECONDS);
         });
     }
 
     @Override
-    public void uninject() {
+    public void release() {
         //Main.logError("UNINJECTED " + Arrays.toString(Thread.currentThread().getStackTrace()));
         //AlixUnsafe.getUnsafe().throwException(new AlixException(""));
         if (cancelled) return;
@@ -72,12 +76,13 @@ public final class ParticleCaptcha extends Captcha {
             if (task != null) this.task.cancel(true);
         } finally {
             if (this.packet != null) this.packet.release();
+            else for (ByteBuf buf : buffers) buf.release();
         }
     }
 
     @Override
     public void onCompletion(UnverifiedUser user) {
-        this.uninject();
+        this.release();
         //ReflectionUtils.sendBlindnessPackets(user);
     }
 

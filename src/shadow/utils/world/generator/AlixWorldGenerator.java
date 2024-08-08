@@ -21,22 +21,38 @@ public final class AlixWorldGenerator extends WorldCreator {
     @Nullable
     @Override
     public World createWorld() {
-        World w = Bukkit.getWorld(this.name());
-        World world = w != null ? w : super.createWorld();
+        World world = super.createWorld();
         init(world);
         return world;
     }
 
     private static void init(World world) {
         world.setTime(18000);
-        world.setAmbientSpawnLimit(0);
-        world.setAnimalSpawnLimit(0);
-        world.setWaterAnimalSpawnLimit(0);
-        world.setMonsterSpawnLimit(0);
+        world.setFullTime(18000);
+        world.setAmbientSpawnLimit(-1);
+        world.setAnimalSpawnLimit(-1);
+        world.setWaterAnimalSpawnLimit(-1);
+        world.setMonsterSpawnLimit(-1);
+        world.setTicksPerAnimalSpawns(-1);
+        world.setTicksPerMonsterSpawns(-1);
         world.setPVP(false);
+        world.setAutoSave(false);
+        world.setSpawnFlags(false, false);
+        world.setDifficulty(Difficulty.EASY);
+        try {
+            Class.forName("org.bukkit.GameRule");
+            initGameRulesModern(world);
+            initCorrectRespawnModern(world);
+        } catch (ClassNotFoundException ex) {
+            initGameRulesOld(world);
+            initCorrectRespawnOld();
+        }
+    }
+
+    private static void initGameRulesModern(World world) {
         world.setGameRule(GameRule.RANDOM_TICK_SPEED, -1);
         world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
-        world.setGameRule(GameRule.SPAWN_RADIUS, 1);
+        world.setGameRule(GameRule.SPAWN_RADIUS, -1);
         world.setGameRule(GameRule.DO_TILE_DROPS, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         world.setGameRule(GameRule.DISABLE_RAIDS, true);
@@ -46,14 +62,42 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setGameRule(GameRule.KEEP_INVENTORY, true);
         world.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
         world.setGameRule(GameRule.DISABLE_ELYTRA_MOVEMENT_CHECK, true);
-        world.setGameRule(GameRule.DO_ENTITY_DROPS, true);
+        world.setGameRule(GameRule.DO_ENTITY_DROPS, false);
         world.setGameRule(GameRule.NATURAL_REGENERATION, false);
-        initCorrectRespawn(world);
+        world.setGameRule(GameRule.MOB_GRIEFING, false);
+        world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
+        world.setGameRule(GameRule.DO_MOB_LOOT, false);
+        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
     }
 
-    private static void initCorrectRespawn(World world) {
+    private static void initGameRulesOld(World world) {
+        world.setGameRuleValue("randomTickSpeed", "-1");
+        world.setGameRuleValue("maxEntityCramming", "-1");
+        world.setGameRuleValue("spawnRadius", "-1");
+        world.setGameRuleValue("doTileDrops", "false");
+        world.setGameRuleValue("doMobSpawning", "false");
+        world.setGameRuleValue("disableRaids", "true");
+        world.setGameRuleValue("doFireTick", "false");
+        world.setGameRuleValue("doDaylightCycle", "false");
+        world.setGameRuleValue("doWeatherCycle", "false");
+        world.setGameRuleValue("keepInventory", "true");
+        world.setGameRuleValue("spectatorsGenerateChunks", "false");
+        world.setGameRuleValue("disableElytraMovementCheck", "true");
+        world.setGameRuleValue("doEntityDrops", "false");
+        world.setGameRuleValue("naturalRegeneration", "false");
+        world.setGameRuleValue("mobGriefing", "false");
+        world.setGameRuleValue("showDeathMessages", "false");
+        world.setGameRuleValue("doMobLoot", "false");
+        world.setGameRuleValue("announceAdvancements", "false");
+    }
+
+    private static void initCorrectRespawnModern(World world) {
         GameRule rule = GameRule.getByName("doImmediateRespawn");
         if (rule != null) world.setGameRule((GameRule<Boolean>) rule, true);
         Main.pm.registerEvents(new CaptchaRespawnExecutors(rule == null), Main.plugin);
+    }
+
+    private static void initCorrectRespawnOld() {
+        Main.pm.registerEvents(new CaptchaRespawnExecutors(true), Main.plugin);
     }
 }

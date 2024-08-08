@@ -142,4 +142,9 @@ public final class JarInJarClassLoader<E extends AbstractLoaderBootstrap> extend
             throw new AlixLoadingException("Unable to get URL from path", e);
         }
     }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName();
+    }
 }

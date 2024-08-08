@@ -1,6 +1,8 @@
 package shadow.systems.gui.impl;
 
 import alix.common.messages.Messages;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -8,34 +10,62 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
+import shadow.utils.misc.version.AlixMaterials;
 
 import java.util.Arrays;
 
-public final class AccountGUI extends AlixGUI {
+public abstract class AccountGUI extends AlixGUI {
 
-    private static final AccountGUI INSTANCE = new AccountGUI();
+    private static final AccountGUI
+            INSTANCE_MODERN = new AccountGUIModern(),
+            INSTANCE_OLDER = new AccountGUIOlder();
 
     private AccountGUI() {
         super(Bukkit.createInventory(null, InventoryType.DROPPER, Messages.get("gui-title-account")));
     }
 
-    @Override
-    protected GUIItem[] create(Player unusedNull) {
-        GUIItem[] items = new GUIItem[9];
-        Arrays.fill(items, BACKGROUND_ITEM);
+    private static final class AccountGUIModern extends AccountGUI {
 
-        ItemStack i1 = create(Material.IRON_BARS, Messages.get("gui-account-passwords"));
-        items[0] = new GUIItem(i1, event -> PasswordsGUI.add((Player) event.getWhoClicked(), this));
+        @Override
+        protected GUIItem[] create(Player unusedNull) {
+            GUIItem[] items = new GUIItem[9];
+            Arrays.fill(items, BACKGROUND_ITEM);
 
-        ItemStack i2 = create(Material.NETHER_STAR, Messages.get("gui-account-login-settings"));
-        items[1] = new GUIItem(i2, event -> LoginSettingsGUI.add((Player) event.getWhoClicked(), this));
+            ItemStack i1 = create(AlixMaterials.IRON_BARS.getItemCloned(), Messages.get("gui-account-passwords"));
+            items[0] = new GUIItem(i1, event -> PasswordsGUI.add((Player) event.getWhoClicked(), this));
 
-        return items;
+            ItemStack i2 = create(Material.NETHER_STAR, Messages.get("gui-account-login-settings"));
+            items[1] = new GUIItem(i2, event -> LoginSettingsGUI.add((Player) event.getWhoClicked(), this));
+
+            return items;
+        }
+    }
+
+    private static final class AccountGUIOlder extends AccountGUI {
+
+        private static final String notAvailable = Messages.getWithPrefix("gui-account-passwords-gui-not-available");
+
+        @Override
+        protected GUIItem[] create(Player unusedNull) {
+            GUIItem[] items = new GUIItem[9];
+            Arrays.fill(items, BACKGROUND_ITEM);
+
+            ItemStack i1 = create(AlixMaterials.IRON_BARS.getItemCloned(), Messages.get("gui-account-passwords"), "§7(1.14+)");
+            items[0] = new GUIItem(i1, event -> event.getWhoClicked().sendMessage(notAvailable));
+
+            ItemStack i2 = create(Material.NETHER_STAR, Messages.get("gui-account-login-settings"));
+            items[1] = new GUIItem(i2, event -> LoginSettingsGUI.add((Player) event.getWhoClicked(), this));
+
+            return items;
+        }
     }
 
     public static void add(Player player) {
-        MAP.put(player.getUniqueId(), INSTANCE);
-        player.openInventory(INSTANCE.gui);
+        //User user = PacketEvents.getAPI().getPlayerManager().getUser(player);
+        //user.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_14)
+        AccountGUI gui = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_14) ? INSTANCE_MODERN : INSTANCE_OLDER;
+        MAP.put(player.getUniqueId(), gui);
+        player.openInventory(gui.gui);
     }
 
 /*    public static void remove(Player player) {

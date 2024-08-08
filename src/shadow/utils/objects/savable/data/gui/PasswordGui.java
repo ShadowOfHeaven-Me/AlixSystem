@@ -14,10 +14,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import shadow.Main;
-import shadow.utils.holders.packet.constructors.OutSoundPacketConstructor;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.savable.data.gui.builders.VirtualPinBuilder;
+import shadow.utils.misc.packet.constructors.OutSoundPacketConstructor;
+import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
+import shadow.utils.objects.savable.data.gui.builders.VirtualPinBuilder;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.ArrayList;
@@ -32,8 +33,12 @@ public final class PasswordGui {
         try {
             m = Material.valueOf(config);
         } catch (Exception e) {
-            Main.logWarning("Invalid material type in 'background-item': " + config + ". Defaulting to GRAY_STAINED_GLASS_PANE!");
-            m = Material.GRAY_STAINED_GLASS_PANE;
+            try {
+                m = Material.valueOf("GRAY_STAINED_GLASS_PANE");
+                Main.logWarning("Invalid material type in 'background-item': " + config + ". Defaulting to GRAY_STAINED_GLASS_PANE!");
+            } catch (Throwable ignored) {//fix for lower versions
+                m = Material.AIR;
+            }
         }
 
         BACKGROUND_ITEM = rename(new ItemStack(m), "§f");
@@ -147,11 +152,11 @@ public final class PasswordGui {
         return Bukkit.createInventory(null, 36, title);
     }
 
-    public static Inventory getPinGuiCloned(String title) {
+/*    public static Inventory getPinGuiCloned(String title) {
         Inventory cloned = createNew(title);
         cloned.setContents(pinVerificationGuiItems);
         return cloned;
-    }
+    }*/
 
     private static ItemStack[] createPINVerificationItems() {
         //Inventory inv = createNew(null);//we do not care about the title
@@ -169,16 +174,16 @@ public final class PasswordGui {
         items[DIGIT_8, digits[8]);
         items[DIGIT_9, digits[9]);*/
 
-        items[ACTION_PIN_CONFIRM] = rename(new ItemStack(Material.GREEN_WOOL), pinConfirm);
-        items[ACTION_LAST_REMOVE] = rename(new ItemStack(Material.YELLOW_WOOL), pinRemoveLast);
-        items[ACTION_RESET] = rename(new ItemStack(Material.RED_WOOL), pinReset);
-        items[ACTION_LEAVE] = rename(new ItemStack(Material.BLACK_WOOL), pinLeave);
+        items[ACTION_PIN_CONFIRM] = rename(AlixMaterials.GREEN_WOOL.getItemCloned(), pinConfirm);
+        items[ACTION_LAST_REMOVE] = rename(AlixMaterials.YELLOW_WOOL.getItemCloned(), pinRemoveLast);
+        items[ACTION_RESET] = rename(AlixMaterials.RED_WOOL.getItemCloned(), pinReset);
+        items[ACTION_LEAVE] = rename(AlixMaterials.BLACK_WOOL.getItemCloned(), pinLeave);
 
         for (int i : EMPTY_DIGIT_SLOTS) items[i] = BARRIER;
 
         for (byte i = 0; i < 36; i++) {
             ItemStack item = items[i];
-            if (item == null || item.getType().isAir()) items[i] = BACKGROUND_ITEM;
+            if (item == null || AlixMaterials.isAir(item.getType())) items[i] = BACKGROUND_ITEM;
         }
         return items;
     }
@@ -253,6 +258,7 @@ public final class PasswordGui {
 
     private static ItemStack rename(ItemStack i, String s) {
         ItemMeta meta = i.getItemMeta();
+        if (meta == null) return i;//ignore air
         meta.setDisplayName(AlixFormatter.translateColors(s));
         i.setItemMeta(meta);
         return i;

@@ -4,7 +4,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import shadow.utils.objects.savable.loc.NamedLocation;
+import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
 
@@ -24,10 +24,10 @@ public final class HomeCommandTabCompleter implements TabCompleter {
 
         if (u == null) return null;
 
-        NamedLocation[] homes = u.getHomes().array();
+        BukkitNamedLocation[] homes = u.getHomes().array();
         List<String> list = new ArrayList<>(homes.length);
 
-        for (NamedLocation home : homes) list.add(home.getName());
+        for (BukkitNamedLocation home : homes) list.add(home.getName());
 
         return list;
     }

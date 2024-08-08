@@ -5,12 +5,13 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import alix.common.data.PersistentUserData;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.users.types.VerifiedUser;
 
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class UserManager {
 
-    private static final Map<UUID, AlixUser> USERS = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
+    private static final Map<UUID, AlixUser> USERS = new ConcurrentHashMap<>(Bukkit.getMaxPlayers() << 1);//always use more buckets to lessen the chance of a hash collision
     private static final Map<String, User> CONNECTING_USERS = new ConcurrentHashMap<>();//the default size of 16 will do, since the joining players are only stored here since connection till login start
     //public static final List<User> users = new ArrayList<>();
     //public static final List<String> notVanishedUserNicknames = new ArrayList<>();
@@ -32,7 +33,7 @@ public final class UserManager {
         return putVer(new VerifiedUser(p, user));
     }
 
-    public static void addVerifiedUser(Player p, PersistentUserData data, String ip, User retrooperUser, ChannelHandlerContext silentContext) {//offline as of non-premium
+    public static void addVerifiedUser(Player p, PersistentUserData data, InetAddress ip, User retrooperUser, ChannelHandlerContext silentContext) {//offline as of non-premium
         Objects.requireNonNull(data, "No verified user data was provided!");
         putVer(new VerifiedUser(p, data.setIP(ip), retrooperUser, silentContext));
         //add(new User(p, PersistentUserData.createDefault(p.getName(), ip)));
@@ -58,7 +59,7 @@ public final class UserManager {
         return data;
     }*/
 
-    public static PersistentUserData register(Player p, String password, String ip, User user, ChannelHandlerContext silentContext) {
+    public static PersistentUserData register(Player p, String password, InetAddress ip, User user, ChannelHandlerContext silentContext) {
         //if (GeoIPTracker.disallowLogin(ip)) return false;
 
         PersistentUserData data = PersistentUserData.createDefault(p.getName(), ip, Password.fromUnhashed(password));

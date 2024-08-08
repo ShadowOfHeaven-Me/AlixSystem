@@ -20,4 +20,7 @@ public final class AlixError extends InternalError {
     public AlixError(Throwable e, String message) {
         super(message, e);
     }
+
+    public static void init() {
+    }
 }

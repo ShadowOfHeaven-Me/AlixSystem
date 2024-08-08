@@ -14,11 +14,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.alix.ABStats;
-import shadow.utils.holders.ReflectionUtils;
+import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
+import alix.common.data.PersistentUserData;
 import shadow.utils.users.UserManager;
 
 import java.util.Date;
@@ -143,7 +143,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
                             sendMessage(sender, "");
                             sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
-                            sendMessage(sender, "IP: &c" + data.getSavedIP());
+                            sendMessage(sender, "IP: &c" + data.getSavedIP().getHostAddress());
                             //sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
                             sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
                             sendMessage(sender, "Login Type: &c" + data.getLoginType());

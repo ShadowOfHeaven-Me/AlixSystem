@@ -3,12 +3,10 @@ package shadow.systems.login.captcha.manager.generator;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.other.ConcurrentRandom;
+import alix.common.utils.other.throwable.AlixError;
 import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
-import shadow.systems.login.captcha.subtypes.MapCaptcha;
-import shadow.systems.login.captcha.subtypes.MessageCaptcha;
-import shadow.systems.login.captcha.subtypes.ParticleCaptcha;
-import shadow.systems.login.captcha.subtypes.SubtitleCaptcha;
+import shadow.systems.login.captcha.subtypes.*;
 import shadow.utils.main.AlixUtils;
 
 import java.util.Random;
@@ -35,6 +33,8 @@ public final class CaptchaGenerator {
 
     private static Supplier<Captcha> createSupplier() {
         switch (captchaVerificationVisualType) {
+            case SMOOTH:
+                return SmoothCaptcha::new;
             case PARTICLE:
                 return ParticleCaptcha::new;
             case MAP:
@@ -44,7 +44,7 @@ public final class CaptchaGenerator {
             case MESSAGE:
                 return MessageCaptcha::new;
             default:
-                throw new InternalError(captchaVerificationVisualType.name());
+                throw new AlixError(captchaVerificationVisualType.name());
         }
     }
 
@@ -55,7 +55,7 @@ public final class CaptchaGenerator {
             case TEXT:
                 return new CaptchaTextGenImpl();
             default:
-                throw new InternalError(captchaVerificationType.name());
+                throw new AlixError(captchaVerificationType.name());
         }
     }
 

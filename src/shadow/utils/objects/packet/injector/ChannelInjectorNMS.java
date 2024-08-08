@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.injector;
 
 import io.netty.channel.Channel;
@@ -18,4 +19,4 @@ public final class ChannelInjectorNMS implements ChannelInjector {
     public String getProvider() {
         return "NMS-" + this.impl.getVersion();
     }
-}
+}*/

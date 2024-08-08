@@ -5,12 +5,14 @@
     <option name="description" value="" />
   </component>
   <component name="EntryPointsManager">
-    <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="com.velocitypowered.api.event.Subscribe" />
-      <item index="1" class="java.lang.String" itemvalue="com.velocitypowered.api.plugin.Plugin" />
-      <item index="2" class="java.lang.String" itemvalue="net.bytebuddy.implementation.bind.annotation.RuntimeType" />
-      <item index="3" class="java.lang.String" itemvalue="net.md_5.bungee.event.EventHandler" />
-      <item index="4" class="java.lang.String" itemvalue="org.bukkit.event.EventHandler" />
+    <list size="7">
+      <item index="0" class="java.lang.String" itemvalue="alix.common.MainClass" />
+      <item index="1" class="java.lang.String" itemvalue="alix.common.utils.other.annotation.RemotelyInvoked" />
+      <item index="2" class="java.lang.String" itemvalue="com.velocitypowered.api.event.Subscribe" />
+      <item index="3" class="java.lang.String" itemvalue="com.velocitypowered.api.plugin.Plugin" />
+      <item index="4" class="java.lang.String" itemvalue="net.bytebuddy.implementation.bind.annotation.RuntimeType" />
+      <item index="5" class="java.lang.String" itemvalue="net.md_5.bungee.event.EventHandler" />
+      <item index="6" class="java.lang.String" itemvalue="org.bukkit.event.EventHandler" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
@@ -26,7 +28,7 @@
       </set>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" project-jdk-name="17" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_9" project-jdk-name="17" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

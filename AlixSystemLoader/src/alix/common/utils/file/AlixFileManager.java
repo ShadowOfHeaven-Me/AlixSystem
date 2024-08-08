@@ -3,7 +3,6 @@ package alix.common.utils.file;
 
 import alix.common.AlixCommonMain;
 import alix.common.utils.other.throwable.AlixException;
-import alix.loaders.bukkit.BukkitAlixMain;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -20,8 +19,8 @@ import java.util.function.Predicate;
 
 public abstract class AlixFileManager {
 
-    protected final File file;
-    protected static final File INTERNAL_FOLDER;
+    private final File file;
+    private static final File INTERNAL_FOLDER;
 
     static {
         INTERNAL_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath() + File.separator + "internal");
@@ -64,7 +63,7 @@ public abstract class AlixFileManager {
         HIGHEST_CHAR = isUtf32 ? 1 << 31 : 1 << 15;
     }*/
 
-    private static final boolean isUTF8Default = Charset.defaultCharset() == StandardCharsets.UTF_8;
+    //private static final boolean isUTF8Default = Charset.defaultCharset() == StandardCharsets.UTF_8;
 
     /*public static String toUTF8(String s) {
         if (isUTF8Default) return s;
@@ -127,7 +126,7 @@ public abstract class AlixFileManager {
 
     public static File writeJarCompiledFileIntoDest(File copyInto, String s) {
         //tmpdir - tf is this
-        try (InputStream in = BukkitAlixMain.class.getClassLoader().getResourceAsStream(s)) {
+        try (InputStream in = AlixCommonMain.MAIN_CLASS_INSTANCE.getClass().getResourceAsStream(s)) {
             copy(in, copyInto);
             return copyInto;
         } catch (IOException e) {
@@ -152,7 +151,7 @@ public abstract class AlixFileManager {
     }
 
     public static void copy(InputStream in, File dest) {
-        try (OutputStream out = new FileOutputStream(dest)) {
+        try (OutputStream out = Files.newOutputStream(dest.toPath())) {
             byte[] buffer = new byte[8 * 1024];
             int bytesRead;
             while ((bytesRead = in.read(buffer)) != -1) out.write(buffer, 0, bytesRead);

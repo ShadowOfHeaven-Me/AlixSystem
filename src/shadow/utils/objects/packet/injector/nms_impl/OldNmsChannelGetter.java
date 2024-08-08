@@ -1,3 +1,4 @@
+/*
 package shadow.utils.objects.packet.injector.nms_impl;
 
 import io.netty.channel.Channel;
@@ -26,4 +27,4 @@ final class OldNmsChannelGetter implements NmsChannelGetter {
     public String getVersion() {
         return "PRE";
     }
-}
+}*/

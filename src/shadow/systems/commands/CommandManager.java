@@ -24,16 +24,16 @@ import shadow.utils.command.managers.ChatManager;
 import shadow.utils.command.managers.PersonalMessageManager;
 import shadow.utils.command.tpa.TpaManager;
 import shadow.utils.command.tpa.TpaRequest;
-import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.holders.methods.MethodProvider;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
-import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.misc.ReflectionUtils;
+import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.SpawnFileManager;
-import shadow.utils.main.file.managers.UserFileManager;
+import alix.common.data.file.UserFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
-import shadow.utils.objects.savable.data.PersistentUserData;
-import shadow.utils.objects.savable.loc.NamedLocation;
+import alix.common.data.PersistentUserData;
+import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.users.types.VerifiedUser;
@@ -897,13 +897,13 @@ public final class CommandManager {
                 Player p = (Player) sender;
                 Location l = p.getLocation();
                 String name = args[0];
-                NamedLocation warp = WarpFileManager.get(name);
+                BukkitNamedLocation warp = WarpFileManager.get(name);
                 if (warp != null) {
-                    WarpFileManager.replace(new NamedLocation(l, warp.getName()));
+                    WarpFileManager.replace(new BukkitNamedLocation(l, warp.getName()));
                     sendMessage(sender, warpLocationChange, name);
                     return true;
                 }
-                WarpFileManager.add(new NamedLocation(l, name));
+                WarpFileManager.add(new BukkitNamedLocation(l, name));
                 sendMessage(sender, warpCreate, name);
                 return true;
             }
@@ -920,7 +920,7 @@ public final class CommandManager {
             if (args.length == 1) {
                 Player p = (Player) sender;
                 String name = args[0];
-                NamedLocation warp = WarpFileManager.get(name);
+                BukkitNamedLocation warp = WarpFileManager.get(name);
                 if (warp != null) {
                     AlixHandler.delayedConfigTeleportExecute(() -> {
                         warp.teleport(p);
@@ -943,11 +943,11 @@ public final class CommandManager {
             if (isConsoleButPlayerRequired(sender)) return false;
             if (args.length == 0) {
                 Player p = (Player) sender;
-                NamedLocation[] homes = getVerifiedUser(p).getHomes().array();
+                BukkitNamedLocation[] homes = getVerifiedUser(p).getHomes().array();
                 if (homes.length != 0) {
                     sendMessage(sender, listOfHomes);
                     sendMessage(sender, "");
-                    for (NamedLocation h : homes) sendMessage(sender, h.toUserReadable());
+                    for (BukkitNamedLocation h : homes) sendMessage(sender, h.toUserReadable());
                     sendMessage(sender, "");
                     return true;
                 }
@@ -969,7 +969,7 @@ public final class CommandManager {
             VerifiedUser u = getVerifiedUser(p);
             switch (l) {
                 case 0: {
-                    NamedLocation home = u.getHomes().getByName("default");
+                    BukkitNamedLocation home = u.getHomes().getByName("default");
                     if (home != null) {
                         AlixHandler.delayedConfigTeleportExecute(() -> {
                             home.teleport(p);
@@ -982,7 +982,7 @@ public final class CommandManager {
                 }
                 case 1: {
                     String name = args[0];
-                    NamedLocation home = u.getHomes().getByName(name);
+                    BukkitNamedLocation home = u.getHomes().getByName(name);
                     if (home != null) {
                         AlixHandler.delayedConfigTeleportExecute(() -> {
                             home.teleport(p);
@@ -1039,10 +1039,10 @@ public final class CommandManager {
                     if (current < max) {
                         int i = u.getHomes().indexOf("default");
                         if (i != -1) {
-                            u.getHomes().setHome(i, new NamedLocation(loc, "default"));
+                            u.getHomes().setHome(i, new BukkitNamedLocation(loc, "default"));
                             sendMessage(sender, homeDefaultOverwrite);
                         } else {
-                            u.getHomes().addHome(new NamedLocation(loc, "default"));
+                            u.getHomes().addHome(new BukkitNamedLocation(loc, "default"));
                             sendMessage(sender, homeSet);
                         }
                         return true;
@@ -1063,10 +1063,10 @@ public final class CommandManager {
                         }
                         int i = u.getHomes().indexOf(name);
                         if (i != -1) {
-                            u.getHomes().setHome(i, new NamedLocation(loc, name));
+                            u.getHomes().setHome(i, new BukkitNamedLocation(loc, name));
                             sendMessage(sender, homeNamedOverwrite, name);
                         } else {
-                            u.getHomes().addHome(new NamedLocation(loc, name));
+                            u.getHomes().addHome(new BukkitNamedLocation(loc, name));
                             sendMessage(sender, homeSet);
                         }
                         return true;
@@ -1204,7 +1204,7 @@ public final class CommandManager {
                     }
 
                     PersistentUserData data = UserFileManager.get(p.getName());
-                    String address = valid ? arg1 : data == null ? "0" : data.getSavedIP();
+                    String address = valid ? arg1 : data == null ? "0" : data.getSavedIP().getHostAddress();
 
                     if (address.equals("0")) {
                         sendMessage(sender, ipInfoAbsentBan, p.getName());
@@ -1225,7 +1225,7 @@ public final class CommandManager {
                     }
 
                     PersistentUserData data = UserFileManager.get(p.getName());
-                    String address = valid ? arg1 : data == null ? "0" : data.getSavedIP();
+                    String address = valid ? arg1 : data == null ? "0" : data.getSavedIP().getHostAddress();
 
                     if (address.equals("0")) {
                         sendMessage(sender, ipInfoAbsentBan, p.getName());
@@ -1246,7 +1246,7 @@ public final class CommandManager {
                         return false;
                     }
                     PersistentUserData data = UserFileManager.get(p.getName());
-                    String address = valid ? arg1 : data == null ? "0" : data.getSavedIP();
+                    String address = valid ? arg1 : data == null ? "0" : data.getSavedIP().getHostAddress();
 
                     if (address.equals("0")) {
                         sendMessage(sender, ipInfoAbsentBan, p.getName());
@@ -1349,7 +1349,7 @@ public final class CommandManager {
                     sendMessage(sender, playerDataNotFound, arg1);
                     return false;
                 }
-                String ip = valid ? arg1 : data.getSavedIP();
+                String ip = valid ? arg1 : data.getSavedIP().getHostAddress();
 /*                if (!Bukkit.getBanList(BanList.Type.IP).isBanned(ip)) {
                     sendMessage(sender, ipNotBanned, ip);
                     return false;

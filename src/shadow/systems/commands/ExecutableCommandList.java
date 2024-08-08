@@ -3,8 +3,6 @@ package shadow.systems.commands;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import shadow.Main;
-import shadow.utils.holders.ReflectionUtils;
 import shadow.utils.main.AlixUtils;
 
 import java.util.ArrayList;
@@ -23,7 +21,7 @@ public final class ExecutableCommandList {
         this.cmds = cmds.toArray(new ExecutableCommand[0]);
     }
 
-    public final void invoke(Player player) {
+    public void invoke(Player player) {
         for (ExecutableCommand c : cmds) c.invoke(player);
     }
 

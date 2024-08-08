@@ -2,6 +2,7 @@ package shadow.utils.objects.savable.data;
 
 import alix.common.data.LoginType;
 import alix.common.data.Password;
+import alix.common.data.PersistentUserData;
 import alix.common.messages.Messages;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;

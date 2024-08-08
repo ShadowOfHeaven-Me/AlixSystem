@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import shadow.systems.login.filters.ConnectionFilter;
+import alix.common.connection.filters.ConnectionFilter;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.users.types.VerifiedUser;

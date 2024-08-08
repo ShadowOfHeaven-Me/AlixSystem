@@ -1,10 +1,12 @@
 <component name="ArtifactManager">
   <artifact type="jar" name="AlixSystemLoader">
-    <output-path>$PROJECT_DIR$/../../../Server/plugins</output-path>
-    <root id="archive" name="AlixSystem 3.1.1.jar">
-      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/plugin.yml" />
+    <output-path>$PROJECT_DIR$/../../../PAPEERR/plugins</output-path>
+    <root id="archive" name="AlixSystem 3.2.0.jar">
+      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/alix/loaders/bukkit/plugin.yml" />
       <element id="module-output" name="AlixSystemLoader" />
       <element id="artifact" artifact-name="AlixSystem" />
+      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/alix/loaders/bukkit/config.yml" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/packetevents-spigot-2.4.1-SNAPSHOT.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

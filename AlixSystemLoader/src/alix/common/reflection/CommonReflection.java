@@ -1,22 +1,64 @@
 package alix.common.reflection;
 
-import org.bukkit.Bukkit;
+import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 public final class CommonReflection {
 
-    public static final Object MC_SERVER_OBJ;
-    private static final String serverVersion2 = getServerVersion();
-    private static final int bukkitVersion = getBukkitVersion();//In 1.20.2 will return 20
-    //public static final int subBukkitVersion = getSubBukkitVersion();//In 1.20.2 will return 2
-    private static final boolean protocolVersion = bukkitVersion >= 17;
+    public static Method getMethod(Class<?> clazz, String name, Class<?>... params) {
+        try {
+            Method method = clazz.getMethod(name, params);
+            method.setAccessible(true);
+            return method;
+        } catch (Exception e) {
+            throw new AlixError(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(params) + ")");
+        }
+    }
+
+    public static Field getFieldAccessibleByType(Class<?> instClass, Class<?> typeClass) {
+        for (Field field : instClass.getDeclaredFields())
+            if (typeClass.isAssignableFrom(field.getType())) {
+                field.setAccessible(true);
+                return field;
+            }
+        throw new ExceptionInInitializerError("No valid field with " + typeClass + " in " + instClass);
+    }
 
     public static Object get(Field field, Object obj) {
         try {
             return field.get(obj);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void set(Field field, Object obj, Object value) {
+        try {
+            field.set(obj, value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Object getFieldResult(Class<?> clazz, String name, Object obj) {
+        try {
+            Field field = clazz.getDeclaredField(name);
+            field.setAccessible(true);
+            return field.get(obj);
+        } catch (Exception e) {
+            throw new RuntimeException(e);//AlixException
+        }
+    }
+
+    public static Field getDeclaredField(Class<?> clazz, String name) {
+        try {
+            return clazz.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            throw new AlixException(e);
         }
     }
 
@@ -27,34 +69,6 @@ public final class CommonReflection {
             return null;
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private static int getBukkitVersion() {
-        return Integer.parseInt(serverVersion2.split("_")[1]);
-    }
-
-    private static String getServerVersion() {
-        return Bukkit.getServer().getClass().getPackage().getName().substring(23);
-    }
-
-    static {
-        Class<?> mcServerClass;
-        try {
-            mcServerClass = nms2("server.MinecraftServer");
-            Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
-            MC_SERVER_OBJ = mcServer;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Class<?> nms2(String name) throws ClassNotFoundException {
-        if (protocolVersion) {
-            return Class.forName("net.minecraft." + name);
-        } else {
-            String[] splitName = name.split("\\.");
-            return Class.forName(String.format("net.minecraft.server.%s.%s", serverVersion2, splitName[splitName.length - 1]));
         }
     }
 }

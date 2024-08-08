@@ -5,8 +5,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
-import shadow.systems.login.filters.ConnectionFilter;
-import shadow.utils.main.file.managers.UserFileManager;
+import alix.common.connection.filters.ConnectionFilter;
+import alix.common.data.file.UserFileManager;
 import shadow.utils.world.AlixWorldHolder;
 
 import static shadow.utils.main.AlixUtils.isOperatorCommandRestricted;
@@ -24,7 +24,7 @@ public final class OnlineExecutors extends UniversalExecutors {
         String address = e.getAddress().getHostAddress();
 
         for (ConnectionFilter filter : premiumFilters) {
-            if (filter.disallowJoin(address, name)) {
+            if (filter.disallowJoin(e.getAddress(), address, name)) {
                 e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                 break;
             }

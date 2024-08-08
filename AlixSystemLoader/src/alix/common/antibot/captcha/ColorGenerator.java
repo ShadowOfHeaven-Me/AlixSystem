@@ -11,7 +11,7 @@ import java.util.List;
 
 public abstract class ColorGenerator {
 
-    public static final ColorGenerator IMPL = ConfigParams.isCaptchaParticle ? new ParticleColorGenerator() : new MapColorGenerator();
+    public static final ColorGenerator IMPL = ConfigParams.isCaptchaMap ? new MapColorGenerator() : new ParticleColorGenerator();
     private static final ConcurrentRandom random = ConcurrentRandom.getInstance();
     public static final List<Color> PARTICLE_COLOR_LIST = Arrays.asList(_PAColors.particleColors);
 
@@ -61,18 +61,18 @@ public abstract class ColorGenerator {
 
     private static final class _PAColors {
         private static final Color[] particleColors = {
-                c(255, 255, 0),     // Yellow
-                c(255, 215, 0),     // Gold
-                c(255, 165, 0),     // Orange
-                c(255, 140, 26),    // Lighter Orange
-                c(255, 127, 80),    // Coral
-                c(255, 105, 180),   // Hot Pink
-                c(255, 20, 147),    // Deep Pink
-                c(255, 0, 255),     // Magenta
-                c(255, 0, 0),       // Red
-                c(127, 255, 0),     // Chartreuse
-                c(0, 255, 0),       // Lime
-                c(0, 255, 255),     // Cyan
+                c(255, 255, 0),     // Yellow         0
+                c(255, 215, 0),     // Gold           1
+                c(255, 165, 0),     // Orange         2
+                c(255, 140, 26),    // Lighter Orange 3
+                c(255, 127, 80),    // Coral          4
+                c(255, 105, 180),   // Hot Pink       5
+                c(255, 20, 147),    // Deep Pink      6
+                c(255, 0, 255),     // Magenta        7
+                c(255, 0, 0),       // Red            8
+                c(127, 255, 0),     // Chartreuse     9
+                c(0, 255, 0),       // Lime           10
+                c(0, 255, 255),     // Cyan           11
         };
 
         @NotNull

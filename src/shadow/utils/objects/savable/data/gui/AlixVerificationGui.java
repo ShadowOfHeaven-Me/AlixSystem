@@ -3,7 +3,7 @@ package shadow.utils.objects.savable.data.gui;
 import alix.common.data.LoginType;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.objects.savable.data.gui.virtual.VirtualInventory;
 
 public interface AlixVerificationGui {
@@ -50,6 +50,8 @@ public interface AlixVerificationGui {
 
 
     /**
+     * Returns the password built
+     *
      * @return The currently created password with the builder
      * @author ShadowOfHeaven
      */

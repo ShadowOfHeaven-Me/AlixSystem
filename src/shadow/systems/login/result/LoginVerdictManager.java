@@ -1,32 +1,34 @@
 package shadow.systems.login.result;
 
+import alix.common.data.PersistentUserData;
+import alix.common.login.LoginVerdict;
 import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerPreLoginEvent;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.savable.data.PersistentUserData;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 
+import java.net.InetAddress;
 import java.util.UUID;
 
 public final class LoginVerdictManager {
 
     //private static final Map<String, LoginInfo> MAP = new ConcurrentHashMap<>(Bukkit.getMaxPlayers());
 
-    public static void addOffline(String name, String ip, PersistentUserData data, AsyncPlayerPreLoginEvent event) {
-        put0(name, getVerdict(ip, data), ip, data, event);
+    public static void addOffline(String name, String strIP, PersistentUserData data, AsyncPlayerPreLoginEvent event) {
+        put0(name, strIP, getVerdict(event.getAddress(), data), data, event);
     }
 
-    public static void addOnline(String name, String ip, PersistentUserData data, boolean justCreated, AsyncPlayerPreLoginEvent event) {
-        put0(name, justCreated ? LoginVerdict.REGISTER_PREMIUM : LoginVerdict.LOGIN_PREMIUM, ip, data, event);
+    public static void addOnline(String name, String strIP, PersistentUserData data, boolean justCreated, AsyncPlayerPreLoginEvent event) {
+        put0(name, strIP, justCreated ? LoginVerdict.REGISTER_PREMIUM : LoginVerdict.LOGIN_PREMIUM, data, event);
     }
 
     //public static final String packetHandlerName = "alix_interception_handler";
 
-    private static void put0(String name, LoginVerdict verdict, String ip, PersistentUserData data, AsyncPlayerPreLoginEvent event) {
+    private static void put0(String name, String strIP, LoginVerdict verdict, PersistentUserData data, AsyncPlayerPreLoginEvent event) {
         //Main.logInfo("[DEBUG] CREATING A VERDICT...");
 /*        Channel channel = AlixChannelInjector.CHANNELS.remove(name);
         if (channel == null) {
@@ -58,7 +60,7 @@ public final class LoginVerdictManager {
             return;
         }*/
 
-        LoginInfo info = new LoginInfo(verdict, ip, data);
+        LoginInfo info = new LoginInfo(verdict, event.getAddress(), strIP, data);
 
         //MAP.put(name, info);
         UserManager.put(event.getUniqueId(), new TemporaryUser(user, info));
@@ -66,7 +68,7 @@ public final class LoginVerdictManager {
         //Main.logError("CREATED A VERDICT: " + info.getVerdict().readableName());
     }
 
-    private static LoginVerdict getVerdict(String ip, PersistentUserData data) {
+    private static LoginVerdict getVerdict(InetAddress ip, PersistentUserData data) {
         if (data == null)//not registered - no data
             return LoginVerdict.DISALLOWED_NO_DATA;
 
@@ -99,8 +101,7 @@ public final class LoginVerdictManager {
 
     private static TemporaryUser ensureExists(TemporaryUser user) {
         if (user == null) {
-            user.reetrooperUser().closeConnection();
-            //player.kickPlayer("§cNo Temporary User was found! Report this to the staff immediately!");
+            //user.reetrooperUser().closeConnection();
             throw new RuntimeException("No Temporary User was found for the player " + user.reetrooperUser().getName() + "! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
         }
         return user;

@@ -8,7 +8,6 @@ import org.bukkit.craftbukkit.libs.jline.internal.Nullable;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.main.file.managers.SpawnFileManager;
 
-import static shadow.utils.main.AlixUtils.parsePureInteger;
 import static shadow.utils.main.AlixUtils.split;
 
 public final class SavableLocation {
@@ -28,7 +27,7 @@ public final class SavableLocation {
         String[] b = split(a, ':');
         World c = Bukkit.getWorld((b[3]));
         if (c == null) return null;
-        return new Location(c, parsePureInteger(b[0]), parsePureInteger(b[1]), parsePureInteger(b[2]), Float.parseFloat(b[4]), Float.parseFloat(b[5]));
+        return new Location(c, Integer.parseInt(b[0]), Integer.parseInt(b[1]), Integer.parseInt(b[2]), Float.parseFloat(b[4]), Float.parseFloat(b[5]));
     }
 
     private SavableLocation() {

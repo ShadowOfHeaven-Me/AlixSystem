@@ -1,9 +1,10 @@
 package shadow.systems.gui.impl;
 
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
@@ -11,8 +12,7 @@ import shadow.Main;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.misc.version.AlixMaterials;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +38,7 @@ public final class IpAutoLoginGUI extends AlixGUI {
         items[1] = new GUIItem(setLore(questionMark, lore));
 
         String[] lore2 = Messages.get("gui-ip-autologin-lore-accept").split("-nl ");
-        ItemStack confirm = create(Material.GREEN_WOOL, Messages.get("gui-ip-autologin-accept"), lore2);
+        ItemStack confirm = create(AlixMaterials.GREEN_WOOL.getItemCloned(), Messages.get("gui-ip-autologin-accept"), lore2);
         items[6] = new GUIItem(setLore(confirm, lore2), event -> {
             Player player = (Player) event.getWhoClicked();
             PersistentUserData data = UserFileManager.get(player.getName());
@@ -48,7 +48,7 @@ public final class IpAutoLoginGUI extends AlixGUI {
         });
 
         String[] lore3 = Messages.get("gui-ip-autologin-lore-reject").split("-nl ");
-        ItemStack reject = create(Material.RED_WOOL, Messages.get("gui-ip-autologin-reject"), lore2);
+        ItemStack reject = create(AlixMaterials.RED_WOOL.getItemCloned(), Messages.get("gui-ip-autologin-reject"), lore2);
         items[8] = new GUIItem(setLore(reject, lore3), event -> {
             Player player = (Player) event.getWhoClicked();
             PersistentUserData data = UserFileManager.get(player.getName());

@@ -1,16 +1,15 @@
 package alix.common.antibot.firewall;
 
-import alix.common.AlixCommonMain;
 import alix.firewall.FireWallOS;
 
-import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 
-final class AlixOSFireWall {
+public final class AlixOSFireWall {
 
+    //Disabled for now
     public static final AlixOSFireWall INSTANCE;
+    public static final boolean isOsFireWallInUse;
     private final FireWallOS delegate;
 
     static {
@@ -18,12 +17,13 @@ final class AlixOSFireWall {
         try {
             delegate = (FireWallOS) Naming.lookup("rmi://localhost:1099/alix_firewall");
         } catch (NotBoundException e) {
-            AlixCommonMain.logInfo("NAME NOT BOUND");
-            e.printStackTrace();
-        } catch (MalformedURLException | RemoteException e) {
-            e.printStackTrace();
+            /*AlixCommonMain.logInfo("NAME NOT BOUND");
+            e.printStackTrace();*/
+        } catch (Exception e) {
+            //e.printStackTrace();
         }
         INSTANCE = delegate != null ? new AlixOSFireWall(delegate) : null;
+        isOsFireWallInUse = INSTANCE != null;
     }
 
     private AlixOSFireWall(FireWallOS delegate) {

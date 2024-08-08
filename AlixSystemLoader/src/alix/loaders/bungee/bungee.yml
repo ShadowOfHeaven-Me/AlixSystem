@@ -1,0 +1,4 @@
+main: alix.loaders.bungee.BungeeAlixMain
+name: AlixBungee
+version: 1.0.0
+author: ShadowOfHeaven

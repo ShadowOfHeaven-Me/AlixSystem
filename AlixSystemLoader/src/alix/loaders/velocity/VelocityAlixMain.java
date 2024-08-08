@@ -1,10 +1,11 @@
 package alix.loaders.velocity;
 
 import alix.common.AlixMain;
+import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
-import alix.common.utils.file.update.FileUpdater;
 import alix.common.utils.file.AlixFileManager;
+import alix.common.utils.file.update.FileUpdater;
 import alix.loaders.classloader.JarInJarClassLoader;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
@@ -20,7 +21,8 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.nio.file.Path;
 
-@Plugin(id = "AlixSystem", name = "AlixSystem", version = "2.8.0", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
+@MainClass
+@Plugin(id = "alixsystem", name = "AlixSystem", version = "2.8.0", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
         authors = "ShadowOfHeaven", dependencies = @Dependency(id = "FastLogin", optional = true))
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
@@ -70,7 +72,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         return logger;
     }
 
-    public final ProxyServer getServer() {
+    public ProxyServer getServer() {
         return server;
     }
 
@@ -86,6 +88,24 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
     @Override
     public LoaderBootstrap getBootstrap() {
         return bootstrap;
+    }
+
+    private final ParamImpl params = new ParamImpl();
+
+    @Override
+    public Params getEngineParams() {
+        return this.params;
+    }
+
+    private static final class ParamImpl implements Params {
+
+        @Override
+        public String messagesFileName() {
+            return null;//NONE YET
+        }
+
+        private ParamImpl() {
+        }
     }
 
     public YamlConfiguration getConfig() {

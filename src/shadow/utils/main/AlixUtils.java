@@ -3,11 +3,13 @@ package shadow.utils.main;
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.i18n.HttpsHandler;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
@@ -25,10 +27,10 @@ import shadow.Main;
 import shadow.systems.commands.ExecutableCommandList;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
-import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
-import shadow.utils.holders.skull.SkullSupplier;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.misc.ReflectionUtils;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.misc.skull.SkullSupplier;
+import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.world.AlixWorldHolder;
 
 import java.io.IOException;
@@ -52,18 +54,17 @@ public final class AlixUtils {
     //public static final String[] invalidNicknamesStart;
     //public static final Language pluginLanguage;
     public static final ExecutableCommandList registerCommandList, loginCommandList, autoLoginCommandList, autoRegisterCommandList;
-    public static final String serverVersion, operatorCommandPassword, chatFormat;//, banFormat;
+    public static final String operatorCommandPassword, chatFormat;//, banFormat;
     public static final CaptchaType captchaVerificationType;
     public static final CaptchaVisualType captchaVerificationVisualType;
-    public static final LoginType defaultLoginType;
     public static final float doubledDefaultWalkSpeed, doubledDefaultFlySpeed;
     //public static final long verificationReminderDelay;
-    public static final int bukkitVersion, maximumTotalAccounts, maxCaptchaTime, maxLoginTime, maxLoginAttempts, maxCaptchaAttempts;//, lowestTeleportableYLevel;
+    public static final int maximumTotalAccounts, maxCaptchaTime, maxLoginTime, maxLoginAttempts, maxCaptchaAttempts;//, lowestTeleportableYLevel;
     public static final byte captchaLength;
-    public static final boolean isOperatorCommandRestricted, playerIPAutoLogin, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
+    public static final boolean isOperatorCommandRestricted, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
-            anvilPasswordGui, pinPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
+            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
 
     private static final String
             tooLongMessage = Messages.get("password-invalid-too-long"),
@@ -97,6 +98,13 @@ public final class AlixUtils {
         }*/
         String captchaVisualType = config.getString("captcha-visual-type").toLowerCase();
         switch (captchaVisualType) {
+            case "smooth":
+                if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
+                    Main.logWarning("The option 'smooth' in 'captcha-visual-type' is only available in a headful graphic environment," +
+                            " with this being a headless one. Switching to 'subtitle', as default!");
+                    captchaVisualType = "subtitle";
+                }
+                break;
             case "particle":
                 if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
                     Main.logWarning("The option 'particle' in 'captcha-visual-type' is only available in a headful graphic environment," +
@@ -128,7 +136,7 @@ public final class AlixUtils {
             case "message":
                 break;
             default:
-                Main.logWarning("Invalid 'captcha-visual-type' parameter set in config! Available: map, subtitle & message, but instead got '" +
+                Main.logWarning("Invalid 'captcha-visual-type' parameter set in config! Available: particle, map, subtitle & message, but instead got '" +
                         captchaVisualType + "! Switching to 'subtitle', as default.");
                 captchaVisualType = "subtitle";
                 break;
@@ -143,24 +151,9 @@ public final class AlixUtils {
                         captchaType + "! Switching to 'text', as default.");
                 break;
         }
-        String loginType = config.getString("password-type").toLowerCase();
-        switch (loginType) {
-            case "password":
-            case "command":
-            case "pin":
-            case "anvil_password":
-            case "anvil":
-                break;
-            default:
-                Main.logWarning("Invalid 'password-type' parameter set in config! Available: password & pin, but instead got '" +
-                        captchaType + "! Switching to 'password', as default.");
-                break;
-        }
         //pluginLanguage = getPluginLanguage(language);
         isPluginLanguageEnglish = !language.equals("pl");
-        defaultLoginType = LoginType.from(loginType.toUpperCase(), true);
-        anvilPasswordGui = defaultLoginType == LoginType.ANVIL;
-        pinPasswordGui = defaultLoginType == LoginType.PIN;
+        anvilPasswordGui = ConfigParams.defaultLoginType == LoginType.ANVIL;
         captchaVerificationType = CaptchaType.from(captchaType.toUpperCase());
         captchaVerificationVisualType = CaptchaVisualType.from(captchaVisualType.toUpperCase());
         //renderFancyCaptchaDigits = config.getBoolean("fancy-digits") && captchaVerificationType == CaptchaType.NUMERIC;
@@ -189,7 +182,6 @@ public final class AlixUtils {
         antibotService = config.getBoolean("antibot-service");
         isOfflineExecutorRegistered = config.getBoolean("offline-login-requirement") && !isOnlineModeEnabled;
         maxLoginAttempts = config.getInt("max-login-attempts");
-        playerIPAutoLogin = config.getBoolean("auto-login");
         isDebugEnabled = config.getBoolean("debug");
         userDataAutoSave = config.getBoolean("auto-save");
         overrideExistingCommands = config.getBoolean("override-existing-commands");
@@ -211,15 +203,15 @@ public final class AlixUtils {
         isOperatorCommandRestricted = config.getBoolean("restrict-op-command");
         operatorCommandPassword = config.getString("op-command-password");
         maxCaptchaAttempts = config.getInt("max-captcha-attempts");
-        hideFailedJoinAttempts = config.getBoolean("hide-failed-join-attempts");
-        alixJoinLog = config.getBoolean("custom-join-log");
+        hideFailedJoinAttempts = AlixConsoleFilterHolder.hideFailedJoinAttempts;
+        alixJoinLog = AlixConsoleFilterHolder.alixJoinLog;
         //invalidNicknamesStart = config.getStringList("disallow-join-of").toArray(new String[0]);
         //spawn = Spawn.fromString(config.getString("spawn-location"));
 
         maxLoginTime = config.getInt("max-login-time");
         //lowestTeleportableYLevel = getLowestTeleportableLevel();
-        serverVersion = getServerVersion();
-        bukkitVersion = getBukkitVersion();
+        /*serverVersion = getServerVersion();
+        bukkitVersion = getBukkitVersion();*/
         //name - password - ip - homes
         //alexSkinTexture = parseTexture("Alex");
 
@@ -233,6 +225,22 @@ public final class AlixUtils {
         doubledDefaultFlySpeed = 0.1F;
         if (config.getBoolean("ping-before-join")) AlixHandler.initializeServerPingManager();
         AlixHandler.updateConsoleFilter();
+    }
+
+    public static boolean isFakePlayer(Player player) {
+        return isFakeChannel(ProtocolManager.CHANNELS.get(player.getUniqueId()));
+    }
+
+    //From PacketEvents
+    public static boolean isFakeChannel(Object channel) {
+        if (channel == null) return true;
+        switch (channel.getClass().getSimpleName()) {
+            case "FakeChannel":
+            case "SpoofedChannel":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static String getFields(Object o) {
@@ -334,6 +342,10 @@ public final class AlixUtils {
 
     private static final SkullSupplier skullSupplier = SkullSupplier.createImpl();
 
+    public static ItemStack getSkull(String url) {
+        return skullSupplier.createSkull(url);
+    }
+
     public static ItemStack getSkull(String name, String url) {
         ItemStack head = skullSupplier.createSkull(url);
         ItemMeta meta = head.getItemMeta();
@@ -426,12 +438,6 @@ public final class AlixUtils {
         return s.equals("null") ? null : s;
     }
 
-    public static LoginType readLoginType(String s, LoginType defaultForNull) {
-        if (s.equals("null")) return defaultForNull;
-        if (s.equals("0")) return defaultLoginType;
-        return LoginType.from(s, false);
-    }
-
 /*    public static double getDamageReduced(Player player) {//some random guy made this at https://www.spigotmc.org/threads/get-armor-defense-points-from-a-player.153971/
         PlayerInventory inv = player.getInventory();
         ItemStack helmet = inv.getHelmet();
@@ -474,30 +480,6 @@ public final class AlixUtils {
         //
         return armor;
     }*/
-
-    public static String[] ensureSplitDataCorrectness(String[] splitData) {
-        int correctLength = PersistentUserData.CURRENT_DATA_LENGTH;
-        int splitDataLength = splitData.length;
-        int diff = correctLength - splitDataLength;
-
-        if (diff == 0) return splitData;
-/*        if (diff < 0)
-            throw new RuntimeException("PersistentUserData length is more than expected! Data: (" + setAsOneAndAddAfter(splitData,"|") + ") Expected: "
-                    + correctLength + " Got: " + splitDataLength + "!");*/
-
-        //if (splitData[5].equals("null")) splitData[5] = "0";//nope
-
-        String[] correctData = new String[correctLength];
-        //Arrays.fill(correctData, "0");
-        System.arraycopy(splitData, 0, correctData, 0, splitDataLength);
-        for (int i = splitDataLength; i < correctLength; i++) {
-            /*if (correctData[i] != null) //Useless
-                throw new RuntimeException("Null to be expected data is not null! Index: " + i + " data: " + correctData[i] + " whole: " + setAsOneAndAddAfter(splitData, "|"));
-            */
-            correctData[i] = "0";
-        }
-        return correctData;
-    }
 
     public static char[] getCharsUntilCharOrSelfIfNone(char[] a, char breaker) {
         for (int i = 0; i < a.length; i++)
@@ -1416,14 +1398,14 @@ public final class AlixUtils {
         return Language.ENGLISH;
     }*/
 
-    private static String getServerVersion() {
+    /*private static String getServerVersion() {
         return Bukkit.getServer().getClass().getPackage().getName().substring(23).replaceAll("_", ".").
                 replaceAll("R", "").replaceAll("v", "");
     }
 
     private static int getBukkitVersion() {
         return parseInteger(getServerVersion().split("\\.")[1]);
-    }
+    }*/
 
     private static int getLowestTeleportableLevel() {
         return AlixWorldHolder.getMain().getMaxHeight() >= 319 ? -66 : -2;

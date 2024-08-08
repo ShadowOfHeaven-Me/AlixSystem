@@ -3,8 +3,8 @@ package shadow.systems.commands.tab;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
+import alix.common.data.PersistentUserData;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -4,7 +4,7 @@ import alix.common.messages.Messages;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import shadow.utils.holders.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 
 @Sharable
 public final class DelayedChannelFireWall extends ChannelDuplexHandler {

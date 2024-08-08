@@ -13,8 +13,9 @@ import org.bukkit.inventory.ItemStack;
 import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
+import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.objects.savable.data.DataChanges;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import alix.common.data.PersistentUserData;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.types.VerifiedUser;
 import shadow.utils.users.UserManager;
@@ -34,20 +35,20 @@ public final class PasswordsGUI extends AlixGUI {
             secondaryPasswordChange = getAsObject("gui-passwords-changed-secondary");
 
     private static final LoginTypeItem
-            COMMAND_LOGIN_TYPE = new LoginTypeItem(create(Material.COMMAND_BLOCK, get("gui-passwords-login-type-command")), LoginType.COMMAND),
+            COMMAND_LOGIN_TYPE = new LoginTypeItem(create(AlixMaterials.COMMAND_BLOCK.getItemCloned(), get("gui-passwords-login-type-command")), LoginType.COMMAND),
             PIN_LOGIN_TYPE = new LoginTypeItem(rename(PasswordGui.digits[1].clone(), get("gui-passwords-login-type-pin")), LoginType.PIN),
             ANVIL_LOGIN_TYPE = new LoginTypeItem(create(Material.ANVIL, get("gui-passwords-login-type-anvil")), LoginType.ANVIL);
 
     private static final LoginTypeItem
             NO_LOGIN_TYPE_SECONDARY = new LoginTypeItem(create(Material.BARRIER, get("gui-passwords-login-type-secondary-disabled")), null),
-            COMMAND_LOGIN_TYPE_SECONDARY = new LoginTypeItem(create(Material.COMMAND_BLOCK, get("gui-passwords-login-type-secondary-command")), LoginType.COMMAND),
+            COMMAND_LOGIN_TYPE_SECONDARY = new LoginTypeItem(create(AlixMaterials.COMMAND_BLOCK.getItemCloned(), get("gui-passwords-login-type-secondary-command")), LoginType.COMMAND),
             PIN_LOGIN_TYPE_SECONDARY = new LoginTypeItem(rename(PasswordGui.digits[1].clone(), get("gui-passwords-login-type-secondary-pin")), LoginType.PIN),
             ANVIL_LOGIN_TYPE_SECONDARY = new LoginTypeItem(create(Material.ANVIL, get("gui-passwords-login-type-secondary-anvil")), LoginType.ANVIL);
 
     private static final ItemStack
-            SAVE_CHANGES = create(Material.GREEN_CONCRETE, get("gui-passwords-save-changes")),
-            INPUT_PASSWORD = create(Material.OAK_SIGN, get("gui-passwords-change-main")),
-            INPUT_SECONDARY_PASSWORD = create(Material.OAK_SIGN, get("gui-passwords-change-secondary"));
+            SAVE_CHANGES = create(AlixMaterials.GREEN_CONCRETE.getItemCloned(), get("gui-passwords-save-changes")),
+            INPUT_PASSWORD = create(AlixMaterials.OAK_SIGN.getItemCloned(), get("gui-passwords-change-main")),
+            INPUT_SECONDARY_PASSWORD = create(AlixMaterials.OAK_SIGN.getItemCloned(), get("gui-passwords-change-secondary"));
     //ENCHANTED_INPUTTED_PASSWORD = create(Material.OAK_SIGN, "&aChange Password");
 
 /*    static {

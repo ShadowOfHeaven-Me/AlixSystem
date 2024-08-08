@@ -1,6 +1,6 @@
 package alix.common.scheduler.impl.bukkit;
 
-import alix.common.AlixCommonMain;
+import alix.common.reflection.BukkitReflection;
 import alix.common.reflection.CommonReflection;
 import alix.common.scheduler.impl.AbstractAlixScheduler;
 import alix.common.scheduler.tasks.SchedulerTask;
@@ -19,12 +19,12 @@ public final class BukkitAlixScheduler extends AbstractAlixScheduler {
     private final SyncScheduler sync;
 
     public BukkitAlixScheduler() {
-        Field f = CommonReflection.getFieldOrNullIfAbsent(CommonReflection.MC_SERVER_OBJ, "processQueue");
+        Field f = CommonReflection.getFieldOrNullIfAbsent(BukkitReflection.MC_SERVER_OBJ, "processQueue");
         this.sync = f != null ? new NMSSyncScheduler(f) : new BukkitSyncScheduler();
-        if (f == null)
+        /*if (f == null)
             AlixCommonMain.logInfo("Using the unoptimized BukkitAlixScheduler for task execution - Paper is suggested for better performance.");
         else
-            AlixCommonMain.logInfo("Using the optimized NMSAlixScheduler for task execution.");
+            AlixCommonMain.logInfo("Using the optimized NMSAlixScheduler for task execution.");*/
     }
 
     @Override
@@ -57,7 +57,7 @@ public final class BukkitAlixScheduler extends AbstractAlixScheduler {
         private final Queue<Runnable> tasks;
 
         private NMSSyncScheduler(Field f) {
-            this.tasks = (Queue<Runnable>) CommonReflection.get(f, CommonReflection.MC_SERVER_OBJ);
+            this.tasks = (Queue<Runnable>) CommonReflection.get(f, BukkitReflection.MC_SERVER_OBJ);
         }
 
         @Override

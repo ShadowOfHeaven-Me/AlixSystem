@@ -4,14 +4,15 @@ import alix.common.data.security.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.utils.file.update.UpdateChecker;
+import alix.common.utils.formatter.AlixFormatter;
 import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.dependencies.Dependencies;
@@ -22,36 +23,53 @@ import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.systems.metrics.Metrics;
+import shadow.systems.netty.AlixInterceptor;
 import shadow.systems.virtualization.manager.UserSemiVirtualization;
-import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
+import shadow.utils.misc.ReflectionUtils;
+import shadow.utils.misc.effect.PotionEffectHandler;
+import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.BukkitAnvilPasswordBuilder;
 import shadow.utils.world.AlixWorld;
 
 import java.util.logging.Level;
 
-import static shadow.utils.main.AlixUtils.anvilPasswordGui;
 import static shadow.utils.main.AlixUtils.requireCaptchaVerification;
 
 public final class Main implements LoaderBootstrap {
 
     public static Thread mainServerThread;
-    public static JavaPlugin plugin;
+    public static BukkitAlixMain plugin;
     public static YamlConfiguration config;
     public static final PluginManager pm = Bukkit.getPluginManager();
     private Metrics metrics;
     private boolean en = true;
 
     //UPDATE:
-    //[*] Fixed a critical error on 1.20.4+
-    //[*] Removed a debug message
+    //[+] Added 1.12 - 1.21 support (GUIs will still only work for 1.14+)
+    //[+] Added support for fake players
+    //[+] Added a new captcha type: Smooth
+    //[+] Changed the connection close strategy for 'prevent-first-time-join', from max-sized to time-based
+    //[+] Antibot-related connection filters will now close the connection before the auth thread is started to reduce overhead
+    //[+] Added faster FireWall implementations for Nio and Epoll
+    //[+] Introduced more safety in concurrent collections and in netty usage
+    //[*] Fixed plugin incompatibility issue
+    //[*] Fixed a bad packet vulnerability issue
+    //[*] Fixed several TAB-related issues
+    //[*] Fixed scoreboards disappearing
+    //[*] Fixed action bar messages being saved and resent as normal messages after verification
+    //[*] Fixed "Network Protocol Error" disconnecting the player sometimes
+    //[*] Fixed invalid benchmark results
+    //[*] Updated PacketEvents to support 1.21
+    //[*] Xp countdown updates will now happen every 500ms instead of every 200ms
+    //[-] Removed connection throttle warning due to handling changes
+
+    //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
     //todo: Add a custom data structure for unverified users
-    //TODO: fix pin gui's location sounds bugs
     //TODO: add book captcha possibility in config
 
 /*    #Defines whether the numerical digits generated on a captcha map item should be 'fancy'
@@ -98,40 +116,36 @@ public final class Main implements LoaderBootstrap {
 
     public Main(BukkitAlixMain instance) {
         plugin = instance;
-/*        try {
-            Field f = JavaPlugin.class.getDeclaredField("isEnabled");
-            f.setBoolean(instance, true);
-            Bukkit.getServer().getPluginManager().registerEvents(new WorldLoadListener(), instance);
-            f.setBoolean(instance, false);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }*/
     }
 
-    //DO NOT USE THE ALIX SCHEDULER ON LOAD, CUZ ON PAPER THIS MFO THROWS ERRORS
+    //Don't use alix scheduler on load, cuz errors on paper
     @Override
     public void onLoad() {
         //ServerLoadEvent
-        //TODO: Make ip autologin ask configurable
         //if (autoRestart()) return;
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
         PacketEventsManager.onLoad();
+        //Main.logError("LOADERRRR " + PacketEvents.class.getClassLoader());
         config = (YamlConfiguration) plugin.getConfig();
         this.metrics = Metrics.createMetrics();
-        AlixHandler.kickAll("Reload");
+        kickAll("Reload");
     }
 
     @Override
     public void onEnable() {//TODO: Player GUI in /js commands (texture not working & items can be picked up)
         //AlixScheduler.repeatAsync(() -> logInfo("Size: " + Bukkit.getOnlinePlayers().size() + " Ver: " + UserManager.userCount()), 1L, TimeUnit.SECONDS);
+        //AlixBungee.init();
+        //ParticleRenderer3d.render();
+        /*if(Bukkit.getServer().getOnlineMode()) {
+            Main.logError("Online mode is enabled! Alix is now an offline mode-only plugin!");
+        }*/
         PreStartUpExecutors preStartUpExecutors = new PreStartUpExecutors();
         pm.registerEvents(preStartUpExecutors, plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
-        ReflectionUtils.replaceBansToConcurrent();
         Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
         VerificationReminder.init();
-        if (anvilPasswordGui) BukkitAnvilPasswordBuilder.init();
+        BukkitAnvilPasswordBuilder.init();
         MethodProvider.init();
         IpAutoLoginGUI.init();
         AlixCommandManager.init();
@@ -141,18 +155,19 @@ public final class Main implements LoaderBootstrap {
         PremiumAutoIn.checkForInit();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         CommandManager.register();
-        PacketEventsManager.onEnable();
         AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
         UserSemiVirtualization.init();
         //AlixScheduler.sync(UserVirtualization::init);
     }
 
+    //TODO: Fix constant buffers OOM with reloads
     @Override
     public void onDisable() {//ChatColor.of(color)
         //logConsoleInfo("Saving files...");
         //UserVirtualization.RETURN_ORIGINAL_PLAYER_LIST.run();
-        UserSemiVirtualization.RETURN_ORIGINAL_SETUP.run();
         FileManager.saveFiles();
+        //if (AlixInterceptor.fireWallType == FireWallType.FAST_UNSAFE_NIO) AlixFastUnsafeNIO.unregister();
+        UserSemiVirtualization.RETURN_ORIGINAL_SETUP.run();
         PacketEvents.getAPI().terminate();
         Captcha.cleanUp();
         //logConsoleInfo("Saved!");
@@ -162,10 +177,18 @@ public final class Main implements LoaderBootstrap {
         AlixScheduler.shutdown();
         if (this.metrics != null) this.metrics.shutdown();
         AlixThread.shutdownAllAlixThreads();
+        AlixInterceptor.onDisable();
+
         //if (preStartUpExecutors != null) HandlerList.unregisterAll(preStartUpExecutors);
         //if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
         logConsoleInfo(en ? "AlixSystem has been disabled." : "AlixSystem zostało wyłączone.");
     }
+
+    //Done this funky way because of class visibility issues, due to different ClassLoaders (fixed it ;])
+/*    @RemotelyInvoked
+    public LoginType getConfigLoginType() {
+        return LoginType.from(config.getString("password-type").toUpperCase(), true, PacketEvents.getAPI().getServerManager().getVersion().isOlderThan(ServerVersion.V_1_14));
+    }*/
 
 /*    public static void disable() {
         pm.disablePlugin(plugin);
@@ -194,29 +217,31 @@ public final class Main implements LoaderBootstrap {
     private void setUp(PreStartUpExecutors preStartUpExecutors) {
         en = AlixUtils.isPluginLanguageEnglish;
         //AlixHandler.kickAll("Reload");
+        PacketEventsManager.onEnable();
+        ReflectionUtils.replaceBansToConcurrent();
         UpdateChecker.checkForUpdates();
         //AlixScheduler.async(UpdateChecker::checkForUpdates);
         //logError("BEFORE CAPTCHA LOAD");
         Captcha.pregenerate(); //will not pregenerate the captcha itself if disabled, but needs to be invoked for the BufferedPackets values to pregenerate
         //logError("AFTER CAPTCHA LOAD");
+        PotionEffectHandler.init();
         if (requireCaptchaVerification) Captcha.sendInitMessage();
         PacketBlocker.init(); //load the class
         //PacketInterceptor.init();//send the init message
         //ConfigUpdater.checkForUpdates(config);
-        ReflectionUtils.init();
-        if (config.getBoolean("check-server-compatibility")) {
+        /*if (config.getBoolean("check-server-compatibility")) {
             //logConsoleInfo(en ? "Started checking for plugin compatibilities..." : "Rozpoczęto sprawdzanie kompatybilności pluginów...");
             //checkPlugins();
-            if (Bukkit.getConnectionThrottle() > 500 && config.getBoolean("prevent-first-time-join")) {
+            *//*if (Bukkit.getConnectionThrottle() > 500 && config.getBoolean("prevent-first-time-join")) {
                 logWarning("");
                 logWarning("The connection throttle in bukkit.yml settings is " + Bukkit.getConnectionThrottle() + ",");
-                logWarning("with the recommended number being 500 or below, with the reason of it being annoying for");
-                logWarning("unregistered players when combined with Alix's 'prevent-first-time-join' safety measure. If you wish to have");
-                logWarning("it overridden automatically type /alixsystem connection-setup or /as c-s for short.");
+                logWarning("with the recommended number being 500 or below. The reason for that is that it can annoying for");
+                logWarning("unregistered players when combined with Alix's 'prevent-first-time-join' safety measure. It's highly recommended to have");
+                logWarning("it overridden automatically with /alixsystem connection-setup or /as c-s for short.");
                 logWarning("");
-            }
+            }*//*
             //logConsoleInfo(en ? "Done!" : "Ukończono!");
-        }
+        }*/
         // String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         //logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
         AlixHandler.initExecutors(pm);
@@ -308,6 +333,11 @@ public final class Main implements LoaderBootstrap {
         plugin.getLogger().info(info);
         //System.out.println(info);
         //MessageUtils.toStdout(
+    }
+
+    private void kickAll(String reason) {
+        String kickMessage = AlixFormatter.appendPrefix(reason);
+        for (Player p : Bukkit.getOnlinePlayers()) p.kickPlayer(kickMessage);
     }
 
 /*    public void logConsoleWarning(String warning) {

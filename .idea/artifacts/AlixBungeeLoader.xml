@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="AlixBungeeLoader">
+    <output-path>$PROJECT_DIR$/../../../ALIX BUNGEEEE/plugins</output-path>
+    <root id="archive" name="AlixBungee.jar">
+      <element id="module-output" name="AlixSystemLoader" />
+      <element id="artifact" artifact-name="AlixSystemBungee" />
+      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/alix/loaders/bungee/bungee.yml" />
+    </root>
+  </artifact>
+</component>

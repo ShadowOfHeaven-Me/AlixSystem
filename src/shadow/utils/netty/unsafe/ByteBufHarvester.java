@@ -3,22 +3,23 @@ package shadow.utils.netty.unsafe;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import shadow.utils.netty.unsafe.first.FirstOutboundHandler;
 
-public final class ByteBufHarvester extends ChannelOutboundHandlerAdapter {
+public final class ByteBufHarvester extends FirstOutboundHandler {
 
-    private static final String name = "alix-harvester";
+    private static final String name = "alix-buf-harvester";
     volatile ByteBuf harvested;
     volatile boolean harvest;
 
     private ByteBufHarvester() {
+        super(name);
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (!this.harvest) super.write(ctx, msg, promise);
-        else this.harvested = (ByteBuf) msg;
+        if (this.harvest) this.harvested = ((ByteBuf) msg).retain();
+        super.write(ctx, msg, promise);
     }
 
     public static ByteBufHarvester newHarvesterFor(Channel channel) {

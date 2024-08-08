@@ -1,8 +1,12 @@
 package shadow.systems.executors;
 
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.connection.filters.ConnectionFilter;
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.file.managers.IpsCacheFileManager;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,14 +16,10 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.WorldSaveEvent;
 import shadow.systems.login.autoin.PremiumAutoIn;
-import shadow.systems.login.filters.ConnectionFilter;
-import shadow.systems.login.result.ConnectionThreadManager;
 import shadow.systems.login.result.LoginVerdictManager;
-import shadow.utils.holders.methods.MethodProvider;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
-import shadow.utils.main.file.managers.UserFileManager;
-import shadow.utils.objects.savable.data.PersistentUserData;
+import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.users.Verifications;
 import shadow.utils.world.AlixWorld;
 import shadow.utils.world.AlixWorldHolder;
@@ -41,7 +41,10 @@ public final class OfflineExecutors extends UniversalExecutors {
         String name = e.getName();
         String ip = e.getAddress().getHostAddress();
         //The FireWall should handle unnecessary connections from being processed
-        if (antibotService) ConnectionThreadManager.onJoinAttempt(name, e.getAddress());
+
+        //This logic was moved to AlixChannelHandler
+        //if (antibotService) ConnectionThreadManager.onJoinAttempt(name, e.getAddress());
+
         if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
         /*if (Bukkit.getMaxPlayers() <= UserManager.userCount()) {//we have to perform this check due to semi-virtualization problems - the server does not really know how many players there currently are on the server
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_FULL, this.serverIsFull);
@@ -76,23 +79,25 @@ public final class OfflineExecutors extends UniversalExecutors {
 
         if (PremiumAutoIn.remove(name)) {
             for (ConnectionFilter filter : premiumFilters) {
-                if (filter.disallowJoin(ip, name)) {
+                if (filter.disallowJoin(e.getAddress(), ip, name)) {
                     e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                     return;
                 }
             }
-            LoginVerdictManager.addOnline(name, ip, PersistentUserData.createFromPremiumInfo(name, ip), true, e);
+            LoginVerdictManager.addOnline(name, ip, PersistentUserData.createFromPremiumInfo(name, e.getAddress()), true, e);
             return;
         }
 
         for (ConnectionFilter filter : filters) {
-            if (filter.disallowJoin(ip, name)) {
+            if (filter.disallowJoin(e.getAddress(), ip, name)) {
                 e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                 return;
             }
         }
         LoginVerdictManager.addOffline(name, ip, data, e);
     }
+
+    //Moved to UserSemiVirtualization and related
 
     /*@EventHandler(priority = EventPriority.MONITOR)
     public void onSpawnLocInit(PlayerSpawnLocationEvent event) {
@@ -209,6 +214,7 @@ public final class OfflineExecutors extends UniversalExecutors {
                 UserFileManager.onAsyncSave();
                 OriginalLocationsManager.onAsyncSave();
                 FireWallManager.onAsyncSave();
+                IpsCacheFileManager.save();
             });
         }
     }

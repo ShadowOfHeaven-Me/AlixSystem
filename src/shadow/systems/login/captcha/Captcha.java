@@ -3,7 +3,7 @@ package shadow.systems.login.captcha;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import shadow.Main;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
-import shadow.systems.login.captcha.manager.CountdownTask;
+import shadow.systems.login.captcha.manager.VirtualCountdown;
 import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.types.UnverifiedUser;
@@ -21,7 +21,7 @@ public abstract class Captcha {
     }
 
     public static void pregenerate() {
-        CountdownTask.pregenerate();
+        VirtualCountdown.pregenerate();
         //VerificationThreadManager.initialize();
     }
 
@@ -33,7 +33,7 @@ public abstract class Captcha {
 
     public abstract void sendPackets(UnverifiedUser user);
 
-    public void uninject() {
+    public void release() {
     }
 
     public void onCompletion(UnverifiedUser user) {

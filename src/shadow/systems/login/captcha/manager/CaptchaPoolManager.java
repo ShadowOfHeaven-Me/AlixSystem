@@ -25,11 +25,11 @@ public final class CaptchaPoolManager {
     Main.logError("Regenerated in: " + ((n2 - nano) / Math.pow(10, 6)) + " ms");*/
 
     public void uninjectAll() {
-        this.deque.forEachNonNull(future -> future.whenCompleted(Captcha::uninject));
+        this.deque.forEachNonNull(future -> future.whenCompleted(Captcha::release));
     }
 
     public AlixFuture<Captcha> poll() {
-        return this.deque.getAndReplaceWith(CaptchaGenerator.generateCaptchaFuture());
+        return this.deque.getNextAndReplace(CaptchaGenerator.generateCaptchaFuture());
     }
 
     private void addNew() {

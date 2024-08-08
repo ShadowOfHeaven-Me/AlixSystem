@@ -1,3 +1,4 @@
+/*
 package shadow.systems.virtualization.packets.login_impl;
 
 import alix.common.utils.other.throwable.AlixException;
@@ -8,7 +9,7 @@ import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.main.AlixUnsafe;
+import alix.common.utils.other.AlixUnsafe;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,6 +17,7 @@ import java.lang.reflect.Method;
 
 public final class PacketTransformation {
 
+*/
 /*    public static ByteBuf createLogin() throws Exception {
         Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
         Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
@@ -25,16 +27,23 @@ public final class PacketTransformation {
         for (Constructor<?> constructor : clazz.getConstructors()) {
 
         }
-        *//*switch (PacketEvents.getAPI().getServerManager().getVersion()) {
+        *//*
+*/
+/*switch (PacketEvents.getAPI().getServerManager().getVersion()) {
             case V_1_20_1:
 
         }*//*
+*/
+/*
         return buf;
-    }*/
+    }*//*
 
+
+*/
 /*    public static PacketWrapper<?> wrapperOf(Object minecraftPacket) {
         ByteBuf buf = write(minecraftPacket);
-    }*/
+    }*//*
+
 
     private static final Unsafe UNSAFE = AlixUnsafe.getUnsafe();
     private static final long packetTypeDataOffset = AlixUnsafe.objectFieldOffset(PacketWrapper.class, "packetTypeData");
@@ -83,4 +92,4 @@ public final class PacketTransformation {
             throw new RuntimeException(e);
         }
     }
-}
+}*/

@@ -1,13 +1,15 @@
 package shadow.utils.objects.savable.data.gui.virtual;
 
 import alix.common.utils.AlixCommonUtils;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
-import shadow.utils.holders.packet.constructors.AlixInventoryType;
-import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
+import shadow.utils.misc.packet.constructors.AlixInventoryType;
+import shadow.utils.misc.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 
 import java.util.List;
@@ -46,7 +48,21 @@ public final class CachingVirtualInventory extends VirtualInventory {
         return constInvOpenByteBuf(AlixInventoryType.generic9xN(size), title);
     }
 
+    private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
+
+    //https://c4k3.github.io/wiki.vg/Protocol.html#Open_Window
+    //https://c4k3.github.io/wiki.vg/Inventory.html
     public static ByteBuf constInvOpenByteBuf(AlixInventoryType type, Component title) {
-        return NettyUtils.constBuffer(new WrapperPlayServerOpenWindow(1, type.getId(), title));//window id = 1
+        WrapperPlayServerOpenWindow wrapper;
+
+        //window id = 1
+        if (version.isNewerThanOrEquals(ServerVersion.V_1_14))
+            wrapper = new WrapperPlayServerOpenWindow(1, type.getId(), title);
+        else {
+            String oldType = type == AlixInventoryType.ANVIL ? "minecraft:anvil" : "minecraft:container";
+            wrapper = new WrapperPlayServerOpenWindow(1, oldType, title, type.size(), -1);
+        }
+
+        return NettyUtils.constBuffer(wrapper);
     }
 }

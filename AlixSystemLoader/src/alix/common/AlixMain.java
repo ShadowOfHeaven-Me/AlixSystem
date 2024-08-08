@@ -10,4 +10,11 @@ public interface AlixMain {
 
     LoaderBootstrap getBootstrap();
 
+    Params getEngineParams();
+
+    interface Params {
+
+        String messagesFileName();
+
+    }
 }

@@ -5,22 +5,24 @@ import alix.common.scheduler.AlixScheduler;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommand;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
-import io.netty.buffer.ByteBuf;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.gui.AlixGUI;
-import shadow.utils.holders.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.misc.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.objects.packet.PacketProcessor;
+import shadow.utils.objects.packet.types.unverified.AnvilGUIPacketBlocker;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.builders.BukkitAnvilPasswordBuilder;
 import shadow.utils.users.types.VerifiedUser;
@@ -40,7 +42,8 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     private boolean settingPassword;
     private BukkitAnvilPasswordBuilder builder;
     private Supplier<LoginType> loginType;
-    private ByteBuf lastItemsPacket;
+    private List<ItemStack> items;
+    //private int windowId;
 
     private VerifiedPacketProcessor(VerifiedUser user) {
         this.user = user;
@@ -67,7 +70,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
         }
         switch (event.getPacketType()) {
             case NAME_ITEM:
-                this.passwordInput(event);
+                this.passwordInput(new WrapperPlayClientNameItem(event).getItemName());
                 event.setCancelled(true);
                 return;
             case CLOSE_WINDOW:
@@ -76,6 +79,14 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
                 return;
             case CLICK_WINDOW:
                 this.builder.spoofValidAccordingly();
+                return;
+            case PLUGIN_MESSAGE:
+                WrapperPlayClientPluginMessage wrapper = new WrapperPlayClientPluginMessage(event);
+                if (wrapper.getChannelName().equals("MC|ItemName")) {
+                    this.passwordInput(AnvilGUIPacketBlocker.getOldAnvilInput(wrapper.getData()));
+                    event.setCancelled(true);
+                }
+                //Bukkit.broadcastMessage("IN: " + wrapper.getChannelName() + " " + Arrays.toString(wrapper.getData()) + " " + new String(wrapper.getData(), StandardCharsets.UTF_8));
                 //event.setCancelled(true);
         }
     }
@@ -129,9 +140,10 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
                 this.builder.updateWindowId(new WrapperPlayServerOpenWindow(event).getContainerId());
                 return;
             case WINDOW_ITEMS:
-                this.builder.updateWindowId(new WrapperPlayServerWindowItems(event).getWindowId());
-                if (this.lastItemsPacket != null) this.lastItemsPacket.release();
-                this.lastItemsPacket = ((ByteBuf) event.getByteBuf()).copy();
+                WrapperPlayServerWindowItems packet = new WrapperPlayServerWindowItems(event);
+                int windowId = packet.getWindowId();
+                this.builder.updateWindowId(windowId);
+                if (windowId == 0) this.items = packet.getItems();
                 event.setCancelled(true);
         }
     }
@@ -141,8 +153,8 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
         return;
     }*/
 
-    private void passwordInput(PacketPlayReceiveEvent event) {
-        String text = new WrapperPlayClientNameItem(event).getItemName(); //(String) ReflectionUtils.inItemNamePacketTextMethod.invoke(event);
+    private void passwordInput(String text) {
+        //String text = new WrapperPlayClientNameItem(event).getItemName(); //(String) ReflectionUtils.inItemNamePacketTextMethod.invoke(event);
 
         String invalidityReason = AlixUtils.getPasswordInvalidityReason(text, this.loginType.get());
 
@@ -161,11 +173,13 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     }
 
     public void disablePasswordSetting() {
-        if (this.lastItemsPacket != null) user.silentContext().writeAndFlush(this.lastItemsPacket);
+        if (this.items != null)
+            this.user.writeAndFlushDynamicSilently(new WrapperPlayServerWindowItems(0, 0, this.items, null));
+        //this.windowId = 0;
         this.settingPassword = false;
         this.loginType = null;
         this.builder = null;
-        this.lastItemsPacket = null;
+        this.items = null;
     }
 
     /*if (msg.getClass() == ReflectionUtils.outPlayerInfoPacketClass) {

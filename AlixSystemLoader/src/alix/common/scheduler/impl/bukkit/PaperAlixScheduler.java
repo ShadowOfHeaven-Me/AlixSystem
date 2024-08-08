@@ -3,6 +3,8 @@ package alix.common.scheduler.impl.bukkit;
 import alix.common.scheduler.impl.AbstractAlixScheduler;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.collections.list.LoopList;
+import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.loaders.bukkit.BukkitAlixMain;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import org.bukkit.Bukkit;
@@ -32,6 +34,7 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
 
     private final AlixTaskList executeNow = new AlixTaskList();
 
+    @AlixIntrinsified(method = "Bukkit.getScheduler")
     public PaperAlixScheduler() {
         Bukkit.getPluginManager().registerEvents(new PaperSyncTickEvent(), BukkitAlixMain.instance);
     }
@@ -76,7 +79,10 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
          * </p>
          **/
 
+        private final LoopList<Runnable> tasks = LoopList.newConcurrentOfSize(40);
         private volatile LinkedAlixTask first, last;
+        private volatile boolean executeExtraNextTick;
+
 
         /**
          * The 'synchronized' keyword is used instead of a ReentrantLock,
@@ -86,18 +92,54 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
          **/
 
         private void add(Runnable task) {
-            synchronized (this) {
-                if (this.first == null) this.first = this.last = new LinkedAlixTask(task);
-                else this.last = this.last.next = new LinkedAlixTask(task);
+            int index = this.tasks.getAndUpdate(i -> i != this.tasks.size() ? i + 1 : i);//ranges from 0 to size(), with size() indicating not enough memory
+            if (index != this.tasks.size()) {
+                this.tasks.setValue(index, task);
+            } else {//we ran out of storage space
+                synchronized (this) {
+                    if (this.first == null) this.first = this.last = new LinkedAlixTask(task);
+                    else this.last = this.last.next = new LinkedAlixTask(task);
+                }
             }
         }
 
         private void executeAllAndClear() {
-            LinkedAlixTask task;
+            if (executeExtraNextTick) this.execExtra();
 
-            if ((task = this.first) == null) return;//get the current run, and return if there is none to execute
+            int size = this.tasks.getAndSetCurrentIndex(0);//to ensure thread safety, set it to 0 right after reading
+            if (size <= 0) return;
 
-            synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are extremely lightweight
+            boolean outOfSpace = size == this.tasks.size();
+
+            this.tasks.drain(outOfSpace ? size - 1 : size, task -> {
+                try {
+                    task.run();//execute the tasks synchronously
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                }
+            });
+
+            if (!outOfSpace) return;
+
+            //for extra safety, leave this check here
+            if (this.first == null) {
+                this.executeExtraNextTick = true;
+                return;//get the current run, and return if there is none to execute
+            }
+            this.execExtra();
+        }
+
+        private void execExtra() {
+            LinkedAlixTask task = this.first;
+
+            //for extra safety, leave this check here
+            if (task == null) {
+                this.executeExtraNextTick = true;
+                return;//get the current run, and return if there is none to execute
+            }
+            this.executeExtraNextTick = false;
+
+            synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are all extremely lightweight
                 this.first = this.last = null;//all of the task nodes are still held by the 'task' variable
             }
 

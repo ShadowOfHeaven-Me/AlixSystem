@@ -24,9 +24,9 @@ abstract class VirtualEventManager {
         UserSemiVirtualization.replaceVirtualHandlerWithOriginal(PlayerQuitEvent.class, this.virtualHandlerList);
     }
 
-    final void invokeOriginalListeners(Event event) {
+/*    final void invokeOriginalListeners(Event event) {
         UserSemiVirtualization.invokeOriginalEventListeners(this.virtualHandlerList.getOriginalListeners(), event);
-    }
+    }*/
 
     static abstract class VirtualEventExecutor<T extends Event> implements EventExecutor {
 
@@ -40,7 +40,7 @@ abstract class VirtualEventManager {
 
         @Override
         public final void execute(@NotNull Listener listener, @NotNull Event event) throws EventException {
-            this.eventManager.invokeOriginalListeners(event);
+            //this.eventManager.invokeOriginalListeners(event);
             this.onInvocation((T) event);
         }
     }
@@ -48,22 +48,37 @@ abstract class VirtualEventManager {
     static final class VirtualizedHandlerList extends HandlerList {
 
         final HandlerList originalHandler;
-        private final RegisteredListener[] virtualListeners;
+        //private final RegisteredListener[] virtualListeners;
+        private final VirtualRegisteredListener virtualListener;
+        private RegisteredListener[] lastCache;
 
         <T extends Event> VirtualizedHandlerList(HandlerList original, VirtualEventExecutor<T> eventExecutor) {
             this.originalHandler = original;
-            this.virtualListeners = new RegisteredListener[]{new VirtualRegisteredListener(eventExecutor)};
+            this.virtualListener = new VirtualRegisteredListener(eventExecutor);
+            this.getRegisteredListeners();//add the listener
+            //this.virtualListeners = new RegisteredListener[]{new VirtualRegisteredListener(eventExecutor)};
         }
 
+        //Fixes invalid benchmark reports
+        @SuppressWarnings("ArrayEquality")
         @NotNull
         @Override
         public RegisteredListener[] getRegisteredListeners() {
-            return this.virtualListeners;
+            RegisteredListener[] current = this.originalHandler.getRegisteredListeners();
+
+            if (current == lastCache) return current;
+
+            RegisteredListener[] full = new RegisteredListener[current.length + 1];
+            System.arraycopy(current, 0, full, 0, current.length);
+            full[current.length] = this.virtualListener;
+
+            this.lastCache = full;
+            return full;
         }
 
-        private RegisteredListener[] getOriginalListeners() {
+/*        private RegisteredListener[] getOriginalListeners() {
             return this.originalHandler.getRegisteredListeners();
-        }
+        }*/
 
         @Override
         public void register(@NotNull RegisteredListener listener) {

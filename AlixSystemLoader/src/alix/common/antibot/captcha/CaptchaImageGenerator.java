@@ -1,18 +1,20 @@
 package alix.common.antibot.captcha;
 
-import alix.common.utils.other.ConcurrentRandom;
+import alix.common.utils.AlixCommonUtils;
 import alix.fonts.AlixFontManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.util.Random;
 
 public final class CaptchaImageGenerator {
 
     private static final Font font = AlixFontManager.getPluginFont();
-    private static final ConcurrentRandom random = ConcurrentRandom.getInstance();
-    private static final ImageGenerator generator = new DefaultGenerator();
+    private static final Random random = AlixCommonUtils.random;
+    private static final X256Generator generatorX256 = new X256Generator();
+    private static final DefaultGenerator generator = new DefaultGenerator();
     private static final ColorGenerator COLOR_GEN = ColorGenerator.IMPL;
 
 /*    public static boolean filter(Color color) {//for map captcha
@@ -27,6 +29,10 @@ public final class CaptchaImageGenerator {
     }*/
 
     private CaptchaImageGenerator() {
+    }
+
+    public static BufferedImage generateCaptchaImageX256(String captcha, int maxRotation, boolean drawLines, boolean antialiasing) {
+        return generatorX256.generate(captcha, maxRotation, drawLines, antialiasing);
     }
 
     public static BufferedImage generateCaptchaImage(String captcha, int maxRotation, boolean drawLines, boolean antialiasing) {
@@ -85,6 +91,71 @@ public final class CaptchaImageGenerator {
 
         BufferedImage generate(String captcha, int maxRotation, boolean drawLines, boolean antialiasing);
 
+    }
+
+    private static final class X256Generator implements ImageGenerator {
+
+        private X256Generator() {
+        }
+
+        @Override
+        public BufferedImage generate(String captcha, int maxRotation, boolean drawLines, boolean antialiasing) {
+            //image with alpha
+            BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_ARGB);//TYPE_INT_RGB - no alpha
+
+            Canvas canvas = new Canvas();
+            canvas.setSize(256, 256);
+
+            Graphics2D graphics = (Graphics2D) image.getGraphics();
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, antialiasing ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
+            canvas.paint(graphics);
+
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, 256, 256);
+
+/*            try {
+                File file = new File(plugin.getDataFolder(), "background.png");
+                BufferedImage background = ImageIO.read(file);
+                AffineTransform affineTransform = new AffineTransform();
+                graphics.drawImage(background, affineTransform, null);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }*/
+
+            int lines = drawLines ? random.nextInt(12) + 8 : 0;
+
+            while (lines-- != 0) {
+                graphics.setColor(COLOR_GEN.nextDifferentColor(null));
+                graphics.drawLine(getRandomCoordinate(), getRandomCoordinate(), getRandomCoordinate(), getRandomCoordinate());
+            }
+
+            graphics.setFont(font);
+
+            String[] chars = captcha.split("");
+
+            Color lastColor = null;
+
+            int sign = random.nextBoolean() ? 1 : -1;
+
+            for (int i = 0; i != chars.length; i++) {
+                AffineTransform original = graphics.getTransform();
+                int rotation = random.nextInt((maxRotation << 1) + 1) - maxRotation;//generates a random number between -n & n
+
+                int x = 70 + i * 25;
+                int y = 130 + sign * 4;
+
+                graphics.rotate(Math.toRadians(rotation), x, y);
+                Color color = COLOR_GEN.nextDifferentColor(lastColor);
+                lastColor = color;
+                graphics.setColor(color);
+                graphics.drawString(chars[i], x, y);
+                sign *= -1;
+                graphics.setTransform(original);
+            }
+
+            graphics.dispose();
+            return image;
+        }
     }
 
     //Source code: https://github.com/InstantlyMoist/Captcha/blob/master/src/main/java/me/kyllian/captcha/spigot/captchas/TextCaptcha.java

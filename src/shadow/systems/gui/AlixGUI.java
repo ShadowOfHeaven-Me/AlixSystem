@@ -59,9 +59,11 @@ public abstract class AlixGUI implements AbstractAlixGUI {
         return i;
     }
 
+    private static final Enchantment RANDOM_JUST_FOR_GLOW = Enchantment.values()[0];//because of version name changes
+
     protected static ItemStack enchant(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
-        meta.addEnchant(Enchantment.DURABILITY, 10, true);
+        meta.addEnchant(RANDOM_JUST_FOR_GLOW, 10, true);
         meta.addItemFlags(ItemFlag.values());
         item.setItemMeta(meta);
         return item;
@@ -85,12 +87,15 @@ public abstract class AlixGUI implements AbstractAlixGUI {
         return item;
     }
 
-    protected static ItemStack create(Material type, String displayName, String... lore) {
-        ItemStack item = new ItemStack(type);
+    protected static ItemStack create(ItemStack item, String displayName, String... lore) {
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(AlixFormatter.translateColors(displayName));
         meta.setLore(AlixUtils.getItemLore(lore));
         item.setItemMeta(meta);
         return item;
+    }
+    
+    protected static ItemStack create(Material type, String displayName, String... lore) {
+        return create(new ItemStack(type), displayName, lore);
     }
 }

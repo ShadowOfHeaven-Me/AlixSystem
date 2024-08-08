@@ -24,4 +24,7 @@ public final class AlixException extends RuntimeException {
     public static void isTrue(boolean b, String message) {
         if (!b) throw new AlixException(message);
     }
+
+    public static void init() {
+    }
 }

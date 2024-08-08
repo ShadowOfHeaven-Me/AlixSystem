@@ -1,7 +1,7 @@
 package alix.common.utils;
 
-import alix.common.AlixMain;
 import alix.common.AlixCommonMain;
+import alix.common.AlixMain;
 import alix.common.environment.ServerEnvironment;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.scheduler.impl.InterfaceAlixScheduler;
@@ -23,12 +23,19 @@ public final class AlixCommonHandler {
     public static InterfaceAlixScheduler createSchedulerImpl() {
         switch (ServerEnvironment.getEnvironment()) {
             case PAPER:
-                AlixCommonMain.logInfo("Using the optimized PaperAlixScheduler for task execution.");
-                return new PaperAlixScheduler();
+                try {
+                    Class.forName("com.destroystokyo.paper.event.server.ServerTickEndEvent");
+                    AlixCommonMain.logInfo("Using the optimized PaperAlixScheduler for task execution.");
+                    return new PaperAlixScheduler();
+                } catch (ClassNotFoundException e) {
+                    AlixCommonMain.logInfo("Using BukkitAlixScheduler for task execution due to a low Paper version.");
+                    return new BukkitAlixScheduler();
+                }
             case VELOCITY:
                 AlixCommonMain.logInfo("Using VelocityAlixScheduler for task execution.");
                 return new VelocityAlixScheduler();
             case SPIGOT:
+                AlixCommonMain.logInfo("Using the unoptimized BukkitAlixScheduler for task execution - Paper is suggested for better performance.");
                 return new BukkitAlixScheduler();
             default:
                 throw new InternalError("Invalid: " + ServerEnvironment.getEnvironment());

@@ -1,12 +1,12 @@
 package shadow.systems.commands.alix;
 
-import alix.common.utils.other.CharArray;
+import alix.common.utils.other.keys.CharArray;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.file.CommandsFile;
 import shadow.systems.commands.alix.verification.VerificationCommand;
-import shadow.utils.holders.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.Arrays;

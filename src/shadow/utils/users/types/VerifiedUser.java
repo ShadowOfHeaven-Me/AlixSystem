@@ -2,18 +2,18 @@ package shadow.utils.users.types;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.main.file.managers.UserFileManager;
+import alix.common.data.file.UserFileManager;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor;
-import shadow.utils.objects.savable.data.PersistentUserData;
-import shadow.utils.objects.savable.multi.HomeList;
+import alix.common.data.PersistentUserData;
+import alix.common.data.loc.impl.bukkit.BukkitHomeList;
 
+import java.net.InetAddress;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -59,37 +59,12 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
         this(player, user.getLoginInfo().getData(), user.reetrooperUser(), NettyUtils.getSilentContext(user.getChannel()));
     }
 
-    private VerifiedUser(Player player, User user) {
-        this(player, UserFileManager.getOrCreatePremiumInformation(player), user, NettyUtils.getSilentContext((Channel) user.getChannel()));
+    private VerifiedUser(Player p, User user) {
+        this(p, UserFileManager.getOrCreatePremiumInformation(p.getName(), p.getAddress().getAddress()), user, NettyUtils.getSilentContext((Channel) user.getChannel()));
     }
 
     public VerifiedUser(Player player) {
         this(player, PacketEvents.getAPI().getPlayerManager().getUser(player));
-    }
-
-    public void writeSilently(ByteBuf buffer) {
-        //DEBUG_TIME();
-        this.silentContext.write(buffer);
-    }
-
-    public void writeAndFlushSilently(ByteBuf buffer) {
-        //DEBUG_TIME();
-        this.silentContext.writeAndFlush(buffer);
-    }
-
-    public void flushSilently() {
-        //DEBUG_TIME();
-        this.silentContext.flush();
-    }
-
-    public void writeConstSilently(ByteBuf buf) {
-        //DEBUG_TIME();
-        NettyUtils.writeConst(this.silentContext, buf);
-    }
-
-    public void writeAndFlushConstSilently(ByteBuf buf) {
-        //DEBUG_TIME();
-        NettyUtils.writeAndFlushConst(this.silentContext, buf);
     }
 
     public Player getPlayer() {
@@ -176,8 +151,8 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
         return maxHomes;
     }
 
-    public HomeList getHomes() {
-        return data.getHomes();
+    public BukkitHomeList getHomes() {
+        return (BukkitHomeList) data.getHomes();
     }
 
     public boolean canReceiveTeleportRequests() {
@@ -247,7 +222,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
         //if (duplexHandler != null) this.duplexHandler.stop();
     }*/
 
-    public String getIPAddress() {
+    public InetAddress getIPAddress() {
         return data.getSavedIP();
     }
 

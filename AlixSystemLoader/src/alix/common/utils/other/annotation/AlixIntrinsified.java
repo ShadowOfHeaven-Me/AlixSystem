@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  **/
 
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface AlixIntrinsified {
 
     String method();//What method it replaces

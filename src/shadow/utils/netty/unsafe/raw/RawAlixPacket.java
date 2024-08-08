@@ -5,6 +5,7 @@ import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.ChannelPromise;
 import shadow.utils.main.AlixHandler;
 
 import java.util.function.Consumer;
@@ -19,9 +20,13 @@ public interface RawAlixPacket {
     void release();
 
     static void writeRaw(ByteBuf rawBuffer, Channel channel) {
+        writeRaw(rawBuffer, channel, channel.voidPromise());
+    }
+
+    static void writeRaw(ByteBuf rawBuffer, Channel channel, ChannelPromise promise) {
         try {
             ChannelOutboundBuffer buffer = channel.unsafe().outboundBuffer();
-            if (buffer != null) buffer.addMessage(rawBuffer, rawBuffer.readableBytes(), channel.voidPromise());
+            if (buffer != null) buffer.addMessage(rawBuffer, rawBuffer.readableBytes(), promise);
         } catch (Throwable e) {
             AlixCommonUtils.logException(e);
         }

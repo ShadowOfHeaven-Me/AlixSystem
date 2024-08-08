@@ -1,32 +1,37 @@
 package alix.common.antibot.firewall;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.IPUtils;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
 import alix.common.utils.file.AlixFileManager;
-import alix.common.utils.other.throwable.AlixException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class FireWallManager {
 
     //Disabled for now
-    private static final AlixOSFireWall osFireWall = null;//AlixOSFireWall.INSTANCE;
-    public static final boolean isOsFireWallInUse = osFireWall != null;
+    private static final AlixOSFireWall osFireWall = AlixOSFireWall.INSTANCE;//AlixOSFireWall.INSTANCE;
+    public static final boolean isOsFireWallInUse = AlixOSFireWall.isOsFireWallInUse;
     private static final FireWallFile file = new FireWallFile();
-    private static final Map<InetAddress, FireWallEntry> map = new ConcurrentHashMap<>(65536);
+    private static final Map<InetAddress, FireWallEntry> map = new ConcurrentHashMap<>(1 << 19);//524288
+    private static final ConcurrentInt62Set intIpv4Set = FireWallType.isIPv4FastLookUpEnabled() ? new ConcurrentInt62Set(1 << 19) : null;
+    //private static final IntOpenHashSet intIpv4Set = FireWallType.isIPv4FastLookUpEnabled() ? new IntOpenHashSet(1 << 19) : null;
 
     static {
         AlixScheduler.async(() -> {
-            try (InputStream is = FireWallManager.class.getResourceAsStream("bad_ips.txt")) {
-                AlixFileManager.readLines(is, ip -> add0(fromAddress(ip), new FireWallEntry(null)), false);
+            try (InputStream is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
+                AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), new FireWallEntry(null)), false);
+                int builtIn = map.size();
                 file.load();
-                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Total blacklisted IPs: " + map.size());
+                int total = map.size();
+                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Built-in blacklisted IPs: " + builtIn + " Blacklisted by this server: " + (total - builtIn) + " Total: " + total);
                 //if(isOsFireWallInUse) osFireWall.blacklist("");
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -34,17 +39,13 @@ public final class FireWallManager {
         });
     }
 
-    public static InetAddress fromAddress(String ip) {
-        try {
-            return InetAddress.getByName(ip);
-        } catch (UnknownHostException e) {
-            AlixCommonMain.logError("Invalid address saved: '" + ip + "'!");
-            throw new AlixException(e);
-        }
+
+    public static void addCauseException(InetSocketAddress ip, Throwable t) {
+        addCauseException(ip.getAddress(), t);
     }
 
-    public static void addCauseException(InetAddress ip) {
-        add0(ip, new FireWallEntry("ex_ca: DecoderException"));
+    public static void addCauseException(InetAddress ip, Throwable t) {
+        add0(ip, new FireWallEntry("ex_ca: " + t.getMessage()));
     }
 
     public static boolean add(InetAddress ip, String algorithmId) {
@@ -61,11 +62,22 @@ public final class FireWallManager {
 
     static FireWallEntry add0(InetAddress ip, FireWallEntry entry) {
         if (isOsFireWallInUse) osBlacklist0(ip.getHostAddress());
-        return map.put(ip, entry);
+        FireWallEntry previous = map.put(ip, entry);
+        if (intIpv4Set != null && previous == null && ip.getClass() == Inet4Address.class)
+            intIpv4Set.add(Integer.toUnsignedLong(IPUtils.ipv4Value((Inet4Address) ip)));
+        return previous;
     }
 
     public static boolean isBlocked(InetSocketAddress address) {
-        return !isOsFireWallInUse && map.containsKey(address.getAddress());
+        return map.containsKey(address.getAddress());
+    }
+
+    public static boolean isBlocked(InetAddress address) {
+        return map.containsKey(address);
+    }
+
+    public static boolean isBlocked(long ipv4Value) {
+        return intIpv4Set.contains(ipv4Value);
     }
 
     public static void fastSave() {

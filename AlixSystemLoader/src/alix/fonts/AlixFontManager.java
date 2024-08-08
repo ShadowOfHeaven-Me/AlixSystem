@@ -3,6 +3,7 @@ package alix.fonts;
 import alix.common.AlixCommonMain;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigProvider;
+import alix.common.utils.other.throwable.AlixException;
 
 import java.awt.*;
 
@@ -16,7 +17,7 @@ public final class AlixFontManager {
         Font font0;
 
         if (AlixCommonUtils.isGraphicEnvironmentHeadless) {//this class should not have been loaded
-            throw new AssertionError(new HeadlessException("Report this as an error immediately!"));
+            throw new AlixException(new AssertionError(new HeadlessException("Report this as an error immediately!")));
             /*switch (configFontName) {
                 case "Dialog":
                 case "DialogInput":

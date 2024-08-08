@@ -1,18 +1,18 @@
 package shadow.systems.gui.impl;
 
+import alix.common.data.PersistentUserData;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.savable.data.PersistentUserData;
-import shadow.utils.users.types.VerifiedUser;
+import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.users.UserManager;
+import shadow.utils.users.types.VerifiedUser;
 
 import java.util.Arrays;
 import java.util.function.Function;
@@ -21,8 +21,8 @@ public final class LoginSettingsGUI extends AlixGUI {
 
     private static final String loginSettingsTitle = Messages.get("gui-title-login-settings");
     private static final ItemStack
-            IP_AUTOLOGIN_ON = create(Material.GREEN_CONCRETE, Messages.get("gui-login-settings-ip-autologin-on")),
-            IP_AUTOLOGIN_OFF = create(Material.RED_CONCRETE, Messages.get("gui-login-settings-ip-autologin-off"));
+            IP_AUTOLOGIN_ON = create(AlixMaterials.GREEN_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-ip-autologin-on")),
+            IP_AUTOLOGIN_OFF = create(AlixMaterials.RED_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-ip-autologin-off"));
     private static final Function<PersistentUserData, ItemStack> IP_AUTOLOGIN_GET = data -> data.getLoginParams().getIpAutoLogin() ? IP_AUTOLOGIN_ON : IP_AUTOLOGIN_OFF;
 
     static {

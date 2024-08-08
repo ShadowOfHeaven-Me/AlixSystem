@@ -1,19 +1,24 @@
 package alix.loaders.bukkit;
 
 import alix.common.AlixMain;
+import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
+import alix.common.reflection.CommonReflection;
 import alix.common.utils.file.update.FileUpdater;
+import alix.common.utils.other.annotation.RemotelyInvoked;
+import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 import alix.loaders.classloader.JarInJarClassLoader;
 import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.logging.Logger;
 
+@MainClass
 public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvider, AlixMain {
 
     public static BukkitAlixMain instance;
@@ -26,10 +31,12 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     //private final AlixPluginLogger alixLogger;
 
     public BukkitAlixMain() {
+        AlixException.init();
+        AlixError.init();
         instance = this;
         //CommonAlixMain.loggerManager = this;
         this.logger = AlixLoggerProvider.createServerAdequateLogger(super.getLogger());
-        this.loggerAdapter = LoggerAdapter.createAdapter(this.getLogger());
+        this.loggerAdapter = LoggerAdapter.createAdapter(this.logger);
 
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
         this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, BukkitAlixMain.class, this);
@@ -96,12 +103,12 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
 
     @Override
     public void onLoad() {
+        CommonReflection.set(CommonReflection.getFieldAccessibleByType(JavaPlugin.class, Logger.class), this, this.logger);
         this.bootstrap.onLoad();
     }
 
     @Override
     public void onEnable() {
-        setEnabled(true);
         this.bootstrap.onEnable();
     }
 
@@ -125,12 +132,6 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
         return this.loggerAdapter;
     }
 
-    @NotNull
-    @Override
-    public Logger getLogger() {
-        return this.logger;
-    }
-
     @Override
     public Path getDataFolderPath() {
         return getDataFolder().toPath();
@@ -139,6 +140,35 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     @Override
     public LoaderBootstrap getBootstrap() {
         return bootstrap;
+    }
+
+    private final ParamImpl params = new ParamImpl();
+
+    @Override
+    public Params getEngineParams() {
+        return this.params;
+    }
+
+    //loads the common module (not all classes tho)
+    public ClassLoader getClassLoader0() {
+        return super.getClassLoader();
+    }
+
+    //Loads the spigot module
+    @RemotelyInvoked
+    public JarInJarClassLoader getJarInJarLoader() {
+        return this.loader;
+    }
+
+    private static final class ParamImpl implements Params {
+
+        @Override
+        public String messagesFileName() {
+            return "messages.txt";
+        }
+
+        private ParamImpl() {
+        }
     }
 
     public void setEnabledStatus(boolean on) {

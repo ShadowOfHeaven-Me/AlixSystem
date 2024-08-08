@@ -8,10 +8,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
+import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 
 public final class NettyUtils {
 
@@ -24,6 +22,7 @@ public final class NettyUtils {
         Main.logError("MAPPED: " + mapper.get(packetId));
     }*/
 
+    //have the bufs managed by the GC (for now disabled)
     private static final ByteBufAllocator ALLOC = new UnpooledByteBufAllocator(false, true);//remember to never explicitly enable 'no cleaner'
     //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
 
@@ -49,13 +48,27 @@ public final class NettyUtils {
     }
 
     public static void writeConst(ChannelHandlerContext context, ByteBuf constByteBuf) {
+        //AlixUser.DEBUG_TIME();
         //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
         context.write(prepareConstToSend(constByteBuf));
     }
 
     public static ChannelFuture writeAndFlushConst(ChannelHandlerContext context, ByteBuf constByteBuf) {
+        //AlixUser.DEBUG_TIME();
         //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
         return context.writeAndFlush(prepareConstToSend(constByteBuf));
+    }
+
+    public static ChannelPromise writeAndFlushConstRaw(Channel channel, ByteBuf constByteBuf) {
+        //AlixUser.DEBUG_TIME();
+        //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
+        ChannelPromise promise = channel.newPromise();
+        RawAlixPacket.writeRaw(constByteBuf, channel, promise);
+        return promise;
+    }
+
+    public static void closeAfterConstSendRaw(Channel channel, ByteBuf constBuf) {
+        writeAndFlushConstRaw(channel, constBuf).addListener(ChannelFutureListener.CLOSE);
     }
 
     public static void closeAfterConstSend(Channel channel, ByteBuf constBuf) {
@@ -69,10 +82,12 @@ public final class NettyUtils {
     //ByteBufAllocator.DEFAULT.buffer();
 
     public static void writeDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
+        //AlixUser.DEBUG_TIME();
         context.write(dynamic(wrapper, context));
     }
 
     public static void writeAndFlushDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
+        //AlixUser.DEBUG_TIME();
         context.writeAndFlush(dynamic(wrapper, context));
     }
 

@@ -9,6 +9,7 @@ import alix.common.messages.Messages;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
@@ -35,28 +36,24 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
-    //the atomic operations are performed by the ConcurrentHashMap
-
-    /**
-     * @noinspection NonAtomicOperationOnVolatileField
-     */
     private static final class NameMapImpl extends NameMap {
 
         private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
-        private volatile int vl;
+        private final AtomicInteger vl;
 
         private NameMapImpl(InetAddress address) {
             super(address);
+            this.vl = new AtomicInteger();
             //this.removalTime = new AtomicLong(System.currentTimeMillis() + 20000);
         }
 
         protected boolean add(String name) {
             //AliCommonMain.logInfo("IP: " + ip + " Name To IP: " + vl.get());
 
-            if (this.namesSet.add(name)) this.vl += 24;
-            else this.vl += 2;
+            if (this.namesSet.add(name)) this.vl.getAndAdd(24);
+            else this.vl.getAndAdd(2);
 
-            if (this.vl > 240) {
+            if (this.vl.get() > 240) {
                 if (FireWallManager.add(ip, ALGORITHM_ID))
                     AlixCommonMain.logInfo(consoleMessage.format(ip.getHostAddress()));
                 return true;
@@ -65,7 +62,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
         }
 
         private int tick() {
-            return this.vl -= 3;
+            return this.vl.addAndGet(-3);
         }
     }
 

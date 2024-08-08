@@ -1,6 +1,7 @@
 package shadow.utils.objects;
 
 import alix.common.environment.ServerEnvironment;
+import alix.common.utils.AlixCommonUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Filter;
@@ -8,20 +9,30 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.message.Message;
 import shadow.Main;
-import shadow.utils.main.AlixUtils;
 
 public final class AlixConsoleFilterHolder implements Filter {
 
-    private ConsoleFilter delegate;
+    public static final AlixConsoleFilterHolder INSTANCE = new AlixConsoleFilterHolder();
+    public static final boolean
+            alixJoinLog = Main.config.getBoolean("custom-join-log"),
+            hideFailedJoinAttempts = Main.config.getBoolean("hide-failed-join-attempts");
+    private final ConsoleFilter delegate;
 
-    public AlixConsoleFilterHolder() {
-        this.updateInstance();
-    }
-
-    public void updateInstance() {
+    private AlixConsoleFilterHolder() {
         this.delegate = new ConsoleFilter();
     }
 
+    public void makeObsolete() {
+        this.delegate.obsolete = true;
+    }
+
+    public void startFilteringStdErr() {
+        this.delegate.filterStdErr = true;
+    }
+
+    public void stopFilteringStdErr() {
+        this.delegate.filterStdErr = false;
+    }
 /*    public void removeInstance() {
         this.delegate = null;
     }*/
@@ -31,17 +42,24 @@ public final class AlixConsoleFilterHolder implements Filter {
         private final char[]
                 regex = "logged in with entity id".toCharArray(),
                 regex2 = "lost connection".toCharArray();
+        private boolean obsolete, filterStdErr;
 
         private Result filter(LogEvent e) {
+            if (obsolete) return Result.NEUTRAL;
+            if (filterStdErr && e.getLevel() == Level.ERROR && e.getMessage().getFormattedMessage().startsWith("[STDERR]")) {
+                //Main.logInfo("OUTPUT: '" + e.getMessage().getFormattedMessage() + "'");
+                return Result.DENY;
+            }
             //if (e.getLevel() == Level.WARN) Main.logInfo("WARNNNNNN: " + e.getThrownProxy() + " " + e.getSource() + " " + e.getMessage().getFormattedMessage() + " " + e.getContextData());
             String message = e.getMessage().getFormattedMessage();
             if (message.isEmpty()) return Result.ACCEPT;
 
             char[] msgChars = null;
-            if (AlixUtils.hideFailedJoinAttempts && (AlixUtils.startsWith(message, "UUID of player",
+            //Make sure not to use any
+            if (hideFailedJoinAttempts && (AlixCommonUtils.startsWith(message, "UUID of player",
                     "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()") || this.isLostCon0(msgChars = message.toCharArray())))
                 return Result.DENY;
-            if (AlixUtils.alixJoinLog && Thread.currentThread() == Main.mainServerThread) {
+            if (alixJoinLog && Thread.currentThread() == Main.mainServerThread) {
                 char[] msg = msgChars != null ? msgChars : message.toCharArray();
                 //AlixScheduler.async(() -> Main.logError("mmmmm '" + new String(msg) + "' - " + Main.mainServerThread.getName()));
                 for (int i = 0; i < msg.length; i++)

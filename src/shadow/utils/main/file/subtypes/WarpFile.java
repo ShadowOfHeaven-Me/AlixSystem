@@ -4,7 +4,7 @@ import shadow.Main;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.FileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
-import shadow.utils.objects.savable.loc.NamedLocation;
+import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 
 import java.io.IOException;
 import java.util.Map;
@@ -17,7 +17,7 @@ public class WarpFile extends FileManager {
 
     @Override
     protected void loadLine(String line) {
-        WarpFileManager.add(NamedLocation.fromString(line));
+        WarpFileManager.add(BukkitNamedLocation.fromString(line));
     }
 
     @Override

@@ -4,9 +4,13 @@ import alix.common.data.LoginType;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
 import shadow.utils.users.types.UnverifiedUser;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
 
@@ -34,7 +38,7 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
             case PLAYER_POSITION_AND_ROTATION:
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
-                this.trySpoofPackets();
+                this.virtualFallPhase.trySpoofPackets();
                 break;
             case NAME_ITEM:
                 this.updateText(new WrapperPlayClientNameItem(event).getItemName());
@@ -43,6 +47,11 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
                 this.builder.spoofValidAccordingly();
                 this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());
                 break;
+            case PLUGIN_MESSAGE:
+                WrapperPlayClientPluginMessage wrapper = new WrapperPlayClientPluginMessage(event);
+                if (wrapper.getChannelName().equals("MC|ItemName"))
+                    this.updateText(getOldAnvilInput(wrapper.getData()));
+                break;
             case CLOSE_WINDOW:
                 event.getPostTasks().add(user::openPasswordBuilderGUI);
                 break;
@@ -50,6 +59,31 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
                 return;
         }
         event.setCancelled(true);
+    }
+
+    public static String getOldAnvilInput(byte[] data) {
+        String input = new String(Arrays.copyOfRange(data, 1, data.length), StandardCharsets.UTF_8);//0th index is the length of the String, equal to data.length - 1
+
+        if (input.startsWith("§")) {
+            return input.substring(Math.min(2, input.length()));
+        }
+        //if(chars.length)
+
+        //works (except if the input is the first regex char), but it's unfortunately necessary to do it another way
+        //char[] chars = input.toCharArray();
+        //char[] regex = PacketConstructor.AnvilGUI.USER_INPUT_CHAR_ARRAY;
+
+        /*boolean equals = true;
+        for (int i = 0; i < chars.length; i++) {
+            if (i < regex.length) {
+                equals &= chars[i] == regex[i];
+                if (!equals) {
+                    return i != 0 ? new String(Arrays.copyOfRange(chars, i, chars.length)) : input;
+                }
+            } else if (equals) return new String(Arrays.copyOfRange(chars, regex.length, chars.length));
+            else return input;
+        }*/
+        return input;
     }
 
     private void updateText(String text) {

@@ -4,8 +4,8 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
-import shadow.utils.holders.packet.constructors.AlixInventoryType;
-import shadow.utils.holders.packet.constructors.OutWindowItemsPacketConstructor;
+import shadow.utils.misc.packet.constructors.AlixInventoryType;
+import shadow.utils.misc.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 
 import java.util.List;

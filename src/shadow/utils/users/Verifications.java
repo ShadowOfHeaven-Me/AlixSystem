@@ -18,11 +18,12 @@ public final class Verifications {
     }
 
     public static boolean has(Player p) {
-        return has(p.getUniqueId());
+        return p != null && has(p.getUniqueId());
     }
 
     public static boolean has(UUID uuid) {
-        return !UserManager.get(uuid).isVerified();
+        AlixUser user = UserManager.get(uuid);
+        return user != null && !user.isVerified();
     }
 
     public static boolean remove(Player p) {

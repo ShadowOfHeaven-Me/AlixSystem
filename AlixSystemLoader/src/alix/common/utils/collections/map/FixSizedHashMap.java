@@ -1,3 +1,4 @@
+/*
 package alix.common.utils.collections.map;
 
 import alix.common.utils.AlixCommonUtils;
@@ -10,13 +11,15 @@ import java.util.function.Consumer;
 
 public final class FixSizedHashMap<K, V> implements AlixMap<K, V> {
 
-    /**
+    */
+/**
      * A custom Key-Value implementation of AlixMap, that requires all
      * of it's modifications to be made synchronously, but allows
      * asynchronous iteration.
      *
      * @author ShadowOfHeaven
-     **/
+     **//*
+
 
     private final Itr iterator = new Itr();//create the iterator, since it's main appeal is the possible async iteration
     private final NodeMapQueue<K, V>[] table;
@@ -127,9 +130,11 @@ public final class FixSizedHashMap<K, V> implements AlixMap<K, V> {
             else this.last = this.last.next = new Node<>(key, value, hashCode);
         }
 
-        /**
+        */
+/**
          * @noinspection ObjectEquality
-         */
+         *//*
+
         private V get(K key, int hashCode) {
             if (this.first == null) return null;
             Node<K, V> current = this.first;
@@ -141,9 +146,11 @@ public final class FixSizedHashMap<K, V> implements AlixMap<K, V> {
             return null;
         }
 
-        /**
+        */
+/**
          * @noinspection ObjectEquality
-         */
+         *//*
+
         private V remove(K key, int hashCode) {
             if (this.first == null) return null;
             Node<K, V> previous = null;
@@ -183,4 +190,4 @@ public final class FixSizedHashMap<K, V> implements AlixMap<K, V> {
             this.hashCode = hashCode;
         }
     }
-}
+}*/

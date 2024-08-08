@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 import shadow.Main;
 import shadow.utils.holders.ReflectionUtils;
-import shadow.utils.main.AlixUnsafe;
+import alix.common.utils.other.AlixUnsafe;
 import shadow.utils.world.AlixWorld;
 import sun.misc.Unsafe;
 

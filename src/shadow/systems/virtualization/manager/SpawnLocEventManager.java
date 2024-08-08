@@ -8,6 +8,7 @@ import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 import shadow.Main;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.AlixHandler;
+import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
@@ -31,6 +32,16 @@ final class SpawnLocEventManager extends VirtualEventManager {
         void onInvocation(PlayerSpawnLocationEvent event) {
             //Main.logError("SPAWN LOC EVENT");
             Player player = event.getPlayer();
+
+/*            if (player != null) {
+                event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);
+                return;
+            }*/
+
+            //Main.logError("FAKEEEEEE " + AlixUtils.isFakePlayer(player));
+
+            if (AlixUtils.isFakePlayer(player)) return;
+
             Location joinLoc = event.getSpawnLocation();
 
             TemporaryUser tempUser = LoginVerdictManager.get(player);
@@ -38,13 +49,19 @@ final class SpawnLocEventManager extends VirtualEventManager {
 
             boolean verified = user == null;
 
-            if (verified) Main.logInfo(this.joinVerified.format(player.getName(), tempUser.getLoginInfo().getIP(), tempUser.getLoginInfo().getVerdict().readableName()));
+            if (verified)
+                Main.logInfo(this.joinVerified.format(player.getName(), tempUser.getLoginInfo().getTextIP(), tempUser.getLoginInfo().getVerdict().readableName()));
 
             //the join location is in the captcha world
-            if (joinLoc.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) {
+            if (joinLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {
                 //if (verified) this.eventManager.invokeOriginalListeners(event);
-                if (!verified) user.originalSpawnEventLocation = joinLoc;
-                event.setSpawnLocation(verified ? OriginalLocationsManager.getOriginalLocation(player) : AlixWorld.TELEPORT_LOCATION);//ensure it's at the correct location
+                if (verified) {
+                    event.setSpawnLocation(OriginalLocationsManager.getOriginalLocation(player));//tp back if the user is verified but in the captcha world
+                    return;
+                }
+                user.originalSpawnEventLocation = joinLoc;
+                event.setSpawnLocation(AlixWorld.TELEPORT_FALL_LOCATION);//ensure it's at the correct location
+                //Main.logError("SET LOC");
                 return;
             }
 
@@ -59,11 +76,12 @@ final class SpawnLocEventManager extends VirtualEventManager {
             Location originLoc = player.isDead() ? player.getBedSpawnLocation() : joinLoc;//if dead set to their spawn, original otherwise
 
             //Check whether the original location is valid
-            if (originLoc != null && !originLoc.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID()))
+            if (originLoc != null && !originLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD))
                 OriginalLocationsManager.add(player, originLoc);//remember the original spawn location
 
             user.originalSpawnEventLocation = joinLoc;
-            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//set the captcha world location as the spawn location (a faster onJoin teleport alternative)
+            event.setSpawnLocation(AlixWorld.TELEPORT_FALL_LOCATION);//ensure it's at the correct location
+            //Main.logError("SET LOC2");
         }
     }
 }

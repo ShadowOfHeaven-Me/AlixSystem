@@ -22,6 +22,7 @@ public abstract class AnvilBuilderBase {
     }
 
     public void input(String text, String invalidityReason) {
+        //Bukkit.broadcastMessage("INPUTTT " + text);
         this.password = text;
         this.isPasswordValid = invalidityReason == null;
         this.invalidityReason = invalidityReason;
