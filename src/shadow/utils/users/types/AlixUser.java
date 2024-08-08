@@ -79,9 +79,10 @@ public interface AlixUser {
         this.silentContext().writeAndFlush(buffer);
     }
 
-    default void flushSilently() {
+    default void flush() {
         //DEBUG_TIME();
-        this.silentContext().flush();
+        //this.silentContext().flush();
+        this.getChannel().flush();
     }
 
     default void writeConstSilently(ByteBuf buf) {

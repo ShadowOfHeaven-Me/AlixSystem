@@ -49,23 +49,13 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added 1.12 - 1.21 support (GUIs will still only work for 1.14+)
-    //[+] Added support for fake players
-    //[+] Added a new captcha type: Smooth
-    //[+] Changed the connection close strategy for 'prevent-first-time-join', from max-sized to time-based
-    //[+] Antibot-related connection filters will now close the connection before the auth thread is started to reduce overhead
-    //[+] Added faster FireWall implementations for Nio and Epoll
-    //[+] Introduced more safety in concurrent collections and in netty usage
-    //[*] Fixed plugin incompatibility issue
-    //[*] Fixed a bad packet vulnerability issue
-    //[*] Fixed several TAB-related issues
-    //[*] Fixed scoreboards disappearing
-    //[*] Fixed action bar messages being saved and resent as normal messages after verification
-    //[*] Fixed "Network Protocol Error" disconnecting the player sometimes
-    //[*] Fixed invalid benchmark results
-    //[*] Updated PacketEvents to support 1.21
-    //[*] Xp countdown updates will now happen every 500ms instead of every 200ms
-    //[-] Removed connection throttle warning due to handling changes
+    //[+] Added 'filter-all-entity-packets' to config.yml
+    //[+] Added compatibility to all TAB plugins by using a generalized handling method
+    //[*] Unverified players will now always be shown in tab
+    //[*] Fixed players verifying in parallel staying invisible to one another after verification
+    //[*] Fixed players getting kicked due to invalid packets after verification completion
+    //[*] Fixed 'verification-blindness' in config.yml not working for login verification
+    //[*] Added compatibility to the now outdated 'map' visual captcha type
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 

@@ -20,6 +20,6 @@ public final class XesCaptcha extends Captcha {
     @Override
     public void sendPackets(UnverifiedUser user) {
         for (ByteBuf buf : buffers) user.writeSilently(buf);
-        user.flushSilently();
+        user.flush();
     }
 }

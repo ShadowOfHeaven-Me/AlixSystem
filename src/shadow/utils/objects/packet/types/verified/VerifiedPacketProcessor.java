@@ -103,7 +103,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
 
     @Override
     public void onPacketSend(PacketPlaySendEvent event) {
-        switch (event.getPacketType()) {
+/*        switch (event.getPacketType()) {
             case PLAYER_INFO: {
                 WrapperPlayServerPlayerInfo info = new WrapperPlayServerPlayerInfo(event);
                 List<WrapperPlayServerPlayerInfo.PlayerData> list = new ArrayList<>(info.getPlayerDataList().size());//since the List in the packet can not support modifications
@@ -132,7 +132,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
                 }
                 return;
             }
-        }
+        }*/
         if (!settingPassword) return;
 
         switch (event.getPacketType()) {

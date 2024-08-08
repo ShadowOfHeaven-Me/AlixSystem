@@ -35,6 +35,10 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
         else MethodProvider.kickAsync(user, user.hasCompletedCaptcha() ? user.isRegistered() ? loginTimePassedKickPacket : registerTimePassedKickPacket : captchaTimePassedKickPacket);
     }
 
+    public void tickNoPacket() {
+        this.index--;
+    }
+
     public void restartAsLogin() {
         this.packets = BufferedPackets.loginOutExperiencePackets;
         this.index = BufferedPackets.loginPacketArraySize;

@@ -38,7 +38,6 @@ import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutGameStatePacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
-import shadow.utils.misc.packet.constructors.OutPlayerInfoPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.utils.users.UserManager;
@@ -72,7 +71,12 @@ public final class AlixHandler {
     public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
     public static final boolean isEpollTransport = SERVER_CHANNEL_FUTURE.channel().getClass() == EpollServerSocketChannel.class;
 
-    public static void resetLoginEffectPackets(UnverifiedUser user) {
+    public static void resetBlindness(UnverifiedUser user) {
+        if (!user.blindnessSent) return;
+        user.writeAndFlushDynamicSilently(new WrapperPlayServerRemoveEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS));
+    }
+
+    /*public static void resetLoginEffectPackets(UnverifiedUser user) {
         Player player = user.getPlayer();
 
         //Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(player.getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
@@ -85,7 +89,7 @@ public final class AlixHandler {
             try {
                 for (ByteBuf buf : addPlayersBuffers) user.writeSilently(buf);
                 if (removeBlindnessBuffer != null) user.writeSilently(removeBlindnessBuffer);
-                user.flushSilently();
+                user.flush();
             } catch (Throwable e) {
                 Main.logError("No jak chuj coś tu nie działa");
                 e.printStackTrace();
@@ -93,17 +97,26 @@ public final class AlixHandler {
         });
 
         //show the verified users the unverified user in tab
-        ByteBuf[] addUnvPlayerBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ONE_VISIBLE(user.reetrooperUser(), user.getPlayer());
+        ByteBuf[] addUnvPlayerBuffersConst = OutPlayerInfoPacketConstructor.constructConst_ADD_OF_ONE_VISIBLE(user.reetrooperUser(), user.getPlayer());
 
-        //Not the most optimized way, that's for sure, but otherwise many problems can occur
         for (AlixUser u : UserManager.users())
-            if (u instanceof VerifiedUser && OutPlayerInfoPacketConstructor.isVisible(((VerifiedUser) u).getPlayer(), user.getPlayer()))
-                for (ByteBuf buf : addUnvPlayerBuffers) u.silentContext().write(buf.copy());
-        for (ByteBuf buf : addUnvPlayerBuffers) buf.release();
-    }
+            if (u instanceof VerifiedUser && OutPlayerInfoPacketConstructor.isVisible(((VerifiedUser) u).getPlayer(), player)) {
+                for (ByteBuf buf : addUnvPlayerBuffersConst) u.writeConstSilently(buf);
+                u.flush();
+            }
+
+        for (ByteBuf buf : addUnvPlayerBuffersConst) buf.unwrap().release();
+    }*/
 
     private static final boolean sendBlindness = CaptchaVisualType.shouldSendBlindness();
     private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
+
+/*
+    static {
+        Main.logError("BLINDNESS " + sendBlindness);
+    }
+*/
+
     //private static final ByteBuf VER_POS = NettyUtils.constBuffer(new WrapperPlayServerPo);
     //SpigotConversionUtil.
 
@@ -114,12 +127,13 @@ public final class AlixHandler {
     public static void sendLoginEffectsPackets(UnverifiedUser user) {
         user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
         user.writeConstSilently(TIME_NIGHT);
+        //flush is invoked in the VirtualCountdown class
 
-        if (sendBlindness || !user.isCaptchaInitialized())
-            sendBlindnessPackets(user);//it's fine even if not invoked, since flush is invoked in the CountdownTask class
+        if (sendBlindness)
+            sendBlindnessPacket(user);
     }
 
-    private static void sendBlindnessPackets(UnverifiedUser user) {
+    private static void sendBlindnessPacket(UnverifiedUser user) {
         user.writeDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
         user.blindnessSent = true;
     }

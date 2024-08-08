@@ -8,8 +8,6 @@ import shadow.utils.misc.packet.constructors.OutPositionPacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.world.AlixWorld;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 public final class VirtualFallPhase {
 
     private static final int TELEPORT_ID = 96;// ;]
@@ -23,7 +21,7 @@ public final class VirtualFallPhase {
     private int tillTimeout;
     private byte waitPackets;
     private boolean packetsSent;
-    private final AtomicBoolean tpConfirmReceived = new AtomicBoolean();
+    private boolean tpConfirmReceived;
 
     public VirtualFallPhase(UnverifiedUser user) {
         this.user = user;
@@ -53,7 +51,7 @@ public final class VirtualFallPhase {
 
     //returns true if should be kicked out
     public boolean timeoutTick() {
-        return !tpConfirmReceived.get() && --tillTimeout == 0;
+        return !tpConfirmReceived && --tillTimeout == 0;
     }
 
     public boolean isOngoing() {
@@ -62,11 +60,11 @@ public final class VirtualFallPhase {
 
     //TODO: Find out why in login this isn't ever invoked
     public void tpConfirm(PacketPlayReceiveEvent event) {
-        if (tpConfirmReceived.get()) return;
+        if (tpConfirmReceived) return;
         //long time = System.currentTimeMillis();
         WrapperPlayClientTeleportConfirm wrapper = new WrapperPlayClientTeleportConfirm(event);
         if (wrapper.getTeleportId() == TELEPORT_ID) {
-            this.tpConfirmReceived.set(true);
+            this.tpConfirmReceived = true;
             //int ping = (int) ((time - this.sendTime) >> 1);
             //Main.logError("PING: " + ((time - this.sendTime) >> 1));
             //Main.logError("TP CONFIRM");

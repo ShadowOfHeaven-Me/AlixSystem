@@ -12,7 +12,6 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import shadow.utils.netty.NettyUtils;
-import shadow.utils.users.Verifications;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -119,11 +118,11 @@ public final class OutPlayerInfoPacketConstructor {
         return buffers;
     }
 
-    public static ByteBuf[] construct_ADD_OF_ONE_VISIBLE(User addToTab, Player p) {
+    public static ByteBuf[] constructConst_ADD_OF_ONE_VISIBLE(User addToTab, Player p) {
         if (version.isNewerThanOrEquals(ServerVersion.V_1_19_3)) {
             WrapperPlayServerPlayerInfoUpdate.PlayerInfo info = new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(addToTab.getProfile(), true, 0, SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), Component.text(p.getPlayerListName()), null);
 
-            return new ByteBuf[]{NettyUtils.createBuffer(new WrapperPlayServerPlayerInfoUpdate(UPDATE_ACTIONS, Collections.singletonList(info)))};
+            return new ByteBuf[]{NettyUtils.constBuffer(new WrapperPlayServerPlayerInfoUpdate(UPDATE_ACTIONS, Collections.singletonList(info)))};
         }
 
         WrapperPlayServerPlayerInfo.PlayerData info = new WrapperPlayServerPlayerInfo.PlayerData(Component.text(p.getPlayerListName()), addToTab.getProfile(), SpigotConversionUtil.fromBukkitGameMode(p.getGameMode()), null, 0);
@@ -133,14 +132,15 @@ public final class OutPlayerInfoPacketConstructor {
 
         for (int i = 0; i < buffers.length; i++) {
             WrapperPlayServerPlayerInfo.Action action = INFO_ACTIONS[i];
-            buffers[i] = NettyUtils.createBuffer(new WrapperPlayServerPlayerInfo(action, list));
+            buffers[i] = NettyUtils.constBuffer(new WrapperPlayServerPlayerInfo(action, list));
         }
         return buffers;
     }
 
     public static boolean isVisible(Player looker, Player target) {
-        return target == null //fix for fake players
-                || looker.canSee(target) && !Verifications.has(target);
+        //UnverifiedUser user;
+        return target == null  || looker == null //fix for fake players
+                || looker.canSee(target);// && ((user = Verifications.get(target)) == null || !user.isCaptchaInitialized());
     }
 
     public static void init() {

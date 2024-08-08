@@ -15,6 +15,7 @@ import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import org.jetbrains.annotations.NotNull;
+import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.login.captcha.consumer.CaptchaConsumer;
@@ -231,6 +232,8 @@ public class PacketBlocker implements PacketProcessor {
         if (++totalPacketsUntilKick == maxTotalPackets) syncedKick(packetLimitReached);
     }*/
 
+    private static final boolean filterAllEntityPackets = Main.config.getBoolean("filter-all-entity-packets");
+
     @Override
     public void onPacketSend(PacketPlaySendEvent event) {
         //Main.logError("READ: " + event.getPacketType().name());
@@ -279,16 +282,17 @@ public class PacketBlocker implements PacketProcessor {
                 event.setCancelled(true);
                 break;
             //case "PacketPlayOutGameStateChange":
+            case SPAWN_PLAYER:
             case TIME_UPDATE:
             case TITLE://
             case SET_TITLE_SUBTITLE://
             case SET_TITLE_TEXT://
             case SET_TITLE_TIMES://
-            case ENTITY_EFFECT:
             case EFFECT:
             case SERVER_DATA:
             case WINDOW_ITEMS:
-            case SPAWN_PLAYER:
+                event.setCancelled(true);
+                break;
             case SPAWN_LIVING_ENTITY:
             case SPAWN_ENTITY:
             case ENTITY_RELATIVE_MOVE_AND_ROTATION:
@@ -304,11 +308,15 @@ public class PacketBlocker implements PacketProcessor {
             case ENTITY_HEAD_LOOK:
             case REMOVE_ENTITY_EFFECT:
             case UPDATE_ENTITY_NBT:
+            case ENTITY_EFFECT:
+                if (filterAllEntityPackets) {
+                    event.setCancelled(true);
+                    return;
+                }
+                break;
             case PLAYER_INFO:
             case PLAYER_INFO_REMOVE:
             case PLAYER_INFO_UPDATE:
-                event.setCancelled(true);
-                break;
             case RESET_SCORE:
             case UPDATE_SCORE:
             case SCOREBOARD_OBJECTIVE:
@@ -358,17 +366,19 @@ public class PacketBlocker implements PacketProcessor {
                 //this.packetMap.putOverriding(AlixPacketType.ABILITIES, event);
                 event.setCancelled(true);
                 break;
+            case SPAWN_PLAYER:
             case UPDATE_ATTRIBUTES:
             case TIME_UPDATE:
-            case TITLE://
-            case SET_TITLE_SUBTITLE://
-            case SET_TITLE_TEXT://
-            case SET_TITLE_TIMES://
-            case ENTITY_EFFECT:
+            case TITLE:
+            case SET_TITLE_SUBTITLE:
+            case SET_TITLE_TEXT:
+            case SET_TITLE_TIMES:
             case EFFECT:
             case SERVER_DATA:
             case WINDOW_ITEMS:
-            case SPAWN_PLAYER:
+            case BUNDLE:
+                event.setCancelled(true);
+                break;
             case SPAWN_LIVING_ENTITY:
             case SPAWN_ENTITY:
             case ENTITY_RELATIVE_MOVE_AND_ROTATION:
@@ -384,12 +394,15 @@ public class PacketBlocker implements PacketProcessor {
             case ENTITY_HEAD_LOOK:
             case REMOVE_ENTITY_EFFECT:
             case UPDATE_ENTITY_NBT:
+            case ENTITY_EFFECT:
+                if (filterAllEntityPackets) {
+                    event.setCancelled(true);
+                    return;
+                }
+                break;
             case PLAYER_INFO:
             case PLAYER_INFO_REMOVE:
             case PLAYER_INFO_UPDATE:
-            case BUNDLE:
-                event.setCancelled(true);
-                break;
             case UPDATE_SCORE:
             case RESET_SCORE:
             case SCOREBOARD_OBJECTIVE:
@@ -468,7 +481,7 @@ public class PacketBlocker implements PacketProcessor {
     public final void sendBlockedPackets() {
         this.blockedChatMessages.forEach(this.user::writeDynamicMessageSilently);
         this.packetMap.sendTo(this.user);
-        this.user.flushSilently();
+        this.user.flush();
     }
 
     public final void releaseBlocked() {

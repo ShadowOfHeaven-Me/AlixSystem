@@ -1,7 +1,8 @@
 package shadow.utils.misc.packet.constructors;
 
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerMapData;
 import io.netty.buffer.ByteBuf;
-import shadow.utils.misc.packet.custom.AlixMapDataPacketWrapper;
+import shadow.utils.netty.NettyUtils;
 
 public final class OutMapPacketConstructor {
 
@@ -43,7 +44,7 @@ public final class OutMapPacketConstructor {
 
 
     public static ByteBuf constructDynamic(int viewId, byte[] toDrawBytes) {
-        return AlixMapDataPacketWrapper.createBuffer(viewId, toDrawBytes);
+        return NettyUtils.createBuffer(new WrapperPlayServerMapData(viewId, (byte) 3, false, true, null, 128, 128, 0, 0, toDrawBytes));
         //return newerConstructor ? construct_1_17(viewId, toDrawBytes) : construct_old(viewId, toDrawBytes);
     }
 

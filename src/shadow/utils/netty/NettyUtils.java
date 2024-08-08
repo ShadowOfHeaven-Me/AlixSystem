@@ -23,7 +23,7 @@ public final class NettyUtils {
     }*/
 
     //have the bufs managed by the GC (for now disabled)
-    private static final ByteBufAllocator ALLOC = new UnpooledByteBufAllocator(false, true);//remember to never explicitly enable 'no cleaner'
+    private static final ByteBufAllocator ALLOC = new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
     //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
 
 /*    static {
@@ -31,11 +31,15 @@ public final class NettyUtils {
     }*/
 
     public static ByteBuf buffer() {
-        return ALLOC.buffer();
+        return directBuffer(); //ALLOC.ioBuffer();
     }
 
     public static ByteBuf directBuffer() {
         return ALLOC.directBuffer();
+    }
+
+    public static ByteBuf directBuffer(int capacity) {
+        return ALLOC.directBuffer(capacity);
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -96,7 +100,7 @@ public final class NettyUtils {
     }
 
     public static ByteBuf createBuffer(PacketWrapper<?> wrapper) {
-        return createBuffer(wrapper, false);
+        return createBuffer(wrapper, true);
     }
 
     public static ByteBuf createBuffer(PacketWrapper<?> wrapper, boolean direct) {

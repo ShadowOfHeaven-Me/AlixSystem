@@ -25,7 +25,7 @@ public final class SmoothCaptcha extends Captcha {
     public void sendPackets(UnverifiedUser user) {
         this.released.set(true);
         for (ByteBuf buf : buffers) user.writeSilently(buf);
-        user.flushSilently();
+        user.flush();
         //Main.logInfo("SENT CAPTCHAAA " + buffers.length);
     }
 

@@ -3,7 +3,9 @@ package shadow.utils.objects.packet.map;
 import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.event.ProtocolPacketEvent;
+import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
 import io.netty.buffer.ByteBuf;
+import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.types.UnverifiedUser;
 
 public final class BlockedPacketsMap {
@@ -21,8 +23,27 @@ public final class BlockedPacketsMap {
     }
 
     public void addDynamic(ProtocolPacketEvent<?> event) {
-        ByteBuf buf = (ByteBuf) event.getByteBuf();
-        this.dynamicPackets.offerLast(buf.copy());
+        int packetId = event.getPacketId();
+        int idBytes = countBytesToEncodeVarInt(packetId);//count the VarInt's bytes
+        //4 - (Integer.numberOfLeadingZeros(packetId) >> 3);//count the int's bytes
+
+        ByteBuf eventBuf = (ByteBuf) event.getByteBuf();
+        ByteBuf buf = NettyUtils.directBuffer(eventBuf.capacity() + idBytes);
+
+        //prefix the ByteBuf with the packet id
+        ByteBufHelper.writeVarInt(buf, packetId);
+        buf.writeBytes(eventBuf);
+
+        this.dynamicPackets.offerLast(buf);
+    }
+
+    private static int countBytesToEncodeVarInt(int value) {
+        int bytes = 1;
+        while ((value & -128) != 0) {//0x80
+            bytes++;
+            value >>>= 7;
+        }
+        return bytes;
     }
 
 /*    public void putOverriding(AlixPacketType type, ProtocolPacketEvent<?> event) {

@@ -60,7 +60,6 @@ public final class UnverifiedUser implements AlixUser {
     private final AlixFuture<Captcha> captchaFuture;
     private final ScheduledFuture<?> reminderTask;
     //private final PacketInterceptor duplexHandler;
-    private PacketBlocker blocker;
     private final String strAddress;
     private final InetAddress address;
     //private PacketProcessor processor;
@@ -68,7 +67,8 @@ public final class UnverifiedUser implements AlixUser {
     //private final GameMode originalGameMode;
     private final boolean captchaInitialized, originalCollidableState;
     private final boolean joinedRegistered;
-    public final PotionEffectHandler potionEffectHandler;
+    private final PotionEffectHandler potionEffectHandler;
+    private PacketBlocker blocker;
     private LoginType loginType;
     private LoginVerification loginVerification;
     private AlixVerificationGui alixGui;
@@ -376,7 +376,7 @@ public final class UnverifiedUser implements AlixUser {
         this.writeAndFlushConstSilently(loginSuccessMessagePacket);//invoked here, since the this#initDoubleVer can prevent this method from being invoked
         UserManager.addVerifiedUser(player, data, this.getIPAddress(), retrooperUser, silentContext);//invoked before onSuccessfulVerification to remove UnverifiedUser from UserManager, to indicate that he's verified
         this.onSuccessfulVerification();
-        AlixHandler.resetLoginEffectPackets(this);//no need to execute this async here, since it's this method's code is already executed async by the AlixScheduler
+        AlixHandler.resetBlindness(this);
         //AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
     }
 
@@ -423,7 +423,7 @@ public final class UnverifiedUser implements AlixUser {
         PersistentUserData data = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext);
         data.setLoginType(this.loginType);
         this.onSuccessfulVerification();
-        AlixScheduler.async(() -> AlixHandler.resetLoginEffectPackets(this));
+        AlixHandler.resetBlindness(this);
 
         /*if (captchaInitialized && originalJoinMessage != null)
             AlixUtils.broadcastRaw(this.originalJoinMessage);//only send the join message if it wasn't removed by someone else*/
