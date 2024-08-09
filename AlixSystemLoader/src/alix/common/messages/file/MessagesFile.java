@@ -45,12 +45,12 @@ public final class MessagesFile extends AlixFileManager {
 
     private static File findFile() {
         String name = AlixCommonMain.MAIN_CLASS_INSTANCE.getEngineParams().messagesFileName();
-        File f = AlixFileManager.getPluginFile(name);
+        File f = AlixFileManager.getPluginFile(name, FileType.CONFIG);
         if (f.exists()) return f;
 /*        String lang = JavaUtils.pluginLanguage.getShortcut();
         File f2 = FileManager.getPluginFile("messages_" + lang + ".txt");
         if (f2.exists()) return f2;*/
         //Main.debug("Unable to find this plugin's messages.txt file. Generating a new one.");
-        return AlixFileManager.createPluginFile(name);
+        return AlixFileManager.createPluginFile(name, FileType.CONFIG);
     }
 }

@@ -17,17 +17,17 @@ public final class FileUpdater {
             case SPIGOT:
             case PAPER:
                 //messages.txt
-
                 File messagesFile = updateFile("messages.txt");
                 MessagesFileUpdater.updateFormatting(messagesFile);
 
                 //commands.txt
-
                 updateFile("commands.txt", Validation.VALIDATE_HASHTAG_START);
 
                 //config.yml
-
                 updateFile("config.yml", Validation.VALIDATE_TRIMMED_DASH_START);
+
+                //config.yml
+                updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;
             case VELOCITY:
                 updateFile("config.yml", Validation.VALIDATE_TRIMMED_DASH_START);

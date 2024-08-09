@@ -14,7 +14,7 @@ public final class SpawnFile extends FileManager {
     private byte index;
 
     public SpawnFile() {
-        super("spawn.yml");
+        super("spawn.yml", FileType.INTERNAL);
     }
 
     @Override

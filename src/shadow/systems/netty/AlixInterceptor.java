@@ -57,7 +57,7 @@ public final class AlixInterceptor {
         }
 
         fireWallType = type;
-        FireWallType.USED[0] = fireWallType;
+        FireWallType.USED.set(fireWallType);
     }
 
     public static void injectIntoServerPipeline(ChannelPipeline serverPipeline) {//, ChannelHandler firewallHandler) {//the server pipeline
@@ -125,6 +125,9 @@ public final class AlixInterceptor {
             case FAST_UNSAFE_EPOLL:
                 break;
         }
+    }
+
+    public static void init() {
     }
 
 /*    public static void initialize() {

@@ -20,16 +20,8 @@ public abstract class FileManager extends AlixFileManager {
         super(file);
     }
 
-    protected FileManager(String fileName) {
-        super(fileName);
-    }
-
-    protected FileManager(String fileName, boolean internal) {
-        super(fileName, internal);
-    }
-
-    protected FileManager(String fileName, boolean init, boolean internal) {
-        super(fileName, init, internal);
+    protected FileManager(String fileName, FileType type) {
+        super(fileName, type);
     }
 
     public static void loadFiles() {

@@ -1,7 +1,7 @@
 package shadow.utils.main.file.managers;
 
 import shadow.systems.commands.tab.subtypes.WarpCommandTabCompleter;
-import shadow.utils.main.file.subtypes.WarpFile;
+import shadow.utils.main.file.subtypes.WarpsFile;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.util.Map;
 public final class WarpFileManager {
 
     private static final Map<String, BukkitNamedLocation> map = new HashMap<>();
-    private static final WarpFile file = new WarpFile();
+    private static final WarpsFile file = new WarpsFile();
     private static boolean hasChanged;
 
     public static void initialize() throws IOException {

@@ -1,3 +1,4 @@
+/*
 package alix.common.utils.file.temp;
 
 import alix.common.utils.file.AlixFileManager;
@@ -11,4 +12,4 @@ public abstract class TemporaryFile extends AlixFileManager {
     protected TemporaryFile(String fileName) {
         super(fileName);
     }
-}
+}*/

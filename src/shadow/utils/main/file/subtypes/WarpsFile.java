@@ -9,10 +9,10 @@ import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import java.io.IOException;
 import java.util.Map;
 
-public class WarpFile extends FileManager {
+public class WarpsFile extends FileManager {
 
-    public WarpFile() {
-        super("warps.yml");
+    public WarpsFile() {
+        super("warps.yml", FileType.INTERNAL);
     }
 
     @Override

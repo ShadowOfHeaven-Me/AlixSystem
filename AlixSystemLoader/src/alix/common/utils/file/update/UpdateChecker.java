@@ -33,8 +33,9 @@ public final class UpdateChecker {
 
         }*/
 
-        if (currentFirstWord.equals(newest))
+        if (currentFirstWord.equals(newest)) {
             return true;//the currently used version is followed by some other text, like 2.5.0 DEV-1, so when 2.5.0 is out, the 2.5.0 is the newest
+        }
 
         String[] newestVer = newestFirstWord.split("\\.");
         String[] currentVer = currentFirstWord.split("\\.");

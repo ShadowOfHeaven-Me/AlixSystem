@@ -243,7 +243,7 @@ public final class AlixHandler {
                 pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
                 Main.logError("drftgyhjuik");
             }*/
-            pm.registerEvents(new ServerPingListener(), Main.plugin);
+            if(AlixUtils.antibotService || ServerPingManager.isRegistered()) pm.registerEvents(new ServerPingListener(), Main.plugin);
             /*            if (requireCaptchaVerification) {
              *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
                     Main.logInfo("Enabling Async Tab Completion support.");

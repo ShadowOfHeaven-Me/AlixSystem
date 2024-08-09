@@ -2,6 +2,7 @@ package alix.common.utils.file;
 
 
 import alix.common.AlixCommonMain;
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 
 import java.io.*;
@@ -20,11 +21,13 @@ import java.util.function.Predicate;
 public abstract class AlixFileManager {
 
     private final File file;
-    private static final File INTERNAL_FOLDER;
+    private static final File INTERNAL_FOLDER, SECRETS_FOLDER;
 
     static {
         INTERNAL_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath() + File.separator + "internal");
         INTERNAL_FOLDER.mkdir();
+        SECRETS_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath() + File.separator + "secrets");
+        SECRETS_FOLDER.mkdir();
     }
 
     protected AlixFileManager(File file) {//existing file
@@ -32,21 +35,23 @@ public abstract class AlixFileManager {
         file.toPath();//buffer the path object
     }
 
-    protected AlixFileManager(String fileName) {
-        this(fileName, true, true);
+    protected AlixFileManager(String fileName, FileType type) {
+        this(fileName, type, true);
     }
 
-    protected AlixFileManager(String fileName, boolean internal) {
-        this(fileName, true, internal);
-    }
-
-    protected AlixFileManager(String fileName, boolean init, boolean internal) {
-        this(init ? initializeFile(fileName, internal) : getPluginFile(fileName, internal));
+    protected AlixFileManager(String fileName, FileType type, boolean init) {
+        this(init ? initializeFile(fileName, type) : getPluginFile(fileName, type));
     }
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     //private static final boolean isUtf32;
     public static int HIGHEST_CHAR = 382;
+
+    public enum FileType {
+
+        CONFIG, INTERNAL, SECRET
+
+    }
 
     /*static {
         Charset c;
@@ -120,8 +125,8 @@ public abstract class AlixFileManager {
         }
     }
 
-    public static File writeJarCompiledFileIntoDest(String s, boolean internal) {
-        return writeJarCompiledFileIntoDest(getPluginFile(s, internal), s);
+    public static File writeJarCompiledFileIntoDest(String s, FileType type) {
+        return writeJarCompiledFileIntoDest(getPluginFile(s, type), s);
     }
 
     public static File writeJarCompiledFileIntoDest(File copyInto, String s) {
@@ -134,12 +139,8 @@ public abstract class AlixFileManager {
         }
     }
 
-    public static File createPluginFile(String s) {
-        return createPluginFile(s, false);
-    }
-
-    public static File createPluginFile(String s, boolean internal) {
-        return createFileIfAbsent(writeJarCompiledFileIntoDest(s, internal));
+    public static File createPluginFile(String s, FileType type) {
+        return createFileIfAbsent(writeJarCompiledFileIntoDest(s, type));
     }
 
     public static void createNewFile(File file) {
@@ -176,36 +177,40 @@ public abstract class AlixFileManager {
         }
     }
 
-    public static File getPluginFile(String fileName) {
-        return getPluginFile(fileName, false);
-    }
-
-    public static File getPluginFile(String fileName, boolean internal) {
+    protected static File getPluginFile(String fileName, FileType type) {
         String path = AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath().toString();
 
-        if (internal) {
-            File oldFile = new File(path + File.separator + fileName);
-            File newFile = new File(INTERNAL_FOLDER.getAbsolutePath() + File.separator + fileName);
-            if (oldFile.exists()) {
-                try {
-                    Files.copy(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    oldFile.delete();
-                    return newFile;
-                } catch (IOException e) {
-                    throw new ExceptionInInitializerError(e);
-                }
-            } else {
-                return newFile;
-            }
+        switch (type) {
+            case SECRET:
+                return getPluginFileInFolder(SECRETS_FOLDER, fileName);
+            case INTERNAL:
+                return getPluginFileInFolder(INTERNAL_FOLDER, fileName);
+            case CONFIG:
+                return new File(path + File.separator + fileName);//return the default file path if the file is not an internal one
+            default:
+                throw new AlixError("Invalid: " + type);
         }
-
-        //new File(path).mkdirs(); //Creating the folder if absent
-
-        return new File(path + File.separator + fileName);//return the default file path if the file is not an internal one
     }
 
-    private static File initializeFile(String fileName, boolean internal) {
-        File file = getPluginFile(fileName, internal);
+    private static File getPluginFileInFolder(File folder, String fileName) {
+        String path = AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath().toString();
+        File oldFile = new File(path + File.separator + fileName);
+        File newFile = new File(folder.getAbsolutePath() + File.separator + fileName);
+        if (oldFile.exists()) {
+            try {
+                Files.copy(oldFile.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                oldFile.delete();
+                return newFile;
+            } catch (IOException e) {
+                throw new ExceptionInInitializerError(e);
+            }
+        } else {
+            return newFile;
+        }
+    }
+
+    private static File initializeFile(String fileName, FileType type) {
+        File file = getPluginFile(fileName, type);
         return createFileIfAbsent(file);
     }
 

@@ -14,7 +14,7 @@ public final class IPsCacheFile extends AlixFileManager {
     private final Map<InetAddress, Boolean> map = new ConcurrentHashMap<>(1 << 7);//128
 
     public IPsCacheFile() {
-        super("ips_cache.txt");
+        super("ips_cache.txt", FileType.INTERNAL);
     }
 
     @Override

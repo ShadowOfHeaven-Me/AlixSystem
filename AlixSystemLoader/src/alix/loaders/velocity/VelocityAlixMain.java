@@ -44,7 +44,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         this.logger = logger;
         this.loggerAdapter = LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
-        File f = AlixFileManager.createPluginFile("vconfig.yml");
+        File f = AlixFileManager.createPluginFile("vconfig.yml", AlixFileManager.FileType.CONFIG);
         this.config = YamlConfiguration.loadConfiguration(f);
 
         //CommonAlixMain.loggerManager = this;

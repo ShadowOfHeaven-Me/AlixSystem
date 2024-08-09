@@ -49,13 +49,6 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //[+] Added 'filter-all-entity-packets' to config.yml
-    //[+] Added compatibility to all TAB plugins by using a generalized handling method
-    //[*] Unverified players will now always be shown in tab
-    //[*] Fixed players verifying in parallel staying invisible to one another after verification
-    //[*] Fixed players getting kicked due to invalid packets after verification completion
-    //[*] Fixed 'verification-blindness' in config.yml not working for login verification
-    //[*] Added compatibility to the now outdated 'map' visual captcha type
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
@@ -206,6 +199,8 @@ public final class Main implements LoaderBootstrap {
 
     private void setUp(PreStartUpExecutors preStartUpExecutors) {
         en = AlixUtils.isPluginLanguageEnglish;
+        AlixInterceptor.init();
+        AlixHandler.initExecutors(pm);
         //AlixHandler.kickAll("Reload");
         PacketEventsManager.onEnable();
         ReflectionUtils.replaceBansToConcurrent();
@@ -234,7 +229,7 @@ public final class Main implements LoaderBootstrap {
         }*/
         // String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         //logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
-        AlixHandler.initExecutors(pm);
+
         FileManager.loadFiles();//load all the classes before enabling the ability to join
         HandlerList.unregisterAll(preStartUpExecutors);
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");

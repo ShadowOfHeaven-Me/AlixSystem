@@ -11,7 +11,7 @@ public final class UserDataFile extends AlixFileManager {
     private final Map<String, PersistentUserData> map = new ConcurrentHashMap<>();
 
     public UserDataFile() {
-        super("users.yml");
+        super("users.yml", FileType.INTERNAL);
     }
 
     @Override
@@ -20,7 +20,7 @@ public final class UserDataFile extends AlixFileManager {
         this.map.put(data[0], PersistentUserData.fromData(data));
     }
 
-    public final Map<String, PersistentUserData> getMap() {
+    public Map<String, PersistentUserData> getMap() {
         return map;
     }
 }

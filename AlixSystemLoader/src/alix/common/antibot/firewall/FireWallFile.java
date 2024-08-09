@@ -7,7 +7,7 @@ import alix.common.utils.file.AlixFileManager;
 public final class FireWallFile extends AlixFileManager {
 
     FireWallFile() {
-        super("firewall.txt");
+        super("firewall.txt", FileType.INTERNAL);
     }
 
     @Override

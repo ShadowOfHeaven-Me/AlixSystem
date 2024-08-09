@@ -11,7 +11,7 @@ import java.util.Map;
 public final class UserFile extends AlixFileManager {
 
     UserFile() {
-        super("users.yml");
+        super("users.yml", FileType.INTERNAL);
     }
 
     @Override

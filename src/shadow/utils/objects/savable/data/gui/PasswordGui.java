@@ -161,7 +161,7 @@ public final class PasswordGui {
     private static ItemStack[] createPINVerificationItems() {
         //Inventory inv = createNew(null);//we do not care about the title
         ItemStack[] items = new ItemStack[36];
-        for (byte i = 0; i < 10; i++) items[PIN_DIGIT_SLOTS[i]] = digits[i];
+        for (byte i = 0; i <= 9; i++) items[PIN_DIGIT_SLOTS[i]] = digits[i];
 
 /*        items[DIGIT_0, digits[0]);
         items[DIGIT_1, digits[1]);

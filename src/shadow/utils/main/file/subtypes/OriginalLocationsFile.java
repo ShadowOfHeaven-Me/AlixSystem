@@ -14,7 +14,7 @@ public final class OriginalLocationsFile extends FileManager {
     private final Map<UUID, Location> map;
 
     public OriginalLocationsFile() {
-        super("original-locations.txt");
+        super("original-locations.txt", FileType.INTERNAL);
         this.map = new HashMap<>();
     }
 
