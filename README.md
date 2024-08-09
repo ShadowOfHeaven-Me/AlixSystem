@@ -2,7 +2,7 @@
 
 This is the source code of the spigot antibot & authentication plugin called AlixSystem, to which link can be found here: https://www.spigotmc.org/resources/alixsystem.109144/
 
-This documentation refers to the latest 3.2.0 (DEV-3 Hotfix) build
+This documentation refers to the latest build
 
 ## FireWall
 Due to different environments, Alix cannot always use the very best firewall methods there are. For that reason, currently 4 different firewall types exist within Alix.
