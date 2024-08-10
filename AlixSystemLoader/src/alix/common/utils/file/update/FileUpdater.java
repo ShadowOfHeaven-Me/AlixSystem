@@ -26,8 +26,7 @@ public final class FileUpdater {
                 //config.yml
                 updateFile("config.yml", Validation.VALIDATE_TRIMMED_DASH_START);
 
-                //config.yml
-                updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
+                //updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;
             case VELOCITY:
                 updateFile("config.yml", Validation.VALIDATE_TRIMMED_DASH_START);
