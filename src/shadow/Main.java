@@ -49,6 +49,18 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
+    //+ Added 2 Factor Authentication for mobile TOTP authentication apps (most preferably Google Authenticator)
+    //+ Added an experimental login feature for bedrock players. Please report any issues, if you encounter any
+    //+ Only the appropriate login commands will be displayed during login
+    //+ Added the possibility to require a password repeat at /register
+    //+ Added colors to Alix's console prefix on all server engines
+    //+ Enhanced colors used in console and the general imperfections
+    //+ Render distance will now always be 2 whenever possible on Paper servers
+    //* Deprecated 'particle' and 'map' captcha types
+    //+ Greatly enhanced VirtualFallPhase
+    //* Fixed a Geyser compatibility issue
+    //* Fixed failed join attempts still sometimes being logged into the console
+    //* Updated PacketEvents
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
@@ -104,6 +116,7 @@ public final class Main implements LoaderBootstrap {
     //Don't use alix scheduler on load, cuz errors on paper
     @Override
     public void onLoad() {
+        //PacketType.Play.Client.PLUGIN_MESSAGE
         //ServerLoadEvent
         //if (autoRestart()) return;
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
@@ -112,6 +125,7 @@ public final class Main implements LoaderBootstrap {
         config = (YamlConfiguration) plugin.getConfig();
         this.metrics = Metrics.createMetrics();
         kickAll("Reload");
+        //PacketType.Play.Server.PLUGIN_MESSAGE
     }
 
     @Override
@@ -120,8 +134,9 @@ public final class Main implements LoaderBootstrap {
         //AlixBungee.init();
         //ParticleRenderer3d.render();
         /*if(Bukkit.getServer().getOnlineMode()) {
-            Main.logError("Online mode is enabled! Alix is now an offline mode-only plugin!");
+            Main.logError("Online mode is enabled! Alix is now an offline mode only plugin!");
         }*/
+
         PreStartUpExecutors preStartUpExecutors = new PreStartUpExecutors();
         pm.registerEvents(preStartUpExecutors, plugin);
         config.options().copyDefaults(true);
@@ -182,19 +197,19 @@ public final class Main implements LoaderBootstrap {
     }*/
 
     public static void logInfo(String info) {
-        plugin.getLogger().info(info);
+        plugin.getAlixLogger().info(info);
     }
 
     public static void logWarning(String warning) {
-        plugin.getLogger().warning(warning);
+        plugin.getAlixLogger().warning(warning);
     }
 
     public static void logError(String error) {
-        plugin.getLogger().severe(error);
+        plugin.getAlixLogger().severe(error);
     }
 
     public static void debug(String info) {
-        if (AlixUtils.isDebugEnabled) plugin.getLogger().log(Level.CONFIG, info);
+        if (AlixUtils.isDebugEnabled) plugin.getAlixLogger().log(Level.CONFIG, info);
     }
 
     private void setUp(PreStartUpExecutors preStartUpExecutors) {
@@ -315,7 +330,7 @@ public final class Main implements LoaderBootstrap {
     }*/
 
     public void logConsoleInfo(String info) {
-        plugin.getLogger().info(info);
+        plugin.getAlixLogger().info(info);
         //System.out.println(info);
         //MessageUtils.toStdout(
     }

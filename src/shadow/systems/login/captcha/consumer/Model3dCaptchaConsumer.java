@@ -1,3 +1,4 @@
+/*
 package shadow.systems.login.captcha.consumer;
 
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
@@ -30,4 +31,4 @@ final class Model3dCaptchaConsumer extends AbstractCaptchaConsumer {
     public Location getLocation() {
         return loc;
     }
-}
+}*/

@@ -11,6 +11,8 @@ import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.objects.packet.PacketProcessor;
 
+import java.util.function.Consumer;
+
 public interface AlixUser {
 
     User reetrooperUser();
@@ -28,8 +30,8 @@ public interface AlixUser {
         return this.silentContext() == user.silentContext();
     }
 
-/*    static void DEBUG_TIME() {
-        StringBuilder sb = new StringBuilder("START");
+    static void DEBUG_TIME() {
+        /*StringBuilder sb = new StringBuilder("START");
         int c = 0;
         for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
             sb.append('\n').append(element);
@@ -38,8 +40,26 @@ public interface AlixUser {
                 break;
             }
         }
-        Main.logError("INVOKED STACKTRACE (send this to shadow): " + sb);
-    }*/
+        Main.logError("INVOKED STACKTRACE (send this to shadow): " + sb);*/
+    }
+
+    default void writeAndOccasionallyFlushSilently(ByteBuf[] buffers) {
+        this.writeAndFlushWithThresholdSilently(buffers, 100);
+    }
+
+    default void writeAndFlushWithThresholdSilently(ByteBuf[] buffers, int threshold) {
+        this.writeAndFlushWithThresholdSilently(buffers, threshold, this::writeSilently);
+    }
+
+    default void writeAndFlushWithThresholdSilently(ByteBuf[] buffers, int threshold, Consumer<ByteBuf> writeFunction) {
+        for (int i = 1; i <= buffers.length; i++) {
+            ByteBuf buf = buffers[i];
+            writeFunction.accept(buf);
+            if (i % threshold == 0) this.flush();
+        }
+        if (buffers.length % threshold != 0)//last loop was not a flush
+            this.flush();
+    }
 
     default void writeDynamicMessageSilently(Component message) {
         NettyUtils.writeDynamicWrapper(OutMessagePacketConstructor.packetWrapper(message), this.silentContext());
@@ -59,28 +79,28 @@ public interface AlixUser {
     }
 
     default void writeRaw(ByteBuf rawBuffer) {
-        //DEBUG_TIME();
+        DEBUG_TIME();
         RawAlixPacket.writeRaw(rawBuffer, this.getChannel());
     }
 
     default void writeAndFlushRaw(ByteBuf rawBuffer) {
-        //DEBUG_TIME();
+        DEBUG_TIME();
         this.writeRaw(rawBuffer);
         this.getChannel().unsafe().flush();
     }
 
     default void writeSilently(ByteBuf buffer) {
-        //DEBUG_TIME();
+        DEBUG_TIME();
         this.silentContext().write(buffer);
     }
 
     default void writeAndFlushSilently(ByteBuf buffer) {
-        //DEBUG_TIME();
+        DEBUG_TIME();
         this.silentContext().writeAndFlush(buffer);
     }
 
     default void flush() {
-        //DEBUG_TIME();
+        DEBUG_TIME();
         //this.silentContext().flush();
         this.getChannel().flush();
     }

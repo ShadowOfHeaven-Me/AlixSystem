@@ -12,7 +12,7 @@ import shadow.utils.users.types.UnverifiedUser;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
+public final class AnvilGUIPacketBlocker extends PacketBlocker {
 
     //private static final Set<Integer> WINDOW_IDS = new ConcurrentSet<>();
     private VirtualAnvilPasswordBuilder builder;
@@ -27,18 +27,17 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
     }
 
     @Override
-    public void onPacketReceive(PacketPlayReceiveEvent event) {
-        if (!user.hasCompletedCaptcha()) {
-            this.onReceiveCaptchaVerification(event);
-            return;
-        }
-        //has completed the captcha and is currently undergoing the pin verification
+    protected void onReceive0(PacketPlayReceiveEvent event) {
+        //has completed the captcha and is currently undergoing the anvil verification
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
             case PLAYER_POSITION_AND_ROTATION:
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
-                this.virtualFallPhase.trySpoofPackets();
+                this.virtualFallPhase.trySpoofPackets(event);
+                break;
+            case TELEPORT_CONFIRM:
+                this.virtualFallPhase.tpConfirm(event);
                 break;
             case NAME_ITEM:
                 this.updateText(new WrapperPlayClientNameItem(event).getItemName());
@@ -49,11 +48,13 @@ public final class AnvilGUIPacketBlocker extends GUIPacketBlocker {
                 break;
             case PLUGIN_MESSAGE:
                 WrapperPlayClientPluginMessage wrapper = new WrapperPlayClientPluginMessage(event);
-                if (wrapper.getChannelName().equals("MC|ItemName"))
+                if (wrapper.getChannelName().equals("MC|ItemName")) {
                     this.updateText(getOldAnvilInput(wrapper.getData()));
-                break;
+                    event.setCancelled(true);
+                }
+                return;
             case CLOSE_WINDOW:
-                event.getPostTasks().add(user::openPasswordBuilderGUI);
+                event.getPostTasks().add(user::openVerificationGUI);
                 break;
             case KEEP_ALIVE:
                 return;

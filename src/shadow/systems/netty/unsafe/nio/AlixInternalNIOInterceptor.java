@@ -2,6 +2,7 @@ package shadow.systems.netty.unsafe.nio;
 
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.utils.other.AlixUnsafe;
+import alix.common.utils.other.annotation.ScheduledForFix;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -21,6 +22,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Set;
 
+//Method::setAccessible doesn't work here
+@ScheduledForFix
 public final class AlixInternalNIOInterceptor {
 
     private static final ServerSocketChannel delegate;
@@ -39,8 +42,11 @@ public final class AlixInternalNIOInterceptor {
 
             Class<?> serverChannelClass = delegate.getClass();//ServerSocketChannelImpl
 
+
             implCloseSelectableChannel = serverChannelClass.getDeclaredMethod("implCloseSelectableChannel");
+            implCloseSelectableChannel.setAccessible(true);
             implConfigureBlocking = serverChannelClass.getDeclaredMethod("implConfigureBlocking", boolean.class);
+            implConfigureBlocking.setAccessible(true);
 
             AlixServerSocketChannel interceptor = new AlixServerSocketChannel();
 

@@ -1,5 +1,6 @@
 package shadow.utils.netty.unsafe.raw;
 
+import alix.common.utils.other.annotation.ScheduledForFix;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -21,6 +22,8 @@ final class EpollRawAlixPacket extends AbstractRawAlixPacket {
     private static final int IPV4_SIZE_THRESHOLD = 760, IPV6_SIZE_THRESHOLD = 1280;
     private final ByteBuf[] buffers;
 
+    //Investigate what the netty guys said about the limit
+    @ScheduledForFix
     EpollRawAlixPacket(Channel channel, ByteBuf[] buffers, Function<ByteBuf, ByteBuf> transformer, Consumer<ByteBuf> release) {
         super(channel, release);
         this.buffers = getRawBuffers(channel, buffers, transformer);

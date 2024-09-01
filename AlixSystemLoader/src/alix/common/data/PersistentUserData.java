@@ -1,6 +1,7 @@
 package alix.common.data;
 
 import alix.common.antibot.IPUtils;
+import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.AlixLocationList;
 import alix.common.data.loc.provider.LocationListProvider;
@@ -12,7 +13,7 @@ import java.util.Arrays;
 public final class PersistentUserData {
 
     private static final LocationListProvider homesProvider = LocationListProvider.createImpl();
-    public static final int CURRENT_DATA_LENGTH = 7;
+    private static final int CURRENT_DATA_LENGTH = 8;
     private final AlixLocationList homes;
     private final String name;
     private final LoginParams loginParams;
@@ -21,7 +22,7 @@ public final class PersistentUserData {
 
     //name | password1 ; password2 | ip | homes | mutedUntil | login type1 ; login type2 | login settings
     private PersistentUserData(String[] splitData) {
-        splitData = ensureSplitDataCorrectness(splitData);
+        //splitData = ensureSplitDataCorrectness(splitData);
         this.name = splitData[0];
         this.loginParams = new LoginParams(splitData[1]);
         this.ip = IPUtils.fromAddress(splitData[2]);
@@ -29,6 +30,9 @@ public final class PersistentUserData {
         this.mutedUntil = Long.parseLong(splitData[4]);
         this.loginParams.initLoginTypes(splitData[5]);
         this.loginParams.initSettings(splitData[6]);
+        this.loginParams.initAuthSettings(splitData[7]);
+        UserFileManager.putData(this);
+        GeoIPTracker.addIP(this.ip);//Add it here, as it was loaded
     }
 
     private PersistentUserData(String name, InetAddress ip, Password password) {
@@ -37,7 +41,7 @@ public final class PersistentUserData {
         this.loginParams = new LoginParams(password);
         this.homes = homesProvider.newList();
         UserFileManager.putData(this);
-        //The GeoIPTracker does not need to have any changes made
+        //The GeoIPTracker add should not be invoked
     }
 
     public static PersistentUserData from(String data) {
@@ -49,9 +53,13 @@ public final class PersistentUserData {
     }
 
     public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip) {
+        return createFromPremiumInfo(name, ip, Password.createRandom());
+    }
+
+    public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip, Password password) {
         //By creating a password we ensure the account cannot be stolen in case
         //the server suddenly ever switches to offline mode, and does not use FastLogin
-        PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
+        PersistentUserData data = new PersistentUserData(name, ip, password);
         data.setLoginType(LoginType.COMMAND);
 
         return data;
@@ -67,19 +75,20 @@ public final class PersistentUserData {
         String[] correctData = new String[correctLength];
 
         System.arraycopy(splitData, 0, correctData, 0, splitDataLength);
-        //for (int i = splitDataLength; i < correctLength; i++) correctData[i] = "0";
-        Arrays.fill(splitData, splitDataLength, correctLength, "0");
+
+        Arrays.fill(correctData, splitDataLength, correctLength, "0");
 
         return correctData;
     }
 
-    public static String[] splitPersistentData(String data) {
+    private static String[] splitPersistentData(String data) {
         return data.split("\\|");
     }
 
     @Override
     public String toString() {
-        return name + "|" + loginParams.passwordsToSavable() + "|" + ip.getHostAddress() + "|" + homes.toSavable() + "|" + mutedUntil + "|" + loginParams.settingsToSavable(); //originalWorldUUID;
+        return name + "|" + loginParams.passwordsToSavable() + "|" + ip.getHostAddress() + "|" + homes.toSavable() + "|" + mutedUntil + "|"
+                + loginParams.settingsToSavable() + "|" + loginParams.authSettingsToSavable(); //originalWorldUUID;
     }
 
     public String getName() {
@@ -130,6 +139,8 @@ public final class PersistentUserData {
         this.loginParams.setPassword(Password.empty());
         this.loginParams.setExtraPassword(null);
         this.loginParams.setExtraLoginType(null);
+        this.loginParams.setAuthSettings(AuthSetting.PASSWORD);
+        this.loginParams.setHasProvenAuthAccess(false);
     }
 
     public PersistentUserData setIP(InetAddress ip) {

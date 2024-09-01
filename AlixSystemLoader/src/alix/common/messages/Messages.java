@@ -11,17 +11,12 @@ public final class Messages {
 
     private static final MessagesFile file = new MessagesFile();
     private static ExtractedMessages extractedMessages;
-    public static final String unregisteredUserMessage, notLoggedInUserMessage, captchaNotCompletedUserMessage, autoLoginMessage, chatAlreadyOn, chatAlreadyOff;
+    public static final String //unregisteredUserMessage,
+            notLoggedInUserMessage, captchaNotCompletedUserMessage, autoLoginMessage, chatAlreadyOn, chatAlreadyOff;
 
     static {
-        /*try {
-            file.load();
-        } catch (IOException e) {
-            Main.logError("File " + e.getMessage() + " has thrown an error whilst loading.");
-            e.getCause().printStackTrace();
-        }*/
         file.loadExceptionless();
-        unregisteredUserMessage = get("unregistered-reminder");
+        //unregisteredUserMessage = get("unregistered-reminder");
         notLoggedInUserMessage = get("not-logged-in-reminder");
         captchaNotCompletedUserMessage = get("uncompleted-captcha-type-reminder");
         autoLoginMessage = getWithPrefix("auto-login");
@@ -36,6 +31,10 @@ public final class Messages {
 
     public static String getWithPrefix(String s, Object... toFormatWith) {
         return AlixFormatter.appendPrefix(AlixFormatter.format(get(s), toFormatWith));
+    }
+
+    public static String[] getSplit(String s) {
+        return get(s).split(" -nl ");
     }
 
     public static String get(String s) {

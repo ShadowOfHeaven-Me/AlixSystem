@@ -1,4 +1,4 @@
-package alix.common.antibot.captcha.cloudflare.files;
+package alix.common.antibot.captcha.secrets.files;
 
 import alix.common.utils.file.AlixFileManager;
 import org.bukkit.configuration.file.YamlConfiguration;

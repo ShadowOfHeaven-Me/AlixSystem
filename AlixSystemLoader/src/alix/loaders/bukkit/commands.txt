@@ -1,10 +1,10 @@
-as: alixsystem, alixs
+as: alixsystem, alix
 fly: flying
 sudo: -
 rename: itemrename
-speed: swiftness, szybkosc, predkosc
-heal: h, ulecz
-feed: f, nasyc
+speed: swiftness
+heal: h
+feed: f
 enderchest: ec, invec, echest, enderc
 invsee: inventory, inv, eq
 gamemode: gm, gms, gmc, gma, gmsp, gm0, gm1, gm2, gm3
@@ -33,11 +33,11 @@ tpaoff: -
 mute: -
 unmute: -
 warp: -
-addwarp: warpadd, createwarp, warpcreate, dodajwarp, stworzwarp, setwarp
+addwarp: warpadd, createwarp, warpcreate, setwarp
 removewarp: warpremove, usunwarp
 setspawn: -
 spawn: -
 msg: message, tell
-reply: r, odpowiedz
+reply: r
 chat: chaton, chatoff, czat, czatoff, czaton
 chatclear: clearchat, cc

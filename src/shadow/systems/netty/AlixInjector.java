@@ -1,3 +1,4 @@
+/*
 package shadow.systems.netty;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -40,4 +41,4 @@ public final class AlixInjector {
             Main.logError("REGISTERED: " + ctx.pipeline().names());
         }
     }
-}
+}*/

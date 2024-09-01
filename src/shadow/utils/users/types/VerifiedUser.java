@@ -1,21 +1,22 @@
 package shadow.utils.users.types;
 
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
+import alix.common.data.loc.impl.bukkit.BukkitHomeList;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
-import alix.common.data.file.UserFileManager;
 import shadow.utils.netty.NettyUtils;
-import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor;
-import alix.common.data.PersistentUserData;
-import alix.common.data.loc.impl.bukkit.BukkitHomeList;
 
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class VerifiedUser implements AlixUser {// implements ObjectSerializable {
 
@@ -29,6 +30,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
     private final boolean canBypassChatStatus, canSendColoredMessages;
     private long nextPossibleChatTime;
     private boolean canReceiveTeleportRequests;
+    public final AtomicReference<Location> originalLocation = new AtomicReference<>();
     /*    protected boolean isOwner;*/
 
 
@@ -85,6 +87,13 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     public VerifiedPacketProcessor getDuplexProcessor() {
         return duplexProcessor;
+    }
+
+    public void onQuit() {
+        Location orgLoc = originalLocation.get();
+        if (orgLoc != null) this.player.teleport(orgLoc);
+
+        this.duplexProcessor.onQuit();
     }
 
     /*    public PersistentUserData getData() {
@@ -228,11 +237,11 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     @Override
     public User reetrooperUser() {
-        return null;
+        return retrooperUser;
     }
 
     @Override
-    public PacketProcessor getPacketProcessor() {
+    public VerifiedPacketProcessor getPacketProcessor() {
         return duplexProcessor;
     }
 

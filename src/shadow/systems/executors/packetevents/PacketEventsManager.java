@@ -4,13 +4,18 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.protocol.chat.Node;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.util.TimeStampMode;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import io.netty.channel.Channel;
 import shadow.Main;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
+
+import java.util.List;
 
 public final class PacketEventsManager {
 
@@ -39,21 +44,37 @@ public final class PacketEventsManager {
         @Override
         public void onPacketReceive(PacketReceiveEvent event) {
             //if (event.getUser().getUUID() == null) return;
-            AlixUser user;/* = UserManager.get(event.getUser().getUUID());
+            /* = UserManager.get(event.getUser().getUUID());
             if (user instanceof TemporaryUser) {
                 ((TemporaryUser) user).getTempProcessor().onPacketReceive(event);
             }*/
 
+/*            if (event.getPacketType() == PacketType.Configuration.Client.SELECT_KNOWN_PACKS) {
+                Main.logError("CLIENT PACKS: " + new WrapperConfigClientSelectKnownPacks(event).getKnownPacks());
+            }*/
+
             //Main.logInfo("PACKET IN: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
 
-            if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
-                AlixChannelHandler.onLoginStart(event);
+
+
+            AlixUser user;
+
+            if (event.getClass() == PacketPlayReceiveEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null) {
+                /*AlixUtils.getMethodTime(() -> {
+                    AlixUser user2 = UserManager.getAttr((Channel) event.getChannel());
+                });*/
+                user.getPacketProcessor().onPacketReceive((PacketPlayReceiveEvent) event);//Main.logInfo("IN NONNULL: " + event.getPacketType().getName());
                 return;
             }
 
-            if (event.getClass() == PacketPlayReceiveEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
-                user.getPacketProcessor().onPacketReceive((PacketPlayReceiveEvent) event);//Main.logInfo("IN NONNULL: " + event.getPacketType().getName());
+            if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
+                AlixChannelHandler.onHandshake(event);
+                return;
+            }
 
+            if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
+                AlixChannelHandler.onLoginStart(event);
+            }
             /*if (event.getPacketType() == PacketType.Play.Client.CHAT_PREVIEW || event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE || event.getPacketType() == PacketType.Play.Client.CHAT_ACK) {
                 Main.logInfo("PACKET IN: " + event.getPacketType().getName() + " CANCELLED: " + event.isCancelled());
             }*/
@@ -62,24 +83,89 @@ public final class PacketEventsManager {
             }*/
         }
 
+        //private static final ByteBuf loginCommands = CommandsPacketConstructor.constructLogin();
+
         @Override
         public void onPacketSend(PacketSendEvent event) {
             //if (event.getUser().getUUID() == null) return;
-            AlixUser user;/* = UserManager.get(event.getUser().getUUID());
+            AlixUser user;
+
+
+/*            if (event.getPacketType() == PacketType.Play.Server.UPDATE_VIEW_POSITION) {
+                Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerUpdateViewPosition(event)));
+            } else if (event.getPacketType() == PacketType.Play.Server.PLAYER_POSITION_AND_LOOK) {
+                Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerPlayerPositionAndLook(event)));
+            } else if (event.getPacketType() == PacketType.Play.Server.SPAWN_POSITION) {
+                Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerSpawnPosition(event)));
+            }else if (event.getPacketType() == PacketType.Play.Server.CHUNK_DATA) {
+                if(new WrapperPlayServerChunkData(event).getColumn().getHeightMaps().getCompoundListTagOrThrow("MOTION_BLOCKING"))
+                Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerChunkData(event).getColumn()));
+            }
+            Main.logInfo("JUST PACKET OUT: " + event.getPacketType().getName());*/
+
+            /* = UserManager.get(event.getUser().getUUID());
+
             if (user instanceof TemporaryUser) {
                 ((TemporaryUser) user).getTempProcessor().onPacketSend(event);
             }*/
-
-
-/*            if (event.getPacketType() == PacketType.Play.Server.PLAYER_ABILITIES) {
-                Main.logError("ABILITIIIESSS SENNDD " + AlixUtils.getFields(new WrapperPlayServerPlayerAbilities(event)));
+/*
+            if (event.getPacketType() == PacketType.Configuration.Server.SELECT_KNOWN_PACKS) {
+                new WrapperConfigServerSelectKnownPacks(event).getKnownPacks().add(new KnownPack("alix", "56789","1"));
+                event.markForReEncode(true);
+                Main.logError("SERVER PACKS: " + new WrapperConfigServerSelectKnownPacks(event).getKnownPacks());
             }*/
 
-            //Main.logInfo("PACKET OUT: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
+            /*Main.logInfo("PACKET OUT: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
+
+            if (event.getPacketType() == PacketType.Play.Server.MAP_DATA) {
+                Main.logError("DATA " + AlixUtils.getFields(new WrapperPlayServerMapData(event)));
+            }
+            if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
+
+                WrapperPlayServerSpawnEntity wrapper = new WrapperPlayServerSpawnEntity(event);
+                int id = wrapper.getEntityId();
+                Bukkit.getScheduler().runTask(Main.plugin, () -> {
+                    Optional<Entity> opt = Bukkit.getWorlds().get(0).getEntities().stream().filter(e -> e.getEntityId() == id).findFirst();
+                    if (opt.isPresent() && opt.get().getType() == EntityType.ITEM_FRAME) {
+                        Main.logError("SPAWNNNN " + AlixUtils.getFields(wrapper));
+                    }
+                });
+            }
+            if (event.getPacketType() == PacketType.Play.Server.ENTITY_METADATA) {
+
+                WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata(event);
+                int id = wrapper.getEntityId();
+                Bukkit.getScheduler().runTask(Main.plugin, () -> {
+                    Optional<Entity> opt = Bukkit.getWorlds().get(0).getEntities().stream().filter(e -> e.getEntityId() == id).findFirst();
+                    if (opt.isPresent() && opt.get().getType() == EntityType.ITEM_FRAME) {
+                        wrapper.getEntityMetadata().forEach(data -> {
+                            Main.logError("DATAAAAAAA " + data.getIndex() + " " + data.getType().getName() + " " + data.getValue());
+                        });
+                    }
+                });
+            }*/
+
+                /*if (event.getPacketType() == PacketType.Play.Server.DECLARE_COMMANDS) {
+                    //WrapperPlayServerDeclareCommands commands = new WrapperPlayServerDeclareCommands(event);
+                    //debugCommands(loginCommands);
+                    user.writeAndFlushConstSilently(CommandsPacketConstructor.LOGIN);
+                    *//*AlixScheduler.runLaterAsync(() -> {
+                        user.writeAndFlushConstSilently(loginCommands);
+                        user.writeDynamicMessageSilently(Component.text("HEHEHHEHE"));
+                    }, 10, TimeUnit.SECONDS);*//*
+
+                    //debugCommands(commands);
+
+                    event.setCancelled(true);
+                    //event.markForReEncode(true);
+                    return;
+                }*/
+
             //Bukkit.broadcastMessage("PACKET OUT: " + event.getPacketType().getName());
 
             if (event.getClass() == PacketPlaySendEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
                 user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
+
             /*else if (event.getPacketType() == PacketType.Status.Server.RESPONSE) {
                 WrapperStatusServerResponse wrapper = new WrapperStatusServerResponse(event);
                 JsonObject obj = wrapper.getComponent();
@@ -134,12 +220,14 @@ public final class PacketEventsManager {
         @Override
         public void onUserDisconnect(UserDisconnectEvent event) {
             String name = event.getUser().getName();
+            AlixChannelHandler.removeFromTimeOut((Channel) event.getUser().getChannel());
             if (name == null) return;
-            //Main.logError("DISCONNECTED: " + event.getUser().getName());
+
             UserManager.removeConnecting(name);
+            //Main.logError("DISCONNECTED: " + event.getUser().getName());
             //AlixChannelHandler.onDisconnect(event.getUser());
-            /*AlixUser user = LoginVerdictManager.getNullable(event.getUser().getUUID());
-            if (user == null) UserManager.removeConnecting(event.getUser().getName());*/
+            //AlixUser user = LoginVerdictManager.getNullable(event.getUser().getUUID());
+            //if (user == null) UserManager.removeConnecting(event.getUser().getName());
             //else //if (user.isVerified()) UserSemiVirtualization.invokeQuit0(user);
         }
 
@@ -169,6 +257,49 @@ public final class PacketEventsManager {
     }*/
 
     private PacketEventsManager() {
+    }
+
+    public static void debugCommands(WrapperPlayServerDeclareCommands commands) {
+        List<Node> list = commands.getNodes();
+        for (Node n : list) {
+            StringBuilder sb = new StringBuilder(list.indexOf(n) + " " + n.getName() + " ");
+            byte flags = n.getFlags();
+
+            switch (flags & 0b11) {
+                case 0:
+                    sb.append("ROOT ");
+                    break;
+                case 1:
+                    sb.append("LITERAL ");
+                    break;
+                case 2:
+                    sb.append("ARGUMENT ");
+                    break;
+                case 3:
+                    sb.append("NOT USED ");
+                    break;
+            }
+            if ((flags & 0x04) == 0x04) sb.append("EXECUTABLE ");
+            if ((flags & 0x08) == 0x08) sb.append("HAS REDIRECT ");
+            if ((flags & 0x10) == 0x10) sb.append("HAS SUGGESTIONS TYPE ");
+
+            sb.append("CHILDREN: [");
+
+            for (Integer i : n.getChildren()) sb.append(list.get(i).getName()).append(" (").append(i).append("), ");
+
+            sb.append("] ");
+
+            sb.append("PARSER: ").append(n.getParser().isPresent() ? n.getParser().get().getName() : n.getParser()).append(" ");
+
+            if ((flags & 0x08) == 0x08)
+                sb.append("REDIRECT: ").append(list.get(n.getRedirectNodeIndex()).getName()).append(" (").append(n.getRedirectNodeIndex()).append(") ");
+
+            sb.append("PROPERTIES: ").append(n.getProperties()).append(" ");
+
+            if ((flags & 0x10) == 0x10) sb.append("SUGGESTIONS TYPE: ").append(n.getSuggestionsType());
+
+            Main.logInfo(sb.toString());
+        }
     }
 /*    public static void initializeFireWall() {
         boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");

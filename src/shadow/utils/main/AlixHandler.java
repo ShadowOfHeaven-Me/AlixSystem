@@ -67,7 +67,7 @@ public final class AlixHandler {
 
     private static final long teleportDelay = Main.config.getLong("user-teleportation-delay");
     private static final boolean isTeleportDelayed = teleportDelay > 0;
-    private static final String delayedTeleportMessage = Messages.getWithPrefix("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
+    private static final String delayedTeleportMessage = Messages.get("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
     public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
     public static final boolean isEpollTransport = SERVER_CHANNEL_FUTURE.channel().getClass() == EpollServerSocketChannel.class;
 
@@ -243,7 +243,8 @@ public final class AlixHandler {
                 pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
                 Main.logError("drftgyhjuik");
             }*/
-            if(AlixUtils.antibotService || ServerPingManager.isRegistered()) pm.registerEvents(new ServerPingListener(), Main.plugin);
+            if (AlixUtils.antibotService || ServerPingManager.isRegistered())
+                pm.registerEvents(new ServerPingListener(), Main.plugin);
             /*            if (requireCaptchaVerification) {
              *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
                     Main.logInfo("Enabling Async Tab Completion support.");
@@ -272,11 +273,9 @@ public final class AlixHandler {
                 }
             }
         }
-        if (hideFailedJoinAttempts || alixJoinLog) {
-            logger.addFilter(AlixConsoleFilterHolder.INSTANCE);
-            Main.debug(isPluginLanguageEnglish ? "Successfully added AlixConsoleFilter to console!" :
-                    "Poprawnie zaimplementowano AlixConsoleFilter dla konsoli! ");
-        }
+        logger.addFilter(AlixConsoleFilterHolder.INSTANCE);
+        Main.debug(isPluginLanguageEnglish ? "Successfully added AlixConsoleFilter to console!" :
+                "Poprawnie zaimplementowano AlixConsoleFilter dla konsoli! ");
     }
 
     public static void initializeServerPingManager() {
@@ -327,21 +326,23 @@ public final class AlixHandler {
         }
 
         if (user instanceof TemporaryUser) {
-            return;//
+            return;//something went wrong - don't care
         }
 
         if (!user.isVerified()) {//unregistered/not logged in user quit handling
             UnverifiedUser u = (UnverifiedUser) user;
             u.uninjectOnQuit();//uninject the user
+            event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
             if (!u.hasAccount()) GeoIPTracker.removeIP(u.getIPAddress());//remove the ip, if it's temporary
-            if (u.isCaptchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
-                event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
+            /*if (u.captchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
                 //if (alixJoinLog) Main.logInfo(quitCaptchaUnverified.format(p.getName(), u.getIPAddress()));
-            }// else if (alixJoinLog) Main.logInfo(quitUnverified.format(p.getName(), u.getIPAddress()));
+            }// else if (alixJoinLog) Main.logInfo(quitUnverified.format(p.getName(), u.getIPAddress()));*/
             return;//true
         }
         //logged in user quit handling
         VerifiedUser u = (VerifiedUser) user;
+        u.onQuit();
+
         Main.logInfo(playerQuit.format(u.getName(), u.getIPAddress().getHostAddress()));
         //false
     }

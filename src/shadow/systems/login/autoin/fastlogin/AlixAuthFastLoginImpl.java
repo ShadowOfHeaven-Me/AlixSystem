@@ -1,25 +1,54 @@
 package shadow.systems.login.autoin.fastlogin;
 
+import alix.common.data.Password;
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
+import alix.common.login.LoginVerdict;
+import alix.common.utils.other.throwable.AlixException;
 import com.github.games647.fastlogin.core.hooks.AuthPlugin;
 import org.bukkit.entity.Player;
-import alix.common.data.file.UserFileManager;
+import shadow.systems.login.result.LoginInfo;
+import shadow.utils.users.UserManager;
+import shadow.utils.users.types.AlixUser;
+import shadow.utils.users.types.TemporaryUser;
+import shadow.utils.users.types.UnverifiedUser;
 
-//This implementation does nothing except showing
-//FastLogin that an authentication plugin is
-//present. The FastLogin support implementation itself
-//is present in the PremiumAutoIn class
+//https://github.com/games647/FastLogin/blob/main/core/src/main/java/com/github/games647/fastlogin/core/hooks/AuthPlugin.java
 public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
 
     @Override
     public boolean forceLogin(Player player) {
         //Main.logError("forceLogin");
-        return true;
+        AlixUser user = UserManager.get(player.getUniqueId());
+
+        if (user == null) throw new AlixException("Could not automatically log in player " + player.getName() + ", because the AlixUser object is null!"); //something went wrong
+
+        if (user instanceof UnverifiedUser) ((UnverifiedUser) user).logIn();
+        else if (user instanceof TemporaryUser) ((TemporaryUser) user).getLoginInfo().setVerdict(LoginVerdict.LOGIN_PREMIUM);
+
+        return true;//was probably already auto-logged in by PremiumAutoIn
     }
 
     @Override
-    public boolean forceRegister(Player player, String s) {
+    public boolean forceRegister(Player player, String password) {
         //Main.logError("forceRegister");
-        return true;
+        AlixUser user = UserManager.get(player.getUniqueId());
+
+        if (user == null) throw new AlixException("Could not automatically register player " + player.getName() + ", because the AlixUser object is null!"); //something went wrong
+
+        if (user instanceof UnverifiedUser) ((UnverifiedUser) user).registerAsync(password);
+        else if (user instanceof TemporaryUser) {
+            LoginInfo info = ((TemporaryUser) user).getLoginInfo();
+
+            if (info.getData() == null)
+                info.setData(PersistentUserData.createFromPremiumInfo(player.getName(),
+                    player.getAddress().getAddress(),
+                    Password.fromUnhashed(password)));
+            //info.getData().setPassword(password);//
+            info.setVerdict(LoginVerdict.REGISTER_PREMIUM);
+        }
+
+        return true;//was probably already auto-registered in by PremiumAutoIn
     }
 
     @Override
@@ -27,55 +56,4 @@ public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
         //Main.logError("isRegistered");
         return UserFileManager.hasName(s);
     }
-
-    /*@Override
-    public boolean forceLogin(Player player) {
-
-        UnverifiedUser user = Verifications.get(player);
-
-        if (user == null) {
-
-            User verifiedUser = UserManager.getNullableUserOnline(player);
-
-            if (verifiedUser == null) UserManager.addOnlineUser(player);
-
-            return true;
-        }
-
-        if (!user.isRegistered())
-            return register(user, Password.createRandomUnhashed());//'forceRegister' is never invoked, so we have to do it manually - it's buggy I guess
-
-        Main.logInfo("Auto-logged player " + user.getPlayer().getName());
-
-        JavaScheduler.sync(user::autoLogin);
-        //JavaScheduler.sync(() -> UserManager.addOnlineUser(player));
-        return true;
-    }
-
-    @Override
-    public boolean forceRegister(Player player, String something) {
-        return register(Verifications.get(player), Password.createRandomUnhashed());
-    }
-
-    private boolean register(UnverifiedUser user, Password password) {
-        if (user == null) {
-
-            User verifiedUser = UserManager.getNullableUserOnline(user.getPlayer());
-
-            if (verifiedUser == null) UserManager.addOnlineUser(user.getPlayer());
-
-            return true;
-        }
-
-        Main.logInfo("Auto-registered player " + user.getPlayer().getName());
-
-        //JavaScheduler.sync(user::autoLogin);
-
-        return user.synchronizedAutoRegister(password);
-    }
-
-    @Override
-    public boolean isRegistered(String s) {
-        return UserFileManager.hasName(s);
-    }*/
 }

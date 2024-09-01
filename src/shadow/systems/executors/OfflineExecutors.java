@@ -1,5 +1,6 @@
 package shadow.systems.executors;
 
+import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.ConnectionFilter;
 import alix.common.data.PersistentUserData;
@@ -8,8 +9,10 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.file.managers.IpsCacheFileManager;
 import alix.common.utils.multiengine.ban.BukkitBanList;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -31,8 +34,8 @@ public final class OfflineExecutors extends UniversalExecutors {
     //private final LoginAuthenticator authenticator = PremiumAutoIn.support;
     private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
     private final String
-            playerAlreadyOnlineMessage = Messages.get("player-already-online"),
-            serverIsFull = Messages.get("server-is-full");
+            playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
+    //serverIsFull = Messages.get("server-is-full");
     //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -40,6 +43,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         //Main.logInfo("ASYNC PRE LOGIN EVENT");
         String name = e.getName();
         String ip = e.getAddress().getHostAddress();
+        //Main.logError("WWWWWWWWWWWW " + PremiumAutoIn.isPremium(e.getUniqueId()));
         //The FireWall should handle unnecessary connections from being processed
 
         //This logic was moved to AlixChannelHandler
@@ -184,6 +188,14 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDamage(EntityDamageEvent event) {
+        if (event.isCancelled()) return;
+        if (!(event.getEntity() instanceof Player)) return;
+
+        if (Verifications.has(event.getEntity().getUniqueId())) event.setCancelled(true);
+    }
+
 /*    @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerQuitEvent e) {
         Main.logInfo("ON KNOWN QUIT");
@@ -215,6 +227,7 @@ public final class OfflineExecutors extends UniversalExecutors {
                 OriginalLocationsManager.onAsyncSave();
                 FireWallManager.onAsyncSave();
                 IpsCacheFileManager.save();
+                UserTokensFileManager.save();
             });
         }
     }

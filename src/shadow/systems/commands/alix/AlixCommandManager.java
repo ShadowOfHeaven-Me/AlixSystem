@@ -1,7 +1,8 @@
 package shadow.systems.commands.alix;
 
-import alix.common.utils.other.keys.CharArray;
+import alix.common.utils.other.keys.str.CharArray;
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.file.CommandsFile;
@@ -103,7 +104,7 @@ public final class AlixCommandManager {
                 user.writeAndFlushConstSilently(formatLoginMessagePacket);
                 return;
             }
-            throw new AssertionError("Invalid: " + new String(labelChars) + " for " + new String(cmd));
+            throw new AlixError("Invalid: " + new String(labelChars) + " for " + new String(cmd));
         }
         //This line of code passes the whole string as the second command argument
         //This if fine due to checks performed later on, like AlixUtils.getInvalidityReason

@@ -1,13 +1,12 @@
 package shadow.utils.main.file.managers;
 
-import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import shadow.Main;
-import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.subtypes.OriginalLocationsFile;
+import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.world.AlixWorld;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ public final class OriginalLocationsManager {
 
     public static Location getOriginalLocation(Player player) {
         Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
-        return originalLoc != null && !originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none was found
+        return originalLoc != null && !originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none (or in the captcha world) was found
     }
 
     public static CompletableFuture<Boolean> teleportBack(Player player) {
@@ -36,8 +35,9 @@ public final class OriginalLocationsManager {
     }
 
     public static void add(Player player, @NotNull Location originalLocation) {
+        if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) return;
         file.getMap().put(player.getUniqueId(), originalLocation);
-        if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) throw new AlixException(":>");
+        //if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) throw new AlixException(":>");
     }
 
 /*    public static Location remove(Player player) {

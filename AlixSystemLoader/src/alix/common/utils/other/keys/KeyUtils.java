@@ -1,12 +1,13 @@
 package alix.common.utils.other.keys;
 
-import alix.common.utils.other.keys.factory.KeyFactory;
+import alix.common.utils.other.keys.factory.StrKeyFactory;
+import alix.common.utils.other.keys.str.ArrayKey;
 
 public final class KeyUtils {
 
-    private static final KeyFactory factory = KeyFactory.createImpl();
+    private static final StrKeyFactory strFactory = StrKeyFactory.createImpl();
 
     public static ArrayKey key(String s) {
-        return factory.string2Key(s);
+        return strFactory.string2Key(s);
     }
 }

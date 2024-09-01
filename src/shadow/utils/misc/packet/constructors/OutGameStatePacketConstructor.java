@@ -7,6 +7,7 @@ import shadow.utils.netty.NettyUtils;
 public final class OutGameStatePacketConstructor {
 
     public static final ByteBuf ADVENTURE_GAMEMODE_PACKET = NettyUtils.constBuffer(new WrapperPlayServerChangeGameState(WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE, 2));
+    public static final ByteBuf SPECTATOR_GAMEMODE_PACKET = NettyUtils.constBuffer(new WrapperPlayServerChangeGameState(WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE, 3));
 
     /*static {
         Class<?> packetClazz = ReflectionUtils.outGameStatePacketClass;

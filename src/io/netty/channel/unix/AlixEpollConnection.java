@@ -7,7 +7,7 @@ import alix.common.utils.other.annotation.RemotelyInvoked;
 
 public final class AlixEpollConnection {
 
-    //this can be done because of 1 thread invocation
+    //it can be done this way because of single-thread invocation
     private static final byte[] ipv6Addr = new byte[16];
 
     //todo: Create new threads for accepting connections with high traffic
@@ -54,7 +54,7 @@ public final class AlixEpollConnection {
                 // - 4   == scopeId
                 // - 4   == port
                 System.arraycopy(addr, 1, ipv6Addr, 0, 16);
-                if (FireWallManager.isBlocked(IPUtils.fastIpv6(ipv6Addr))) {//general ipv6 look-up with fast object creation
+                if (FireWallManager.isBlocked(IPUtils.fastIPv6(ipv6Addr))) {//general ipv6 look-up with fast object creation
                     AlixSocketAccessBridge.nativeClose(res);
                     return Errors.ERRNO_EAGAIN_NEGATIVE;
                 }

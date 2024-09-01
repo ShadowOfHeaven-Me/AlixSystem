@@ -1,11 +1,12 @@
 package shadow.utils.users;
 
 import alix.common.data.Password;
+import alix.common.data.PersistentUserData;
+import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import alix.common.data.PersistentUserData;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
@@ -85,6 +86,20 @@ public final class UserManager {
         //AlixScheduler.async(() -> users.forEach((i, u) -> u.duplexHandler.sendOf(name)));
     }*/
 
+    //Optimization Util - start
+
+/*    private static final AttributeKey<AlixUser> USER_ATTR = AttributeKey.valueOf("alix-user");
+
+    public static void putAttr(AlixUser user) {
+        user.getChannel().attr(USER_ATTR).set(user);
+    }
+
+    public static AlixUser getAttr(Channel channel) {
+        return channel.attr(USER_ATTR).get();
+    }*/
+
+    //Optimization Util - end
+
     static void putUnv(UnverifiedUser user) {
         USERS.put(user.getPlayer().getUniqueId(), user);
     }
@@ -105,6 +120,10 @@ public final class UserManager {
         return CONNECTING_USERS.compute(name, (n, alreadyConnecting) -> alreadyConnecting != null ? alreadyConnecting : user);
     }
 
+    public static User getConnecting(String name) {
+        return CONNECTING_USERS.get(name);
+    }
+
     public static User removeConnecting(String name) {
         return CONNECTING_USERS.remove(name);
     }
@@ -116,7 +135,7 @@ public final class UserManager {
 
     public static VerifiedUser getVerifiedUser(Player p) {
         VerifiedUser u = getNullableVerifiedUser(p);
-        if (u == null) throw new RuntimeException("Null or unverified user access! - " + p.getName());
+        if (u == null) throw new AlixException("Null or unverified user access! - " + p.getName());
         return u;
     }
 

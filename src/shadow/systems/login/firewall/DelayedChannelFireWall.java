@@ -1,3 +1,4 @@
+/*
 package shadow.systems.login.firewall;
 
 import alix.common.messages.Messages;
@@ -17,6 +18,7 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
 
     private DelayedChannelFireWall() {
     }
+*/
 /*
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -34,7 +36,8 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Main.logError("INACTIVE: " + ctx);
         super.channelInactive(ctx);
-    }*/
+    }*//*
+
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -47,15 +50,21 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
         //Main.logError("ACTIVEEE 22222222222");
         ctx.channel().pipeline().addBefore("packet_handler", interceptorName, this.interceptor);
     }
+*/
 /*
     @Override
     public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Main.logError("BYTE BUF READ " + msg.getClass().getSimpleName() + " msg: " + msg + " ctx: " + ctx);
-        *//*if (msg.getClass() == ReflectionUtils.loginInStartPacketClass)
+        *//*
+*/
+/*if (msg.getClass() == ReflectionUtils.loginInStartPacketClass)
             ctx.channel().writeAndFlush(kickPacket).addListener(ChannelFutureListener.CLOSE);
         else *//*
+*/
+/*
         super.channelRead(ctx, msg);
-    }*/
+    }*//*
+
 
     @Sharable
     private static final class DelayedInterceptor extends ChannelDuplexHandler {
@@ -64,13 +73,15 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
         private final Object kickPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-firewalled"));
 
         //TODO: This was included \/
-        /*@Override
+        */
+/*@Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             //Main.logError("REAAADD: " + msg.getClass().getSimpleName());
             if (msg.getClass() == ReflectionUtils.loginInStartPacketClass)
                 ctx.channel().writeAndFlush(kickPacket).addListener(ChannelFutureListener.CLOSE);
             else super.channelRead(ctx, msg);
-        }*/
+        }*//*
+
 
         ///212.88.124.174:58009 lost connection: Internal Exception: io.netty.handler.codec.DecoderException: java.lang.IndexOutOfBoundsException: readerIndex(18) + length(8) exceeds writerIndex(19): PooledUnsafeDirectByteBuf(ridx: 18, widx: 19, cap: 256)
         @Override
@@ -80,4 +91,4 @@ public final class DelayedChannelFireWall extends ChannelDuplexHandler {
             ctx.channel().close();
         }
     }
-}
+}*/

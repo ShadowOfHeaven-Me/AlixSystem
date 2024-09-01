@@ -8,9 +8,7 @@ import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import shadow.Main;
@@ -19,6 +17,7 @@ import shadow.utils.misc.packet.constructors.OutSoundPacketConstructor;
 import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
 import shadow.utils.objects.savable.data.gui.builders.VirtualPinBuilder;
+import shadow.utils.objects.savable.data.gui.builders.auth.UnverifiedVirtualAuthBuilder;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.ArrayList;
@@ -26,6 +25,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class PasswordGui {
+
+    public static final ItemStack BACKGROUND_ITEM;
+    public static final com.github.retrooper.packetevents.protocol.item.ItemStack RETROOPER_BACKGROUND_ITEM;
 
     static {
         String config = Main.config.getString("background-item").toUpperCase();
@@ -42,9 +44,8 @@ public final class PasswordGui {
         }
 
         BACKGROUND_ITEM = rename(new ItemStack(m), "§f");
+        RETROOPER_BACKGROUND_ITEM = SpigotConversionUtil.fromBukkitItemStack(BACKGROUND_ITEM);
     }
-
-    public static final ItemStack BACKGROUND_ITEM;
 
     public static final ByteBuf
             villagerNoSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.ENTITY_VILLAGER_NO),
@@ -91,6 +92,13 @@ public final class PasswordGui {
             ACTION_LAST_REMOVE = 23,
             ACTION_RESET = 24,
             ACTION_LEAVE = 25;
+
+    public static final ItemStack
+            PIN_CONFIRM_ITEM = rename(AlixMaterials.GREEN_WOOL.getItemCloned(), pinConfirm),
+            PIN_LAST_REMOVE_ITEM = rename(AlixMaterials.YELLOW_WOOL.getItemCloned(), pinRemoveLast),
+            PIN_RESET_ITEM = rename(AlixMaterials.RED_WOOL.getItemCloned(), pinReset),
+            PIN_LEAVE_ITEM = rename(AlixMaterials.BLACK_WOOL.getItemCloned(), pinLeave);
+
     private static final ItemStack[] pinVerificationGuiItems = createPINVerificationItems();
     public static final List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperPinVerificationGuiItems = Arrays.asList(toRetrooperItems(pinVerificationGuiItems));
 
@@ -108,6 +116,12 @@ public final class PasswordGui {
 
     public static AlixVerificationGui newBuilder(UnverifiedUser user, LoginType type) {
         AlixVerificationGui builder = create(user, type);
+        user.setGUIInitialized(true);
+        return builder;
+    }
+
+    public static AlixVerificationGui newBuilder2FA(UnverifiedUser user) {
+        AlixVerificationGui builder = new UnverifiedVirtualAuthBuilder(user);
         user.setGUIInitialized(true);
         return builder;
     }
@@ -148,9 +162,9 @@ public final class PasswordGui {
         JavaScheduler.async(() -> en.openInventory(getCloned()));
     }*/
 
-    private static Inventory createNew(String title) {
+/*    private static Inventory createNew(String title) {
         return Bukkit.createInventory(null, 36, title);
-    }
+    }*/
 
 /*    public static Inventory getPinGuiCloned(String title) {
         Inventory cloned = createNew(title);
@@ -161,6 +175,13 @@ public final class PasswordGui {
     private static ItemStack[] createPINVerificationItems() {
         //Inventory inv = createNew(null);//we do not care about the title
         ItemStack[] items = new ItemStack[36];
+        Arrays.fill(items, BACKGROUND_ITEM);
+
+/*        for (byte i = 0; i < 36; i++) {
+            ItemStack item = items[i];
+            if (item == null || AlixMaterials.isAir(item.getType())) items[i] = BACKGROUND_ITEM;
+        }*/
+
         for (byte i = 0; i <= 9; i++) items[PIN_DIGIT_SLOTS[i]] = digits[i];
 
 /*        items[DIGIT_0, digits[0]);
@@ -174,17 +195,12 @@ public final class PasswordGui {
         items[DIGIT_8, digits[8]);
         items[DIGIT_9, digits[9]);*/
 
-        items[ACTION_PIN_CONFIRM] = rename(AlixMaterials.GREEN_WOOL.getItemCloned(), pinConfirm);
-        items[ACTION_LAST_REMOVE] = rename(AlixMaterials.YELLOW_WOOL.getItemCloned(), pinRemoveLast);
-        items[ACTION_RESET] = rename(AlixMaterials.RED_WOOL.getItemCloned(), pinReset);
-        items[ACTION_LEAVE] = rename(AlixMaterials.BLACK_WOOL.getItemCloned(), pinLeave);
+        items[ACTION_PIN_CONFIRM] = PIN_CONFIRM_ITEM;
+        items[ACTION_LAST_REMOVE] = PIN_LAST_REMOVE_ITEM;
+        items[ACTION_RESET] = PIN_RESET_ITEM;
+        items[ACTION_LEAVE] = PIN_LEAVE_ITEM;
 
         for (int i : EMPTY_DIGIT_SLOTS) items[i] = BARRIER;
-
-        for (byte i = 0; i < 36; i++) {
-            ItemStack item = items[i];
-            if (item == null || AlixMaterials.isAir(item.getType())) items[i] = BACKGROUND_ITEM;
-        }
         return items;
     }
 

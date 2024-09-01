@@ -54,19 +54,33 @@ public final class OutMessagePacketConstructor {
     }
 
     public static ByteBuf constructConst(String message) {
-        return constructConst(message, false);
+        return constructConst(Component.text(message), false);
     }
 
     public static ByteBuf constructConst(String message, boolean actionBar) {
-        return NettyUtils.constBuffer(packetWrapper(Component.text(message), actionBar));
+        return constructConst(Component.text(message), actionBar);
         //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 
     public static ByteBuf constructConst(String message, boolean actionBar, boolean direct) {
-        return NettyUtils.constBuffer(packetWrapper(Component.text(message), actionBar), direct);
+        return constructConst(Component.text(message), actionBar, direct);
         //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 
+    public static ByteBuf constructConst(Component message) {
+        return constructConst(message, false);
+    }
+
+    public static ByteBuf constructConst(Component message, boolean actionBar) {
+        return NettyUtils.constBuffer(packetWrapper(message, actionBar));
+        //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
+    }
+
+    public static ByteBuf constructConst(Component message, boolean actionBar, boolean direct) {
+        return NettyUtils.constBuffer(packetWrapper(message, actionBar), direct);
+        //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
+    }
+    
     public static PacketWrapper<?> packetWrapper(Component message) {
         return packetWrapper(message, false);
     }

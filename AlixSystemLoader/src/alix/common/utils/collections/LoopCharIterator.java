@@ -1,5 +1,7 @@
 package alix.common.utils.collections;
 
+import alix.common.utils.other.annotation.ScheduledForFix;
+
 public final class LoopCharIterator {
 
     private final char[] chars;
@@ -14,6 +16,8 @@ public final class LoopCharIterator {
         this.size = (short) l;
     }
 
+    //could be potentially problematic
+    @ScheduledForFix
     private char next() {
         return chars[++index == size ? index = 0 : index];//we do not care for concurrency issues here, since this class is supposed to be pseudo-random
     }

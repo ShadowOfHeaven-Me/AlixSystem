@@ -1,6 +1,5 @@
 package alix.common.data;
 
-import alix.common.data.security.Hashing;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import org.jetbrains.annotations.NotNull;
@@ -11,20 +10,21 @@ public final class LoginParams {
     private Password password, extraPassword;
     private LoginType loginType, extraLoginType;
     private Boolean ipAutoLogin;
-    private Byte defaultingPasswordHash;
+    private AuthSetting authSettings;
+    private boolean hasProvenAuthAccess;
 
     LoginParams(String line) {
         String[] a = line.split(";");
         this.password = Password.readFromSaved(a[0]);
         if (a.length >= 2) {
             this.extraPassword = Password.readFromSaved(a[1]);
-            if (a.length == 3) defaultingPasswordHash = Byte.parseByte(a[2]);
         }
     }
 
     LoginParams(Password password) {
         this.password = password;
         this.loginType = ConfigParams.defaultLoginType;
+        this.authSettings = AuthSetting.PASSWORD;
     }
 
     void initLoginTypes(String data) {
@@ -37,6 +37,12 @@ public final class LoginParams {
         this.ipAutoLogin = settings.equals("0") || settings.equals("null") ? null : Boolean.parseBoolean(settings);
     }
 
+    void initAuthSettings(String authSettings) {
+        String[] a = authSettings.split(";");
+        this.authSettings = AuthSetting.fromString(a[0]);
+        if (a.length == 2) this.hasProvenAuthAccess = a[1].equals("1");
+    }
+
     public String passwordsToSavable() {
         if (extraPassword == null) return password.toSavable();
         return password.toSavable() + ";" + extraPassword.toSavable();
@@ -45,6 +51,27 @@ public final class LoginParams {
     public String settingsToSavable() {
         if (extraLoginType == null) return loginType + "|" + ipAutoLogin;
         return loginType + ";" + extraLoginType + "|" + ipAutoLogin;
+    }
+
+    public String authSettingsToSavable() {
+        return this.authSettings.toSavable() + ";" + (hasProvenAuthAccess ? "1" : "0");
+    }
+
+    public void setAuthSettings(AuthSetting authSettings) {
+        this.authSettings = authSettings;
+    }
+
+    @NotNull
+    public AuthSetting getAuthSettings() {
+        return authSettings;
+    }
+
+    public void setHasProvenAuthAccess(boolean hasProvenAuthAccess) {
+        this.hasProvenAuthAccess = hasProvenAuthAccess;
+    }
+
+    public boolean hasProvenAuthAccess() {
+        return hasProvenAuthAccess;
     }
 
     public boolean isDoubleVerificationEnabled() {
@@ -57,14 +84,6 @@ public final class LoginParams {
 
     public void setIpAutoLogin(boolean ipAutoLogin) {
         this.ipAutoLogin = ipAutoLogin;
-    }
-
-    public byte getDefaultingPasswordHash() {
-        return defaultingPasswordHash == null ? Hashing.CONFIG_HASH_ID : defaultingPasswordHash;
-    }
-
-    public void setDefaultingPasswordHash(byte defaultingPasswordHash) {
-        this.defaultingPasswordHash = defaultingPasswordHash;
     }
 
     @NotNull

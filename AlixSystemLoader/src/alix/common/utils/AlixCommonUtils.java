@@ -16,6 +16,7 @@ import static alix.common.utils.config.ConfigParams.defaultLoginType;
 public final class AlixCommonUtils {
 
     public static final Consumer EMPTY_CONSUMER = e -> {};
+    //public static final Predicate FALSE_PREDICATE = e -> false;
     public static final Random random = new Random();
     public static final boolean isGraphicEnvironmentHeadless;
 

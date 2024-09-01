@@ -1,17 +1,20 @@
 package shadow.systems.login.result;
 
-import alix.common.login.LoginVerdict;
 import alix.common.data.PersistentUserData;
+import alix.common.login.LoginVerdict;
 
 import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 public final class LoginInfo {
 
     //public static final LoginInfo PREMIUM_LOGIN = new LoginInfo(LoginVerdict.LOGIN_PREMIUM, null, null);
-    private final LoginVerdict verdict;
+    private static final AtomicReferenceFieldUpdater<LoginInfo, LoginVerdict> UPDATER_VERDICT = AtomicReferenceFieldUpdater.newUpdater(LoginInfo.class, LoginVerdict.class, "verdict");
+    private static final AtomicReferenceFieldUpdater<LoginInfo, PersistentUserData> UPDATER_DATA = AtomicReferenceFieldUpdater.newUpdater(LoginInfo.class, PersistentUserData.class, "data");
     private final String strIP;
     private final InetAddress ip;
-    private final PersistentUserData data;
+    private volatile PersistentUserData data;
+    private volatile LoginVerdict verdict;
     //private final PacketInterceptor packetInterceptor;
     //final long removalTime;
 
@@ -28,6 +31,10 @@ public final class LoginInfo {
         return verdict;
     }
 
+    public void setVerdict(LoginVerdict verdict) {
+        UPDATER_VERDICT.set(this, verdict);
+    }
+
     public InetAddress getIP() {
         return ip;
     }
@@ -38,5 +45,9 @@ public final class LoginInfo {
 
     public PersistentUserData getData() {
         return data;
+    }
+
+    public void setData(PersistentUserData data) {
+        UPDATER_DATA.set(this, data);
     }
 }

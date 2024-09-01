@@ -5,9 +5,9 @@ import shadow.utils.main.file.FileManager;
 import shadow.utils.objects.savable.loc.SavableLocation;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class OriginalLocationsFile extends FileManager {
 
@@ -15,7 +15,7 @@ public final class OriginalLocationsFile extends FileManager {
 
     public OriginalLocationsFile() {
         super("original-locations.txt", FileType.INTERNAL);
-        this.map = new HashMap<>();
+        this.map = new ConcurrentHashMap<>();
     }
 
     @Override

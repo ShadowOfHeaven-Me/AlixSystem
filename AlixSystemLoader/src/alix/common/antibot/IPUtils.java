@@ -37,12 +37,12 @@ public final class IPUtils {
         try {
             return InetAddress.getByName(ip);
         } catch (UnknownHostException e) {
-            AlixCommonMain.logError("Invalid address saved: '" + ip + "'!");
+            AlixCommonMain.logError("Invalid address: '" + ip + "'!");
             throw new AlixException(e);
         }
     }
 
-    public static Inet6Address fastIpv6(byte[] addr) {
+    public static Inet6Address fastIPv6(byte[] addr) {
         try {
             Object holder6 = UNSAFE.allocateInstance(holder6Clazz);
             UNSAFE.putObject(holder6, ipaddress6Offset, addr);

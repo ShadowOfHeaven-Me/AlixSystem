@@ -14,17 +14,19 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
             captchaTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-time-passed")),
             registerTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("register-time-passed")),
             loginTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("login-time-passed"));
+
+    private static final ByteBuf timeOutError = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase("§cTimed Out No Packet [Alix]");
     //private final ChannelHandlerContext ctx;
     private final UnverifiedUser user;
     private ByteBuf[] packets;
     private int index;
 
     public VirtualCountdown(UnverifiedUser user) {
-        boolean login = user.hasCompletedCaptcha();
+        boolean completedCaptcha = user.hasCompletedCaptcha();
         this.user = user;
         //this.ctx = user.getSilentContext();//used in order to optimize PacketProcessor's implementation checks
-        this.index = login ? BufferedPackets.loginPacketArraySize : BufferedPackets.captchaPacketArraySize;
-        this.packets = login ? BufferedPackets.loginOutExperiencePackets : BufferedPackets.captchaOutExperiencePackets;
+        this.index = completedCaptcha ? BufferedPackets.loginPacketArraySize : BufferedPackets.captchaPacketArraySize;
+        this.packets = completedCaptcha ? BufferedPackets.loginOutExperiencePackets : BufferedPackets.captchaOutExperiencePackets;
     }
 
     //can be optimized via caching raw packets or moving it to be an action bar message
@@ -36,7 +38,7 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
     }
 
     public void tickNoPacket() {
-        this.index--;
+        if (--this.index == 0) MethodProvider.kickAsync(this.user, timeOutError);
     }
 
     public void restartAsLogin() {

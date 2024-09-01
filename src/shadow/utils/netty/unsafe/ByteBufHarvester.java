@@ -9,8 +9,8 @@ import shadow.utils.netty.unsafe.first.FirstOutboundHandler;
 public final class ByteBufHarvester extends FirstOutboundHandler {
 
     private static final String name = "alix-buf-harvester";
-    volatile ByteBuf harvested;
-    volatile boolean harvest;
+    ByteBuf harvested;
+    boolean harvest;
 
     private ByteBufHarvester() {
         super(name);

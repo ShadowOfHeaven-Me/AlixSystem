@@ -4,7 +4,6 @@ import alix.common.AlixMain;
 import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
-import alix.common.reflection.CommonReflection;
 import alix.common.utils.file.update.FileUpdater;
 import alix.common.utils.other.annotation.RemotelyInvoked;
 import alix.common.utils.other.throwable.AlixError;
@@ -14,6 +13,7 @@ import alix.loaders.classloader.LoaderBootstrap;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.util.logging.Logger;
@@ -35,7 +35,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
         AlixError.init();
         instance = this;
         //CommonAlixMain.loggerManager = this;
-        this.logger = AlixLoggerProvider.createServerAdequateLogger(super.getLogger());
+        this.logger = AlixLoggerProvider.createServerAdequateLogger();
         this.loggerAdapter = LoggerAdapter.createAdapter(this.logger);
 
         this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
@@ -103,7 +103,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
 
     @Override
     public void onLoad() {
-        CommonReflection.set(CommonReflection.getFieldAccessibleByType(JavaPlugin.class, Logger.class), this, this.logger);
+        //CommonReflection.set(CommonReflection.getFieldAccessibleByType(JavaPlugin.class, Logger.class), this, this.logger);
         this.bootstrap.onLoad();
     }
 
@@ -119,6 +119,11 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
         } finally {
             this.loader.close();
         }
+    }
+
+    @NotNull
+    public Logger getAlixLogger() {
+        return logger;
     }
 
     @Override

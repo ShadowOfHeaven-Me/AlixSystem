@@ -2,7 +2,6 @@ package shadow.utils.world;
 
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3i;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import shadow.utils.world.generator.AlixWorldGenerator;
@@ -18,6 +17,9 @@ public final class AlixWorld {
     public static final Vector3i TELEPORT_VEC3I = instance.vec3d.toVector3i();
     public static final World CAPTCHA_WORLD = instance.world;
 
+    static {
+        CAPTCHA_WORLD.setSpawnLocation(TELEPORT_FALL_LOCATION);
+    }
     //private final List<Integer> playerIds = new ArrayList<>();
     private final World world;
     private final ConstLocation teleportLocation;
@@ -51,8 +53,9 @@ public final class AlixWorld {
         } catch (Exception ignored) {//the method doesn't exist on lower versions
             return;
         }
+        //CAPTCHA_WORLD.getViewDistance()
 
-        int min = Math.max(Bukkit.getViewDistance(), 2);
+        int min = Math.max(CAPTCHA_WORLD.getViewDistance(), 2);
 
         for (int i = -min; i <= min; i++)
             for (int j = -min; j <= min; j++)

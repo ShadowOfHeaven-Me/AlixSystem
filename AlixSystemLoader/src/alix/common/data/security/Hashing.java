@@ -92,7 +92,7 @@ public final class Hashing {
         }
     }
 
-    private static final class Hash4 implements HashingAlgorithm {
+/*    private static final class Hash4 implements HashingAlgorithm {
 
         @Override
         public String hash(String s) {
@@ -109,7 +109,7 @@ public final class Hashing {
         public byte hashId() {
             return 4;
         }
-    }
+    }*/
 
     private static MessageDigest getDigest(String algorithm) {
         try {

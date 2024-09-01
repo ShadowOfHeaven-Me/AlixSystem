@@ -2,11 +2,10 @@ package alix.common.utils.collections.list;
 
 import alix.common.utils.other.throwable.AlixException;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.function.Predicate;
 
 public abstract class LoopList<T> {
 
@@ -112,6 +111,20 @@ public abstract class LoopList<T> {
         return -1;
     }
 
+    public final int indexOfFirst(Predicate<T> v) {
+        for (int i = 0; i < values.length; i++) if (v.test((T) values[i])) return i;
+        return -1;
+    }
+
+    public final int indexOfFirstNonNull(Predicate<T> v) {
+        for (int i = 0; i < values.length; i++) {
+            Object o = values[i];
+            if (o == null) continue;
+            if (v.test((T) o)) return i;
+        }
+        return -1;
+    }
+
     public final T get(int i) {
         return (T) this.get0(i);
     }
@@ -198,9 +211,7 @@ public abstract class LoopList<T> {
 
     private static final class ConcurrentLoopList<T> extends LoopList<T> {
 
-        //Ensure the array's elements thread visibility by using MethodHandles
-        private static final MethodHandle setElement = MethodHandles.arrayElementSetter(Object[].class);
-        private static final MethodHandle getElement = MethodHandles.arrayElementGetter(Object[].class);
+
         private final AtomicInteger currentIndex = new AtomicInteger();
 
         private ConcurrentLoopList(Object[] values) {
@@ -253,11 +264,7 @@ public abstract class LoopList<T> {
 
         @Override
         void set0(int index, Object value) {
-            try {
-                setElement.invokeExact(this.values, index, value);
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
+            AtomicArrayUtil.setElement(this.values, index, value);
         }
 
         @Override
@@ -267,11 +274,7 @@ public abstract class LoopList<T> {
 
         @Override
         Object get0(int index) {
-            try {
-                return getElement.invokeExact(this.values, index);
-            } catch (Throwable e) {
-                throw new AlixException(e);
-            }
+            return AtomicArrayUtil.getElement(this.values, index);
         }
     }
 

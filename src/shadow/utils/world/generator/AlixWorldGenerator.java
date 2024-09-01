@@ -4,6 +4,7 @@ import org.bukkit.*;
 import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.executors.captcha.CaptchaRespawnExecutors;
+import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.world.generator.chunk.AlixChunkGenerator;
 
 public final class AlixWorldGenerator extends WorldCreator {
@@ -28,7 +29,7 @@ public final class AlixWorldGenerator extends WorldCreator {
 
     private static void init(World world) {
         world.setTime(18000);
-        world.setFullTime(18000);
+        //world.setFullTime(18000);
         world.setAmbientSpawnLimit(-1);
         world.setAnimalSpawnLimit(-1);
         world.setWaterAnimalSpawnLimit(-1);
@@ -37,8 +38,18 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setTicksPerMonsterSpawns(-1);
         world.setPVP(false);
         world.setAutoSave(false);
+        //world.getViewDistance()
         world.setSpawnFlags(false, false);
         world.setDifficulty(Difficulty.EASY);
+
+        if (ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setViewDistance", int.class), world, 2)) {
+            Main.logInfo("Optimizing chunk rendering in the verification world, thanks to the Paper environment");
+            ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setSimulationDistance", int.class), world, 2);
+            ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setSendViewDistance", int.class), world, 2);
+        }
+        //setSendViewDistance
+
+        //Main.logError("METADATA " + world.getMetadata());
         try {
             Class.forName("org.bukkit.GameRule");
             initGameRulesModern(world);
@@ -52,7 +63,8 @@ public final class AlixWorldGenerator extends WorldCreator {
     private static void initGameRulesModern(World world) {
         world.setGameRule(GameRule.RANDOM_TICK_SPEED, -1);
         world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
-        world.setGameRule(GameRule.SPAWN_RADIUS, -1);
+        world.setGameRule(GameRule.SPAWN_RADIUS, 0);
+        world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
         world.setGameRule(GameRule.DO_TILE_DROPS, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         world.setGameRule(GameRule.DISABLE_RAIDS, true);

@@ -1,5 +1,6 @@
 package shadow.utils.misc.captcha;
 
+import alix.common.antibot.captcha.CaptchaImageGenerator;
 import alix.common.antibot.captcha.ColorGenerator;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
@@ -13,6 +14,7 @@ import com.github.retrooper.packetevents.protocol.particle.data.ParticleDustData
 import com.github.retrooper.packetevents.protocol.particle.type.ParticleTypes;
 import com.github.retrooper.packetevents.protocol.player.Equipment;
 import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
+import com.github.retrooper.packetevents.protocol.world.BlockFace;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3f;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -22,9 +24,12 @@ import org.bukkit.Location;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.VisibleForTesting;
 import shadow.Main;
+import shadow.systems.login.auth.GoogleAuth;
+import shadow.systems.login.captcha.subtypes.MapCaptcha;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.math.MathUtils;
 import shadow.utils.misc.captcha.D3.ModelRenderer3d;
+import shadow.utils.misc.packet.constructors.OutMapPacketConstructor;
 import shadow.utils.misc.packet.custom.ParticleHashCompressor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.world.AlixWorld;
@@ -37,7 +42,7 @@ import java.util.*;
 
 import static java.lang.Math.*;
 
-public final class CaptchaRenderer {
+public final class ImageRenderer {
 
     private static final ConstLocation
             MODEL_3D_START = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(2, -40, 2).toConst(),
@@ -48,7 +53,8 @@ public final class CaptchaRenderer {
     private static final Vector3f OFFSET = new Vector3f(0, 0, 0);
     private static final Map<Color, ItemType> COLOR_TO_MODEL_ITEM;
 
-    public static final int ENTITY_ID_START = 100000;//+ 1 is the actual start
+    public static final int ENTITY_ID_START = 100_000;//+ 1 is the actual start
+    public static final int QR_ENTITY_ID_START = 1_000_000;//+ 1 is the actual start
 
     static {
         Map<Color, ItemType> map = new HashMap<>();
@@ -82,6 +88,102 @@ public final class CaptchaRenderer {
 
     //Source code: https://github.com/whileSam/bukkit-image-renderer/blob/master/src/main/java/me/trysam/imagerenderer/particle/ImageRenderer.java
 
+    public static ByteBuf[] recaptcha(Location loc) {
+        List<ByteBuf> list = new ArrayList<>();
+        int entityId = ENTITY_ID_START;
+
+        entityId++;
+
+        ItemStack item = ItemStack.builder().type(ItemTypes.ACACIA_BUTTON).build(); //SpigotConversionUtil.fromBukkitItemStack(AlixUtils.getSkull("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOGZmOTY4YzkwNTIyMzQ5MWE0ZTM5MGM3ZDVmMTBjMTg0M2E2YmEwNDgyMGQ2YjE3ODRmNTJlNDEwZDExYWI1YiJ9fX0="));
+
+        WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND,
+                SpigotConversionUtil.fromBukkitLocation(loc).getPosition(), 0, 0, 0,
+                BlockFace.NORTH.getFaceValue(), Optional.of(Vector3d.zero()));
+        WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId, Collections.singletonList(new Equipment(EquipmentSlot.HELMET, item)));
+
+        //https://wiki.vg/Entity_metadata#Item_Frame
+        WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+                Collections.singletonList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20)));
+
+        list.add(NettyUtils.createBuffer(entity));
+        list.add(NettyUtils.createBuffer(metadata));
+        list.add(NettyUtils.createBuffer(equipment));
+
+
+        //Main.logError("BUFFERS " + list.size());
+
+        return list.toArray(new ByteBuf[0]);
+    }
+
+    public static ByteBuf[] qrCode(BufferedImage image) {
+        if (image.getWidth() != image.getHeight())
+            throw new AlixException("INVALID: WIDTH " + image.getWidth() + " HEIGHT " + image.getHeight());
+
+        int side = image.getWidth();
+        int entityId = QR_ENTITY_ID_START;
+
+        int offset = (side % 128) >> 1;
+
+        int mapsOnOneSide = (side / 128) + (offset == 0 ? 0 : 1);
+        int mapsTotal = mapsOnOneSide * mapsOnOneSide;
+
+        Map<Integer, BufferedImage> images = new HashMap(mapsTotal);
+
+        for (int i = 0; i < mapsTotal; i++) {
+            int x = i % mapsOnOneSide;
+            int y = i / mapsOnOneSide;
+
+            int xCoord = x * 128;
+            int yCoord = y * 128;
+
+            int xy = (x << 12) + y;
+
+            //Main.logError("X COORD " + xCoord + " Y COORD " + yCoord);
+
+            images.put(xy, image.getSubimage(xCoord, yCoord, 128, 128));
+        }
+
+        int mapId = 0;
+
+        List<ByteBuf> list = new ArrayList<>(mapsTotal * 3);
+
+        /*Location loc = player.getLocation();
+        org.bukkit.block.BlockFace spigotFace = player.getFacing();
+        BlockFace face = fromBukkitFace(player.getLocation().getYaw());*/
+
+        for (Map.Entry<Integer, BufferedImage> entry : images.entrySet()) {
+            int x = entry.getKey() >> 12;
+            int y = entry.getKey() - (x << 12);
+            //Main.logError("XXXX " + x + " Y " + y);
+
+            ItemStack item = SpigotConversionUtil.fromBukkitItemStack(MapCaptcha.newCaptchaMapItem(mapId));
+
+            entityId++;
+
+            //loc.clone().subtract(x, y, 0).add(spigotFace.getDirection())).getPosition()
+            WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ITEM_FRAME,
+                    SpigotConversionUtil.fromBukkitLocation(GoogleAuth.QR_CODE_SHOW_LOC.asModifiableCopy().subtract(x, y, 0)).getPosition(), 0, 0, 0,
+                    BlockFace.NORTH.getFaceValue(), Optional.of(Vector3d.zero()));
+            //https://wiki.vg/Entity_metadata#Item_Frame
+            WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+                    Collections.singletonList(new EntityData(8, EntityDataTypes.ITEMSTACK, item)));
+
+            list.add(NettyUtils.createBuffer(entity));
+            list.add(NettyUtils.createBuffer(metadata));
+            list.add(OutMapPacketConstructor.constructDynamic(mapId++, CaptchaImageGenerator.imageToBytes(entry.getValue())));
+        }
+        //Main.logError("BUFFERS " + list.size());
+
+        return list.toArray(new ByteBuf[0]);
+    }
+
+    //no idea whether this would even work
+/*    private static BlockFace fromBukkitFace(float yaw) {
+        if (yaw >= 315 || yaw <= 45) return BlockFace.NORTH;
+        if (yaw >= 45 && yaw <= 135) return BlockFace.EAST;
+        if (yaw >= 135 && yaw <= 215) return BlockFace.SOUTH;
+        return BlockFace.WEST;
+    }*/
 
     public static ByteBuf[] xes(BufferedImage image) {
         //The scaling factor determines how dense the particles should be together (the higher the denominator, the less the space between the particles/pixels)

@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
 import shadow.utils.math.MathUtils;
-import shadow.utils.misc.captcha.CaptchaRenderer;
+import shadow.utils.misc.captcha.ImageRenderer;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public final class ModelCaptcha extends Captcha {
 
     public ModelCaptcha() {
         //BufferedImage image = CaptchaImageGenerator.generateCaptchaImageX256(captcha, maxRotation, false, false);
-        this.buffers = CaptchaRenderer.model3dBuffers(this.selectablePointsToUpdateBufs);
+        this.buffers = ImageRenderer.model3dBuffers(this.selectablePointsToUpdateBufs);
     }
 
     public void onClick(UnverifiedUser user, Location loc) {

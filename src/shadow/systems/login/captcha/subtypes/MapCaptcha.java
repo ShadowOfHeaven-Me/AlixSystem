@@ -45,6 +45,15 @@ public final class MapCaptcha extends ItemBasedCaptcha {
         return item;
     }
 
+    public static ItemStack newCaptchaMapItem(int mapId) {
+        ItemStack item = new ItemStack(Material.FILLED_MAP);
+        MapMeta meta = (MapMeta) item.getItemMeta();
+
+        meta.setMapId(mapId);
+
+        item.setItemMeta(meta);
+        return item;
+    }
 /*    @Override
     protected void finalize() throws Throwable {
         int refCnt = mapBuffer.refCnt();

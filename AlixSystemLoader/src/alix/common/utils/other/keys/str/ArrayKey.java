@@ -1,4 +1,4 @@
-package alix.common.utils.other.keys;
+package alix.common.utils.other.keys.str;
 
 public interface ArrayKey {
 

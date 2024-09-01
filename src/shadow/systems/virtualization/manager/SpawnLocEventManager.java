@@ -60,7 +60,7 @@ final class SpawnLocEventManager extends VirtualEventManager {
                     return;
                 }
                 user.originalSpawnEventLocation = joinLoc;
-                event.setSpawnLocation(AlixWorld.TELEPORT_FALL_LOCATION);//ensure it's at the correct location
+                event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//ensure it's at the correct location
                 //Main.logError("SET LOC");
                 return;
             }
@@ -80,7 +80,7 @@ final class SpawnLocEventManager extends VirtualEventManager {
                 OriginalLocationsManager.add(player, originLoc);//remember the original spawn location
 
             user.originalSpawnEventLocation = joinLoc;
-            event.setSpawnLocation(AlixWorld.TELEPORT_FALL_LOCATION);//ensure it's at the correct location
+            event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//ensure it's at the correct location
             //Main.logError("SET LOC2");
         }
     }

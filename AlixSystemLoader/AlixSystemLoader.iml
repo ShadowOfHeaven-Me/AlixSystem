@@ -64,6 +64,10 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="fastutil-8.5.9" level="project" />
-    <orderEntry type="library" name="packetevents-spigot-2.4.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="zxing-1.1.1" level="project" />
+    <orderEntry type="library" name="core-3.4.0" level="project" />
+    <orderEntry type="library" name="totp-1.0" level="project" />
+    <orderEntry type="library" name="javase-3.4.0" level="project" />
+    <orderEntry type="library" name="packetevents-spigot-2.5.0-SNAPSHOT" level="project" />
   </component>
 </module>

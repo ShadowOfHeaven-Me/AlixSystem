@@ -30,8 +30,12 @@ public final class CachingVirtualInventory extends VirtualInventory {
 
     @Override
     public void spoofAllItems() {
-        if (spoofWithCached) NettyUtils.writeAndFlushConst(this.silentContext, this.cachedConstInvItemsPacket);
+        if (spoofWithCached) this.spoofCachedItems();
         else super.spoofAllItems();
+    }
+
+    public void spoofCachedItems() {
+        NettyUtils.writeAndFlushConst(this.silentContext, this.cachedConstInvItemsPacket);
     }
 
     @Override
@@ -53,16 +57,24 @@ public final class CachingVirtualInventory extends VirtualInventory {
     //https://c4k3.github.io/wiki.vg/Protocol.html#Open_Window
     //https://c4k3.github.io/wiki.vg/Inventory.html
     public static ByteBuf constInvOpenByteBuf(AlixInventoryType type, Component title) {
+        return NettyUtils.constBuffer(invOpenWrapper(type, title));
+    }
+
+    public static ByteBuf invOpenByteBuf(AlixInventoryType type, Component title) {
+        return NettyUtils.createBuffer(invOpenWrapper(type, title));
+    }
+
+    public static WrapperPlayServerOpenWindow invOpenWrapper(AlixInventoryType type, Component title) {
         WrapperPlayServerOpenWindow wrapper;
 
         //window id = 1
         if (version.isNewerThanOrEquals(ServerVersion.V_1_14))
-            wrapper = new WrapperPlayServerOpenWindow(1, type.getId(), title);
+            wrapper = new WrapperPlayServerOpenWindow(VirtualInventory.CONST_WINDOW_ID, type.getId(), title);
         else {
             String oldType = type == AlixInventoryType.ANVIL ? "minecraft:anvil" : "minecraft:container";
-            wrapper = new WrapperPlayServerOpenWindow(1, oldType, title, type.size(), -1);
+            wrapper = new WrapperPlayServerOpenWindow(VirtualInventory.CONST_WINDOW_ID, oldType, title, type.size(), -1);
         }
 
-        return NettyUtils.constBuffer(wrapper);
+        return wrapper;
     }
 }

@@ -1,5 +1,6 @@
 package shadow.utils.users.types;
 
+import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.messages.AlixMessage;
@@ -16,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import shadow.Main;
+import shadow.systems.dependencies.Dependencies;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
 import shadow.systems.login.LoginVerification;
 import shadow.systems.login.captcha.Captcha;
@@ -23,6 +25,7 @@ import shadow.systems.login.reminder.VerificationReminder;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
+import shadow.utils.misc.command.CommandsPacketConstructor;
 import shadow.utils.misc.effect.PotionEffectHandler;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
@@ -33,6 +36,7 @@ import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
+import shadow.utils.objects.savable.data.gui.bedrock.VerificationBedrockGUI;
 import shadow.utils.users.UserManager;
 import shadow.utils.world.AlixWorld;
 
@@ -68,13 +72,14 @@ public final class UnverifiedUser implements AlixUser {
     private final boolean captchaInitialized, originalCollidableState;
     private final boolean joinedRegistered;
     private final PotionEffectHandler potionEffectHandler;
+    private final VerificationBedrockGUI bedrockGUI;
     private PacketBlocker blocker;
     private LoginType loginType;
     private LoginVerification loginVerification;
     private AlixVerificationGui alixGui;
     private volatile ByteBuf rawVerificationMessageBuffer;
     public long nextSend;
-    public int loginAttempts, captchaAttempts;
+    public int loginAttempts, captchaAttempts, authAppAttempts;
     private boolean hasCompletedCaptcha, isGUIInitialized, isGuiUser;
     //Virtualization values
     public boolean blindnessSent;
@@ -82,6 +87,7 @@ public final class UnverifiedUser implements AlixUser {
     public Location originalSpawnEventLocation;
 
     public UnverifiedUser(Player player, TemporaryUser tempUser) {
+        //UserManager.putAttr(this);
         this.player = player;
         this.data = tempUser.getLoginInfo().getData();
         this.strAddress = tempUser.getLoginInfo().getTextIP();
@@ -102,8 +108,17 @@ public final class UnverifiedUser implements AlixUser {
         this.player.setCollidable(false); // <- excluding the player from the collision calculation to save a bit of cpu & to stop entity collision at verification
         //this.player.setPersistent(false); //Explicitly state to not save the semi-virtualized user
 
+        //common handling
         boolean hasAccount = hasAccount();//data != null
         boolean registered = isRegistered();
+
+        //auth app support
+        boolean justAuthApp = registered && this.data.getLoginParams().getAuthSettings() == AuthSetting.AUTH_APP;
+
+        //bedrock support
+        Object bedrockPlayer = Dependencies.getBedrockPlayer(this.player);
+        boolean isBedrock = bedrockPlayer != null;
+        this.bedrockGUI = isBedrock ? new VerificationBedrockGUI(this, bedrockPlayer) : null;
 
         this.joinedRegistered = registered;
         this.hasCompletedCaptcha = hasAccount || !requireCaptchaVerification;//has an account or captcha is disabled
@@ -116,12 +131,14 @@ public final class UnverifiedUser implements AlixUser {
 
         this.captchaFuture = this.captchaInitialized ? Captcha.nextCaptcha() : null;//Fast captcha get and request for a new captcha generation or null if disabled
 
-        if (isGuiUser && hasCompletedCaptcha) this.alixGui = PasswordGui.newBuilder(this, this.loginType);
+        if (justAuthApp) this.alixGui = PasswordGui.newBuilder2FA(this);
+        else if (!isBedrock && isGuiUser && hasCompletedCaptcha)
+            this.alixGui = PasswordGui.newBuilder(this, this.loginType);
         //else this.getChannel().eventLoop().schedule(() -> this.setVerificationMessageBuffer(getVerificationReminderMessagePacket(registered, hasAccount)), 500, TimeUnit.MILLISECONDS);
 
-        if (registered) this.loginVerification = new LoginVerification(this.data.getPassword(), true);
+        if (registered && !justAuthApp) this.loginVerification = new LoginVerification(this.data.getPassword(), true);
 
-        this.blocker = PacketBlocker.getPacketBlocker(this, this.loginType);
+        this.blocker = justAuthApp ? PacketBlocker.getPacketBlocker2FA(this) : PacketBlocker.getPacketBlocker(this, this.loginType);
         this.reminderTask = VerificationReminder.reminderFor(this);//probably the most efficient way, since all packet sending methods need to be invoked on the eventLoop thread
         //this.openPasswordBuilderGUI();
         //if (!captchaInitialized) this.spoofVerificationPackets();//spoof the verification packets immediately
@@ -129,12 +146,23 @@ public final class UnverifiedUser implements AlixUser {
 
     public void spoofVerificationPackets() {
         //DEBUG_TIME();
-        if (!isGUIInitialized) this.setVerificationMessageBuffer(getVerificationReminderMessagePacket(this.isRegistered(), this.hasAccount()));
+        //Main.logError("VERIFY PACKETS SPOOF");
+        //Main.logError("PIPELINE: " + this.getChannel().pipeline().names());
+        if (!isGUIInitialized && !this.isBedrock())
+            this.setVerificationMessageBuffer(getVerificationReminderMessagePacket(this.isRegistered(), this.hasAccount()));
 
         AlixHandler.sendLoginEffectsPackets(this);
+        CommandsPacketConstructor.spoofFor(this);
         if (captchaInitialized)
             this.captchaFuture.whenCompleted(c -> c.sendPackets(this), this.getChannel().eventLoop());
-        this.openPasswordBuilderGUI();
+        //else GoogleAuth.showQRCode(this);
+
+        if (this.isBedrock()) {
+            //this.sendDynamicMessageSilently("SENT BEDROCK GUI [DEBUG]");
+            this.bedrockGUI.open();
+            //AlixScheduler.runLaterAsync(this.bedrockGUI::open, 1, TimeUnit.SECONDS);
+        }
+        else this.openVerificationGUI();
         /*this.getChannel().eventLoop().schedule(() -> {
             this.writeAndFlushConstSilently(OutPositionPacketConstructor.CAPTCHA_WORLD_TELEPORT);
             Main.logError("SENT");
@@ -156,6 +184,10 @@ public final class UnverifiedUser implements AlixUser {
         this.potionEffectHandler.returnEffects();
 
         if (isGUIInitialized) this.alixGui.getVirtualGUI().destroy();
+    }
+
+    public boolean isBedrock() {
+        return bedrockGUI != null;
     }
 
     //the action blocker is now automatically disabled by overriding the PacketProcessor
@@ -199,7 +231,8 @@ public final class UnverifiedUser implements AlixUser {
         return AlixWorld.TELEPORT_LOCATION;//The current location should be the captcha world (set by the OfflineExecutors)
     }*/
 
-    public boolean isCaptchaInitialized() {
+    //was or is
+    public boolean captchaInitialized() {
         return captchaInitialized;
     }
 
@@ -234,9 +267,9 @@ public final class UnverifiedUser implements AlixUser {
         return alixGui;
     }
 
-    public boolean isGuiUser() {
+/*    public boolean isGuiUser() {
         return isGuiUser;
-    }
+    }*/
 
     /*    public final World getOriginalWorld() {
         return originalWorld;
@@ -253,13 +286,14 @@ public final class UnverifiedUser implements AlixUser {
 
     public void completeCaptcha() {
         //if (this.hasCompletedCaptcha) return;
-        this.setVerificationMessageBuffer(AlixUtils.unregisteredUserMessagePacket);
-        this.writeAndFlushRaw(this.rawVerificationMessageBuffer);
+        this.hasCompletedCaptcha = true;
+
+        if (!this.isBedrock()) this.setVerificationMessageBuffer(AlixUtils.unregisteredUserMessagePacket);
+        CommandsPacketConstructor.spoofFor(this);
+        //this.writeAndFlushRaw(this.rawVerificationMessageBuffer);
 
         this.blocker.startLoginKickTask();
         this.captchaFuture.value().onCompletion(this);//It must've been completed if this method was invoked
-
-        this.hasCompletedCaptcha = true;
 
         if (this.isGuiUser) this.initGUI();
     }
@@ -267,7 +301,7 @@ public final class UnverifiedUser implements AlixUser {
     private void initGUI() {
         this.alixGui = PasswordGui.newBuilder(this, this.loginType);
         this.blocker.updateBuilder();
-        this.openPasswordBuilderGUI();
+        this.openVerificationGUI();
     }
 
     /*private void initGUI0() {
@@ -291,12 +325,30 @@ public final class UnverifiedUser implements AlixUser {
         this.isGUIInitialized = initialized;
     }
 
-    public void openPasswordBuilderGUI() {
+    public void openVerificationGUI() {
         if (isGUIInitialized) this.alixGui.openGUI();
     }
 
     public boolean hasCompletedCaptcha() {
         return hasCompletedCaptcha;
+    }
+
+    private boolean init2FA() {
+        if (this.data.getLoginParams().getAuthSettings() != AuthSetting.PASSWORD_AND_AUTH_APP) return false;
+
+        if (isGuiUser) {
+            this.alixGui.getVirtualGUI().destroy();
+            MethodProvider.closeInventoryAsyncSilently(this.silentContext);//we do not care that it's silent
+            this.isGUIInitialized = false;
+        }
+
+        this.isGuiUser = true;
+
+        this.blocker = PacketBlocker.getPacketBlocker2FA(this.blocker);//uses the previous blocker
+        this.alixGui = PasswordGui.newBuilder2FA(this);
+
+        this.openVerificationGUI();
+        return true;
     }
 
     private boolean initDoubleVer() {
@@ -364,8 +416,13 @@ public final class UnverifiedUser implements AlixUser {
         });
     }
 
-    public void logIn() {
+    public void tryLogIn() {
         if (initDoubleVer()) return;
+        if (init2FA()) return;
+        this.logIn();
+    }
+
+    public void logIn() {
         AlixScheduler.async(() -> {
             this.logIn0();
             AlixScheduler.sync(this::logIn1);
@@ -373,7 +430,7 @@ public final class UnverifiedUser implements AlixUser {
     }
 
     private void logIn0() {
-        this.writeAndFlushConstSilently(loginSuccessMessagePacket);//invoked here, since the this#initDoubleVer can prevent this method from being invoked
+        this.writeAndFlushConstSilently(loginSuccessMessagePacket);//invoked here, since the this::initDoubleVer can prevent this method from being invoked
         UserManager.addVerifiedUser(player, data, this.getIPAddress(), retrooperUser, silentContext);//invoked before onSuccessfulVerification to remove UnverifiedUser from UserManager, to indicate that he's verified
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);

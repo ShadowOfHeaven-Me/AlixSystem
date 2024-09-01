@@ -9,14 +9,12 @@ import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.i18n.HttpsHandler;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -64,12 +62,13 @@ public final class AlixUtils {
     public static final boolean isOperatorCommandRestricted, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
-            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService;//renderFancyCaptchaDigits
+            anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService,
+            requirePasswordRepeatInRegister;//renderFancyCaptchaDigits
 
     private static final String
-            tooLongMessage = Messages.get("password-invalid-too-long"),
-            tooShortMessage = Messages.get("password-invalid-too-short"),
-            invalidCharacterMessage = Messages.get("password-invalid-too-short");
+            tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
+            tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
+            invalidCharacterMessage = Messages.getWithPrefix("password-invalid-too-short");
 
     static {
         FileConfiguration config = Main.config;
@@ -110,7 +109,13 @@ public final class AlixUtils {
                     Main.logWarning("The option 'particle' in 'captcha-visual-type' is only available in a headful graphic environment," +
                             " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
+                    break;
                 }
+
+
+                Main.logWarning("The option 'particle' in 'captcha-visual-type' is now outdated! " +
+                        "The 'smooth' type will be used in it's stead, as its better equivalent.");
+                captchaVisualType = "smooth";
                 break;
             case "map":
                 /*if (ReflectionUtils.bukkitVersion <= 13) {
@@ -120,15 +125,16 @@ public final class AlixUtils {
                 }*/
 
                 if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
-                    Main.logWarning("The option 'map' in 'captcha-visual-type' is only available in a headful graphic environment," +
+                    Main.logWarning("The option 'map' in 'captcha-visual-type' is only available in a heedful graphic environment," +
                             " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
+                    break;
                 }
 
                 if (captchaVisualType.equals("map")) {
-                    Main.logWarning("The option 'map' in 'captcha-visual-type' is currently disabled." +
-                            "Switching to 'particle', as it's visual equivalent.");
-                    captchaVisualType = "particle";
+                    Main.logWarning("The option 'map' in 'captcha-visual-type' is currently disabled. " +
+                            "Switching to 'smooth', as it's visual equivalent.");
+                    captchaVisualType = "smooth";
                 }
 
                 break;
@@ -136,9 +142,10 @@ public final class AlixUtils {
             case "message":
                 break;
             default:
+                String best = AlixCommonUtils.isGraphicEnvironmentHeadless ? "subtitle" : "smooth";
                 Main.logWarning("Invalid 'captcha-visual-type' parameter set in config! Available: particle, map, subtitle & message, but instead got '" +
-                        captchaVisualType + "! Switching to 'subtitle', as default.");
-                captchaVisualType = "subtitle";
+                        captchaVisualType + "! Switching to '" + best + "', as default.");
+                captchaVisualType = best;
                 break;
         }
         String captchaType = config.getString("captcha-type").toLowerCase();
@@ -151,7 +158,7 @@ public final class AlixUtils {
                         captchaType + "! Switching to 'text', as default.");
                 break;
         }
-        //pluginLanguage = getPluginLanguage(language);
+        //pluginLanguage = getPluginLanguage(language););
         isPluginLanguageEnglish = !language.equals("pl");
         anvilPasswordGui = ConfigParams.defaultLoginType == LoginType.ANVIL;
         captchaVerificationType = CaptchaType.from(captchaType.toUpperCase());
@@ -180,6 +187,7 @@ public final class AlixUtils {
         //repeatedVerificationReminderMessages = verificationReminderDelay > 0;
         isOnlineModeEnabled = Bukkit.getServer().getOnlineMode();
         antibotService = config.getBoolean("antibot-service");
+        requirePasswordRepeatInRegister = config.getBoolean("require-password-repeat-in-register");
         isOfflineExecutorRegistered = config.getBoolean("offline-login-requirement") && !isOnlineModeEnabled;
         maxLoginAttempts = config.getInt("max-login-attempts");
         isDebugEnabled = config.getBoolean("debug");
@@ -227,6 +235,33 @@ public final class AlixUtils {
         AlixHandler.updateConsoleFilter();
     }
 
+    public static void getMethodTime(Executable method) {
+        /*long ranOnce = methodTimeRun1(method);//method time + nano method offset = m + n
+        long ranTwice = methodTimeRun1(method);//2 * method time + nano time offset = 2m + n
+        long time = ranTwice - ranOnce;//2m + n - (m + n) = m*/
+        long time = methodTimeRun1(method);
+        String result = setAsClearNumber(time / Math.pow(10, 6));
+        Main.logError("METHOD TIME: " + result + " (ms)");
+    }
+
+    private static long methodTimeRun1(Executable method) {
+        try {
+            long t = System.nanoTime();
+            method.execute();
+            return System.nanoTime() - t;
+        } catch (Throwable e) {
+            throw new AlixException(e);
+        }
+    }
+
+    public static Location getFacedLocation(Player p, double distance) {
+        return getFacedLocation(p.getLocation(), distance);
+    }
+
+    public static Location getFacedLocation(Location l, double distance) {
+        return l.add(l.getDirection().normalize().multiply(distance));
+    }
+
     public static boolean isFakePlayer(Player player) {
         return isFakeChannel(ProtocolManager.CHANNELS.get(player.getUniqueId()));
     }
@@ -251,7 +286,8 @@ public final class AlixUtils {
                 if (Modifier.isStatic(f.getModifiers())) continue;
                 f.setAccessible(true);
                 try {
-                    sb.append(f.getName()).append(": ").append(f.get(o)).append(", ");
+                    Object w = f.get(o);
+                    sb.append(f.getName()).append(": ").append(w.getClass().isArray() ? Arrays.toString((Object[]) w) : w).append(", ");
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
@@ -259,6 +295,26 @@ public final class AlixUtils {
         } while ((c = c.getSuperclass()) != Object.class);
         return sb.toString();
     }
+
+/*    public static String getFieldsDeep(Object o) {
+        StringBuilder sb = new StringBuilder();
+        Class<?> c = o.getClass();
+        if (c.getPackageName().startsWith("java")) return "";
+        do {
+            sb.append("[");
+            for (Field f : c.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers()) || f.getType().getPackageName().startsWith("java")) continue;
+                f.setAccessible(true);
+                try {
+                    sb.append(f.getName()).append(": ").append(f.get(o)).append(", ");
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            sb.append("]");
+        } while ((c = c.getSuperclass()) != Object.class);
+        return sb.toString();
+    }*/
 
 /*    public static void change(Player player) {
         if (player.getInventory().getHelmet().getType() == Material.PLAYER_HEAD) //Checking if the player wears a head
@@ -310,7 +366,7 @@ public final class AlixUtils {
         return data != null ? data.getPasswordType() == PasswordType.PIN : fancyPasswordGui || defaultPasswordType == PasswordType.PIN;
     }*/
 
-    private static final String pinTypeInvalid = Messages.get("gui-pin-type-invalid");
+    private static final String pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
 
     public static String getPasswordInvalidityReason(String password, LoginType type) {
         if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin
@@ -581,7 +637,7 @@ public final class AlixUtils {
     public static final ByteBuf
             notLoggedInUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.notLoggedInUserMessage, true, true),
             captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.captchaNotCompletedUserMessage, true, true),
-            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.unregisteredUserMessage, true, true);
+            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.get("unregistered-reminder-password-repeat") : Messages.get("unregistered-reminder"), true, true);
 
     public static ByteBuf getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
         if (isRegistered) return notLoggedInUserMessagePacket;//is registered - require login
@@ -1175,7 +1231,8 @@ public final class AlixUtils {
     }
 
     public static void serverLog(String info) {
-        Bukkit.getServer().getLogger().info(info);
+        Bukkit.getConsoleSender().sendMessage(info);
+        //Bukkit.getServer().getLogger().info(info);
     }
 
     public static void broadcastRaw(String info) {

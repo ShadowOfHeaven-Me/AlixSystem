@@ -22,7 +22,9 @@ public final class LoginInStartGetter {
         String name = buffer.toString(buffer.readerIndex(), length, StandardCharsets.UTF_8);
         //Main.logError("NAME: " + name + " LENGTH OF NAME: " + name.length());
         if (name.length() > 16) return null;//an invalid name was sent
-        buffer.readerIndex(buffer.readerIndex() + length);
+        //todo: disabled rn
+        //buffer.readerIndex(buffer.readerIndex() + length);
+
         return name;
     }
 

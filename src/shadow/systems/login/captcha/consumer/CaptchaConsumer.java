@@ -1,18 +1,19 @@
 package shadow.systems.login.captcha.consumer;
 
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.protocol.world.Location;
+import com.github.retrooper.packetevents.util.Vector3f;
 import shadow.utils.users.types.UnverifiedUser;
 
 public interface CaptchaConsumer {
 
     void onMove(PacketPlayReceiveEvent event);
 
-    void onClick();
+    void onClick(Vector3f clickVector);
 
-    Location getLocation();
+    //Location getLocation();
 
     static CaptchaConsumer adequateFor(UnverifiedUser user) {
-        return user.hasCompletedCaptcha() ? null : new Model3dCaptchaConsumer(user);
+        if (user.hasCompletedCaptcha()) return null;
+        return AbstractCaptchaConsumer.createFor0(user);
     }
 }

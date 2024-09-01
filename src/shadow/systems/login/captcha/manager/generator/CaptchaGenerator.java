@@ -33,6 +33,8 @@ public final class CaptchaGenerator {
 
     private static Supplier<Captcha> createSupplier() {
         switch (captchaVerificationVisualType) {
+            case RECAPTCHA:
+                return ReCaptcha::new;
             case SMOOTH:
                 return SmoothCaptcha::new;
             case PARTICLE:

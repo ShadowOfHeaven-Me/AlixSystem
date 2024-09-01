@@ -4,7 +4,7 @@ import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import shadow.utils.users.types.UnverifiedUser;
 
-public class GUIPacketBlocker extends PacketBlocker {
+public final class GUIPacketBlocker extends PacketBlocker {
 
     GUIPacketBlocker(PacketBlocker previousBlocker) {
         super(previousBlocker);
@@ -15,21 +15,20 @@ public class GUIPacketBlocker extends PacketBlocker {
     }
 
     @Override
-    public void onPacketReceive(PacketPlayReceiveEvent event) {
-        if (!user.hasCompletedCaptcha()) {
-            this.onReceiveCaptchaVerification(event);
-            return;
-        }
+    protected void onReceive0(PacketPlayReceiveEvent event) {
         //has completed the captcha and is currently undergoing the pin verification
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
             case PLAYER_POSITION_AND_ROTATION:
             case PLAYER_ROTATION:
             case PLAYER_FLYING:
-                this.virtualFallPhase.trySpoofPackets();
+                this.virtualFallPhase.trySpoofPackets(event);
+                break;
+            case TELEPORT_CONFIRM:
+                this.virtualFallPhase.tpConfirm(event);
                 break;
             case CLOSE_WINDOW:
-                event.getPostTasks().add(user::openPasswordBuilderGUI);
+                event.getPostTasks().add(user::openVerificationGUI);
                 break;
             case CLICK_WINDOW://order of these is important \/
                 this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());

@@ -87,7 +87,7 @@ public class AlixDeque<T> {
 
     public static final class Node<T> {
 
-        public final T element;
+        private final T element;
         private Node<T> next;
 
         private Node(T element) {

@@ -1,10 +1,10 @@
 package alix.common.utils.other.keys.factory;
 
-import alix.common.utils.other.keys.ArrayKey;
-import alix.common.utils.other.keys.ByteArray;
+import alix.common.utils.other.keys.str.ArrayKey;
+import alix.common.utils.other.keys.str.ByteArray;
 import sun.misc.Unsafe;
 
-final class ByteKeyFactory implements KeyFactory {
+final class ByteKeyFactory implements StrKeyFactory {
 
     private static final Unsafe UNSAFE = Unsafe.getUnsafe();
     private final long valueOffset;

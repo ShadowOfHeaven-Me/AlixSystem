@@ -1,5 +1,8 @@
 package shadow.systems.commands;
 
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
+import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import alix.common.messages.Messages;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
@@ -24,16 +27,14 @@ import shadow.utils.command.managers.ChatManager;
 import shadow.utils.command.managers.PersonalMessageManager;
 import shadow.utils.command.tpa.TpaManager;
 import shadow.utils.command.tpa.TpaRequest;
+import shadow.utils.main.AlixHandler;
+import shadow.utils.main.AlixUtils;
+import shadow.utils.main.file.managers.SpawnFileManager;
+import shadow.utils.main.file.managers.WarpFileManager;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
-import shadow.utils.main.AlixHandler;
-import shadow.utils.main.file.managers.SpawnFileManager;
-import alix.common.data.file.UserFileManager;
-import shadow.utils.main.file.managers.WarpFileManager;
-import alix.common.data.PersistentUserData;
-import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.users.types.VerifiedUser;
@@ -109,8 +110,8 @@ public final class CommandManager {
             formatTempban = Messages.get("format-tempban"),
             formatUnban = Messages.get("format-unban"),
             formatUnbanip = Messages.get("format-unbanip"),
-            //formatCaptcha = Messages.get("format-captcha"),
-            formatChangepassword = Messages.get("format-changepassword"),
+    //formatCaptcha = Messages.get("format-captcha"),
+    formatChangepassword = Messages.get("format-changepassword"),
             formatLogin = Messages.get("format-login"),
             formatRegister = Messages.get("format-register"),
             formatNicknamePlayer = Messages.get("format-nicknameplayer"),
@@ -188,10 +189,10 @@ public final class CommandManager {
             unbannedPlayer = Messages.get("unbanned-player"),
     //ipNotBanned = Messages.get("ip-not-banned"),
     unbannedIp = Messages.get("unbanned-ip"),
-            //alreadyLoggedIn = Messages.get("already-logged-in"),
-            //captchaAlreadyCompleted = Messages.get("captcha-already-completed"),
+    //alreadyLoggedIn = Messages.get("already-logged-in"),
+    //captchaAlreadyCompleted = Messages.get("captcha-already-completed"),
     //captchaNotInitialized = Messages.get("captcha-not-initialized"),
-            incorrectCaptcha = Messages.get("incorrect-captcha"),
+    incorrectCaptcha = Messages.get("incorrect-captcha"),
     //loginReminderCommand = Messages.get("login-reminder-command"),
     registerReminderCommand = Messages.get("register-reminder-command"),
             passwordChanged = Messages.get("password-changed"),
@@ -373,9 +374,14 @@ public final class CommandManager {
             registerCommand("nickname", new NickNameCommand());
             if (isOfflineExecutorRegistered) {
                 //if (requireCaptchaVerification)
-                    //registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
-                registerPermissionlessCommandForcibly("register", new RegisterCommand());
-                registerPermissionlessCommandForcibly("login", new LoginCommand());
+                //registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
+
+                /**
+                 * Logic moved to {@link shadow.utils.misc.command.CommandsPacketConstructor}
+                 **/
+                //registerPermissionlessCommandForcibly("register", new RegisterCommand());
+                //registerPermissionlessCommandForcibly("login", new LoginCommand());
+
                 registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
                 registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
             }
@@ -1383,7 +1389,7 @@ public final class CommandManager {
     private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(incorrectCaptcha);
     public static final ByteBuf
             incorrectCaptchaMessagePacket = OutMessagePacketConstructor.constructConst(incorrectCaptcha),
-            captchaCompleteMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-complete"));
+            captchaCompleteMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.getWithPrefix("captcha-complete-register-password-repeat") : Messages.getWithPrefix("captcha-complete"));
 
     public static void onCaptchaCompletionAttempt(UnverifiedUser user, String captcha) {
         //Main.logError("INPUT: '" + captcha + "'");
@@ -1465,25 +1471,27 @@ public final class CommandManager {
             return;
         }
         if (user.isPasswordCorrect(password)) {
-            user.logIn();
+            user.tryLogIn();
             return;
         }
         if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
         else user.writeAndFlushConstSilently(incorrectPasswordMessagePacket);
     }
 
-    private static final class LoginCommand implements CommandExecutor {
+/*    private static final class LoginCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             sender.sendMessage(commandUnreachable);
             return false;
         }
-    }
+    }*/
 
     public static final ByteBuf
             alreadyRegisteredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("already-registered")),
-            passwordRegisterMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("password-register"));
+            passwordRegisterMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("password-register")),
+            registerPasswordsDoNotMatchMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-do-not-match")),
+            registerPasswordsMoreThanTwoMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-more-than-two"));
 
 /*    public static void onSyncRegisterCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
@@ -1503,7 +1511,7 @@ public final class CommandManager {
         user.writeAndFlushDuplicateSilently(OutMessagePacketConstructor.constructConst(reason));
     }*/
 
-    public static void onAsyncRegisterCommand(UnverifiedUser user, String password) {
+    public static void onAsyncRegisterCommand(UnverifiedUser user, String args) {
         if (!user.hasCompletedCaptcha()) {
             user.writeAndFlushConstSilently(captchaReminderMessagePacket);
             return;
@@ -1512,6 +1520,34 @@ public final class CommandManager {
             user.writeAndFlushConstSilently(alreadyRegisteredMessagePacket);
             return;
         }
+
+        String password;
+
+        if (requirePasswordRepeatInRegister) {
+            String[] a = AlixUtils.split(args, ' ');
+
+            switch (a.length) {
+                case 1:
+                    tryRegister0(user, a[0]);//tolerate single password input, even if repeat is explicitly enabled in config
+                    return;
+                case 2:
+                    password = a[0];
+                    if (!password.equals(a[1])) {
+                        user.writeAndFlushConstSilently(registerPasswordsDoNotMatchMessagePacket);
+                        return;
+                    }
+                    break;
+                default:
+                    user.writeAndFlushConstSilently(registerPasswordsMoreThanTwoMessagePacket);
+                    return;
+            }
+
+        } else password = args;
+
+        tryRegister0(user, password);
+    }
+
+    private static void tryRegister0(UnverifiedUser user, String password) {
         String reason = getInvalidityReason(password, false);
         if (reason == null) {
             user.registerAsync(password);
@@ -1521,14 +1557,14 @@ public final class CommandManager {
         user.sendDynamicMessageSilently(reason);
     }
 
-    private static final class RegisterCommand implements CommandExecutor {
+/*    private static final class RegisterCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             sender.sendMessage(commandUnreachable);
             return false;
         }
-    }
+    }*/
 
     private static final class AccountSettingsCommand implements CommandExecutor {
 

@@ -225,6 +225,26 @@ public final class ReflectionUtils {
         }
     }*/
 
+
+    public static boolean invokeIfPresent(Method method, Object obj, Object... args) {
+        if (method == null) return false;
+
+        try {
+            method.invoke(obj, args);
+            return true;
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Method getMethodOrNull(Class<?> clazz, String name, Class<?>... params) {
+        try {
+            return clazz.getMethod(name, params);
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
     public static Object getHandle(Player player) {
         try {
             return getHandle.invoke(player);

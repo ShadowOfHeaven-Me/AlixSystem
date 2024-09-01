@@ -1,4 +1,4 @@
-package alix.common.antibot.captcha.cloudflare.files;
+package alix.common.antibot.captcha.secrets.files;
 
 import java.io.File;
 

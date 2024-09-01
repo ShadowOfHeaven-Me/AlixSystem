@@ -43,7 +43,7 @@ captcha: true
 #Defines the visual representation type of the captcha that will be shown to the tested player. Available:
 #smooth - Recommended, as it's highly performant, will always be shown to the user (unlike particle for example), and is the most secure option out here
 #particle - Creates a particle image representing the captcha. The player is not given blindness with this captcha (It's pretty lightweight (about ~0.01ms per refresh), but technically still the heaviest of the options)
-#map (Currently temporarily disabled) - Gives the player a map item with the given captcha (a decently safe one)
+#map - Gives the player a map item with the given captcha (a decently safe one)
 #subtitle - Shows the captcha with a subtitle (mediocre in terms of safety)
 #message - Sends a message to the player with the given captcha (mediocre in terms of safety, and can be missed by the user)
 captcha-visual-type: smooth
@@ -65,7 +65,7 @@ captcha-length: 5
 #Defines whether captcha should be case-sensitive (not recommended, as whether the letters are capital can sometimes be hard to tell)
 captcha-case-sensitive: false
 #Defines how many times the player can enter the incorrect captcha before being kicked out (setting it to a high number could be risky because of bot attacks)
-max-captcha-attempts: 1
+max-captcha-attempts: 2
 #Defines (in seconds) how long should a player allowed to be on the server without completing the captcha test before being kicked out
 max-captcha-time: 45
 
@@ -78,16 +78,26 @@ max-captcha-time: 45
 
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)
 verification-blindness: true
+#Defines whether the registering user should have to repeat the password he's trying to set whilst registering
+#Parameter 'true' would result in the format /register <password> <password>
+#Parameter 'false' would result in the format /register <password>
+require-password-repeat-in-register: false
+#Defines whether all characters (so including non-english chars) should be shown as valid during verification command typing, either during login or register.
+#If set to false, only english characters will be seen as valid by the verifying user. Any other character range will be shown in red as invalid. However, when
+# password repeat in /register is enabled, the second password argument will differ in color, making it more distinguishable
+command-support-all-characters: true
 #Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users). This value is used as the default if the given user does not specify it himself.
 auto-login: true
 #Defines whether the ip autologin should be forcefully disabled. This option overrides the user's /account settings
 forcefully-disable-auto-login: false
-#Defines how long (in seconds) should be a player allowed to be on the server not logged in (but with the captcha test completed, setting it to 0 or less doesn't work for now)
+#Defines how long (in seconds) should be a player allowed to be on the server not logged in (must be greater than zero)
 max-login-time: 75
 #Defines whether, if the server is set to offline mode, the players should be required to log in using a set beforehand password
 offline-login-requirement: true
-#Defines whether the player should be kicked when the entered password is incorrect (setting it to false could be risky because of password crackers)
-max-login-attempts: 1
+#Defines how many attempts does a user have when entering his password (setting it too high could be risky because of password crackers)
+max-login-attempts: 2
+#Defines how many attempts should a player be allowed to have to enter the 2FA code from the app
+max-auth-app-attempts: 2
 #Defines the way the passwords set by the users will be hashed in by default
 # 0 - No hash, not recommended in case of password leaks
 # 1 - Mixes character's code point, very fast but possibly repeatable, stored in a 32-bit integer
@@ -96,8 +106,10 @@ max-login-attempts: 1
 password-hash-type: 3
 #Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure his ip autologin, right after registering
 auto-ip-autologin-ask: true
-#Requires FastLogin (https://ci.codemc.io/job/Games647/job/FastLogin/changes), but allows premium users to join without the need of registering or logging in
+#Requires FastLogin (https://ci.codemc.io/job/Games647/job/FastLogin/lastSuccessfulBuild/), but allows premium users to join without the need of registering or logging in
 premium-auto-in: true
+#Defines whether all of FastLogin's debug messages should be disabled, as they can be annoying
+filter-fastlogin-debug: true
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
 #An example would be
@@ -118,7 +130,7 @@ after-auto-login-commands:
 #Config used when the player is in the login phase, either trying to login in or register, but by using a GUI
 
 #Defines the default way the users have to register/log in. Available:
-# command - The user registers/logs in using the traditional password typed in the login command
+# command - The user registers/logs in using the traditional password typed in the verification command
 # anvil (1.14+) - The user registers/logs in using an anvil rename gui
 # pin (1.14+) - The user registers/logs in using a pin gui
 password-type: command
@@ -139,6 +151,7 @@ pin-digit-item-type: wooden_skull
 pin-digit-item-amount: 1
 #Defines the item amount for the '0' digit in the pin login, as 'digit_equivalent' would result in no item
 pin-digit-zero-item-amount: 1
+
 
 
 #----------------------------------------------#

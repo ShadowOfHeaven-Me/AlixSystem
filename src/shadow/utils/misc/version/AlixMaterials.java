@@ -24,7 +24,7 @@ public final class AlixMaterials {
     public static final ConstItem COMMAND_BLOCK = make("COMMAND_BLOCK", "COMMAND");
 
     public static boolean isAir(Material m) {
-        if (m == null) return false;
+        if (m == null) return false;//right?
         switch (m.name()) {
             case "AIR":
             case "CAVE_AIR":

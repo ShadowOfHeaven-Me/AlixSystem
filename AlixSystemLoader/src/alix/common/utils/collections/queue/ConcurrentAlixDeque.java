@@ -1,5 +1,8 @@
 package alix.common.utils.collections.queue;
 
+import alix.common.utils.other.annotation.ScheduledForFix;
+
+@ScheduledForFix
 public final class ConcurrentAlixDeque<T> extends AlixDeque<T> {
 
     //Any modifications are synchronized

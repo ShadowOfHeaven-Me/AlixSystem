@@ -26,9 +26,9 @@ public final class PremiumAutoIn {
 
         if (configInit) {
             if (Main.pm.isPluginEnabled("FastLogin"))
-                Main.logInfo("Using FastLogin for automatic premium user authentication.");
+                Main.logInfo("Hooking into FastLogin for automatic premium user authentication.");
             else
-                Main.logInfo("FastLogin is recommended for the automatic authentication of premium users. Download link: https://ci.codemc.io/job/Games647/job/FastLogin/changes");
+                Main.logInfo("FastLogin is recommended for the automatic authentication of premium users. Download link: https://ci.codemc.io/job/Games647/job/FastLogin/lastSuccessfulBuild/");
         }
     }
 

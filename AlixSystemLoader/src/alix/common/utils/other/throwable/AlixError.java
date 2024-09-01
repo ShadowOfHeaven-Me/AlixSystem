@@ -21,6 +21,10 @@ public final class AlixError extends InternalError {
         super(message, e);
     }
 
+    public static void throwInvalid(Object whatWasInvalid) {
+        throw new AlixError("Invalid: " + whatWasInvalid);
+    }
+
     public static void init() {
     }
 }

@@ -1,6 +1,5 @@
 package alix.common.data.loc.impl.bukkit;
 
-import io.papermc.lib.PaperLib;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -47,6 +46,7 @@ public final class BukkitNamedLocation {//extends SavableLocation {
     }
 
     public void teleport(Player p) {
-        PaperLib.teleportAsync(p, loc);
+        //PaperLib.teleportAsync(p, loc);
+        p.teleport(loc);
     }
 }

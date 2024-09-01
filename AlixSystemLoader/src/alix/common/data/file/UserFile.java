@@ -1,7 +1,6 @@
 package alix.common.data.file;
 
 import alix.common.AlixCommonMain;
-import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.PersistentUserData;
 import alix.common.utils.file.AlixFileManager;
 
@@ -16,9 +15,7 @@ public final class UserFile extends AlixFileManager {
 
     @Override
     protected void loadLine(String line) {
-        PersistentUserData data = PersistentUserData.from(line);
-        UserFileManager.putData(data);
-        GeoIPTracker.addIP(data.getSavedIP());//Add it here, as it was loaded
+        PersistentUserData.from(line);
     }
 
     @Override

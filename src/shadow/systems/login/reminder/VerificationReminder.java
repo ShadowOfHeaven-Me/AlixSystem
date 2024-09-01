@@ -38,7 +38,7 @@ public final class VerificationReminder {
             return;
         }
 
-        if (!delayPassed) return;
+        if (!delayPassed || fallPhase.isOngoing()) return;
 
         user.nextSend = now + MESSAGE_RESEND_DELAY;//update the next send
         ByteBuf buf;

@@ -10,11 +10,14 @@ import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
 import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.DecoderException;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.jetbrains.annotations.NotNull;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.misc.packet.getters.LoginInStartGetter;
@@ -136,7 +139,7 @@ public final class AlixChannelHandler {
             TIMEOUT_TASKS.put(channel, channel.eventLoop().schedule(() -> {
                 TIMEOUT_TASKS.remove(channel);
                 NettyUtils.closeAfterConstSend(channel, timeOutError);
-            }, 3, TimeUnit.SECONDS));
+            }, 7, TimeUnit.SECONDS));
         }
 
         /*        @Override
@@ -283,6 +286,24 @@ public final class AlixChannelHandler {
     //private static final String REASON = "LoginInStart sent twice";
 
     //Handler addition and removal can be optimized with UnsafeNettyUtils when their methods are completed
+
+    private static final AttributeKey<String> JOINED_WITH_IP = AttributeKey.valueOf("alix-joined-with-ip");
+
+    public static void onHandshake(PacketReceiveEvent event) {
+        WrapperHandshakingClientHandshake wrapper = new WrapperHandshakingClientHandshake(event);
+        Channel channel = (Channel) event.getChannel();
+        channel.attr(JOINED_WITH_IP).set(wrapper.getServerAddress());
+    }
+
+    @NotNull
+    public static String getJoinedWithIP(Channel channel) {
+        return channel.attr(JOINED_WITH_IP).get();
+    }
+
+    //private static final AttributeKey<?> floodgate_player = Dependencies.isFloodgatePresent ? AttributeKey.valueOf("floodgate-player") : null;
+
+    //Thanks onechris ;]
+    //https://github.com/onebeastchris/GeyserPackSync/blob/master/common%2Fsrc%2Fmain%2Fjava%2Fnet%2Fonebeastchris%2Fgeyserpacksync%2Fcommon%2Futils%2FFloodgateUtil.java#L12-L15
     @OptimizationCandidate
     public static void onLoginStart(PacketReceiveEvent event) {
         User user = event.getUser();
@@ -297,15 +318,20 @@ public final class AlixChannelHandler {
             channel.close();
             return;
         }*/
-        String name = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
-        //Main.logError("NAME: " + name);
-        if (name == null) {
+
+        String nameInPacket = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
+
+        //Main.logError("NAME IN LOGIN START: " + name);
+        if (nameInPacket == null) {
             FireWallManager.add(user.getAddress().getAddress(), "E1");
             NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
             //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
             event.setCancelled(true);
             return;
         }
+
+        //String name = Dependencies.FLOODGATE_PREFIX != null && floodgate_player != null && channel.attr(floodgate_player).get() != null ? Dependencies.FLOODGATE_PREFIX + nameInPacket : nameInPacket;
+        String name = nameInPacket;
 
         //AlixScheduler.async(() -> (?)
         if (AlixUtils.antibotService)
@@ -326,6 +352,7 @@ public final class AlixChannelHandler {
         }
 
         user.getProfile().setName(name);//set the user's name prematurely, since it's used for identifying the user on removal
+        //user.getProfile().setUUID(new WrapperLoginClientLoginStart(event).getPlayerUUID().get());
         User cU = UserManager.putConnecting(name, user);//get the currently already connecting user (or this very user if he doesn't exist, that being mostly the case) close the connection of the one trying to connect in this very method execution
 
         //identity equality check

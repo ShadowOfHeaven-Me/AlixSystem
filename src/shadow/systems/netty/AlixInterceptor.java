@@ -9,6 +9,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
+import org.jetbrains.annotations.TestOnly;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
@@ -92,9 +93,13 @@ public final class AlixInterceptor {
             AlixChannelHandler.init();
         }
 
+        @TestOnly
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             Channel channel = (Channel) msg;
+
+            //VirtualServer.init(channel);
+
             if (isNettyFireWall) {
                 AntiBotStatistics.INSTANCE.incrementJoins();
                 //Channel serverChannel = AlixHandler.SERVER_CHANNEL_FUTURE.channel();

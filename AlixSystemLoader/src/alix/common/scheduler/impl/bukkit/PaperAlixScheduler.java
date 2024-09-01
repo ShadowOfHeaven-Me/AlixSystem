@@ -3,8 +3,8 @@ package alix.common.scheduler.impl.bukkit;
 import alix.common.scheduler.impl.AbstractAlixScheduler;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonUtils;
-import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import alix.common.utils.other.annotation.ScheduledForFix;
 import alix.loaders.bukkit.BukkitAlixMain;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import org.bukkit.Bukkit;
@@ -79,9 +79,9 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
          * </p>
          **/
 
-        private final LoopList<Runnable> tasks = LoopList.newConcurrentOfSize(40);
+        //private final LoopList<Runnable> tasks = LoopList.newConcurrentOfSize(40);
         private volatile LinkedAlixTask first, last;
-        private volatile boolean executeExtraNextTick;
+        //private volatile boolean executeExtraNextTick;
 
 
         /**
@@ -92,7 +92,7 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
          **/
 
         private void add(Runnable task) {
-            int index = this.tasks.getAndUpdate(i -> i != this.tasks.size() ? i + 1 : i);//ranges from 0 to size(), with size() indicating not enough memory
+            /*int index = this.tasks.getAndUpdate(i -> i != this.tasks.size() ? i + 1 : i);//ranges from 0 to size(), with size() indicating not enough memory
             if (index != this.tasks.size()) {
                 this.tasks.setValue(index, task);
             } else {//we ran out of storage space
@@ -100,11 +100,30 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
                     if (this.first == null) this.first = this.last = new LinkedAlixTask(task);
                     else this.last = this.last.next = new LinkedAlixTask(task);
                 }
+            }*/
+            synchronized (this) {
+                if (this.first == null) this.first = this.last = new LinkedAlixTask(task);
+                else this.last = this.last.next = new LinkedAlixTask(task);
             }
         }
 
+        @ScheduledForFix
         private void executeAllAndClear() {
-            if (executeExtraNextTick) this.execExtra();
+            LinkedAlixTask task = this.first;
+            if (task == null) return;
+
+            synchronized (this) {//this synchronization is fine, since the tasks are executed at the end of a tick and the operations are all extremely lightweight
+                this.first = this.last = null;//all of the task nodes are still held by the 'task' variable
+            }
+
+            do {
+                try {
+                    task.task.run();//execute the tasks synchronously
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                }
+            } while ((task = task.next) != null);
+            /*if (executeExtraNextTick) this.execExtra();
 
             int size = this.tasks.getAndSetCurrentIndex(0);//to ensure thread safety, set it to 0 right after reading
             if (size <= 0) return;
@@ -126,10 +145,10 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
                 this.executeExtraNextTick = true;
                 return;//get the current run, and return if there is none to execute
             }
-            this.execExtra();
+            this.execExtra();*/
         }
 
-        private void execExtra() {
+/*        private void execExtra() {
             LinkedAlixTask task = this.first;
 
             //for extra safety, leave this check here
@@ -151,15 +170,16 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
                 }
             } while ((task = task.next) != null);
         }
-    }
+    }*/
 
-    private static final class LinkedAlixTask {
+        private static final class LinkedAlixTask {
 
-        private final Runnable task;
-        private volatile LinkedAlixTask next;
+            private final Runnable task;
+            private volatile LinkedAlixTask next;
 
-        private LinkedAlixTask(Runnable task) {
-            this.task = task;
+            private LinkedAlixTask(Runnable task) {
+                this.task = task;
+            }
         }
     }
 }

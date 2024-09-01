@@ -17,10 +17,10 @@ public final class AlixChunkGenerator extends ChunkGenerator {
         return createEmptyChunkData(world);
     }
 
-/*    @Override
+    @Override
     public Location getFixedSpawnLocation(World world, Random random) {
         return AlixWorld.TELEPORT_LOCATION; //SpawnFileManager.file.getSpawn().getLocation();
-    }*/
+    }
 
     private static ChunkData createEmptyChunkData(World world) {
         ChunkData chunkData = Bukkit.createChunkData(world);

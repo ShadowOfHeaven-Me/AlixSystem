@@ -1,13 +1,14 @@
 package shadow.utils.misc.skull;
 
 import alix.common.utils.other.throwable.AlixError;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.profile.PlayerProfile;
 import shadow.utils.misc.ReflectionUtils;
-
 
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -39,8 +40,15 @@ class APISkullSupplier implements SkullSupplier {
 
     public static URL getUrlFromBase64(String base64) throws MalformedURLException {
         String decoded = new String(Base64.getDecoder().decode(base64));
-        // We simply remove the "beginning" and "ending" part of the JSON, so we're left with only the URL. You could use a proper
-        // JSON parser for this, but that's not worth it. The String will always start exactly with this stuff anyway
-        return new URL(decoded.substring("{\"textures\":{\"SKIN\":{\"url\":\"".length(), decoded.length() - "\"}}}".length()));
+
+        JsonElement json = JsonParser.parseString(decoded);
+        String url = json.getAsJsonObject()
+                .getAsJsonObject("textures")
+                .getAsJsonObject("SKIN")
+                .getAsJsonPrimitive("url")
+                .getAsString();
+        return new URL(url);
+        //Main.logError("JSON: " + JsonParser.parseString(decoded));
+        //return new URL(decoded.substring("{\"textures\":{\"SKIN\":{\"url\":\"".length(), decoded.length() - "\"}}}".length()));
     }
 }

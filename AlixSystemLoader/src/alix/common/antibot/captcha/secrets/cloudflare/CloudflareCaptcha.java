@@ -1,4 +1,4 @@
-package alix.common.antibot.captcha.cloudflare.manager;
+package alix.common.antibot.captcha.secrets.cloudflare;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;

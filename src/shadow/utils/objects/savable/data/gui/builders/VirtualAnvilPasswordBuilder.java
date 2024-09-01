@@ -28,7 +28,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
         super(user.silentContext(), user.isRegistered(), i -> PacketConstructor.AnvilGUI.allItemsPacket, i -> PacketConstructor.AnvilGUI.invalidItemsPacket);
         this.user = user;
         this.gui = new EmptyVirtualInventory(user.silentContext(), AlixInventoryType.ANVIL, user.isRegistered() ? PasswordGui.guiTitleLogin : PasswordGui.guiTitleRegister);
-        //this.updateWindowId(1);
+        //this.updateWindowId(1); <- broken
     }
 
     @Override
@@ -54,7 +54,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
                 if (password.isEmpty()) return;
                 if (user.isRegistered()) {
                     if (user.isPasswordCorrect(password)) {
-                        this.user.logIn();
+                        this.user.tryLogIn();
                         return;
                     } else if (++user.loginAttempts == maxLoginAttempts)
                         MethodProvider.kickAsync(this.user, CommandManager.incorrectPasswordKickPacket);

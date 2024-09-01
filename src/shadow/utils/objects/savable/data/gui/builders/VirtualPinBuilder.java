@@ -32,7 +32,7 @@ public final class VirtualPinBuilder implements AlixVerificationGui {
             registerInvOpenBuffer = CachingVirtualInventory.constInvOpenByteBuf(36, guiTitleRegister),
             loginInvOpenBuffer = CachingVirtualInventory.constInvOpenByteBuf(36, guiTitleLogin);
 
-    private StringBuilder pin = new StringBuilder(4);
+    private final StringBuilder pin = new StringBuilder(4);
     private final CachingVirtualInventory gui;
     private final UnverifiedUser user;
 
@@ -53,14 +53,15 @@ public final class VirtualPinBuilder implements AlixVerificationGui {
     }
 
     @Override
-    public void select(int slot) {//returns whether the login action should be performed
+    public void select(int slot) {
         byte digit = getDigit(slot);
         if (digit != -1) {
             boolean login = append(digit);
 
             if (login && pinAutoConfirm) {//logging in
                 this.onPINConfirmation();
-            } else if (pin.length() != 4) this.user.writeAndFlushConstSilently(noteBlockHarpSoundPacket);//adding a pin digit
+            } else if (pin.length() != 4)
+                this.user.writeAndFlushConstSilently(noteBlockHarpSoundPacket);//adding a pin digit
             return;
         }
         if (performAction(slot)) this.onPINConfirmation();
@@ -72,9 +73,11 @@ public final class VirtualPinBuilder implements AlixVerificationGui {
         if (user.isRegistered()) {
             if (user.isPasswordCorrect(pin)) {
                 this.user.writeAndFlushConstSilently(playerLevelUpSoundPacket);
-                this.user.logIn();
+                this.user.tryLogIn();
                 return;
-            } else if (++user.loginAttempts == maxLoginAttempts)
+            }
+
+            if (++user.loginAttempts == maxLoginAttempts)
                 MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
             else {//beautiful syntax
                 this.resetPin0();
@@ -94,7 +97,7 @@ public final class VirtualPinBuilder implements AlixVerificationGui {
 
     private void resetPin0() {
         if (pin.length() != 0) {
-            this.pin = new StringBuilder(4);
+            this.pin.setLength(0);
             for (int i : EMPTY_DIGIT_SLOTS)
                 gui.setItem(i, RETROOPER_BARRIER);
             this.user.writeAndFlushConstSilently(itemBreakSoundPacket);

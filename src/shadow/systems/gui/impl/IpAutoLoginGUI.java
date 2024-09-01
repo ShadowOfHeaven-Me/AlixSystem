@@ -34,10 +34,10 @@ public final class IpAutoLoginGUI extends AlixGUI {
         Arrays.fill(items, BACKGROUND_ITEM);
 
         ItemStack questionMark = AlixUtils.getSkull(Messages.get("gui-ip-autologin-question-mark"), "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYmFkYzA0OGE3Y2U3OGY3ZGFkNzJhMDdkYTI3ZDg1YzA5MTY4ODFlNTUyMmVlZWQxZTNkYWYyMTdhMzhjMWEifX19");
-        String[] lore = Messages.get("gui-ip-autologin-what-is-this").split("-nl ");
+        String[] lore = Messages.get("gui-ip-autologin-what-is-this").split(" -nl ");
         items[1] = new GUIItem(setLore(questionMark, lore));
 
-        String[] lore2 = Messages.get("gui-ip-autologin-lore-accept").split("-nl ");
+        String[] lore2 = Messages.get("gui-ip-autologin-lore-accept").split(" -nl ");
         ItemStack confirm = create(AlixMaterials.GREEN_WOOL.getItemCloned(), Messages.get("gui-ip-autologin-accept"), lore2);
         items[6] = new GUIItem(setLore(confirm, lore2), event -> {
             Player player = (Player) event.getWhoClicked();
@@ -47,7 +47,7 @@ public final class IpAutoLoginGUI extends AlixGUI {
             AlixScheduler.runLaterSync(player::closeInventory, 100, TimeUnit.MILLISECONDS);//we need to delay it because of a ConcurrentModificationException in the 'MAP' in AlixGUI
         });
 
-        String[] lore3 = Messages.get("gui-ip-autologin-lore-reject").split("-nl ");
+        String[] lore3 = Messages.get("gui-ip-autologin-lore-reject").split(" -nl ");
         ItemStack reject = create(AlixMaterials.RED_WOOL.getItemCloned(), Messages.get("gui-ip-autologin-reject"), lore2);
         items[8] = new GUIItem(setLore(reject, lore3), event -> {
             Player player = (Player) event.getWhoClicked();

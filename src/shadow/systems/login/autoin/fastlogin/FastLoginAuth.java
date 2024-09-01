@@ -18,6 +18,7 @@ public final class FastLoginAuth implements LoginAuthenticator {
 
     @Override
     public boolean isPremium(UUID uuid) {
+        //Main.logError("STATUS: " + base.getStatus(uuid) + " all " + base.getPremiumPlayers());
         return base.getStatus(uuid) == PremiumStatus.PREMIUM;
     }
 }

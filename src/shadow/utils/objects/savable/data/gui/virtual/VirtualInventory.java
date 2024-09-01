@@ -13,16 +13,17 @@ import java.util.function.Consumer;
 
 public class VirtualInventory {
 
-    private final List<ItemStack> list;
+    public static final int CONST_WINDOW_ID = 1;
+    final List<ItemStack> list;
     final ChannelHandlerContext silentContext;
-    private final int windowId, stateId;
+    //private final int windowId, stateId;
     private final ByteBuf openInvBuffer;
     private final Consumer<ByteBuf> destroyInvOpen;
 
     VirtualInventory(ChannelHandlerContext silentContext, List<ItemStack> contents, ByteBuf openInvByteBuf, Consumer<ByteBuf> destroyInvOpen) {
         this.list = contents;
         this.silentContext = silentContext;
-        this.windowId = this.stateId = 1;
+        //this.windowId = this.stateId = 1;
         this.openInvBuffer = openInvByteBuf;
         this.destroyInvOpen = destroyInvOpen;
     }
@@ -43,9 +44,13 @@ public class VirtualInventory {
         this.destroyInvOpen.accept(this.openInvBuffer);
     }
 
+    void openWindow() {
+        NettyUtils.writeAndFlushConst(this.silentContext, this.openInvBuffer);
+    }
+
     public void open() {
-        NettyUtils.writeConst(this.silentContext, this.openInvBuffer);
-        if (list != null) this.spoofAllItems();
+        this.openWindow();
+        this.spoofAllItems();
     }
 
     public void setItem(int i, ItemStack item) {
@@ -54,6 +59,7 @@ public class VirtualInventory {
     }
 
     public void spoofAllItems() {
-        NettyUtils.writeDynamicWrapper(OutWindowItemsPacketConstructor.constructDynamic0(this.windowId, this.stateId, this.list), this.silentContext);
+        if (this.list != null)
+            NettyUtils.writeDynamicWrapper(OutWindowItemsPacketConstructor.constructDynamic0(CONST_WINDOW_ID, CONST_WINDOW_ID, this.list), this.silentContext);//window and state id can be the same
     }
 }

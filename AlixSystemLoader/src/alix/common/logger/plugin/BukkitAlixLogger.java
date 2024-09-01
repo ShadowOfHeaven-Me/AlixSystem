@@ -1,27 +1,28 @@
 package alix.common.logger.plugin;
 
-import alix.common.logger.AlixLoggerProvider;
-import alix.common.reflection.CommonReflection;
-import alix.loaders.bukkit.BukkitAlixMain;
-import org.bukkit.plugin.PluginLogger;
+import com.github.retrooper.packetevents.util.ColorUtil;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 
-import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
-public final class BukkitAlixLogger extends PluginLogger {
+public final class BukkitAlixLogger extends Logger {
 
-    private final String name = AlixLoggerProvider.LOGGER_NAME_FULL;
+    //private final String name = AlixLoggerProvider.LOGGER_NAME_FULL;
+    private final String prefixText;
 
     public BukkitAlixLogger() {
-        super(BukkitAlixMain.instance);
-        this.setParent(BukkitAlixMain.instance.getServer().getLogger());
-        this.setLevel(Level.ALL);
-        CommonReflection.set(CommonReflection.getFieldAccessibleByType(PluginLogger.class, String.class), this, this.name);
-        //PluginLogger.class.getFields();
+        super("Sex",null);
+        this.prefixText = ColorUtil.toString(NamedTextColor.RED) + "[AlixSystem] " + ColorUtil.toString(NamedTextColor.GRAY);
     }
 
-/*    @Override
+    @Override
     public void log(LogRecord record) {
-        record.setMessage(this.name + record.getMessage());
-        super.log(record);
+        Bukkit.getConsoleSender().sendMessage(this.prefixText + record.getMessage());
+    }
+
+    /*private String color(Level level) {
+
     }*/
 }

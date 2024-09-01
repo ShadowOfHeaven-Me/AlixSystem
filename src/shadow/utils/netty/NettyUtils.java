@@ -1,6 +1,7 @@
 package shadow.utils.netty;
 
 
+import alix.common.utils.other.annotation.ScheduledForFix;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -10,6 +11,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.*;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
+import shadow.utils.users.types.AlixUser;
 
 public final class NettyUtils {
 
@@ -52,19 +54,19 @@ public final class NettyUtils {
     }
 
     public static void writeConst(ChannelHandlerContext context, ByteBuf constByteBuf) {
-        //AlixUser.DEBUG_TIME();
+        AlixUser.DEBUG_TIME();
         //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
         context.write(prepareConstToSend(constByteBuf));
     }
 
     public static ChannelFuture writeAndFlushConst(ChannelHandlerContext context, ByteBuf constByteBuf) {
-        //AlixUser.DEBUG_TIME();
+        AlixUser.DEBUG_TIME();
         //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
         return context.writeAndFlush(prepareConstToSend(constByteBuf));
     }
 
     public static ChannelPromise writeAndFlushConstRaw(Channel channel, ByteBuf constByteBuf) {
-        //AlixUser.DEBUG_TIME();
+        AlixUser.DEBUG_TIME();
         //ByteBuf send = context.channel().alloc().buffer().writeBytes(constByteBuf.copy());
         ChannelPromise promise = channel.newPromise();
         RawAlixPacket.writeRaw(constByteBuf, channel, promise);
@@ -75,6 +77,8 @@ public final class NettyUtils {
         writeAndFlushConstRaw(channel, constBuf).addListener(ChannelFutureListener.CLOSE);
     }
 
+    //fix sending invalid packets for ping
+    @ScheduledForFix
     public static void closeAfterConstSend(Channel channel, ByteBuf constBuf) {
         writeAndFlushConst(getSilentContext(channel), constBuf).addListener(ChannelFutureListener.CLOSE);
     }
@@ -86,12 +90,12 @@ public final class NettyUtils {
     //ByteBufAllocator.DEFAULT.buffer();
 
     public static void writeDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
-        //AlixUser.DEBUG_TIME();
+        AlixUser.DEBUG_TIME();
         context.write(dynamic(wrapper, context));
     }
 
     public static void writeAndFlushDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
-        //AlixUser.DEBUG_TIME();
+        AlixUser.DEBUG_TIME();
         context.writeAndFlush(dynamic(wrapper, context));
     }
 
@@ -112,8 +116,13 @@ public final class NettyUtils {
         if (wrapper.buffer != null)
             throw new AlixException("Incorrect invocation of NettyUtils.createBuffer - buffer exists");
 
+        int packetId = wrapper.getPacketTypeData().getNativePacketId();
+        if (packetId < 0) throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in version "
+                + PacketEvents.getAPI().getServerManager().getVersion().toClientVersion() + "! Contact the developer and show him this error! " +
+                "Otherwise Alix will not work as intended!");
+
         wrapper.buffer = emptyByteBuf;
-        wrapper.writeVarInt(wrapper.getPacketTypeData().getNativePacketId());
+        wrapper.writeVarInt(packetId);
         wrapper.write();
 
         return emptyByteBuf;//(ByteBuf) wrapper.buffer;

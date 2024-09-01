@@ -116,7 +116,7 @@ public final class Password {
         if (s.length == 1)
             return password == null ? empty() : fromUnhashed(password); //the old formatting support - we know it's unhashed since the hashing id was not saved
 
-        return new Password(password, Byte.parseByte(s[1]));
+        return password == null ? empty() : new Password(password, Byte.parseByte(s[1]));
     }
 
     static {

@@ -22,7 +22,7 @@ public final class BlockedPacketsMap {
         //this.overridingPackets = new ByteBuf[size];
     }
 
-    public void addDynamic(ProtocolPacketEvent<?> event) {
+    public void addDynamic(ProtocolPacketEvent event) {
         int packetId = event.getPacketId();
         int idBytes = countBytesToEncodeVarInt(packetId);//count the VarInt's bytes
         //4 - (Integer.numberOfLeadingZeros(packetId) >> 3);//count the int's bytes
@@ -54,7 +54,7 @@ public final class BlockedPacketsMap {
         this.overridingPackets[type.ordinal()] = buf.copy();
     }*/
 
-    public void sendTo(UnverifiedUser user) {
+    public void writeTo(UnverifiedUser user) {
         this.dynamicPackets.forEach(user::writeSilently);
         //for (ByteBuf buf : this.overridingPackets) if (buf != null) user.writeSilently(buf);
     }

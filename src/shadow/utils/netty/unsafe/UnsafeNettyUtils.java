@@ -4,7 +4,6 @@ import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import shadow.utils.netty.unsafe.fast.FastNettyUtils;
 
 import java.util.function.Function;
 
@@ -77,9 +76,9 @@ public final class UnsafeNettyUtils {
         return outputTransformer.apply(harvested);
     }
 
-    public static void fastUnsafeRemove(Channel channel, String handlerName) {
+/*    public static void fastUnsafeRemove(Channel channel, String handlerName) {
         FastNettyUtils.remove(channel, handlerName);
-    }
+    }*/
 
     /*private static final int COMPRESSION_THRESHOLD;
 

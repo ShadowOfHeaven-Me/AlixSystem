@@ -5,7 +5,7 @@ import alix.common.scheduler.AlixScheduler;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.ScheduledFuture;
 import shadow.systems.login.captcha.Captcha;
-import shadow.utils.misc.captcha.CaptchaRenderer;
+import shadow.utils.misc.captcha.ImageRenderer;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.unsafe.UnsafeNettyUtils;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
@@ -24,7 +24,7 @@ public final class ParticleCaptcha extends Captcha {
 
     public ParticleCaptcha() {
         BufferedImage image = CaptchaImageGenerator.generateCaptchaImage(captcha, maxRotation, false, false);//aliasing is necessary for us, since it shows more contrast
-        this.buffers = CaptchaRenderer.particleBuffers(image);//Unreleasable(ReadOnly(Direct)))
+        this.buffers = ImageRenderer.particleBuffers(image);//Unreleasable(ReadOnly(Direct)))
         //Main.logError("CREATED: " + buffers.length);
         //Main.logError("BUFFERS HASH: " + ParticleRenderer.captchaRenderingBuffers(image).length + " NORMALLY: " + ParticleRenderer.list(image).length);
         //this.buffer = Unpooled.buffer();

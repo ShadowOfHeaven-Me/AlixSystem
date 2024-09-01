@@ -10,7 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import shadow.utils.netty.NettyUtils;
-import shadow.utils.users.types.UnverifiedUser;
+import shadow.utils.users.types.AlixUser;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -49,7 +49,7 @@ public final class MethodProvider {
     }
 
     @AlixIntrinsified(method = "Player#kickPlayer")
-    public static void kickAsync(UnverifiedUser user, ByteBuf disconnectPacket) {
+    public static void kickAsync(AlixUser user, ByteBuf disconnectPacket) {
         NettyUtils.writeAndFlushConst(user.silentContext(), disconnectPacket).addListener(ChannelFutureListener.CLOSE);
     }
 
@@ -58,6 +58,11 @@ public final class MethodProvider {
     @AlixIntrinsified(method = "Player#teleport")
     public static CompletableFuture<Boolean> teleportAsync(Entity entity, Location loc) {
         return PaperLib.teleportAsync(entity, loc, ASYNC_TP_CAUSE);
+    }
+
+    @AlixIntrinsified(method = "Player#teleport")
+    public static CompletableFuture<Boolean> teleportAsyncPluginCause(Entity entity, Location loc) {
+        return PaperLib.teleportAsync(entity, loc, PlayerTeleportEvent.TeleportCause.PLUGIN);
     }
 
     public static void init() {

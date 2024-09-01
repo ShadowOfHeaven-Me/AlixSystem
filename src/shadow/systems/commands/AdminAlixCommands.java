@@ -5,6 +5,7 @@ import alix.common.data.LoginType;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.other.throwable.AlixError;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -149,7 +150,24 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "Login Type: &c" + data.getLoginType());
                             if (dVer)
                                 sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
-                            sendMessage(sender, "Double verification: " + (dVer ? "&cEnabled" : "&cDisabled"));
+
+                            sendMessage(sender, "Double password verification: " + (dVer ? "&aEnabled" : "&cDisabled"));
+                            String authApp;
+                            switch (data.getLoginParams().getAuthSettings()) {
+                                case PASSWORD:
+                                    authApp = "&cDisabled";
+                                    break;
+                                case AUTH_APP:
+                                    authApp = "&aEnabled - Just app";
+                                    break;
+                                case PASSWORD_AND_AUTH_APP:
+                                    authApp = "&aEnabled - App and in-game passwords";
+                                    break;
+                                default:
+                                    throw new AlixError("Invalid - " + data.getLoginParams().getAuthSettings());
+                            }
+                            sendMessage(sender, "TOTP Auth app: " + authApp);
+                            sendMessage(sender, "Has TOTP app linked: " + (data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
                             sendMessage(sender, "First joined: &c" + getFormattedDate(new Date(offlinePlayer.getFirstPlayed())));
                             sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: &c" : "Last joined: &c") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
                             sendMessage(sender, "");
