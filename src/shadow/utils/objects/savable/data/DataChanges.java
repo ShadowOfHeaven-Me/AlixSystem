@@ -78,6 +78,19 @@ public final class DataChanges {
                     return false;
                 }
             }
+            LoginType extraLoginType = data.getLoginParams().getExtraLoginType();
+
+            if (this.extraLoginType != null && newExtraPassword == null) {
+                if (extraLoginType == LoginType.PIN && this.extraLoginType != LoginType.PIN) {
+                    player.sendRawMessage(secondaryPin);
+                    return false;
+                }
+
+                if (extraLoginType != LoginType.PIN && this.extraLoginType == LoginType.PIN) {
+                    player.sendRawMessage(secondaryNotPin);
+                    return false;
+                }
+            }
         }
         if (changeMainPassword) data.setPassword(newPassword);
         if (changeExtraPassword) data.getLoginParams().setExtraPassword(Password.fromUnhashed(newExtraPassword));

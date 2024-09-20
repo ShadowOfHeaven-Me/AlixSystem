@@ -53,7 +53,8 @@ public final class AlixInterceptor {
                     AlixCommonMain.debug("Error that occurred when trying to use the faster implementation (send this to the developer):");
                     AlixCommonMain.debug("Epoll: " + AlixHandler.isEpollTransport);
                     e.printStackTrace();
-                } else AlixCommonMain.logInfo("If you wish to use the faster FireWall implementation enable 'debug' in config.yml and contact the developer!");
+                } else
+                    AlixCommonMain.logInfo("If you wish to use the faster FireWall implementation enable 'debug' in config.yml and contact the developer!");
             }
         }
 
@@ -97,6 +98,7 @@ public final class AlixInterceptor {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             Channel channel = (Channel) msg;
+            //Main.logError("CHANNELLLLLLLLLLLLLLLLLLLLLL: " + channel);
 
             //VirtualServer.init(channel);
 
@@ -122,7 +124,8 @@ public final class AlixInterceptor {
     public static void onDisable() {
         switch (fireWallType) {
             case NETTY:
-                AlixHandler.SERVER_CHANNEL_FUTURE.channel().pipeline().remove(name);
+                ChannelPipeline pipeline = AlixHandler.SERVER_CHANNEL_FUTURE.channel().pipeline();
+                if (pipeline.context(name) != null) pipeline.remove(name);
                 break;
             case INTERNAL_NIO_INTERCEPTOR:
                 AlixInternalNIOInterceptor.unregister();

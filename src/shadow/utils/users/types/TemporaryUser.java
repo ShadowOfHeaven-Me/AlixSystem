@@ -7,18 +7,21 @@ import shadow.systems.login.result.LoginInfo;
 import shadow.utils.netty.unsafe.ByteBufHarvester;
 import shadow.utils.objects.packet.EmptyProcessor;
 import shadow.utils.objects.packet.PacketProcessor;
+import shadow.utils.objects.packet.TemporaryUnverifiedProcessor;
 
 public final class TemporaryUser implements AlixUser {
 
     private final User user;
     private final LoginInfo loginInfo;
     private final ByteBufHarvester bufHarvester;
+    private final TemporaryUnverifiedProcessor unverifiedProcessor;
     //private final TemporaryProcessor processor = new TemporaryProcessor();
 
     public TemporaryUser(User user, LoginInfo loginInfo) {
         this.user = user;
         this.loginInfo = loginInfo;
         this.bufHarvester = ByteBufHarvester.newHarvesterFor(this.getChannel());
+        this.unverifiedProcessor = this.isVerified() ? null : new TemporaryUnverifiedProcessor();
     }
 
     @Override
@@ -36,13 +39,13 @@ public final class TemporaryUser implements AlixUser {
 
     @Override
     public PacketProcessor getPacketProcessor() {
-        return EmptyProcessor.INSTANCE;
+        return this.unverifiedProcessor != null ? this.unverifiedProcessor : EmptyProcessor.INSTANCE;
         //throw new AlixException("getPacketProcessor() should not be invoked on a TemporaryUser");
     }
 
-/*    public TemporaryProcessor getTempProcessor() {
-        return processor;
-    }*/
+    public TemporaryUnverifiedProcessor getUnverifiedProcessor() {
+        return unverifiedProcessor;
+    }
 
     @Override
     public boolean isVerified() {

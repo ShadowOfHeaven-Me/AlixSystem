@@ -54,7 +54,7 @@ public final class CommandsPacketConstructor {
         }
 
         list.add(newNode0(NodeType.ROOT, null, indices, null, null));//0
-        list.add(newNode0(NodeType.ARGUMENT, argName, Collections.emptyList(), Parsers.BRIGADIER_STRING, BrigadierString.SINGLE_WORD, NodeFlag.IS_EXECUTABLE));//1
+        list.add(newNode0(NodeType.ARGUMENT, argName, Collections.emptyList(), Parsers.BRIGADIER_STRING, supportAllChars ? BrigadierString.GREEDY_PHRASE : BrigadierString.SINGLE_WORD, NodeFlag.IS_EXECUTABLE));//1
 
         for (String alias : commands) {
             list.add(newNode0(NodeType.LITERAL, alias, Collections.singletonList(1), null, null, NodeFlag.IS_EXECUTABLE));

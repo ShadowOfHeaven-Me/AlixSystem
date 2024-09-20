@@ -52,10 +52,10 @@ public interface AlixUser {
     }
 
     default void writeAndFlushWithThresholdSilently(ByteBuf[] buffers, int threshold, Consumer<ByteBuf> writeFunction) {
-        for (int i = 1; i <= buffers.length; i++) {
-            ByteBuf buf = buffers[i];
+        for (int c = 1; c <= buffers.length; c++) {
+            ByteBuf buf = buffers[c - 1];
             writeFunction.accept(buf);
-            if (i % threshold == 0) this.flush();
+            if (c % threshold == 0) this.flush();
         }
         if (buffers.length % threshold != 0)//last loop was not a flush
             this.flush();
@@ -86,7 +86,8 @@ public interface AlixUser {
     default void writeAndFlushRaw(ByteBuf rawBuffer) {
         DEBUG_TIME();
         this.writeRaw(rawBuffer);
-        this.getChannel().unsafe().flush();
+        this.flush();
+        //this.getChannel().unsafe().flush();
     }
 
     default void writeSilently(ByteBuf buffer) {
@@ -103,6 +104,13 @@ public interface AlixUser {
         DEBUG_TIME();
         //this.silentContext().flush();
         this.getChannel().flush();
+    }
+
+    default void writeAllAndThenFlushConstSilently(ByteBuf[] bufs) {
+        for (ByteBuf buf : bufs) {
+            this.writeConstSilently(buf);
+        }
+        this.flush();
     }
 
     default void writeConstSilently(ByteBuf buf) {

@@ -11,10 +11,12 @@ import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutSoundPacketConstructor;
 import shadow.utils.misc.version.AlixMaterials;
+import shadow.utils.objects.savable.data.gui.bedrock.VerificationBedrockGUI;
 import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
 import shadow.utils.objects.savable.data.gui.builders.VirtualPinBuilder;
 import shadow.utils.objects.savable.data.gui.builders.auth.UnverifiedVirtualAuthBuilder;
@@ -116,13 +118,19 @@ public final class PasswordGui {
 
     public static AlixVerificationGui newBuilder(UnverifiedUser user, LoginType type) {
         AlixVerificationGui builder = create(user, type);
-        user.setGUIInitialized(true);
+        //user.setGUIInitialized(true);
         return builder;
     }
 
     public static AlixVerificationGui newBuilder2FA(UnverifiedUser user) {
         AlixVerificationGui builder = new UnverifiedVirtualAuthBuilder(user);
-        user.setGUIInitialized(true);
+        //user.setGUIInitialized(true);
+        return builder;
+    }
+
+    public static AlixVerificationGui newBuilderBedrock(UnverifiedUser user, @NotNull Object bedrockPlayer) {
+        AlixVerificationGui builder = new VerificationBedrockGUI(user, bedrockPlayer);
+        //user.setGUIInitialized(true);
         return builder;
     }
 

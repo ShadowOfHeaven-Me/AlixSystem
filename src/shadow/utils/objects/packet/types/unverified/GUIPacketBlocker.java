@@ -2,6 +2,7 @@ package shadow.utils.objects.packet.types.unverified;
 
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
 public final class GUIPacketBlocker extends PacketBlocker {
@@ -10,12 +11,12 @@ public final class GUIPacketBlocker extends PacketBlocker {
         super(previousBlocker);
     }
 
-    GUIPacketBlocker(UnverifiedUser u) {
-        super(u);
+    GUIPacketBlocker(UnverifiedUser u, TemporaryUser t) {
+        super(u, t);
     }
 
     @Override
-    protected void onReceive0(PacketPlayReceiveEvent event) {
+    void onReceive0(PacketPlayReceiveEvent event) {
         //has completed the captcha and is currently undergoing the pin verification
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
@@ -32,7 +33,7 @@ public final class GUIPacketBlocker extends PacketBlocker {
                 break;
             case CLICK_WINDOW://order of these is important \/
                 this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());
-                this.user.getVerificationGUI().getVirtualGUI().spoofAllItems();
+                //this.user.getVerificationGUI().getVirtualGUI().spoofAllItems();
                 break;
             case KEEP_ALIVE://will time out without this one
                 return;

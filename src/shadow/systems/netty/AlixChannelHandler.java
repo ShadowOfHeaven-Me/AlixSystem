@@ -18,6 +18,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.jetbrains.annotations.NotNull;
+import shadow.systems.dependencies.Dependencies;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.misc.packet.getters.LoginInStartGetter;
@@ -66,6 +67,8 @@ public final class AlixChannelHandler {
         //pipeline.remove(PACKET_ANALYSER_NAME);
     }*/
 
+    //remake it with channel close future
+    @OptimizationCandidate
     public static void removeFromTimeOut(Channel channel) {
         ScheduledFuture<?> future = TIMEOUT_TASKS.remove(channel);
         if (future != null) future.cancel(false);
@@ -320,8 +323,9 @@ public final class AlixChannelHandler {
         }*/
 
         String nameInPacket = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
+        //ChannelWrapper
 
-        //Main.logError("NAME IN LOGIN START: " + name);
+        //Main.logError("NAME IN LOGIN START: " + nameInPacket + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
         if (nameInPacket == null) {
             FireWallManager.add(user.getAddress().getAddress(), "E1");
             NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
@@ -330,8 +334,8 @@ public final class AlixChannelHandler {
             return;
         }
 
-        //String name = Dependencies.FLOODGATE_PREFIX != null && floodgate_player != null && channel.attr(floodgate_player).get() != null ? Dependencies.FLOODGATE_PREFIX + nameInPacket : nameInPacket;
-        String name = nameInPacket;
+        String name = Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + nameInPacket : nameInPacket;
+        //String name = nameInPacket;
 
         //AlixScheduler.async(() -> (?)
         if (AlixUtils.antibotService)
@@ -355,6 +359,8 @@ public final class AlixChannelHandler {
         //user.getProfile().setUUID(new WrapperLoginClientLoginStart(event).getPlayerUUID().get());
         User cU = UserManager.putConnecting(name, user);//get the currently already connecting user (or this very user if he doesn't exist, that being mostly the case) close the connection of the one trying to connect in this very method execution
 
+        //channel.closeFuture().addListener()
+
         //identity equality check
         //fix for a race condition caused by two players connecting with the same nickname
         if (cU != user) {
@@ -362,6 +368,10 @@ public final class AlixChannelHandler {
             event.setCancelled(true);
         }
     }
+
+    /*private static final ChannelFutureListener REMOVE_CONNECTING = future -> {
+        UserManager.removeConnecting()
+    };*/
 
 /*    private static final class InvalidLoginInStartWrapper extends WrapperLoginClientLoginStart {
 

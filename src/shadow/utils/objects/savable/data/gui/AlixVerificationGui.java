@@ -4,19 +4,16 @@ import alix.common.data.LoginType;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
-import shadow.utils.objects.savable.data.gui.virtual.VirtualInventory;
 
 public interface AlixVerificationGui {
 
     /**
-     * Throws an exception if the used gui cannot be returned
+     * (If specified) Releases the ByteBufs responsible for showing this gui
      *
-     * @return The Inventory gui used for password building
      * @author ShadowOfHeaven
      */
 
-    @NotNull
-    VirtualInventory getVirtualGUI();
+    void destroy();
 
     /**
      * Opens the GUI and informs this gui about it
@@ -24,9 +21,7 @@ public interface AlixVerificationGui {
      * @author ShadowOfHeaven
      */
 
-    default void openGUI() {
-        this.getVirtualGUI().open();
-    }
+    void openGUI();
 
 
     /**

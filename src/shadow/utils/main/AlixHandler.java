@@ -7,9 +7,11 @@ import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRemoveEntityEffect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTimeUpdate;
 import io.netty.buffer.ByteBuf;
@@ -25,9 +27,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginManager;
 import shadow.Main;
-import shadow.systems.executors.OfflineExecutors;
-import shadow.systems.executors.OnlineExecutors;
-import shadow.systems.executors.ServerPingListener;
+import shadow.systems.executors.*;
 import shadow.systems.executors.gui.GUIExecutors;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
@@ -124,17 +124,20 @@ public final class AlixHandler {
     slowness = 2
     jump boost = 8
     */
+    private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.05f, 0.1f));
+
     public static void sendLoginEffectsPackets(UnverifiedUser user) {
         user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
-        user.writeConstSilently(TIME_NIGHT);
-        //flush is invoked in the VirtualCountdown class
+        user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
+        //user.sendDynamicMessageSilently("GAMEMODE SPOOOOOOOF");
+        //user.writeAndFlushConstSilently(TIME_NIGHT);
 
         if (sendBlindness)
             sendBlindnessPacket(user);
     }
 
     private static void sendBlindnessPacket(UnverifiedUser user) {
-        user.writeDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
+        user.writeAndFlushDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS, 255, 999999999, (byte) 0));
         user.blindnessSent = true;
     }
 
@@ -216,6 +219,9 @@ public final class AlixHandler {
     public static void initExecutors(PluginManager pm) {
         if (isOfflineExecutorRegistered) {
             pm.registerEvents(new OfflineExecutors(), Main.plugin);
+            pm.registerEvents(
+                    AlixCommonUtils.isValidClass("com.destroystokyo.paper.event.player.PlayerSetSpawnEvent")
+                    ? new PaperSpawnExecutors() : new SpigotSpawnExecutors(), Main.plugin);
 
             initializeAlixInterceptor();
             //PaperAccess.initializeFireWall();

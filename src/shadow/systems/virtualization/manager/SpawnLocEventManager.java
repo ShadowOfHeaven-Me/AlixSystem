@@ -45,6 +45,7 @@ final class SpawnLocEventManager extends VirtualEventManager {
             Location joinLoc = event.getSpawnLocation();
 
             TemporaryUser tempUser = LoginVerdictManager.get(player);
+            if (tempUser == null) return;
             UnverifiedUser user = AlixHandler.handleVirtualPlayerJoin(player, tempUser);
 
             boolean verified = user == null;

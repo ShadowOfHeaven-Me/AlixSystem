@@ -7,6 +7,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNa
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
+import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
 import java.nio.charset.StandardCharsets;
@@ -21,13 +22,13 @@ public final class AnvilGUIPacketBlocker extends PacketBlocker {
         super(previousBlocker);
     }
 
-    AnvilGUIPacketBlocker(UnverifiedUser u) {
-        super(u);
+    AnvilGUIPacketBlocker(UnverifiedUser u, TemporaryUser t) {
+        super(u, t);
         this.builder = (VirtualAnvilPasswordBuilder) u.getPasswordBuilder();
     }
 
     @Override
-    protected void onReceive0(PacketPlayReceiveEvent event) {
+    void onReceive0(PacketPlayReceiveEvent event) {
         //has completed the captcha and is currently undergoing the anvil verification
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets

@@ -2,6 +2,7 @@ package shadow.utils.objects.packet.types.unverified;
 
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
 public final class AuthGUIPacketBlocker extends PacketBlocker {
@@ -10,11 +11,11 @@ public final class AuthGUIPacketBlocker extends PacketBlocker {
         super(previousBlocker);
     }
 
-    AuthGUIPacketBlocker(UnverifiedUser user) {
-        super(user);
+    AuthGUIPacketBlocker(UnverifiedUser u, TemporaryUser t) {
+        super(u, t);
     }
     @Override
-    protected void onReceive0(PacketPlayReceiveEvent event) {
+    void onReceive0(PacketPlayReceiveEvent event) {
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
             case PLAYER_POSITION_AND_ROTATION:

@@ -13,7 +13,7 @@ import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.AlixInventoryType;
-import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
+import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.virtual.CachingVirtualInventory;
 import shadow.utils.objects.savable.data.gui.virtual.VirtualInventory;
@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-public abstract class VirtualAuthBuilder implements AlixVerificationGui {
+public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
 
     private static final String START_TEXT;
     private static final String[] EMPTY_SLOTS_TEXTS;

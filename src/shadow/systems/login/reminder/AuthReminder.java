@@ -1,6 +1,7 @@
 package shadow.systems.login.reminder;
 
 import alix.common.messages.Messages;
+import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.ScheduledFuture;
 import net.kyori.adventure.text.Component;
@@ -23,15 +24,16 @@ public final class AuthReminder implements Runnable {
     private AuthReminder(VerifiedUser user) {
         this.future = user.getChannel().eventLoop().scheduleAtFixedRate(this, 500L, MESSAGE_RESEND_DELAY, TimeUnit.MILLISECONDS);
         this.user = user;
+        throw new AlixError("AuthReminder should not be used");
     }
 
     public void cancel() {
         this.future.cancel(false);
     }
 
-    public static AuthReminder reminderFor(VerifiedUser user) {
+/*    public static AuthReminder reminderFor(VerifiedUser user) {
         return new AuthReminder(user);
-    }
+    }*/
 
     @Override
     public void run() {

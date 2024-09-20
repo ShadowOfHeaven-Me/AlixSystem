@@ -3,11 +3,11 @@ package shadow.utils.objects.savable.data.gui.builders;
 import alix.common.data.LoginType;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
+import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.buffered.PacketConstructor;
 import shadow.utils.misc.packet.constructors.AlixInventoryType;
-import shadow.utils.main.AlixUtils;
-import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
+import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.bases.AnvilBuilderBase;
 import shadow.utils.objects.savable.data.gui.virtual.EmptyVirtualInventory;
@@ -16,7 +16,7 @@ import shadow.utils.users.types.UnverifiedUser;
 
 import static shadow.utils.main.AlixUtils.maxLoginAttempts;
 
-public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implements AlixVerificationGui {
+public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implements AlixJavaVerificationGui {
 
    /* private static final EmptyVirtualInventory
             registerGUI,
@@ -33,7 +33,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
 
     @Override
     public void openGUI() {
-        AlixVerificationGui.super.openGUI();
+        AlixJavaVerificationGui.super.openGUI();
         this.updateWindowId(1);
     }
 

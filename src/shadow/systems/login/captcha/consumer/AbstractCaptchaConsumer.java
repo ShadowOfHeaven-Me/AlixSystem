@@ -20,6 +20,8 @@ abstract class AbstractCaptchaConsumer<T extends Captcha> implements CaptchaCons
     }
 
     static CaptchaConsumer createFor0(UnverifiedUser user) {
+        if (user.hasCompletedCaptcha()) return null;
+        //if (user.isBedrock()) return new BedrockReCaptchaConsumer(user);
         return Holder.func.apply(user);
     }
 

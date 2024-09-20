@@ -17,6 +17,7 @@ import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
 import com.github.retrooper.packetevents.protocol.world.BlockFace;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3f;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
@@ -39,6 +40,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.*;
+import java.util.function.Function;
 
 import static java.lang.Math.*;
 
@@ -53,7 +55,7 @@ public final class ImageRenderer {
     private static final Vector3f OFFSET = new Vector3f(0, 0, 0);
     private static final Map<Color, ItemType> COLOR_TO_MODEL_ITEM;
 
-    public static final int ENTITY_ID_START = 100_000;//+ 1 is the actual start
+    public static final int ENTITY_ID_START = 1_000;//+ 1 is the actual start
     public static final int QR_ENTITY_ID_START = 1_000_000;//+ 1 is the actual start
 
     static {
@@ -88,7 +90,7 @@ public final class ImageRenderer {
 
     //Source code: https://github.com/whileSam/bukkit-image-renderer/blob/master/src/main/java/me/trysam/imagerenderer/particle/ImageRenderer.java
 
-    public static ByteBuf[] recaptcha(Location loc) {
+    public static ByteBuf[] recaptcha(Location loc, Function<PacketWrapper<?>, ByteBuf> transformer) {
         List<ByteBuf> list = new ArrayList<>();
         int entityId = ENTITY_ID_START;
 
@@ -99,15 +101,16 @@ public final class ImageRenderer {
         WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND,
                 SpigotConversionUtil.fromBukkitLocation(loc).getPosition(), 0, 0, 0,
                 BlockFace.NORTH.getFaceValue(), Optional.of(Vector3d.zero()));
-        WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId, Collections.singletonList(new Equipment(EquipmentSlot.HELMET, item)));
+        WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId,
+                Collections.singletonList(new Equipment(EquipmentSlot.HELMET, item)));
 
         //https://wiki.vg/Entity_metadata#Item_Frame
         WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
                 Collections.singletonList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20)));
 
-        list.add(NettyUtils.createBuffer(entity));
-        list.add(NettyUtils.createBuffer(metadata));
-        list.add(NettyUtils.createBuffer(equipment));
+        list.add(transformer.apply(entity));
+        //list.add(transformer.apply(metadata));
+        list.add(transformer.apply(equipment));
 
 
         //Main.logError("BUFFERS " + list.size());

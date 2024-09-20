@@ -9,7 +9,7 @@ import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
-import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
+import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.virtual.CachingVirtualInventory;
 import shadow.utils.objects.savable.data.gui.virtual.VirtualInventory;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import static shadow.utils.main.AlixUtils.maxLoginAttempts;
 import static shadow.utils.objects.savable.data.gui.PasswordGui.*;
 
-public final class VirtualPinBuilder implements AlixVerificationGui {
+public final class VirtualPinBuilder implements AlixJavaVerificationGui {
 
     private static final boolean pinAutoConfirm = Main.config.getBoolean("pin-auto-confirm");
     private static final String pinRegister = Messages.get("pin-register");
@@ -62,9 +62,9 @@ public final class VirtualPinBuilder implements AlixVerificationGui {
                 this.onPINConfirmation();
             } else if (pin.length() != 4)
                 this.user.writeAndFlushConstSilently(noteBlockHarpSoundPacket);//adding a pin digit
-            return;
-        }
-        if (performAction(slot)) this.onPINConfirmation();
+
+        } else if (performAction(slot)) this.onPINConfirmation();
+        this.gui.spoofAllItems();
     }
 
     private void onPINConfirmation() {

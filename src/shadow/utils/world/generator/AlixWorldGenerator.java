@@ -105,7 +105,7 @@ public final class AlixWorldGenerator extends WorldCreator {
 
     private static void initCorrectRespawnModern(World world) {
         GameRule rule = GameRule.getByName("doImmediateRespawn");
-        if (rule != null) world.setGameRule((GameRule<Boolean>) rule, true);
+        if (rule != null) world.setGameRule((GameRule<Boolean>) rule, false);
         Main.pm.registerEvents(new CaptchaRespawnExecutors(rule == null), Main.plugin);
     }
 

@@ -244,6 +244,11 @@ prevent-first-time-join: &aWe're analysing your connection. You may now join the
 register-reminder-command: &cRegister first!
 register-success: &aSuccessfully registered! You may now rejoin the server!
 register-time-passed: &cYou took too long to register!
+reminder-login-title: Log in with
+reminder-login-subtitle: &e/login <password>
+reminder-register-title: Register with
+reminder-register-subtitle: &e/register <password>
+reminder-register-subtitle-repeat: &e/register <password> <password>
 remove-warp: &6Successfully removed the warp {0}!
 renamed-item: &6Successfully renamed held item.
 server-is-full: &cThe server is full!

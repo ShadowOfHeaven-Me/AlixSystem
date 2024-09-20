@@ -13,15 +13,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
+import shadow.Main;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
+import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.users.Verifications;
 import shadow.utils.world.AlixWorld;
@@ -37,6 +36,9 @@ public final class OfflineExecutors extends UniversalExecutors {
             playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
     //serverIsFull = Messages.get("server-is-full");
     //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
+
+
+    //Pre-to-join executors - start
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
@@ -100,6 +102,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
         LoginVerdictManager.addOffline(name, ip, data, e);
     }
+    //Pre-to-join executors - end
 
     //Moved to UserSemiVirtualization and related
 
@@ -174,6 +177,22 @@ public final class OfflineExecutors extends UniversalExecutors {
         } else if (alixJoinLog)
             Main.logInfo(joinVerified.format(e.getPlayer().getName(), e.getPlayer().getAddress().getAddress().getHostAddress()));*/
 
+    //During verification executors - start
+
+    //spawn in verification world fix
+
+    private final boolean useLastLoc = Main.config.getBoolean("use-last-location-as-fallback");
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onSpawn(PlayerRespawnEvent event) {
+        boolean verified = !Verifications.has(event.getPlayer());
+        if (verified && event.getRespawnLocation().getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {
+            event.setRespawnLocation(this.useLastLoc ? OriginalLocationsManager.getOriginalLocation(event.getPlayer()) : SpawnFileManager.getSpawnLocation());
+            return;
+        }
+        if (!verified) event.setRespawnLocation(AlixWorld.TELEPORT_LOCATION);
+    }
+
     //Teleportation on login fix
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTeleport(PlayerTeleportEvent event) {
@@ -188,13 +207,14 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
     }
 
+    //Damage during verification fix
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDamage(EntityDamageEvent event) {
-        if (event.isCancelled()) return;
-        if (!(event.getEntity() instanceof Player)) return;
+        if (event.isCancelled() || !(event.getEntity() instanceof Player)) return;
 
         if (Verifications.has(event.getEntity().getUniqueId())) event.setCancelled(true);
     }
+    //During verification executors - end
 
 /*    @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerQuitEvent e) {

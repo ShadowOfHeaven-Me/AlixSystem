@@ -10,7 +10,8 @@ public enum LoginType {
     PIN,
     ANVIL,
     //Additional, not used
-    AUTH_2FA;
+    AUTH_2FA,
+    BEDROCK_VER;
 
     public static LoginType from(String t, boolean config) {
         boolean isOlderThan1_14 = PacketEvents.getAPI().getServerManager().getVersion().isOlderThan(ServerVersion.V_1_14);

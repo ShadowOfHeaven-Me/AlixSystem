@@ -55,8 +55,6 @@ public final class PacketEventsManager {
 
             //Main.logInfo("PACKET IN: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
 
-
-
             AlixUser user;
 
             if (event.getClass() == PacketPlayReceiveEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null) {
@@ -161,7 +159,12 @@ public final class PacketEventsManager {
                     return;
                 }*/
 
-            //Bukkit.broadcastMessage("PACKET OUT: " + event.getPacketType().getName());
+
+            //Main.logInfo("PACKET OUT: " + event.getPacketType().getName());
+
+/*            if (event.getPacketType() == PacketType.Play.Server.WINDOW_PROPERTY) {
+                Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerWindowProperty(event)));
+            }*/
 
             if (event.getClass() == PacketPlaySendEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
                 user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
@@ -223,7 +226,7 @@ public final class PacketEventsManager {
             AlixChannelHandler.removeFromTimeOut((Channel) event.getUser().getChannel());
             if (name == null) return;
 
-            UserManager.removeConnecting(name);
+            UserManager.removeConnecting(name);//can be done like this, since the temp name accounts for bedrock
             //Main.logError("DISCONNECTED: " + event.getUser().getName());
             //AlixChannelHandler.onDisconnect(event.getUser());
             //AlixUser user = LoginVerdictManager.getNullable(event.getUser().getUUID());

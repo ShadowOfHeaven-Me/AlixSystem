@@ -1,7 +1,9 @@
 package shadow.systems.dependencies;
 
+import io.netty.channel.Channel;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.dependencies.floodgate.FloodgateAccess;
@@ -32,6 +34,10 @@ public final class Dependencies {
     public static Object getBedrockPlayer(Player player) {
         if (!isFloodgatePresent) return null;
         return FloodgateAccess.getBedrockPlayer(player);
+    }
+
+    public static boolean isBedrock(@NotNull Channel channel) {
+        return isFloodgatePresent && FloodgateAccess.isBedrock(channel);
     }
 
     private Dependencies() {

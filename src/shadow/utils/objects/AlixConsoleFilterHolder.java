@@ -54,7 +54,11 @@ public final class AlixConsoleFilterHolder implements Filter {
             }
             //if (e.getLevel() == Level.WARN) Main.logInfo("WARNNNNNN: " + e.getThrownProxy() + " " + e.getSource() + " " + e.getMessage().getFormattedMessage() + " " + e.getContextData());
             String message = e.getMessage().getFormattedMessage();
-            if (message.isEmpty() || e.getLevel() != Level.INFO) return Result.NEUTRAL;
+/*            if (message.startsWith("_ShadowOfHeaven_")) {
+                Main.logError("SEX " + message + " " + e.getLoggerFqcn() + " " + e.getLoggerName());
+                return Result.NEUTRAL;
+            }*/
+            if (message.isEmpty()) return Result.NEUTRAL;
 
             if (filterFastLoginDebug && message.startsWith("[FastLogin]")) return Result.DENY;
 
@@ -62,12 +66,15 @@ public final class AlixConsoleFilterHolder implements Filter {
             if (hideFailedJoinAttempts && (AlixCommonUtils.startsWith(message, "UUID of player",
                     "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()"))) //|| this.isLostCon0(msgChars = message.toCharArray())))
                 return Result.DENY;
-            String[] lostCon0 = message.split(" ", 3);
-            if (lostCon0.length >= 2) {
-                //Main.logError("LOST CON " + Arrays.toString(lostCon0));
-                if (lostCon0[1].startsWith("lost connection")) return Result.DENY;
-                if (lostCon0.length == 3 && lostCon0[2].startsWith("lost connection"))
-                    return Result.DENY;
+            if (Thread.currentThread() == Main.mainServerThread) {
+                String[] lostCon = message.split(" ", 4);
+                if (lostCon.length >= 3) {
+                    //AlixScheduler.async(() -> Main.logError("LOST CON '" + Arrays.toString(lostCon)));
+                    //Main.logError("LOST CON " + Arrays.toString(lostCon));
+                    if (lostCon[1].equals("lost") && lostCon[2].equals("connection:")) return Result.DENY;
+                    if (lostCon.length == 4 && lostCon[2].equals("lost") && lostCon[3].equals("connection:"))
+                        return Result.DENY;
+                }
             }
 
             if (alixJoinLog && Thread.currentThread() == Main.mainServerThread) {

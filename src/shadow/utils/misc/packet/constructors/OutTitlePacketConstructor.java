@@ -11,12 +11,23 @@ import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import shadow.utils.netty.NettyUtils;
 
+import java.util.function.Function;
+
 public final class OutTitlePacketConstructor {
 
     private static final boolean modern = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_17);
 
     //From User#sendTitle
+
+    public static ByteBuf[] constructConst(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks) {
+        return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, NettyUtils::constBuffer);
+    }
+
     public static ByteBuf[] constructDynamic(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks) {
+        return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, NettyUtils::createBuffer);
+    }
+
+    public static ByteBuf[] construct(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks, Function<PacketWrapper, ByteBuf> transformer) {
         Component title = titleText != null ? Component.text(titleText) : null;
         Component subtitle = subtitleText != null ? Component.text(subtitleText) : null;
         PacketWrapper<?> setTitle = null;
@@ -32,19 +43,19 @@ public final class OutTitlePacketConstructor {
             animation = new WrapperPlayServerTitle(WrapperPlayServerTitle.TitleAction.SET_TIMES_AND_DISPLAY, null, null, (Component) null, fadeInTicks, stayTicks, fadeOutTicks);
 
             if (title != null)
-                setTitle = new WrapperPlayServerTitle(WrapperPlayServerTitle.TitleAction.SET_TITLE, title, null, null, 0, 0, 0);
+                setTitle = new WrapperPlayServerTitle(WrapperPlayServerTitle.TitleAction.SET_TITLE, title, null, null, fadeInTicks, stayTicks, fadeOutTicks);
 
             if (subtitle != null)
-                setSubtitle = new WrapperPlayServerTitle(WrapperPlayServerTitle.TitleAction.SET_SUBTITLE, null, subtitle, null, 0, 0, 0);
+                setSubtitle = new WrapperPlayServerTitle(WrapperPlayServerTitle.TitleAction.SET_SUBTITLE, null, subtitle, null, fadeInTicks, stayTicks, fadeOutTicks);
         }
 
         int size = 1 + (setTitle != null ? 1 : 0) + (setSubtitle != null ? 1 : 0);
         ByteBuf[] buffers = new ByteBuf[size];
         int index = 0;
 
-        buffers[index++] = NettyUtils.createBuffer(animation);
-        if (setTitle != null) buffers[index++] = NettyUtils.createBuffer(setTitle);
-        if (setSubtitle != null) buffers[index] = NettyUtils.createBuffer(setSubtitle);
+        buffers[index++] = transformer.apply(animation);
+        if (setTitle != null) buffers[index++] = transformer.apply(setTitle);
+        if (setSubtitle != null) buffers[index] = transformer.apply(setSubtitle);
 
         return buffers;
     }

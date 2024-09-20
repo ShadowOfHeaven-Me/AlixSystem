@@ -39,7 +39,7 @@ public final class BlockedPacketsMap {
 
     private static int countBytesToEncodeVarInt(int value) {
         int bytes = 1;
-        while ((value & -128) != 0) {//0x80
+        while ((value & -128) != 0) {//-128 is 0x80 in hex
             bytes++;
             value >>>= 7;
         }

@@ -22,6 +22,7 @@ final class JoinEventManager extends VirtualEventManager {
             UnverifiedUser user = Verifications.get(event.getPlayer());
             if (user != null) {//stop the event's invocation
                 user.originalJoinMessage = event.getJoinMessage();
+                //user.getPacketBlocker().getFallPhase().
                 event.setJoinMessage(null);
             } //else this.eventManager.invokeOriginalListeners(event);
         }

@@ -1,10 +1,8 @@
 package shadow.systems.login.captcha.subtypes;
 
-import alix.common.utils.other.annotation.Dependent;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerClearTitles;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.login.captcha.Captcha;
-import shadow.systems.login.captcha.manager.VirtualCountdown;
 import shadow.utils.misc.packet.constructors.OutTitlePacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.types.UnverifiedUser;
@@ -21,10 +19,10 @@ public final class SubtitleCaptcha extends Captcha {
     }*/
 
     @Override
-    @Dependent(clazz = VirtualCountdown.class, method = "#tick", reason = "Flush already invoked every 500 ms")
+    //@Dependent(clazz = VirtualCountdown.class, method = "#tick", reason = "Flush already invoked every 500 ms")
     public void sendPackets(UnverifiedUser user) {
         for (ByteBuf buf : buffers) user.writeSilently(buf);
-        //no flush, as specified in the @Dependent annotation
+        user.flush();
     }
 
     @Override

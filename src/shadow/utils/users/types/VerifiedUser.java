@@ -115,7 +115,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     @Override
     public int hashCode() {
-        return uuid.hashCode();
+        return this.uuid.hashCode();
     }
 
 /*    public boolean hasUUID(UUID uuid) {

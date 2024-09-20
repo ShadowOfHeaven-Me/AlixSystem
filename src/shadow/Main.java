@@ -49,36 +49,19 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //+ Added 2 Factor Authentication for mobile TOTP authentication apps (most preferably Google Authenticator)
-    //+ Added an experimental login feature for bedrock players. Please report any issues, if you encounter any
-    //+ Only the appropriate login commands will be displayed during login
-    //+ Added the possibility to require a password repeat at /register
-    //+ Added colors to Alix's console prefix on all server engines
-    //+ Enhanced colors used in console and the general imperfections
-    //+ Render distance will now always be 2 whenever possible on Paper servers
-    //* Deprecated 'particle' and 'map' captcha types
-    //+ Greatly enhanced VirtualFallPhase
-    //* Fixed a Geyser compatibility issue
-    //* Fixed failed join attempts still sometimes being logged into the console
-    //* Updated PacketEvents
+    //+ Login/Register reminder can now be a title
+    //* Fixed deadlock for captcha on bedrock players - they will now skip captcha entirely
+    //* Fixed non-english characters being unsupported even with 'support-all-chars' on true for single-argument /register and /login
+    //* Added proper handling for death and damage packets
+    //* Fixed items still sometimes being shown and sounds playing
+    //* Fixed all death and respawn related issues known so far
+    //* Fixed the possibility of setting a PIN secondary verification without
+    //* Added proper handling for not found users
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
     //todo: Add a custom data structure for unverified users
     //TODO: add book captcha possibility in config
-
-/*    #Defines whether the numerical digits generated on a captcha map item should be 'fancy'
-            #Turning this on, however, will require the captcha length to be 8 or less (due to how big the digits are)
-#It will also enlarge the required amount of calculations, that needs to be made on the captcha rendering
-    fancy-digits: false*/
-
-/*    #Defines the way the unregistered/not logged in players' actions will be restricted. Available: packet & teleport ('teleport' parameter is currently disabled)
-            #packet - cancels all unnecessary client packets until the player logs in or leaves (could false some anticheats or result in errors on older versions of minecraft - should be tested beforehand, however it could potentially work as a safety measure against a bot attack)
-#teleport - teleports the player to their starting position every 3 seconds (supports every version, however right now it's very buggy (the inventory can be modified before logging in) and definitely not recommended)
-            login-restrict-base: packet*/
-
-    /*#Defines (in milliseconds) the delay between each verification message sent (used for captcha, register and login message reminders, you can set it to 0 or less in order to make the message be sent only once)
-    verification-reminder-message-delay: 5000*/
 
     //TODO: /blacklist, mute-ip (?), ban format customizable
     //TODO: ping check by Keep Alive packets or the CraftPlayer getPing method (?)
@@ -129,18 +112,15 @@ public final class Main implements LoaderBootstrap {
     }
 
     @Override
-    public void onEnable() {//TODO: Player GUI in /js commands (texture not working & items can be picked up)
+    public void onEnable() {
         //AlixScheduler.repeatAsync(() -> logInfo("Size: " + Bukkit.getOnlinePlayers().size() + " Ver: " + UserManager.userCount()), 1L, TimeUnit.SECONDS);
         //AlixBungee.init();
         //ParticleRenderer3d.render();
-        /*if(Bukkit.getServer().getOnlineMode()) {
-            Main.logError("Online mode is enabled! Alix is now an offline mode only plugin!");
-        }*/
-
         PreStartUpExecutors preStartUpExecutors = new PreStartUpExecutors();
         pm.registerEvents(preStartUpExecutors, plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
+        //PacketCaptureManager.init();
         Hashing.init();//Making sure all the hashing algorithms exist by loading the Hashing class
         VerificationReminder.init();
         BukkitAnvilPasswordBuilder.init();
@@ -154,6 +134,7 @@ public final class Main implements LoaderBootstrap {
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         CommandManager.register();
         AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
+        if (Bukkit.getServer().getOnlineMode()) AlixScheduler.sync(() -> Main.logError("Online mode is enabled! Alix is now mainly an offline mode plugin! Bear that in mind!"));
         UserSemiVirtualization.init();
         //AlixScheduler.sync(UserVirtualization::init);
     }

@@ -27,7 +27,7 @@ public final class OriginalLocationsManager {
 
     public static Location getOriginalLocation(Player player) {
         Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
-        return originalLoc != null && !originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none (or in the captcha world) was found
+        return originalLoc != null && !originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none was found (or it was in the captcha world)
     }
 
     public static CompletableFuture<Boolean> teleportBack(Player player) {

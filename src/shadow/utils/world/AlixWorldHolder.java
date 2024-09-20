@@ -33,10 +33,10 @@ public final class AlixWorldHolder {//This class (like the bukkit Location class
             if (!world.getName().equals(AlixWorld.worldName))
                 return new WeakReference<>(world);
 
-        w = AlixWorld.CAPTCHA_WORLD;
+        //w = AlixWorld.CAPTCHA_WORLD;
         if (w == null) throw new AlixException("Couldn't find any worlds!");
 
-        return new WeakReference<>(w);//only our world is present
+        return new WeakReference<>(w);
     }
 
     private AlixWorldHolder() {

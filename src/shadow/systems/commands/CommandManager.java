@@ -1424,15 +1424,18 @@ public final class CommandManager {
             sendMessage(sender, passwordChanged);
             return;
         }
-        sendMessage(sender, reason);
+        sender.sendRawMessage(reason);
     }
 
     private static final class PasswordChangeCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-            //The AlixDuplexHandler handle the processing of this command.
-            //Only the console could've made the code here executed
+            /**
+             * The {@link shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor}
+             * should handle the processing of this command.
+             * Only the console could've made the code here executed
+             **/
             sender.sendMessage(commandUnreachable);
             return false;
         }
@@ -1461,21 +1464,22 @@ public final class CommandManager {
         else user.writeAndFlushDuplicateSilently(incorrectPasswordMessagePacket);
     }*/
 
-    public static void onAsyncLoginCommand(UnverifiedUser user, String password) {
+    public static boolean onAsyncLoginCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
             user.writeAndFlushConstSilently(captchaReminderMessagePacket);
-            return;
+            return false;
         }
         if (!user.isRegistered()) {
             user.writeAndFlushConstSilently(registerReminderMessagePacket);
-            return;
+            return false;
         }
         if (user.isPasswordCorrect(password)) {
             user.tryLogIn();
-            return;
+            return true;
         }
         if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
         else user.writeAndFlushConstSilently(incorrectPasswordMessagePacket);
+        return false;
     }
 
 /*    private static final class LoginCommand implements CommandExecutor {
@@ -1528,7 +1532,7 @@ public final class CommandManager {
 
             switch (a.length) {
                 case 1:
-                    tryRegister0(user, a[0]);//tolerate single password input, even if repeat is explicitly enabled in config
+                    tryRegisterIfValid(user, a[0]);//tolerate single password input, even if repeat is explicitly enabled in config
                     return;
                 case 2:
                     password = a[0];
@@ -1544,17 +1548,19 @@ public final class CommandManager {
 
         } else password = args;
 
-        tryRegister0(user, password);
+        tryRegisterIfValid(user, password);
     }
 
-    private static void tryRegister0(UnverifiedUser user, String password) {
+    //returns true if valid
+    public static boolean tryRegisterIfValid(UnverifiedUser user, String password) {
         String reason = getInvalidityReason(password, false);
         if (reason == null) {
             user.registerAsync(password);
             user.writeAndFlushConstSilently(passwordRegisterMessagePacket);
-            return;
+            return true;
         }
         user.sendDynamicMessageSilently(reason);
+        return false;
     }
 
 /*    private static final class RegisterCommand implements CommandExecutor {

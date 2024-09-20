@@ -2,7 +2,7 @@ package alix.common.utils.collections.map;
 
 import java.util.*;
 
-//Stores all that was added, but claims that it's an empty map
+//Stores all that was added, but claims it's an empty map
 //The stored contents can only be accessed via getStorage()
 public final class InvisibleStorageMap implements Map {
 

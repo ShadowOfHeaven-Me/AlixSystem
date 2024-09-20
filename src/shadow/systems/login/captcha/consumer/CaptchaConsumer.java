@@ -13,7 +13,6 @@ public interface CaptchaConsumer {
     //Location getLocation();
 
     static CaptchaConsumer adequateFor(UnverifiedUser user) {
-        if (user.hasCompletedCaptcha()) return null;
         return AbstractCaptchaConsumer.createFor0(user);
     }
 }

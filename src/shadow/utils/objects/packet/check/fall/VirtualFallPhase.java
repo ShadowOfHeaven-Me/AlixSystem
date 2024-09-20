@@ -16,8 +16,9 @@ import shadow.utils.world.AlixWorld;
 
 public final class VirtualFallPhase {
 
+    //private static final double MIN_Y = AlixWorld.TELEPORT_LOCATION.getY() - 10;
     private static final int NOT_FALLING_TELEPORT_ID = AlixUtils.getRandom(13456789, 34567898) + 96;// ;]
-    private static final int TIMEOUT = BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND * 10;//timeout the player after 10 seconds
+    private static final int TIMEOUT = BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND * 7;//timeout the player after 7 seconds
     public static final ByteBuf FALL_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_FALL_LOCATION, 10);
     public static final ByteBuf NOT_FALLING_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_LOCATION, NOT_FALLING_TELEPORT_ID);
     //private static final ByteBuf BARRIER = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, -1, 0), SpigotConversionUtil.fromBukkitBlockData(Material.DIRT.createBlockData()).getGlobalId()));
@@ -31,9 +32,10 @@ public final class VirtualFallPhase {
     //public static final ByteBuf FALL_CHECK_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, 100, 0));
     private final UnverifiedUser user;
     //private long sendTime;//, time;
+    //private long lastCorrectingTeleport;
     private int tillTimeout;
     private byte waitPackets;
-    private boolean packetsSent, tpConfirmReceived, firstPlayPacketReceived, blocksSent;
+    private boolean packetsSent, tpConfirmReceived, firstPlayPacketReceived, noCobwebSent, chunkSent;
 
     public VirtualFallPhase(UnverifiedUser user) {
         this.user = user;
@@ -52,46 +54,62 @@ public final class VirtualFallPhase {
         this.firstPlayPacketReceived = true;
     }
 
+    public void tpPosCorrect() {
+        this.user.writeAndFlushConstSilently(NOT_FALLING_TELEPORT);
+        //this.lastCorrectingTeleport = System.currentTimeMillis();
+    }
+
+    public void noCobwebSpoof() {
+        this.user.writeAndFlushConstSilently(NO_COBWEB);
+    }
+
     public void trySpoofPackets(PacketPlayReceiveEvent event) {
-        //Main.logError("PACKET COUNT: " + (waitPackets + 1));
-
+        //this.user.sendDynamicMessageSilently(AlixUtils.getFields(this));
+        //Main.logError(AlixUtils.getFields(this));
         if (tpConfirmReceived) {
-            //this.user.sendDynamicMessageSilently("TRY SPOOF: " +blocksSent + " " + waitPackets);
-
-            if (this.blocksSent) return;
+            if (this.noCobwebSent) return;
+            /*if (this.noCobwebSent) {
+                WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
+                if (flying.hasPositionChanged() && flying.getLocation().getY() < MIN_Y) {
+                    long now = System.currentTimeMillis();
+                    if (now - this.lastCorrectingTeleport < 5000)
+                        return;//try to prevent any exploits by limiting how often the correcting teleport can occur
+                    this.tpPosCorrect();
+                }
+                return;
+            }*/
 
             if (++this.waitPackets == 5) {
-                this.blocksSent = true;
-                //this.user.writeConstSilently(BARRIER1);
-                //this.user.writeAndFlushConstSilently(BARRIER2);
-                this.user.writeAndFlushConstSilently(NO_COBWEB);
-                //this.user.sendDynamicMessageSilently("HEHEHEHEH");
+                this.noCobwebSent = true;
+                this.noCobwebSpoof();
+                //this.user.sendDynamicMessageSilently("NO COBWEB");
             }
             return;
         }
 
         if (packetsSent) return;
 
-        //Main.logError("LOC: " + this.user.getPlayer().getLocation());
-        //if (++waitPackets == 3) user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
-
-        if (++this.waitPackets == 20) {
-            this.waitPackets = 0;
-            //Main.logError("REACHED AFTER " + (System.currentTimeMillis() - time));
-            this.packetsSent = true;
-            //this.user.writeAndFlushConstSilently(BARRIER);
-            //Main.logError("NOT FALLING TP");
-            this.user.writeAndFlushConstSilently(NOT_FALLING_TELEPORT);
-            //this.user.writeConstSilently(NO_COBWEB);
-
-
-            //this.user.getPlayer().stopSound(Sound.ENTITY_GENERIC_SMALL_FALL);//as much as it pains me, it can only be done this way for now
-            //this.user.getPlayer().stopSound(Sound.ENTITY_PLAYER_SMALL_FALL);
-            //this.sendTime = System.currentTimeMillis();
-            this.user.spoofVerificationPackets();
+        if (this.waitPackets != 20) {
+            this.waitPackets++;
+            return;
         }
+
+        if (!chunkSent) return;
+
+        this.waitPackets = 0;
+        this.packetsSent = true;
+        this.user.writeAndFlushConstSilently(NOT_FALLING_TELEPORT);
+        //this.user.writeConstSilently(NO_COBWEB);
+
+
+        //this.user.getPlayer().stopSound(Sound.ENTITY_GENERIC_SMALL_FALL);//as much as it pains me, it can only be done this way for now
+        //this.user.getPlayer().stopSound(Sound.ENTITY_PLAYER_SMALL_FALL);
+        this.user.spoofVerificationPackets();
     }
 
+    public void setChunkSent() {
+        this.chunkSent = true;
+    }
 
     //returns true if should be kicked out
 
@@ -105,21 +123,11 @@ public final class VirtualFallPhase {
         return !packetsSent;
     }
 
-    //TODO: Find out why in login this isn't ever invoked
-    //yeah, turns out because I only invoked it during the captcha part of code
-    //Nice.
     public void tpConfirm(PacketPlayReceiveEvent event) {
         if (tpConfirmReceived) return;
-        //long time = System.currentTimeMillis();
         WrapperPlayClientTeleportConfirm wrapper = new WrapperPlayClientTeleportConfirm(event);
         if (wrapper.getTeleportId() == NOT_FALLING_TELEPORT_ID) {
             this.tpConfirmReceived = true;
-            //this.user.sendDynamicMessageSilently("TP CONFIRM RECEIVED");
-            //this.user.writeAndFlushConstSilently(NO_COBWEB);
-            //Main.logError("NO COBWEB");
-            //int ping = (int) ((time - this.sendTime) >> 1);
-            //Main.logError("PING: " + ((time - this.sendTime) >> 1));
-            //Main.logError("TP CONFIRM");
         }
     }
 }

@@ -1,7 +1,7 @@
 package shadow.systems.commands.alix;
 
-import alix.common.utils.other.keys.str.CharArray;
 import alix.common.utils.other.annotation.AlixIntrinsified;
+import alix.common.utils.other.keys.str.CharArray;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.commands.CommandManager;

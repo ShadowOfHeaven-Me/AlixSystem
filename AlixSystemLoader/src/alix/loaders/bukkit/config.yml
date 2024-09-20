@@ -76,6 +76,12 @@ max-captcha-time: 45
 
 #Config used when the player is in the login phase, either trying to login in or register
 
+
+#Defines how the register/login message reminders should be presented
+#Available:
+# title - A title paired with a subtitle will be used
+# action_bar - An action bar message will be used
+verification-reminder-type: title
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)
 verification-blindness: true
 #Defines whether the registering user should have to repeat the password he's trying to set whilst registering
@@ -179,13 +185,17 @@ use-this-syntax: false
 language: en
 #Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
 custom-join-log: true
+#Defines which fallback location should be used if for some unknown reason, the player is destined to respawn in the verification world
+# true - The last saved location will be used or the Alix spawn (defined by /setspawn) if it's absent as well
+# false - The Alix spawn will be used
+use-last-location-as-fallback: true
 #As the name suggests, it will hide any failed join attempts (such as unlisted, banned players etc.) from the console in order to avoid spam
 hide-failed-join-attempts: true
 #Defines whether Alix should override other commands with it's own implementation (if set to true you can disable the ones you don't want in the commands.txt file)
 override-existing-commands: false
 #Defines (in seconds) in what period of time should the teleportation request automatically expire (set it to 0 or less if you want to disable it)
 tpa-auto-expire: 120
-#Prefix of the messages sent by this plugin.
+#Prefix of the messages sent by this plugin
 prefix: "&c[System] > &7"
 #Defines whether the prefix should be appended to messages sent by this plugin
 append-prefix: true
