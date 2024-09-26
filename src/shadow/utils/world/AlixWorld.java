@@ -44,7 +44,7 @@ public final class AlixWorld {
                 }
             }
         }
-        this.world.getBlockAt(0, 2, 0).setType(Material.COBWEB);
+        //this.world.getBlockAt(0, 2, 0).setType(Material.COBWEB);
     }
 
     private void forceloadSpawnChunks() {

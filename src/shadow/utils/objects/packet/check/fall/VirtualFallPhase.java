@@ -3,10 +3,8 @@ package shadow.utils.objects.packet.check.fall;
 import alix.common.utils.other.annotation.ScheduledForFix;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import io.netty.buffer.ByteBuf;
-import org.bukkit.Material;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.buffered.BufferedPackets;
 import shadow.utils.misc.packet.constructors.OutPositionPacketConstructor;
@@ -22,7 +20,7 @@ public final class VirtualFallPhase {
     public static final ByteBuf FALL_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_FALL_LOCATION, 10);
     public static final ByteBuf NOT_FALLING_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_LOCATION, NOT_FALLING_TELEPORT_ID);
     //private static final ByteBuf BARRIER = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, -1, 0), SpigotConversionUtil.fromBukkitBlockData(Material.DIRT.createBlockData()).getGlobalId()));
-    private static final ByteBuf NO_COBWEB = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I, SpigotConversionUtil.fromBukkitBlockData(Material.AIR.createBlockData()).getGlobalId()));
+    //private static final ByteBuf NO_COBWEB = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I, SpigotConversionUtil.fromBukkitBlockData(Material.AIR.createBlockData()).getGlobalId()));
 
     //private static final ByteBuf BARRIER1 = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I, SpigotConversionUtil.fromBukkitBlockData(Material.BARRIER.createBlockData()).getGlobalId()));
     //private static final ByteBuf BARRIER2 = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, 1, 0), SpigotConversionUtil.fromBukkitBlockData(Material.BARRIER.createBlockData()).getGlobalId()));
@@ -47,9 +45,12 @@ public final class VirtualFallPhase {
         //this.user.writeAndFlushConstSilently(FALL_CHECK_TELEPORT);
     }
 
+    private static final ByteBuf PLAYER_ABILITIES_FALL_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.0f, 0.0f));//default: fovModifier = 0.1f, flySpeed = 0.05f
+
     public void playPhase() {
         if (firstPlayPacketReceived) return;
 
+        this.user.writeConstSilently(PLAYER_ABILITIES_FALL_PACKET);
         this.user.writeAndFlushConstSilently(FALL_TELEPORT);
         this.firstPlayPacketReceived = true;
     }
@@ -60,15 +61,16 @@ public final class VirtualFallPhase {
     }
 
     public void noCobwebSpoof() {
-        this.user.writeAndFlushConstSilently(NO_COBWEB);
+        //this.user.writeAndFlushConstSilently(NO_COBWEB);
     }
 
     public void trySpoofPackets(PacketPlayReceiveEvent event) {
         //this.user.sendDynamicMessageSilently(AlixUtils.getFields(this));
         //Main.logError(AlixUtils.getFields(this));
-        if (tpConfirmReceived) {
+
+/*        if (tpConfirmReceived) {
             if (this.noCobwebSent) return;
-            /*if (this.noCobwebSent) {
+            *//*if (this.noCobwebSent) {
                 WrapperPlayClientPlayerFlying flying = new WrapperPlayClientPlayerFlying(event);
                 if (flying.hasPositionChanged() && flying.getLocation().getY() < MIN_Y) {
                     long now = System.currentTimeMillis();
@@ -77,7 +79,7 @@ public final class VirtualFallPhase {
                     this.tpPosCorrect();
                 }
                 return;
-            }*/
+            }*//*
 
             if (++this.waitPackets == 5) {
                 this.noCobwebSent = true;
@@ -85,7 +87,7 @@ public final class VirtualFallPhase {
                 //this.user.sendDynamicMessageSilently("NO COBWEB");
             }
             return;
-        }
+        }*/
 
         if (packetsSent) return;
 

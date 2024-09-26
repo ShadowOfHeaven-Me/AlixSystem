@@ -49,19 +49,6 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //+ Login/Register reminder can now be a title
-    //+ Added an account limiter ignore list
-    //+ Added a "Remember Me" for bedrock players
-    //+ Added the possibility to configure ip autologin expiry time
-    //* Fixed deadlock for captcha on bedrock players - they will now skip captcha entirely
-    //* Fixed the possibility of setting a PIN secondary verification without
-    //* Fixed non-english characters being unsupported even with 'support-all-chars' on true for single-argument /register and /login
-    //* Added proper handling for death and damage packets
-    //* Fixed items still sometimes being shown and sounds playing
-    //* Fixed all death and respawn related issues known so far
-    //* Fixed "Too short!" being shown for invalid character feedback in passwords
-    //* Added proper handling for not found users
-
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
     //todo: Add a custom data structure for unverified users

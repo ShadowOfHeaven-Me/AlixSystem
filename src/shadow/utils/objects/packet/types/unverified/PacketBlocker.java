@@ -318,6 +318,7 @@ public class PacketBlocker implements PacketProcessor {
             case UPDATE_VIEW_POSITION:
             case SPAWN_POSITION:*/
             case PLAYER_ABILITIES:
+            case UPDATE_ATTRIBUTES:
             case DEATH_COMBAT_EVENT://fix for death
             case UPDATE_HEALTH://fix for death and damage
             case SPAWN_PLAYER:

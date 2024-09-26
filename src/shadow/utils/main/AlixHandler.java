@@ -132,6 +132,7 @@ public final class AlixHandler {
     private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(1)));//default: fovModifier = 0.1f, flySpeed = 0.05f
 
     public static void sendLoginEffectsPackets(UnverifiedUser user) {
+        //user.writeDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.INVISIBILITY, 255, 999999999, (byte) 0));
         user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
         user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
         //user.writeAndFlushDynamicSilently(new WrapperPlayServerUpdateAttributes(user.getPlayer().getEntityId(), Collections.singletonList(new WrapperPlayServerUpdateAttributes.Property(Attributes.GENERIC_MOVEMENT_SPEED, ))));
