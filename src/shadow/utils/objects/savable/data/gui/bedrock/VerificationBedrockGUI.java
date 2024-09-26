@@ -1,7 +1,10 @@
 package shadow.utils.objects.savable.data.gui.bedrock;
 
 import alix.common.data.LoginType;
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
 import alix.common.messages.Messages;
+import alix.common.utils.other.throwable.AlixException;
 import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.response.CustomFormResponse;
 import org.geysermc.floodgate.api.player.FloodgatePlayer;
@@ -23,7 +26,8 @@ public final class VerificationBedrockGUI implements AlixBedrockVerificationGui 
             aboveInputLogin = Messages.get("bedrock-login-above-input"),
             loginInput = Messages.get("bedrock-login-input"),
             registerInput = Messages.get("bedrock-register-input"),
-            registerInputRepeat = Messages.get("bedrock-register-input-repeat");
+            registerInputRepeat = Messages.get("bedrock-register-input-repeat"),
+            rememberMe = Messages.get("bedrock-remember-me");
     private final UnverifiedUser user;
     private final FloodgatePlayer player;
     private final CustomForm form;
@@ -38,24 +42,37 @@ public final class VerificationBedrockGUI implements AlixBedrockVerificationGui 
 
     private void inputRegister(CustomFormResponse response) {
         String arg1 = response.asInput(0);
-        if (requirePasswordRepeatInRegister) {
-            String arg2 = response.asInput(1);
-            if (!arg1.equals(arg2)) {
-                this.user.writeAndFlushConstSilently(registerPasswordsDoNotMatchMessagePacket);
-                this.open();
-                return;
-            }
+
+        this.register0(arg1, response.asToggle(1));
+    }
+
+    private void inputRegisterRepeat(CustomFormResponse response) {
+        String arg1 = response.asInput(0);
+        String arg2 = response.asInput(1);
+
+        if (!arg1.equals(arg2)) {
+            this.user.writeAndFlushConstSilently(registerPasswordsDoNotMatchMessagePacket);
+            this.open();
+            return;
         }
-        if (!CommandManager.tryRegisterIfValid(this.user, arg1)) this.open();
+        this.register0(arg1, response.asToggle(2));
+    }
+
+    private void register0(String password, boolean autoLogin) {
+        if (CommandManager.tryRegisterIfValid(this.user, password)) {
+            PersistentUserData data = UserFileManager.get(this.user.getPlayer().getName());//since UnverifiedUser#getData is null
+            if (data == null) throw new AlixException("Null data after bedrock register! Report this immediately!");
+            data.getLoginParams().setIpAutoLogin(autoLogin);
+        } else this.open();//invalid password
     }
 
     private void inputLogin(CustomFormResponse response) {
         String arg1 = response.asInput(0);
-        if (!CommandManager.onAsyncLoginCommand(this.user, arg1)) this.open();
-    }
+        boolean autoLogin = response.asToggle(1);
 
-    public void open() {
-        this.player.sendForm(this.form);
+        if (CommandManager.onAsyncLoginCommand(this.user, arg1)) {
+            this.user.getData().getLoginParams().setIpAutoLogin(autoLogin);
+        } else this.open();//incorrect password
     }
 
     private static CustomForm constructRegister(VerificationBedrockGUI gui) {
@@ -64,13 +81,15 @@ public final class VerificationBedrockGUI implements AlixBedrockVerificationGui 
                     .title(registerTitle)
                     .input(aboveInputRegister, registerInput)
                     .input(aboveInputRegisterRepeat, registerInputRepeat)
-                    .validResultHandler(gui::inputRegister)
+                    .toggle(rememberMe, false)
+                    .validResultHandler(gui::inputRegisterRepeat)
                     .closedOrInvalidResultHandler(gui::open)
                     .build();
         }
         return CustomForm.builder()
                 .title(registerTitle)
                 .input(aboveInputRegister, registerInput)
+                .toggle(rememberMe, false)
                 .validResultHandler(gui::inputRegister)
                 .closedOrInvalidResultHandler(gui::open)
                 .build();
@@ -80,9 +99,14 @@ public final class VerificationBedrockGUI implements AlixBedrockVerificationGui 
         return CustomForm.builder()
                 .title(loginTitle)
                 .input(aboveInputLogin, loginInput)
+                .toggle(rememberMe, false)
                 .validResultHandler(gui::inputLogin)
                 .closedOrInvalidResultHandler(gui::open)
                 .build();
+    }
+
+    private void open() {
+        this.player.sendForm(this.form);
     }
 
     @Override

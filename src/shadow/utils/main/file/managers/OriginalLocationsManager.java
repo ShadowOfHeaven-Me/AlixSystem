@@ -47,7 +47,7 @@ public final class OriginalLocationsManager {
     public static void onAsyncSave() {
         try {
             file.save();
-            Main.debug(AlixUtils.isPluginLanguageEnglish ? "Successfully saved original-locations.txt file!" : "Poprawnie zapisano plik original-locations.txt!");
+            Main.logDebug(AlixUtils.isPluginLanguageEnglish ? "Successfully saved original-locations.txt file!" : "Poprawnie zapisano plik original-locations.txt!");
         } catch (IOException e) {
             e.printStackTrace();
             Main.logWarning(AlixUtils.isPluginLanguageEnglish ? "Could not save original-locations.txt file! Some information could be lost!" : "Nie udało się zapisać pliku original-locations.txt! Pewne informacje mogły zostać utracone!");

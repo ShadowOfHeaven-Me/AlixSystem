@@ -24,6 +24,7 @@ bedrock-register-above-input-repeat: Confirm Password
 bedrock-register-input: Register with password
 bedrock-register-input-repeat: Repeat your password
 bedrock-register-title: Register
+bedrock-remember-me: Remember Me
 captcha-already-completed: &cYou have already completed the captcha test!
 captcha-complete: &aCaptcha test has been completed. You may now register using /register <password>
 captcha-complete-register-password-repeat: &aCaptcha test has been completed. You may now register using /register <password> <password>
@@ -195,6 +196,7 @@ login-success: &aYou've successfully logged in!
 login-time-passed: &cYou took too long to log in!
 max-homes-reached: &cMax numbers of homes has already been reached by you! ({0})
 movement-forbidden-captcha: &cMoving around during the captcha verification is forbidden!
+movement-forbidden-captcha-chat: &cDo not move around during captcha verification!
 muted-forever: Muted {0} forever!
 muted-self: &cYou're muted!
 muted-time: &7Muted {0} until {1}
@@ -211,7 +213,7 @@ not-logged-in-reminder: &cPlease type /login <password>
 online-player-list: Online Player List ({0} Currently Online)
 packet-limit-reached-verification: &c[AntiBot] You've sent too many total packets!
 password-changed: &aSuccessfully changed your password!
-password-invalid-character: Invalid character {0}!
+password-invalid-character-invalid: Invalid character: '{0}'!
 password-invalid-gui: &cINVALID PASSWORD
 password-invalid-too-long: Too long!
 password-invalid-too-short: Too short!

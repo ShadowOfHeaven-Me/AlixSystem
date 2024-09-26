@@ -56,10 +56,10 @@ public final class UnverifiedUser implements AlixUser {
     public final ByteBufHarvester bufHarvester;
     private final ChannelHandlerContext silentContext;
     //A captcha future that is very likely to be already finished, but we do not have the certainty that it is.
-    //It is also very likely to be completed if generated at runtime for a user before it is accessed, and even if
+    //It is also very likely to be completed if generated at runtime for a user before access. Even if
     //accessed before completion, the captcha generation takes less than 35 ms (for a map captcha) and has already been started before
     //AlixFuture#whenCompleted was invoked, so it will take even less. More than that, all consumer acceptance
-    //is done async to the currently executing thread (if specified, currently on the eventLoop).
+    //is done async to the currently executing thread
     private final AlixFuture<Captcha> captchaFuture;
     private final ScheduledFuture<?> reminderTask;
     //private final PacketInterceptor duplexHandler;
@@ -124,7 +124,7 @@ public final class UnverifiedUser implements AlixUser {
 
         if (player.isDead()) this.onSyncDeath();
 
-        this.captchaFuture = this.captchaInitialized ? Captcha.nextCaptcha(this) : null;//Fast captcha get and request for a new captcha generation or null if disabled
+        this.captchaFuture = this.captchaInitialized ? Captcha.nextCaptcha() : null;//Fast captcha get and request for a new captcha generation or null if disabled
         this.verificationMessage = VerificationMessage.createFor(this);
 
         if (isBedrock) this.alixGui = PasswordGui.newBuilderBedrock(this, bedrockPlayer);
@@ -179,15 +179,17 @@ public final class UnverifiedUser implements AlixUser {
     }
 
     public void uninject() {//reverses back all changes (but does not teleport back)
-        //if (captchaInitialized) captcha.uninject(this);
+        //release allocated
         if (captchaInitialized) this.captchaFuture.whenCompleted(Captcha::release);
         this.reminderTask.cancel(true);
         this.verificationMessage.destroy();
-
-        //give back the effects
-        this.potionEffectHandler.returnEffects();
-
         if (this.alixGui != null) this.alixGui.destroy();
+
+        //return collidable state
+        this.player.setCollidable(this.originalCollidableState);
+
+        //give back potion effects
+        this.potionEffectHandler.returnEffects();
     }
 
     public boolean isBedrock() {
@@ -435,6 +437,7 @@ public final class UnverifiedUser implements AlixUser {
 
     private void logIn0() {
         this.writeAndFlushConstSilently(loginSuccessMessagePacket);//invoked here, since the this::initDoubleVer can prevent this method from being invoked
+        this.data.updateLastSuccessfulLoginTime();
         UserManager.addVerifiedUser(player, data, this.getIPAddress(), retrooperUser, silentContext);//invoked before onSuccessfulVerification to remove UnverifiedUser from UserManager, to indicate that he's verified
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
@@ -482,6 +485,7 @@ public final class UnverifiedUser implements AlixUser {
     private void register0(String password) {//the common part
         //AlixScheduler.async(() -> {
         PersistentUserData data = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext);
+        data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);

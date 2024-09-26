@@ -13,7 +13,6 @@ import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRemoveEntityEffect;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTimeUpdate;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.epoll.EpollServerSocketChannel;
@@ -109,7 +108,7 @@ public final class AlixHandler {
     }*/
 
     private static final boolean sendBlindness = CaptchaVisualType.shouldSendBlindness();
-    private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
+    //private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
 
 /*
     static {
@@ -117,6 +116,12 @@ public final class AlixHandler {
     }
 */
 
+    private static float getScope(double level) {
+        if (level < 1 || level > 10) {
+            throw new IllegalArgumentException("1..10, found " + level);
+        }
+        return (float) (1.0 / (20 / level - 10)); // checking for division by zero is not needed here, Java gives Infinity when dividing by zero. ABILITIES packet correctly understands the meaning of Infinity
+    }
     //private static final ByteBuf VER_POS = NettyUtils.constBuffer(new WrapperPlayServerPo);
     //SpigotConversionUtil.
 
@@ -124,11 +129,12 @@ public final class AlixHandler {
     slowness = 2
     jump boost = 8
     */
-    private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.05f, 0.1f));
+    private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(1)));//default: fovModifier = 0.1f, flySpeed = 0.05f
 
     public static void sendLoginEffectsPackets(UnverifiedUser user) {
         user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
         user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
+        //user.writeAndFlushDynamicSilently(new WrapperPlayServerUpdateAttributes(user.getPlayer().getEntityId(), Collections.singletonList(new WrapperPlayServerUpdateAttributes.Property(Attributes.GENERIC_MOVEMENT_SPEED, ))));
         //user.sendDynamicMessageSilently("GAMEMODE SPOOOOOOOF");
         //user.writeAndFlushConstSilently(TIME_NIGHT);
 
@@ -280,7 +286,7 @@ public final class AlixHandler {
             }
         }
         logger.addFilter(AlixConsoleFilterHolder.INSTANCE);
-        Main.debug(isPluginLanguageEnglish ? "Successfully added AlixConsoleFilter to console!" :
+        Main.logDebug(isPluginLanguageEnglish ? "Successfully added AlixConsoleFilter to console!" :
                 "Poprawnie zaimplementowano AlixConsoleFilter dla konsoli! ");
     }
 
@@ -316,7 +322,7 @@ public final class AlixHandler {
                 UserManager.addVerifiedUser(p, user).writeAndFlushConstSilently(autoLoginMessageBuffer);
                 return null;
             default:
-                throw new AssertionError("Invalid verdict: " + login.getVerdict());
+                throw new AlixError("Invalid verdict: " + login.getVerdict());
         }
     }
 

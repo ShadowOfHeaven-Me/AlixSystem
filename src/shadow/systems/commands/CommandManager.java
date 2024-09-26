@@ -731,7 +731,7 @@ public final class CommandManager {
                         sendMessage(sender, playerDataNotFound, arg1);
                         return false;
                     }
-                    long time = getProcessedTime(args[1]);
+                    long time = getProcessedTimePlusNow(args[1]);
                     data.setMutedUntil(time);
                     sendMessage(sender, mutedTime, arg1, getFormattedDate(new Date(time)));
                 }

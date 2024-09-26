@@ -4,6 +4,7 @@ import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.ConnectionFilter;
 import alix.common.data.PersistentUserData;
+import alix.common.data.file.AllowListFileManager;
 import alix.common.data.file.UserFileManager;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -32,8 +33,7 @@ public final class OfflineExecutors extends UniversalExecutors {
 
     //private final LoginAuthenticator authenticator = PremiumAutoIn.support;
     private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
-    private final String
-            playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
+    private final String playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
     //serverIsFull = Messages.get("server-is-full");
     //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
 
@@ -69,7 +69,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
 
         if (isAlreadyOnline(name)) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, playerAlreadyOnlineMessage);
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, this.playerAlreadyOnlineMessage);
             return;
         }
 
@@ -248,6 +248,7 @@ public final class OfflineExecutors extends UniversalExecutors {
                 FireWallManager.onAsyncSave();
                 IpsCacheFileManager.save();
                 UserTokensFileManager.save();
+                AllowListFileManager.save();
             });
         }
     }

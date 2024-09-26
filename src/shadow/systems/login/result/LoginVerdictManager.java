@@ -83,6 +83,8 @@ public final class LoginVerdictManager {
         //Main.logError("CREATED A VERDICT: " + info.getVerdict().readableName());
     }
 
+    private static final boolean sessionExpireEnabled = AlixUtils.autoLoginExpiry > 0;
+
     private static LoginVerdict getVerdict(InetAddress ip, PersistentUserData data) {
         if (data == null)//not registered - no data
             return LoginVerdict.DISALLOWED_NO_DATA;
@@ -90,10 +92,16 @@ public final class LoginVerdictManager {
         if (!data.getPassword().isSet())//not registered - password was reset
             return LoginVerdict.DISALLOWED_PASSWORD_RESET;
 
-        if (!AlixUtils.forcefullyDisableIpAutoLogin && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip))//ip auto login
+        if (!AlixUtils.forcefullyDisableIpAutoLogin && isSessionNotExpired(data) && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip))//ip auto login
             return LoginVerdict.IP_AUTO_LOGIN;
 
         return LoginVerdict.DISALLOWED_LOGIN_REQUIRED; //not logged in
+    }
+
+    private static boolean isSessionNotExpired(PersistentUserData data) {
+        //Main.logError("SES " + sessionExpireEnabled + " LAST SUCC " + data.getLastSuccessfulLogin() + " EXPIRY " + AlixUtils.autoLoginExpiry + " TIME: " + System.currentTimeMillis());
+        return !sessionExpireEnabled ||
+                data.getLastSuccessfulLogin() + AlixUtils.autoLoginExpiry > System.currentTimeMillis();//sessionExpireEnabled must be true here
     }
 
 /*    public static TemporaryUser getNullable(UUID uuid) {

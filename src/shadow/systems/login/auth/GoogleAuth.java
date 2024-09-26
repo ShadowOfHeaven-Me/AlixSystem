@@ -52,7 +52,7 @@ public final class GoogleAuth {
             }
             for (int x = -1; x <= 1; x++) {
                 for (int z = -1; z <= 1; z++) {
-                    QR_CODE_TP_LOC.asModifiableCopy().add(x, -2, z).getBlock().setType(Material.BARRIER);
+                    QR_CODE_TP_LOC.asModifiableCopy().add(x, -1, z).getBlock().setType(Material.BARRIER);
                 }
             }
         });

@@ -24,7 +24,7 @@ public class WarpsFile extends FileManager {
     public void save(Map<?, ?> map) {
         try {
             super.save(map);
-            Main.debug(AlixUtils.isPluginLanguageEnglish ? "Successfully saved warps.yml file!" : "Poprawnie zapisano plik warps.yml!");
+            Main.logDebug(AlixUtils.isPluginLanguageEnglish ? "Successfully saved warps.yml file!" : "Poprawnie zapisano plik warps.yml!");
         } catch (IOException e) {
             e.printStackTrace();
             Main.logWarning(AlixUtils.isPluginLanguageEnglish ? "Could not save warps.yml file! Some information could be lost!" : "Nie udało się zapisać pliku warps.yml! Pewne informacje mogły zostać utracone!");

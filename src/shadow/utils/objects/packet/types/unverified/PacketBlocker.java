@@ -27,6 +27,7 @@ import shadow.systems.login.captcha.manager.VirtualCountdown;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.check.fall.VirtualFallPhase;
 import shadow.utils.objects.packet.map.BlockedPacketsMap;
@@ -57,7 +58,7 @@ public class PacketBlocker implements PacketProcessor {
     //protected static final PacketAffirmator affirmator = AlixHandler.createPacketAffirmatorImpl();
     //private static final PingCheckFactory factory = AlixHandler.createPingCheckFactoryImpl();
     private static final int maxMovementPackets = 120 + AlixUtils.maxLoginTime + (AlixUtils.requireCaptchaVerification ? AlixUtils.maxCaptchaTime : 0);//It's not used whenever captcha verification is disabled, but whatever, it can stay this way for now
-    private static final int correctingTpMovementPackets = 50;
+    private static final int correctingTpMovementPackets = 80;
     private static final int maxTotalPackets = maxMovementPackets + 100;
 
     //private static final boolean initLoginTask = maxLoginTime >= 3;
@@ -375,6 +376,14 @@ public class PacketBlocker implements PacketProcessor {
 
     protected final void onSendCaptchaVerification(PacketPlaySendEvent event) {
         switch (event.getPacketType()) {
+            case UPDATE_ATTRIBUTES: {
+                /*this.user.writeAndFlushDynamicSilently(new WrapperPlayServerUpdateAttributes(user.getPlayer().getEntityId(),
+                        Collections.singletonList(new WrapperPlayServerUpdateAttributes.Property(Attributes.GENERIC_MOVEMENT_SPEED, -1,
+                                Collections.singletonList(new WrapperPlayServerUpdateAttributes.PropertyModifier(UUID.randomUUID(), -1, WrapperPlayServerUpdateAttributes.PropertyModifier.Operation.ADDITION))))));
+                */
+                event.setCancelled(true);
+                return;
+            }
             case CHUNK_DATA:
             case CHUNK_BATCH_BEGIN:
             case CHUNK_BIOMES:
@@ -410,7 +419,6 @@ public class PacketBlocker implements PacketProcessor {
             case UPDATE_HEALTH://fix for death and damage
             case SET_EXPERIENCE:
             case SPAWN_PLAYER:
-            case UPDATE_ATTRIBUTES:
                 //case TIME_UPDATE:
             case TITLE:
             case SET_TITLE_SUBTITLE:
@@ -469,6 +477,8 @@ public class PacketBlocker implements PacketProcessor {
         if (AlixUtils.isDebugEnabled) cause.printStackTrace();
     }*/
 
+    private static final ByteBuf movementForbiddenCaptchaChat = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("movement-forbidden-captcha-chat"));
+
     private void onReceiveCaptchaVerification(PacketPlayReceiveEvent event) {
         //Main.logInfo(event.getPacketType() + " ");
         switch (event.getPacketType()) {
@@ -486,7 +496,10 @@ public class PacketBlocker implements PacketProcessor {
 
                 long now = System.currentTimeMillis();
 
-                if (this.movementPackets == correctingTpMovementPackets) this.virtualFallPhase.tpPosCorrect();
+                if (this.movementPackets == correctingTpMovementPackets) {
+                    this.user.writeConstSilently(movementForbiddenCaptchaChat);
+                    this.virtualFallPhase.tpPosCorrect();
+                }
 
                 if (now - this.lastMovementPacket > 995) {//the user is standing still
                     this.movementPackets--;

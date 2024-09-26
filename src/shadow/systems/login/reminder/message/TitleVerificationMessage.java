@@ -1,6 +1,7 @@
 package shadow.systems.login.reminder.message;
 
 import alix.common.messages.Messages;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerClearTitles;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
@@ -16,7 +17,10 @@ import static shadow.utils.main.AlixUtils.maxLoginTime;
 final class TitleVerificationMessage extends AbstractVerificationMessage {
 
     private static final ByteBuf emptyActionBar = OutMessagePacketConstructor.constructConst(Component.empty(), true);
-    private static final ByteBuf resetTitleConstBuffer = NettyUtils.constBuffer(new WrapperPlayServerClearTitles(true));
+    private static final ByteBuf[] resetTitleConstBuffers =
+            NettyUtils.exists(PacketType.Play.Server.CLEAR_TITLES) ?
+            new ByteBuf[]{NettyUtils.constBuffer(new WrapperPlayServerClearTitles(true))} :
+            OutTitlePacketConstructor.constructConst("","", 0, 0, 0);
     private static final ByteBuf[]
             loginTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-login-title"), Messages.get("reminder-login-subtitle"), 0, maxLoginTime * 60, 0),
             registerTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-register-title"), AlixUtils.requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle"), 0, maxLoginTime * 60, 0);
@@ -63,18 +67,19 @@ final class TitleVerificationMessage extends AbstractVerificationMessage {
 
         ByteBuf[] bufs = this.user.isRegistered() ? loginTitleConstBuffer : registerTitleConstBuffer;
 
-        this.user.writeAllAndThenFlushConstSilently(bufs);
+        this.user.writeAllConstAndThenFlushSilently(bufs);
     }
 
     @Override
     public void spoof() {//invoked only for captcha action bar reminders
-        if (this.rawCaptchaMsgBuffer != null) this.user.writeAndFlushRaw(this.rawCaptchaMsgBuffer);
+        ByteBuf buf = this.rawCaptchaMsgBuffer;
+        if (buf != null) this.user.writeAndFlushRaw(buf);
         //throw new AlixError("spoof() invoked on TitleVerificationMessage");
     }
 
     @Override
     public void clearEffects() {
-        this.user.writeAndFlushConstSilently(resetTitleConstBuffer);
+        this.user.writeAllConstAndThenFlushSilently(resetTitleConstBuffers);
     }
 
     @Override

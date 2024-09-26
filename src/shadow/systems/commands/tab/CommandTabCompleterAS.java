@@ -37,7 +37,9 @@ public final class CommandTabCompleterAS implements TabCompleter {
     }
 
     private List<String> getASCommands() {
-        List<String> list = Arrays.asList("user", "abstats", "rp", "resetpassword", "valueof", "constants", "info", "calculate", "average", "randommath", "help", "helpmath");// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
+        List<String> list = Arrays.asList(
+                "user", "abstats", "rp", "resetpassword", "valueof", "constants",
+                "info", "calculate", "average", "randommath", "help", "helpmath","bypasslimit","bypasslimit-remove","bl","bl-r");// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
         list = new ArrayList<>(list);
         //if (ServerPingManager.isRegistered()) list.add("pings");
         Collections.sort(list);

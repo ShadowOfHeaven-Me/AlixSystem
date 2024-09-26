@@ -5,7 +5,6 @@ import shadow.Main;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
 import shadow.systems.login.captcha.manager.VirtualCountdown;
 import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
-import shadow.systems.login.captcha.subtypes.ConstReCaptcha;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.types.UnverifiedUser;
 
@@ -51,8 +50,8 @@ public abstract class Captcha {
         if (AlixUtils.requireCaptchaVerification) captchaPool.uninjectAll();
     }
 
-    public static AlixFuture<Captcha> nextCaptcha(UnverifiedUser user) {
-        return user.isBedrock() ? ConstReCaptcha.BEDROCK_RECAPTCHA : captchaPool.poll();
+    public static AlixFuture<Captcha> nextCaptcha() {
+        return captchaPool.poll();
     }
 
 /*    public static void unregister() {

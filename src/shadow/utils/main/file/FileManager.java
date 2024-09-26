@@ -2,6 +2,7 @@ package shadow.utils.main.file;
 
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.data.file.AllowListFileManager;
 import alix.common.messages.Messages;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.file.managers.IpsCacheFileManager;
@@ -34,6 +35,7 @@ public abstract class FileManager extends AlixFileManager {
             WarpFileManager.initialize();
             OriginalLocationsManager.init();
             SpawnFileManager.initialize();
+            AllowListFileManager.init();
             Main.logInfo(AlixUtils.isPluginLanguageEnglish ? "All files were successfully loaded!" : "Poprawnie wczytano wszystkie pliki!");
         } catch (IOException e) {
             Main.logError("An error occurred whilst trying to load a file! (" + e.getMessage() + ")");
@@ -49,5 +51,6 @@ public abstract class FileManager extends AlixFileManager {
         UserTokensFileManager.save();
         WarpFileManager.save();
         SpawnFileManager.save();
+        AllowListFileManager.save();
     }
 }

@@ -97,12 +97,6 @@ public final class Hashing {
         @Override
         public String hash(String s) {
             byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
-            int mask = bytes.length - 1;
-            byte[] bytesToHash = new byte[16];
-
-            for (byte i = 0; i < 16; i++) bytesToHash[i] = bytes[i & mask];
-
-            return uuidBitHash(bytesToHash);
         }
 
         @Override

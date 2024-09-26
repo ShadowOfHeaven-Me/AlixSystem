@@ -2,6 +2,9 @@ package shadow.systems.commands;
 
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.data.LoginType;
+import alix.common.data.PersistentUserData;
+import alix.common.data.file.AllowListFileManager;
+import alix.common.data.file.UserFileManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -15,11 +18,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.alix.ABStats;
-import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
-import alix.common.data.file.UserFileManager;
-import alix.common.data.PersistentUserData;
+import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.users.UserManager;
 
 import java.util.Date;
@@ -38,61 +39,28 @@ public final class AdminAlixCommands implements CommandExecutor {
             String arg1 = args[0].toLowerCase();
             if (l > 1) {
                 String arg2 = args[1];
-                switch (arg1) {/*
-                    case "setowner": {
-                        if (isOmnipotent(sender)) {
-                            sendMessage(sender, "You can only set the Owner by Console or by already being an Owner!");
-                            return false;
+                switch (arg1) {
+                    case "bl":
+                    case "bypasslist":
+                    case "bypasslimit": {
+                        if (AllowListFileManager.has(arg2)) {
+                            sendMessage(sender, "&cName '" + arg2 + " is already on the account limit bypass list!");
+                            return true;
                         }
-                        Player p = Bukkit.getPlayer(arg2);
-                        if (p == null) {
-                            sendMessage(sender, "&cPlayer " + arg2 + " has to be online to set his Ownership!");
-                            return false;
-                        }
-                        getUser(p).setOwner(
+                        AllowListFileManager.add(arg2);
+                        sendMessage(sender, "Added name '" + arg2 + " to the account limit bypass list!");
                         break;
-                    }*/
-/*                    case "skin": {
-                        if (isConsoleButPlayerRequired(sender)) break;
-                        Player p = (Player) sender;
-                        JsonObject texture = parseTexture(arg2);
-                        if (texture == null) {
-                            sendMessage(sender, "&cTexture not found!");
-                            return false;
+                    }
+                    case "bl-r":
+                    case "bypasslist-remove":
+                    case "bypasslimit-remove": {
+                        if (AllowListFileManager.remove(arg2)) {
+                            sendMessage(sender, "Removed name '" + arg2 + " from the account limit bypass list!");
+                            return true;
                         }
-                        setSkin(p, texture);
-                        sendMessage(sender, "&6Skin successfully changed!");
+                        sendMessage(sender, "&cName '" + arg2 + " is not on the account limit bypass list!");
                         break;
-                    }*/
-                    /*case "incognito": {
-                        if (isConsoleButPlayerRequired(sender)) break;
-                        Player p = (Player) sender;
-                        JsonObject texture = parseTexture(arg2);
-                        if (texture == null) {
-                            sendMessage(sender, "&cSkin not found!");
-                            return false;
-                        }
-
-                        setSkin(p, texture);
-                        String nickname = null;
-                        switch (l) {
-                            case 2:
-                                nickname = CustomNameHolder.generateRandomNickname();
-                                break;
-                            case 3:
-                                nickname = CustomNameHolder.generateRandomNickname(isPluginLanguageEnglish, random.nextBoolean());
-                                break;
-                            case 4:
-                                nickname = CustomNameHolder.generateRandomNickname(isPluginLanguageEnglish, checkBooleanString(args[3], p));
-                                break;
-                            default:
-                                sendMessage(sender, "&cTry /as help!");
-                                break;
-                        }
-                        setName(p, nickname);
-                        sendMessage(sender, "&6Your identity is now: " + nickname);
-                        break;
-                    }*/
+                    }
                     case "rp":
                     case "resetpassword": {
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -125,11 +93,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                         } else sendMessage(sender, "Successfully reset the password of the player " + arg2 + ".");
                     }
                     break;
-                    case "user": {/*
-                        if (!isOmnipotent(sender)) {
-                            sendMessage(sender, "&cError! Console or Owner permission level required! Try /as help!");
-                            return false;
-                        }*/
+                    case "user": {
                         AlixScheduler.async(() -> {
                             OfflinePlayer offlinePlayer = getOfflinePlayer(arg2);
                             if (offlinePlayer == null) {
@@ -158,10 +122,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                                     authApp = "&cDisabled";
                                     break;
                                 case AUTH_APP:
-                                    authApp = "&aEnabled - Just app";
+                                    authApp = "&aEnabled - Just Auth App";
                                     break;
                                 case PASSWORD_AND_AUTH_APP:
-                                    authApp = "&aEnabled - App and in-game passwords";
+                                    authApp = "&aEnabled - Auth App and in-game password" + (dVer ? "s" : "");
                                     break;
                                 default:
                                     throw new AlixError("Invalid - " + data.getLoginParams().getAuthSettings());
@@ -287,16 +251,21 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "");
                     break;
                 case "help":
-                    sendMessage(sender, "");
+                    sendMessage(sender, "");//bypasslimit-remove
                     sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
                     sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
                     sendMessage(sender, "&c/as abstats &7- Enables or disables the ability to view the AntiBot Statistics.");
+                    sendMessage(sender, "&c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list." +
+                            " Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.");
+                    sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
-                    sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
-                            "by executing this command in console.");
-                    sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, " +
-                            "by executing this command in console.");
+                    if (isOperatorCommandRestricted) {
+                        sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
+                                "by executing this command in console.");
+                        sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, " +
+                                "by executing this command in console.");
+                    }
                     sendMessage(sender, "&c/as helpmath &7- Lists alix commands related to math.");
                     sendMessage(sender, "");
 /*                        dispatch(sender, "&c/as median <numbers> &7- " +

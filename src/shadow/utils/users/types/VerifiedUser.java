@@ -39,6 +39,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
         //Main.logError("VERIFIED MADE");
         this.player = player;
         this.data = data;
+        //this.data.updateLastSuccessfulLoginTime();
         this.retrooperUser = retrooperUser;
         this.silentContext = silentContext;
         this.uuid = player.getUniqueId();

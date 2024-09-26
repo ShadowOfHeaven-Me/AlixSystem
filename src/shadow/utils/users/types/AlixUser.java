@@ -106,7 +106,7 @@ public interface AlixUser {
         this.getChannel().flush();
     }
 
-    default void writeAllAndThenFlushConstSilently(ByteBuf[] bufs) {
+    default void writeAllConstAndThenFlushSilently(ByteBuf[] bufs) {
         for (ByteBuf buf : bufs) {
             this.writeConstSilently(buf);
         }

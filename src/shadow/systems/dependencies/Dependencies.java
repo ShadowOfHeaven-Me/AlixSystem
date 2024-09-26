@@ -36,6 +36,12 @@ public final class Dependencies {
         return FloodgateAccess.getBedrockPlayer(player);
     }
 
+    @NotNull
+    public static String getCorrectUsername(Channel channel, @NotNull String forNull) {
+        if (!isFloodgatePresent) return forNull;
+        return FloodgateAccess.getCorrectUsername(channel);
+    }
+
     public static boolean isBedrock(@NotNull Channel channel) {
         return isFloodgatePresent && FloodgateAccess.isBedrock(channel);
     }

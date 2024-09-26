@@ -29,7 +29,7 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
         this.packets = completedCaptcha ? BufferedPackets.loginOutExperiencePackets : BufferedPackets.captchaOutExperiencePackets;
     }
 
-    //can be optimized via caching raw packets or moving it to be an action bar message
+    //can be optimized by caching raw packets or moving it to be an action bar message
     @OptimizationCandidate
     public void tick() {
         //Main.logError("TICKKKKK");

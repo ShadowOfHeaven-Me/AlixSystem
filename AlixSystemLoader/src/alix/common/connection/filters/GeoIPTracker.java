@@ -1,5 +1,6 @@
 package alix.common.connection.filters;
 
+import alix.common.data.file.AllowListFileManager;
 import alix.common.messages.Messages;
 import alix.common.utils.config.ConfigParams;
 
@@ -28,14 +29,14 @@ public final class GeoIPTracker implements ConnectionFilter {
                 : "Osiągnąłeś limit kont! (" + maximumTotalAccounts + ")";*/
 
 
-    public static boolean disallowJoin(InetAddress ip) {//counts both: existing accounts and unregistered players currently on the server with that ip
+    public static boolean disallowJoin(InetAddress ip, String name) {//counts both: existing accounts and unregistered players currently on the server with that ip
         //CommonAlixMain.logInfo(tempIPCounter.getAccountsOf(address) + " " + getAccountsOf(address));
-        return initialized && INSTANCE.getAccountsOf(ip) >= ConfigParams.maximumTotalAccounts;//invoked only if registered, so non-negatives to negative comparison won't occur
+        return initialized && !AllowListFileManager.has(name) && INSTANCE.getAccountsOf(ip) >= ConfigParams.maximumTotalAccounts;//invoked only if registered, so non-negatives to negative comparison won't occur
     }
 
     @Override
     public boolean disallowJoin(InetAddress ip, String strAddress, String name) {
-        return disallowJoin(ip);
+        return disallowJoin(ip, name);
     }
 
     @Override

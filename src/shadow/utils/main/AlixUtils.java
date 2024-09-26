@@ -57,6 +57,7 @@ public final class AlixUtils {
     public static final CaptchaVisualType captchaVerificationVisualType;
     public static final float doubledDefaultWalkSpeed, doubledDefaultFlySpeed;
     //public static final long verificationReminderDelay;
+    public static final long autoLoginExpiry;
     public static final int maximumTotalAccounts, maxCaptchaTime, maxLoginTime, maxLoginAttempts, maxCaptchaAttempts;//, lowestTeleportableYLevel;
     public static final byte captchaLength;
     public static final boolean isOperatorCommandRestricted, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
@@ -68,7 +69,7 @@ public final class AlixUtils {
     private static final String
             tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
             tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
-            invalidCharacterMessage = Messages.getWithPrefix("password-invalid-too-short");
+            invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character-invalid");
 
     static {
         FileConfiguration config = Main.config;
@@ -161,6 +162,8 @@ public final class AlixUtils {
         //pluginLanguage = getPluginLanguage(language););
         isPluginLanguageEnglish = !language.equals("pl");
         anvilPasswordGui = ConfigParams.defaultLoginType == LoginType.ANVIL;
+        autoLoginExpiry = getProcessedTime(config.getString("autologin-expiry"));
+        //Main.debug("EXPIRY: " + autoLoginExpiry);
         captchaVerificationType = CaptchaType.from(captchaType.toUpperCase());
         captchaVerificationVisualType = CaptchaVisualType.from(captchaVisualType.toUpperCase());
         //renderFancyCaptchaDigits = config.getBoolean("fancy-digits") && captchaVerificationType == CaptchaType.NUMERIC;
@@ -175,12 +178,12 @@ public final class AlixUtils {
             Main.logWarning("The default captcha length must be less than 6! 5 will be used instead, as default.");
             captchaLength0 = 5;
         }
+        captchaLength = captchaLength0;
         //}
         registerCommandList = new ExecutableCommandList(config.getStringList("after-register-commands"));
         loginCommandList = new ExecutableCommandList(config.getStringList("after-login-commands"));
         autoRegisterCommandList = new ExecutableCommandList(config.getStringList("after-auto-register-commands"));
         autoLoginCommandList = new ExecutableCommandList(config.getStringList("after-auto-login-commands"));
-        captchaLength = captchaLength0;
         forcefullyDisableIpAutoLogin = config.getBoolean("forcefully-disable-auto-login");
         captchaVerificationCaseSensitive = config.getBoolean("captcha-case-sensitive");
         //verificationReminderDelay = config.getLong("verification-reminder-message-delay");
@@ -1014,7 +1017,12 @@ public final class AlixUtils {
     }
 
     public static Date getProcessedDate(String a) {
-        return new Date(getProcessedTime(a));
+        return new Date(getProcessedTimePlusNow(a));
+    }
+
+    public static long getProcessedTimePlusNow(String a) {
+        //The Given Time * Unit + The Current Moment
+        return getProcessedTime(a) + System.currentTimeMillis();
     }
 
     public static long getProcessedTime(String a) {
@@ -1025,8 +1033,8 @@ public final class AlixUtils {
             if (d < 48 || d > 57) lettersOnly.append(d);
             else numbersOnly.append(d);
         }
-        //The Given Time * Unit + The Current Moment
-        return parsePureLong(numbersOnly.toString()) * getTimeUnitMultiplier(lettersOnly.toString()) + System.currentTimeMillis();
+        //The Given Time * Unit
+        return parsePureLong(numbersOnly.toString()) * getTimeUnitMultiplier(lettersOnly.toString());
     }
 
 /*    public static String getTextWithNumbersOnly(String a) {

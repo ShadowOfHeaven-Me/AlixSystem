@@ -303,7 +303,6 @@ public final class AlixChannelHandler {
         return channel.attr(JOINED_WITH_IP).get();
     }
 
-    //private static final AttributeKey<?> floodgate_player = Dependencies.isFloodgatePresent ? AttributeKey.valueOf("floodgate-player") : null;
 
     //Thanks onechris ;]
     //https://github.com/onebeastchris/GeyserPackSync/blob/master/common%2Fsrc%2Fmain%2Fjava%2Fnet%2Fonebeastchris%2Fgeyserpacksync%2Fcommon%2Futils%2FFloodgateUtil.java#L12-L15
@@ -334,7 +333,7 @@ public final class AlixChannelHandler {
             return;
         }
 
-        String name = Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + nameInPacket : nameInPacket;
+        String name = Dependencies.getCorrectUsername(channel, nameInPacket); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + nameInPacket : nameInPacket;
         //String name = nameInPacket;
 
         //AlixScheduler.async(() -> (?)
@@ -348,7 +347,7 @@ public final class AlixChannelHandler {
                 return;
             }
 
-            if (GeoIPTracker.disallowJoin(user.getAddress().getAddress())) {
+            if (GeoIPTracker.disallowJoin(user.getAddress().getAddress(), name)) {
                 NettyUtils.closeAfterConstSend(channel, maxTotalAccountsPacket);
                 event.setCancelled(true);
                 return;

@@ -92,6 +92,8 @@ require-password-repeat-in-register: false
 #If set to false, only english characters will be seen as valid by the verifying user. Any other character range will be shown in red as invalid. However, when
 # password repeat in /register is enabled, the second password argument will differ in color, making it more distinguishable
 command-support-all-characters: true
+#Defines how long (in the given unit) should an ip autologin session be valid for. Any unit can be used, for example 10m, 72h, 14d, 1 month. This parameter does not account for decimal places. Set to 0 or less disables this logic.
+autologin-expiry: 0
 #Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users). This value is used as the default if the given user does not specify it himself.
 auto-login: true
 #Defines whether the ip autologin should be forcefully disabled. This option overrides the user's /account settings
@@ -212,7 +214,7 @@ op-command-password: ILikePie
 
 #Config used for the very technical features of this plugin
 
-#Defines whether during verification all entity packets should be prevented from being sent to the user. If set to false, only packets about other players will be blocked, and all other entities will be shown. Leaving this at 'true' is the more optimized option.
+#Defines whether during verification all entity packets should be stopped from being sent to the user. If set to false, only packets about other players will be blocked, and all other entities will be shown. Leaving this at 'true' is slightly more optimized.
 filter-all-entity-packets: true
 #(Deprecated)
 #Checks the server's compatibility with Alix and gives feedback in the console right after enabling

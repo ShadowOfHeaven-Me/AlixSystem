@@ -55,6 +55,18 @@ public final class PacketEventsManager {
 
             //Main.logInfo("PACKET IN: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
 
+            /*if (event.getPacketType() == PacketType.Configuration.Client.CLIENT_SETTINGS) {
+                Main.logError("SETTINGS: " + AlixUtils.getFields(new WrapperConfigClientSettings(event)));
+            }*/
+
+            /*if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS) {
+                Main.logError("SETTINGS2: " + AlixUtils.getFields(new WrapperPlayClientSettings(event)));
+            }*/
+/*            if (event.getPacketType() == PacketType.Play.Client.PLAYER_ABILITIES) {
+                Main.logError("ABILITIES: " + AlixUtils.getFields(new WrapperPlayClientPlayerAbilities(event)));
+            }*/
+
+
             AlixUser user;
 
             if (event.getClass() == PacketPlayReceiveEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null) {

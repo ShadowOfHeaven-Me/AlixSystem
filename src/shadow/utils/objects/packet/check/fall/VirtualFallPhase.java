@@ -94,17 +94,17 @@ public final class VirtualFallPhase {
             return;
         }
 
-        if (!chunkSent) return;
+        //if (!chunkSent) return;
 
         this.waitPackets = 0;
         this.packetsSent = true;
+        this.user.spoofVerificationPackets();
         this.user.writeAndFlushConstSilently(NOT_FALLING_TELEPORT);
         //this.user.writeConstSilently(NO_COBWEB);
 
 
         //this.user.getPlayer().stopSound(Sound.ENTITY_GENERIC_SMALL_FALL);//as much as it pains me, it can only be done this way for now
         //this.user.getPlayer().stopSound(Sound.ENTITY_PLAYER_SMALL_FALL);
-        this.user.spoofVerificationPackets();
     }
 
     public void setChunkSent() {

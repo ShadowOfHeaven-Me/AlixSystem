@@ -69,6 +69,6 @@
     <orderEntry type="library" name="spigot-1.12.2" level="project" />
     <orderEntry type="library" name="Geyser-Spigot" level="project" />
     <orderEntry type="library" name="floodgate-spigot" level="project" />
-    <orderEntry type="library" name="packetevents-spigot-2.5.0-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="packetevents-spigot-2.5.0" level="project" />
   </component>
 </module>

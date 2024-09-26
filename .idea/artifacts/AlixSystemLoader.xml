@@ -10,7 +10,7 @@
       <element id="extracted-dir" path="$USER_HOME$/Downloads/core-3.4.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$USER_HOME$/Downloads/totp-1.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$USER_HOME$/Downloads/javase-3.4.0.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/packetevents-spigot-2.5.0-SNAPSHOT.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$USER_HOME$/Downloads/packetevents-spigot-2.5.0.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

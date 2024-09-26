@@ -4,6 +4,7 @@ package shadow.utils.netty;
 import alix.common.utils.other.annotation.ScheduledForFix;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -88,6 +89,14 @@ public final class NettyUtils {
     }*/
 
     //ByteBufAllocator.DEFAULT.buffer();
+
+   /* public static <T extends PacketWrapper> boolean exists(Class<T> clazz) {
+        WrapperPlayServerClearTitles.class.
+    }*/
+
+    public static boolean exists(PacketTypeCommon type) {
+        return type.getId(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion()) != -1;
+    }
 
     public static void writeDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
         AlixUser.DEBUG_TIME();

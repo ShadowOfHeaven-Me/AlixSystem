@@ -28,7 +28,8 @@ final class ActionBarVerificationMessage extends AbstractVerificationMessage {
 
     @Override
     public void spoof() {
-        if (this.rawVerificationMessageBuffer != null) this.user.writeAndFlushRaw(this.rawVerificationMessageBuffer);
+        ByteBuf buf = this.rawVerificationMessageBuffer;
+        if (buf != null) this.user.writeAndFlushRaw(buf);
     }
 
     @Override

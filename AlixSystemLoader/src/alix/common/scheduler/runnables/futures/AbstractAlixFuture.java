@@ -52,10 +52,10 @@ abstract class AbstractAlixFuture<T> implements AlixFuture<T>, Runnable {
         }
 
         @Override
-        public void whenCompleted(Consumer<T> consumer, Executor withExecutor) {
+        public void whenCompleted(Consumer<T> consumer, Executor executor) {
             this.consumer = consumer;
-            if (this.value != null) withExecutor.execute(() -> this.consumer.accept(this.value));
-            else this.executor = withExecutor;
+            if (this.value != null) executor.execute(() -> this.consumer.accept(this.value));
+            else this.executor = executor;
         }
 
         @Override
@@ -69,7 +69,7 @@ abstract class AbstractAlixFuture<T> implements AlixFuture<T>, Runnable {
         }
     }
 
-    //Creates a future, where the #whenCompleted methods override the current Consumer (and optionally Executor)
+    //Creates a future, where #whenCompleted invocation overrides the current Consumer (and optionally Executor)
     static <T> AlixFuture<T> newSingleFuture(Executor e, Supplier<T> s) {
         return new SingleFuture<>(e, s);
     }
