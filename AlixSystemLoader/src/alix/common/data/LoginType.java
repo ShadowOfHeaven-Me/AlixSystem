@@ -1,8 +1,8 @@
 package alix.common.data;
 
 import alix.common.AlixCommonMain;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
 
 public enum LoginType {
 

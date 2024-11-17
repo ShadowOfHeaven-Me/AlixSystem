@@ -17,14 +17,14 @@ public final class SmoothCaptcha extends Captcha {
 
     public SmoothCaptcha() {
         BufferedImage image = CaptchaImageGenerator.generateCaptchaImageX256(captcha, maxRotation, false, false);
-        this.buffers = ImageRenderer.smoothModelBuffers(image, 256);
+        this.buffers = ImageRenderer.smoothModelBuffers(image);
     }
 
     @Override
     public void sendPackets(UnverifiedUser user) {
         this.released.set(true);
         //created to spread out the packet sending, even just a bit
-        user.writeAndFlushWithThresholdSilently(this.buffers, Math.min(this.buffers.length / 5 + 1, 100));
+        user.writeAndFlushWithThresholdSilently(this.buffers, Math.max(this.buffers.length / 5 + 1, 100));
         //Main.logInfo("SENT CAPTCHAAA " + buffers.length);
     }
 
@@ -39,5 +39,10 @@ public final class SmoothCaptcha extends Captcha {
     public void release() {
         if (this.released.compareAndSet(false, true))
             for (ByteBuf buf : buffers) buf.release();
+    }
+
+    @Override
+    protected boolean isReleased() {
+        return this.released.get();
     }
 }

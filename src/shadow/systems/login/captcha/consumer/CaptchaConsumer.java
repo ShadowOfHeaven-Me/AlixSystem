@@ -1,14 +1,13 @@
 package shadow.systems.login.captcha.consumer;
 
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.util.Vector3f;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import shadow.utils.users.types.UnverifiedUser;
 
 public interface CaptchaConsumer {
 
     void onMove(PacketPlayReceiveEvent event);
 
-    void onClick(Vector3f clickVector);
+    void onClick();
 
     //Location getLocation();
 

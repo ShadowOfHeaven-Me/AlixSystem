@@ -372,19 +372,19 @@ public final class CommandManager {
             registerCommand("gamemode", new GamemodeSwitchCommand());
             registerCommand("list", new OnlinePlayersListCommand());
             registerCommand("nickname", new NickNameCommand());
-            if (isOfflineExecutorRegistered) {
-                //if (requireCaptchaVerification)
-                //registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
 
-                /**
-                 * Logic moved to {@link shadow.utils.misc.command.CommandsPacketConstructor}
-                 **/
-                //registerPermissionlessCommandForcibly("register", new RegisterCommand());
-                //registerPermissionlessCommandForcibly("login", new LoginCommand());
+            //if (requireCaptchaVerification)
+            //registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
 
-                registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
-                registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
-            }
+            /**
+             * Logic moved to {@link shadow.utils.misc.command.CommandsPacketConstructor}
+             **/
+            //registerPermissionlessCommandForcibly("register", new RegisterCommand());
+            //registerPermissionlessCommandForcibly("login", new LoginCommand());
+
+            registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
+            registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
+
             registerCommand("unban", new UnbanCommand(), new NameBanCommandTabCompleter());
             registerCommand("unbanip", new UnbanIPCommand(), new IPBanCommandTabCompleter());
             registerCommand("tempban", new TemporaryBanCommand());
@@ -1394,8 +1394,8 @@ public final class CommandManager {
     public static void onCaptchaCompletionAttempt(UnverifiedUser user, String captcha) {
         //Main.logError("INPUT: '" + captcha + "'");
         if (user.isCaptchaCorrect(captcha)) {
+            user.writeConstSilently(captchaCompleteMessagePacket);
             user.completeCaptcha();
-            user.writeAndFlushConstSilently(captchaCompleteMessagePacket);
             return;
         }
         if (++user.captchaAttempts == maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);

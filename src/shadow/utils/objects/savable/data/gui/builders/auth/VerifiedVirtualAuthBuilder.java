@@ -1,10 +1,10 @@
 package shadow.utils.objects.savable.data.gui.builders.auth;
 
 import alix.common.messages.Messages;
-import com.github.retrooper.packetevents.protocol.sound.Sound;
-import com.github.retrooper.packetevents.protocol.sound.Sounds;
-import com.github.retrooper.packetevents.util.Vector3i;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import alix.libs.com.github.retrooper.packetevents.protocol.sound.Sound;
+import alix.libs.com.github.retrooper.packetevents.protocol.sound.Sounds;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3i;
+import alix.libs.io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.misc.packet.constructors.OutSoundPacketConstructor;

@@ -1,8 +1,9 @@
 package shadow.utils.math;
 
 
-import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.util.Vector3d;
+import alix.common.utils.other.throwable.AlixException;
+import alix.libs.com.github.retrooper.packetevents.protocol.world.Location;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -11,6 +12,30 @@ import java.util.List;
 public final class MathUtils {
 
     private static final CircleFastMath circleMath = CircleFastMath.circleFastMath;
+
+    public static float gcd(float a, float b) {
+        return b == 0 ? a : gcd(b, a % b);
+    }
+
+    public static float round(float val, int decimals) {
+        int pow = pow(10, decimals);
+        val *= pow;
+        float i = (int) val;
+        return i / pow;
+    }
+
+    //returns a^b (a to the power of b)
+    public static int pow(int a, int b) {
+        if (b < 0) throw new AlixException("Invalid a^b for b=" + b + ", for domain b >= 0." );
+        int r = 1;
+        int tmp = a;
+        while (b != 0) {
+            if ((b & 1) == 1) r *= tmp;
+            tmp *= tmp;
+            b >>= 1;
+        }
+        return r;
+    }
 
     public static Vector3d getFacedLocation(Location l, double distance) {
         return l.getPosition().add(getDirection(l).normalize().multiply(distance));

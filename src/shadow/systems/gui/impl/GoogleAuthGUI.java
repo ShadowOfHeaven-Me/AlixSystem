@@ -51,7 +51,6 @@ public final class GoogleAuthGUI extends AlixGUI {
         setLore(showQRCodeItem, loreQRCode);
 
         applyChangesItem = rename(AlixMaterials.GREEN_CONCRETE.getItemCloned(), Messages.get("gui-google-auth-apply-changes"));
-        ;
     }
 
     //private final VerifiedUser user;

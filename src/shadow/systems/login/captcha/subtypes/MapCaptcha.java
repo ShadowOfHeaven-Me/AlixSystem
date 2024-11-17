@@ -30,6 +30,11 @@ public final class MapCaptcha extends ItemBasedCaptcha {
         //no flush, as specified in the @Dependent annotation
     }
 
+    @Override
+    protected boolean isReleased() {
+        return false;
+    }
+
     private static ItemStack generateNewCaptchaMapItem() {
         ItemStack item = new ItemStack(Material.FILLED_MAP);
         MapMeta meta = (MapMeta) item.getItemMeta();

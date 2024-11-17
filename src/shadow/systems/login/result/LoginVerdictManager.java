@@ -2,7 +2,7 @@ package shadow.systems.login.result;
 
 import alix.common.data.PersistentUserData;
 import alix.common.login.LoginVerdict;
-import com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerPreLoginEvent;
@@ -55,9 +55,10 @@ public final class LoginVerdictManager {
         //fix for floodgate, could be erroneous
         //@ScheduledForFix
         //String prefix = Dependencies.FLOODGATE_PREFIX;
-        String nameFixed = name; //prefix != null && name.startsWith(prefix) ? name.substring(prefix.length()) : name;
 
-        User user = UserManager.removeConnecting(nameFixed);//name
+        //String nameFixed = name; //prefix != null && name.startsWith(prefix) ? name.substring(prefix.length()) : name;
+
+        User user = UserManager.removeConnecting(name);//name
 
         //Main.logError("NAME IN EVENT: " + name);
 

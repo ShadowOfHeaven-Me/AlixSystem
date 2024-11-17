@@ -48,9 +48,13 @@ public final class LoginParams {
         return password.toSavable() + ";" + extraPassword.toSavable();
     }
 
-    public String settingsToSavable() {
-        if (extraLoginType == null) return loginType + "|" + ipAutoLogin;
-        return loginType + ";" + extraLoginType + "|" + ipAutoLogin;
+    public String loginTypesToSavable() {
+        if (extraLoginType == null) return String.valueOf(loginType);
+        return loginType + ";" + extraLoginType;
+    }
+
+    public String ipAutoLoginToSavable() {
+        return String.valueOf(ipAutoLogin);
     }
 
     public String authSettingsToSavable() {

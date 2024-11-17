@@ -1,3 +1,4 @@
+/*
 package shadow.systems.bungee;
 
 import alix.common.data.Password;
@@ -21,8 +22,10 @@ public final class AlixBungee {
 
     public static void init() {
         if (!isEnabled) return;
-        /*Bukkit.getMessenger().registerIncomingPluginChannel(Main.plugin, ID_TAG, new Interpreter());
-        Bukkit.getMessenger().registerOutgoingPluginChannel(Main.plugin, ID_TAG);*/
+        */
+/*Bukkit.getMessenger().registerIncomingPluginChannel(Main.plugin, ID_TAG, new Interpreter());
+        Bukkit.getMessenger().registerOutgoingPluginChannel(Main.plugin, ID_TAG);*//*
+
     }
 
     private static final class Interpreter implements PluginMessageListener {
@@ -40,4 +43,4 @@ public final class AlixBungee {
             throw new AlixException("Intention from Bungee " + intention.name() + " is not readable!");
         }
     }
-}
+}*/

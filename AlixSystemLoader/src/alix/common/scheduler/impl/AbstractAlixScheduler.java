@@ -4,6 +4,7 @@ import alix.common.AlixCommonMain;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.scheduler.tasks.SchedulerTask;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.other.throwable.AlixException;
 
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -16,6 +17,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
     //For now disabled \/
     //TO DO: Fix errors not being logged with AlixCommonUtils.logException(Exception) when ThreadPoolExecutor is used
     protected AbstractAlixScheduler() {
+        //ThreadFactory virtualThreadFactory = VirtualThreadUtil.virtualThreadFactory(ForkJoinPool.defaultForkJoinWorkerThreadFactory);
         int parallelisms = 2;//Math.max(Runtime.getRuntime().availableProcessors(), 2);//at least two threads
         AlixCommonMain.logInfo("Async scheduler parallelisms: " + parallelisms);
         //parallelisms == 1 ?//no need to create a ForkJoinPool for only one thread
@@ -61,7 +63,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
             this.poolExecutor.shutdown();
             this.poolExecutor.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new AlixException(e);
         }
     }
 

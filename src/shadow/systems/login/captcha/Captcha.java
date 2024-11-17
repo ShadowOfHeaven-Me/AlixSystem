@@ -1,7 +1,10 @@
 package shadow.systems.login.captcha;
 
+import alix.common.data.file.UserFileManager;
 import alix.common.scheduler.runnables.futures.AlixFuture;
+import io.netty.channel.Channel;
 import shadow.Main;
+import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.captcha.manager.CaptchaPoolManager;
 import shadow.systems.login.captcha.manager.VirtualCountdown;
 import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
@@ -25,6 +28,12 @@ public abstract class Captcha {
         //VerificationThreadManager.initialize();
     }
 
+    //returns whether a user with the given parameters is deemed to have completed his captcha test
+    public static boolean hasCompletedCaptcha(String name, Channel channel) {
+        return UserFileManager.hasName(name) ||//is registered
+                Dependencies.isBedrock(channel);//is a bedrock player
+    }
+
     public static void sendInitMessage() {
         Main.logInfo(AlixUtils.isPluginLanguageEnglish ?
                 "Pre-generated the captcha pool with the size " + CaptchaPoolManager.maxSize + "."
@@ -32,6 +41,8 @@ public abstract class Captcha {
     }
 
     public abstract void sendPackets(UnverifiedUser user);
+
+    protected abstract boolean isReleased();
 
     public void release() {
     }
@@ -45,13 +56,24 @@ public abstract class Captcha {
 
     //private static final Object errorKickPacket = OutDisconnectKickPacketConstructor.constructAtPlayPhase("§cSomething went wrong");
 
-
     public static void cleanUp() {
         if (AlixUtils.requireCaptchaVerification) captchaPool.uninjectAll();
     }
 
     public static AlixFuture<Captcha> nextCaptcha() {
         return captchaPool.poll();
+    }
+
+    //Recycles not shown captchas to reduce overhead during stress tests
+    public static void uninject(AlixFuture<Captcha> future) {
+        Captcha captcha = future.value();
+        if (captcha == null) {//incredibly unlikely, the future hasn't completed yet
+            captchaPool.recycle(future);
+            return;
+        }
+        if (captcha.isReleased()) return;//can't recycle a used captcha
+
+        captchaPool.recycle(future.isCompletedFutureType() ? future : AlixFuture.completedFuture(captcha));
     }
 
 /*    public static void unregister() {

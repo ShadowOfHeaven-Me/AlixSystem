@@ -6,7 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/AlixSystemBungeeSupport/AlixSystemBungeeSupport.iml" filepath="$PROJECT_DIR$/AlixSystemBungeeSupport/AlixSystemBungeeSupport.iml" />
       <module fileurl="file://$PROJECT_DIR$/AlixSystemLoader/AlixSystemLoader.iml" filepath="$PROJECT_DIR$/AlixSystemLoader/AlixSystemLoader.iml" />
       <module fileurl="file://$PROJECT_DIR$/AlixSystemVelocitySupport/AlixSystemVelocitySupport.iml" filepath="$PROJECT_DIR$/AlixSystemVelocitySupport/AlixSystemVelocitySupport.iml" />
-      <module fileurl="file://$USER_HOME$/eclipse-workspace/GradleCheckin/GradleCheckin.iml" filepath="$USER_HOME$/eclipse-workspace/GradleCheckin/GradleCheckin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GradleCheckin.jmh.iml" filepath="$PROJECT_DIR$/.idea/modules/GradleCheckin.jmh.iml" />
     </modules>
   </component>
 </project>

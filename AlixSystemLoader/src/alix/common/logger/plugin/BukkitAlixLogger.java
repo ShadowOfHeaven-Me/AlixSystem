@@ -1,6 +1,6 @@
 package alix.common.logger.plugin;
 
-import com.github.retrooper.packetevents.util.ColorUtil;
+import alix.libs.com.github.retrooper.packetevents.util.ColorUtil;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 

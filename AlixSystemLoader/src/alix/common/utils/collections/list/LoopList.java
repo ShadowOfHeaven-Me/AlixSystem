@@ -1,5 +1,6 @@
 package alix.common.utils.collections.list;
 
+import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixException;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,6 +86,7 @@ public abstract class LoopList<T> {
         return this.get(this.previousIndex());
     }
 
+    @OptimizationCandidate
     public final void drain(int size, Consumer<T> consumer) {
         for (int i = 0; i < size; i++) {
             //AlixCommonMain.logError("AAAAAA " + i + " " + this.get(i) + " " + size);
@@ -211,7 +213,6 @@ public abstract class LoopList<T> {
 
     private static final class ConcurrentLoopList<T> extends LoopList<T> {
 
-
         private final AtomicInteger currentIndex = new AtomicInteger();
 
         private ConcurrentLoopList(Object[] values) {
@@ -267,6 +268,7 @@ public abstract class LoopList<T> {
             AtomicArrayUtil.setElement(this.values, index, value);
         }
 
+        //not sure whether this is correct
         @Override
         void lazySet(int index, Object value) {
             this.values[index] = value;

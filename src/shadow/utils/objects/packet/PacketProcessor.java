@@ -1,7 +1,7 @@
 package shadow.utils.objects.packet;
 
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 
 public interface PacketProcessor {
 

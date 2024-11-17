@@ -30,7 +30,7 @@ public abstract class FileManager extends AlixFileManager {
         try {
             Messages.init();
             UserFileManager.init();
-            FireWallManager.init();
+            if (AlixUtils.antibotService) FireWallManager.init();
             IpsCacheFileManager.init();
             WarpFileManager.initialize();
             OriginalLocationsManager.init();
@@ -47,7 +47,7 @@ public abstract class FileManager extends AlixFileManager {
     public static void saveFiles() {
         UserFileManager.fastSave();
         OriginalLocationsManager.fastSave();
-        FireWallManager.fastSave();
+        if (AlixUtils.antibotService) FireWallManager.fastSave();
         UserTokensFileManager.save();
         WarpFileManager.save();
         SpawnFileManager.save();

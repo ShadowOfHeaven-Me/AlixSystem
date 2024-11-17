@@ -1,9 +1,6 @@
 package shadow.systems.login.autoin;
 
 import org.bukkit.event.Listener;
-import shadow.Main;
-import shadow.systems.executors.fastlogin.FastLoginExecutors;
-import shadow.systems.login.autoin.fastlogin.FastLoginAuth;
 
 public final class AuthAPI {
 
@@ -16,7 +13,7 @@ public final class AuthAPI {
     }
 
     public static AuthAPI getAuthenticatorAPI() {
-        if (Main.pm.isPluginEnabled("FastLogin")) return new AuthAPI(new FastLoginAuth(), new FastLoginExecutors());
+        //if (Main.pm.isPluginEnabled("FastLogin")) return new AuthAPI(new FastLoginAuth(), new FastLoginExecutors());
         return null;
     }
 

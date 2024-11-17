@@ -1,6 +1,6 @@
 package shadow.systems.netty.exception;
 
-import com.github.retrooper.packetevents.exception.PacketProcessException;
+import alix.libs.com.github.retrooper.packetevents.exception.PacketProcessException;
 import io.netty.handler.codec.DecoderException;
 
 final class PE_ExValidatorImpl implements ExceptionValidator {

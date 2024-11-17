@@ -1,6 +1,6 @@
 package shadow.utils.misc.packet.buffered;
 
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetExperience;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetExperience;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.netty.NettyUtils;

@@ -1,43 +1,33 @@
 package alix.common.utils.collections.queue;
 
-import alix.common.utils.other.annotation.ScheduledForFix;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
-@ScheduledForFix
-public final class ConcurrentAlixDeque<T> extends AlixDeque<T> {
+public final class ConcurrentAlixDeque<T> implements AlixQueue<T> {
 
-    //Any modifications are synchronized
-    private final Object lock;
+    private final ConcurrentLinkedQueue<T> queue;
 
     public ConcurrentAlixDeque() {
-        this(false);
-    }
-
-    public ConcurrentAlixDeque(boolean internalLock) {
-        this.lock = internalLock ? new Object() : this;
-    }
-
-    public ConcurrentAlixDeque(Object lock) {
-        this.lock = lock;
+        this.queue = new ConcurrentLinkedQueue<>();
     }
 
     @Override
-    public void addNodeLast(Node<T> node) {//any node addition synchronized
-        synchronized (lock) {//only this addition method is synchronized, as all the other point towards this one
-            super.addNodeLast(node);
-        }
+    public T pollFirst() {
+        return this.queue.poll();
     }
 
     @Override
-    public T pollFirst() {//any node removal synchronized
-        synchronized (lock) {
-            return super.pollFirst();
-        }
+    public void offerLast(T element) {
+        this.queue.offer(element);
     }
 
     @Override
-    public void clear() {//any node clearing synchronized
-        synchronized (lock) {
-            super.clear();
-        }
+    public void clear() {
+        this.queue.clear();
+    }
+
+    @Override
+    public void forEach(Consumer<T> action) {
+        this.queue.forEach(action);
     }
 }

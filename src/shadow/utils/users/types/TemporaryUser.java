@@ -1,6 +1,6 @@
 package shadow.utils.users.types;
 
-import com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import shadow.systems.login.result.LoginInfo;

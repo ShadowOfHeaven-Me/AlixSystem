@@ -4,9 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import alix.common.connection.filters.ConnectionFilter;
 import shadow.utils.command.managers.ChatManager;
-import shadow.utils.main.AlixHandler;
 import shadow.utils.users.types.VerifiedUser;
 
 import static shadow.utils.main.AlixUtils.*;
@@ -15,7 +13,7 @@ import static shadow.utils.users.UserManager.getVerifiedUser;
 public abstract class UniversalExecutors implements Listener {
 
     //protected static final UUID mainWorldUUID = AlixWorldHolder.getMain().getUID();
-    protected final ConnectionFilter[] premiumFilters = AlixHandler.getPremiumConnectionFilters();
+    //protected final ConnectionFilter[] premiumFilters = AlixHandler.getPremiumConnectionFilters();
 
     protected void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();

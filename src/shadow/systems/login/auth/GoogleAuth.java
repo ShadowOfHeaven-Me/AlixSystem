@@ -5,7 +5,7 @@ import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.keys.secret.MapSecretKey;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.bukkit.Location;
@@ -27,7 +27,6 @@ import shadow.utils.world.location.ConstLocation;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.util.concurrent.CompletableFuture;
 
 public final class GoogleAuth {
 
@@ -86,14 +85,16 @@ public final class GoogleAuth {
             user.originalLocation.set(loc);
 
             OriginalLocationsManager.add(player, loc);//try to prevent any potential data loss
-            CompletableFuture<Boolean> tpFuture = MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC);
-            tpFuture.thenAccept(b -> {
+
+            MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC).thenAccept(b -> {
                 if (!b) {
                     for (ByteBuf buf : buffers) buf.release();
-                    user.writeAndFlushConstSilently(tpFailedMessage);
                     user.originalLocation.set(null);
-                    user.getDuplexProcessor().endQRCodeShow();
-                    MethodProvider.closeInventoryAsyncSilently(user.silentContext());
+                    channel.eventLoop().execute(() -> {
+                        user.writeAndFlushConstSilently(tpFailedMessage);
+                        user.getDuplexProcessor().endQRCodeShow();
+                        MethodProvider.closeInventoryAsyncSilently(user.silentContext());
+                    });
                     return;
                 }
                 channel.eventLoop().execute(() -> {

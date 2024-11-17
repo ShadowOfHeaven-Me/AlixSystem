@@ -2,8 +2,8 @@ package shadow.systems.netty;
 
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.utils.other.annotation.OptimizationCandidate;
-import com.github.retrooper.packetevents.exception.PacketProcessException;
-import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
+import alix.libs.com.github.retrooper.packetevents.exception.PacketProcessException;
+import alix.libs.io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.net.InetSocketAddress;

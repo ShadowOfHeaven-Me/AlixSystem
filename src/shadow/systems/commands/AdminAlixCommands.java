@@ -1,6 +1,7 @@
 package shadow.systems.commands;
 
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
@@ -61,6 +62,25 @@ public final class AdminAlixCommands implements CommandExecutor {
                         sendMessage(sender, "&cName '" + arg2 + " is not on the account limit bypass list!");
                         break;
                     }
+
+                    case "frd":
+                    case "fullyremovedata": {
+                        PersistentUserData data = UserFileManager.remove(arg2);
+
+                        if (AllowListFileManager.remove(arg2)) {
+                            sendMessage(sender, "Removed the name " + arg2 + " from the allow-list!");
+                        }
+
+                        //todo: Also remove from UserTokensFileManager
+                        if (data == null) {
+                            sendMessage(sender, playerDataNotFound.format(arg2));
+                            return false;
+                        }
+
+                        GeoIPTracker.removeIP(data.getSavedIP());
+                        sendMessage(sender, "Fully removed the data of the account " + arg2 + "!");
+                    }
+                    break;
                     case "rp":
                     case "resetpassword": {
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -250,7 +270,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             "Example: &c" + AlixUtils.getRandomMathematicalOperation());
                     sendMessage(sender, "");
                     break;
-                case "help":
+                case "help"://fullyremovedata
                     sendMessage(sender, "");//bypasslimit-remove
                     sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
                     sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
@@ -260,6 +280,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                    sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.");
                     if (isOperatorCommandRestricted) {
                         sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
                                 "by executing this command in console.");

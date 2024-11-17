@@ -19,9 +19,23 @@ public final class FloodgateAccess {
         return FloodgateApi.getInstance().getPlayer(player.getUniqueId());
     }
 
+    @Nullable
+    public static FloodgatePlayer getBedrockPlayer(String username) {
+        for (FloodgatePlayer floodgatePlayer : FloodgateApi.getInstance().getPlayers())
+            if (floodgatePlayer.getCorrectUsername().equals(username))
+                return floodgatePlayer;
+        return null;
+    }
+
+    @Nullable
+    public static FloodgatePlayer getBedrockPlayer(Channel channel) {
+        return channel.hasAttr(floodgate_player) ? channel.attr(floodgate_player).get() : null;
+    }
+
     @NotNull
-    public static String getCorrectUsername(Channel channel) {
-        return channel.attr(floodgate_player).get().getCorrectUsername();
+    public static String getCorrectUsername(Channel channel, @NotNull String forNull) {
+        FloodgatePlayer player = getBedrockPlayer(channel);
+        return player != null ? player.getCorrectUsername() : forNull;
     }
 
     public static boolean isBedrock(Channel channel) {

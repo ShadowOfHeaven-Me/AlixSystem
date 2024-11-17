@@ -1,8 +1,8 @@
 package shadow.systems.login.reminder.message;
 
 import alix.common.messages.Messages;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerClearTitles;
+import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerClearTitles;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import shadow.utils.main.AlixUtils;

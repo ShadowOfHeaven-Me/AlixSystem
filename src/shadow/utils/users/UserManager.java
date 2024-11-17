@@ -3,7 +3,7 @@ package shadow.utils.users;
 import alix.common.data.Password;
 import alix.common.data.PersistentUserData;
 import alix.common.utils.other.throwable.AlixException;
-import com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -40,9 +40,9 @@ public final class UserManager {
         //add(new User(p, PersistentUserData.createDefault(p.getName(), ip)));
     }
 
-    public static void addOnlineUser(Player p) { //online as of premium
+    /*public static void addOnlineUser(Player p) { //online as of premium
         putVer(new VerifiedUser(p));
-    }
+    }*/
 
 /*    public static Channel getPremiumChannel(User user) {
 

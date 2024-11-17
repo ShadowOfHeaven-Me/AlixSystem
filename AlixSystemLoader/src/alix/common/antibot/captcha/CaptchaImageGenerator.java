@@ -31,6 +31,18 @@ public final class CaptchaImageGenerator {
     private CaptchaImageGenerator() {
     }
 
+    public static BufferedImage resizeTo128(BufferedImage image) {
+        BufferedImage resizedImage = new BufferedImage(128, 128, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D graphics = (Graphics2D) resizedImage.getGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        Image scaledImage = image.getScaledInstance(128, 128, BufferedImage.TYPE_INT_ARGB);
+        graphics.drawImage(scaledImage, 0, 0, 128, 128, null);
+
+        return resizedImage;
+    }
+
     public static BufferedImage generateCaptchaImageX256(String captcha, int maxRotation, boolean drawLines, boolean antialiasing) {
         return generatorX256.generate(captcha, maxRotation, drawLines, antialiasing);
     }

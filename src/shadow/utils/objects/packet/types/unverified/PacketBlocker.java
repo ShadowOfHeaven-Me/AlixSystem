@@ -3,18 +3,18 @@ package shadow.utils.objects.packet.types.unverified;
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.collections.queue.AlixDeque;
+import alix.common.utils.collections.queue.network.AlixNetworkDeque;
 import alix.common.utils.other.throwable.AlixError;
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommand;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommandUnsigned;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerBlockPlacement;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommand;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommandUnsigned;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientKeepAlive;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
@@ -24,13 +24,14 @@ import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.login.captcha.consumer.CaptchaConsumer;
 import shadow.systems.login.captcha.manager.VirtualCountdown;
+import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.check.fall.VirtualFallPhase;
-import shadow.utils.objects.packet.map.BlockedPacketsMap;
+import shadow.utils.objects.packet.map.BlockedPacketsQueue;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
@@ -87,8 +88,8 @@ public class PacketBlocker implements PacketProcessor {
     final UnverifiedUser user;
     private final CaptchaConsumer captchaConsumer;
 
-    private final AlixDeque<Component> blockedChatMessages;
-    private final BlockedPacketsMap packetMap;
+    private final AlixNetworkDeque<Component> blockedChatMessages;
+    private final BlockedPacketsQueue packetMap;
 
     private final VirtualCountdown virtualCountdown;
     final VirtualFallPhase virtualFallPhase;
@@ -198,6 +199,7 @@ public class PacketBlocker implements PacketProcessor {
                 this.virtualFallPhase.tpConfirm(event);
                 break;
             case PLUGIN_MESSAGE:
+            case PONG:
             case KEEP_ALIVE://will time out without this one
                 return;
             case CHAT_COMMAND_UNSIGNED:
@@ -328,6 +330,8 @@ public class PacketBlocker implements PacketProcessor {
             case SET_TITLE_TEXT://
             case SET_TITLE_TIMES://
             case EFFECT:
+            case SET_EXPERIENCE:
+            case EXPLOSION:
                 //case SERVER_DATA:
             case WINDOW_ITEMS:
             case SET_SLOT:
@@ -419,6 +423,7 @@ public class PacketBlocker implements PacketProcessor {
             case DEATH_COMBAT_EVENT://fix for death
             case UPDATE_HEALTH://fix for death and damage
             case SET_EXPERIENCE:
+            case EXPLOSION:
             case SPAWN_PLAYER:
                 //case TIME_UPDATE:
             case TITLE:
@@ -482,6 +487,7 @@ public class PacketBlocker implements PacketProcessor {
 
     private void onReceiveCaptchaVerification(PacketPlayReceiveEvent event) {
         //Main.logInfo(event.getPacketType() + " ");
+        //user.sendDynamicMessageSilently(event.getPacketType().name());
         switch (event.getPacketType()) {
             case PLAYER_POSITION://most common packets
             case PLAYER_POSITION_AND_ROTATION:
@@ -497,10 +503,10 @@ public class PacketBlocker implements PacketProcessor {
 
                 long now = System.currentTimeMillis();
 
-                if (this.movementPackets == correctingTpMovementPackets) {
+/*                if (this.movementPackets == correctingTpMovementPackets) {
                     this.user.writeConstSilently(movementForbiddenCaptchaChat);
                     this.virtualFallPhase.tpPosCorrect();
-                }
+                }*/
 
                 if (now - this.lastMovementPacket > 995) {//the user is standing still
                     this.movementPackets--;
@@ -516,29 +522,55 @@ public class PacketBlocker implements PacketProcessor {
             case TELEPORT_CONFIRM:
                 this.virtualFallPhase.tpConfirm(event);
                 break;
+            case INTERACT_ENTITY:
+                if (captchaConsumer != null)
+                    this.captchaConsumer.onClick();//new WrapperPlayClientInteractEntity(event).getTarget().orElse(null)
+                //this.user.sendDynamicMessageSilently("CURSOR: " + wrapper.getCursorPosition() + " " + wrapper.getBlockPosition());
+                break;
             case PLAYER_BLOCK_PLACEMENT:
                 //WrapperPlayClientPlayerBlockPlacement wrapper = new WrapperPlayClientPlayerBlockPlacement(event);
                 if (captchaConsumer != null)
-                    this.captchaConsumer.onClick(new WrapperPlayClientPlayerBlockPlacement(event).getCursorPosition());
+                    this.captchaConsumer.onClick();//new WrapperPlayClientPlayerBlockPlacement(event).getCursorPosition()
                 //this.user.sendDynamicMessageSilently("CURSOR: " + wrapper.getCursorPosition() + " " + wrapper.getBlockPosition());
                 break;
             case CHAT_MESSAGE:
                 CommandManager.onCaptchaCompletionAttempt(this.user, new WrapperPlayClientChatMessage(event).getMessage().trim());
                 break;
+            case ANIMATION:
+                this.user.armSwingReceived = true;
+                //this.user.debug("ANIMATION RECEIVED");
+                //this.t = System.currentTimeMillis();
+                //Main.debug("ANIMATION RECEIVED " + (System.currentTimeMillis() - user.armSwingSent) + "ms");
+                break;
 /*            case CHAT_COMMAND:
                 this.processCommand(new WrapperPlayClientChatCommand(event).getCommand().toCharArray());
                 event.setCancelled(true);
                 break;*/
-            case PLUGIN_MESSAGE:
             case KEEP_ALIVE:
+                if (user.keepAliveReceived) return;
+                WrapperPlayClientKeepAlive keepAlive = new WrapperPlayClientKeepAlive(event);
+                if (keepAlive.getId() == AlixHandler.KEEP_ALIVE_ID) {
+                    event.setCancelled(true);
+                    //this.user.debug("KEEP ALIVE RECEIVED: " + (System.currentTimeMillis() - t));
+                    //Main.debug("KEEP ALIVE RECEIVED " + (System.currentTimeMillis() - user.keepAliveSent) + "ms");
+                    this.user.keepAliveReceived = true;
+                    if (!this.user.armSwingReceived) MethodProvider.kickAsync(this.user, invalidProtocolError);
+                }
                 return;//exempt keep alive from the total packet count limitation
+            case PONG:
+            case PLUGIN_MESSAGE:
+                return;//exempt plugin message from the total packet count limitation
 
             //keep alive is exempt because other plugins may use it to measure ping, and keep alive spam will very much likely get the player kicked out automatically, thus the exemption
         }
         event.setCancelled(true);
         if (++totalPacketsUntilKick == maxTotalPackets)
-            MethodProvider.kickAsync(this.user, packetLimitReachedKickPacket); //syncedKick(packetLimitReached);
+            MethodProvider.kickAsync(this.user, packetLimitReachedKickPacket);
     }
+
+    //long t;
+
+    private static final ByteBuf invalidProtocolError = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase("§cInvalid Protocol [Alix]");
 
     //we execute it async because the password hashing
     //algorithms could be somewhat heavy
@@ -555,29 +587,6 @@ public class PacketBlocker implements PacketProcessor {
     public final void releaseBlocked() {
         this.packetMap.release();
     }
-
-/*    protected void syncedKick(String reason) {
-        AlixScheduler.sync(() -> user.getPlayer().kickPlayer(reason));
-    }*/
-
-/*    protected void kickLoginTimePassed() {
-        kick(loginTimePassed);
-    }*/
-
-/*    public void cancelLoginKickTask() {
-        if (this.loginKickTask != null)
-            this.loginKickTask.cancel();
-    }*/
-
-    //Deprecated: the packet handler is now never
-    //removed, only the packet processors change
-/*    public void stop() {
-        //this.cancelLoginKickTask(); //only cancel the login task, as the captcha task will be cancelled when the user is removed from the user map
-        this.channel.eventLoop().submit(() -> {
-            this.channel.pipeline().remove(packetHandlerName);
-            return null;
-        });
-    }*/
 
     @NotNull
     public final VirtualCountdown getCountdown() {

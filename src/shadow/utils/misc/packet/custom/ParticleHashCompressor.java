@@ -1,7 +1,7 @@
 package shadow.utils.misc.packet.custom;
 
-import com.github.retrooper.packetevents.util.Vector3d;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerParticle;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerParticle;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.netty.NettyUtils;
 

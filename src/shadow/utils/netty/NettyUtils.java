@@ -3,9 +3,9 @@ package shadow.utils.netty;
 
 import alix.common.utils.other.annotation.ScheduledForFix;
 import alix.common.utils.other.throwable.AlixException;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -81,7 +81,19 @@ public final class NettyUtils {
     //fix sending invalid packets for ping
     @ScheduledForFix
     public static void closeAfterConstSend(Channel channel, ByteBuf constBuf) {
-        writeAndFlushConst(getSilentContext(channel), constBuf).addListener(ChannelFutureListener.CLOSE);
+        closeAfterConstSend(getSilentContext(channel), constBuf);
+    }
+
+    //fix sending invalid packets for ping
+    @ScheduledForFix
+    public static void closeAfterConstSend(ChannelHandlerContext silentContext, ByteBuf constBuf) {
+        writeAndFlushConst(silentContext, constBuf).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    //fix sending invalid packets for ping
+    @ScheduledForFix
+    public static void closeAfterDynamicSend(Channel channel, ByteBuf dynamicBuf) {
+        getSilentContext(channel).writeAndFlush(dynamicBuf).addListener(ChannelFutureListener.CLOSE);
     }
 
 /*    public static ByteBuf newBuffer(int initialCapacity) {
@@ -95,7 +107,7 @@ public final class NettyUtils {
     }*/
 
     public static boolean exists(PacketTypeCommon type) {
-        return type.getId(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion()) != -1;
+        return type.getId(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion()) >= 0;
     }
 
     public static void writeDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
@@ -126,8 +138,8 @@ public final class NettyUtils {
             throw new AlixException("Incorrect invocation of NettyUtils.createBuffer - buffer exists");
 
         int packetId = wrapper.getPacketTypeData().getNativePacketId();
-        if (packetId < 0) throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in version "
-                + PacketEvents.getAPI().getServerManager().getVersion().toClientVersion() + "! Contact the developer and show him this error! " +
+        if (packetId < 0) throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in server version "
+                + PacketEvents.getAPI().getServerManager().getVersion() + "! Contact the developer and show him this error! " +
                 "Otherwise Alix will not work as intended!");
 
         wrapper.buffer = emptyByteBuf;
@@ -138,7 +150,7 @@ public final class NettyUtils {
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper) {
-        return constBuffer(wrapper, false);
+        return constBuffer(wrapper, true);
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean direct) {

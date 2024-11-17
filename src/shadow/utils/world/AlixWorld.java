@@ -1,9 +1,10 @@
 package shadow.utils.world;
 
-import com.github.retrooper.packetevents.util.Vector3d;
-import com.github.retrooper.packetevents.util.Vector3i;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3i;
 import org.bukkit.Material;
 import org.bukkit.World;
+import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.world.generator.AlixWorldGenerator;
 import shadow.utils.world.location.ConstLocation;
 
@@ -18,7 +19,7 @@ public final class AlixWorld {
     public static final World CAPTCHA_WORLD = instance.world;
 
     static {
-        CAPTCHA_WORLD.setSpawnLocation(TELEPORT_FALL_LOCATION);
+        CAPTCHA_WORLD.setSpawnLocation(TELEPORT_LOCATION);
     }
     //private final List<Integer> playerIds = new ArrayList<>();
     private final World world;
@@ -28,7 +29,7 @@ public final class AlixWorld {
     private AlixWorld() {
         this.world = new AlixWorldGenerator(worldName).createWorld();
 
-        this.teleportLocation = new ConstLocation(this.world, 0.5, 2, 0.5, 180, 45);
+        this.teleportLocation = new ConstLocation(this.world, 0.5, 2, 0.5, 180, CaptchaVisualType.isRecaptcha() ? 0 : 45);
         this.vec3d = new Vector3d(this.teleportLocation.getX(), this.teleportLocation.getY(), this.teleportLocation.getZ());
         this.prepareSpawnCube();
     }
@@ -37,13 +38,17 @@ public final class AlixWorld {
         for (int x = -1; x <= 1; x++) {
             for (int y = 1; y <= 4; y++) {
                 for (int z = -1; z <= 1; z++) {
-                    boolean air = (y == 2 || y == 3) && x == 0 && z == 0;
+                    //boolean air = (y == 2 || y == 3) && x == 0 && z == 0;
 
-                    this.world.getBlockAt(x, y, z).setType(air ? Material.AIR : Material.BARRIER);
+                    this.world.getBlockAt(x, y, z).setType(Material.AIR);//air ? Material.AIR : Material.BARRIER
+                    //this.world.getBlockAt(x, y, z).setType(air ? Material.AIR : Material.END_GATEWAY);//air ? Material.AIR : Material.BARRIER
                     //Main.logInfo("Block " + x + " " + y + " " + z + " was set to: " + this.world.getBlockAt(x, y, z).getType());
                 }
             }
         }
+
+        this.world.getBlockAt(0, 1, 0).setType(Material.BARRIER);
+
         //this.world.getBlockAt(0, 2, 0).setType(Material.COBWEB);
     }
 
@@ -53,9 +58,8 @@ public final class AlixWorld {
         } catch (Exception ignored) {//the method doesn't exist on lower versions
             return;
         }
-        //CAPTCHA_WORLD.getViewDistance()
 
-        int min = Math.max(CAPTCHA_WORLD.getViewDistance(), 2);
+        int min = Math.max(CAPTCHA_WORLD.getViewDistance(), 2);//view distance is custom on paper
 
         for (int i = -min; i <= min; i++)
             for (int j = -min; j <= min; j++)

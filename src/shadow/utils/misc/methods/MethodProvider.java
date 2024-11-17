@@ -1,14 +1,15 @@
 package shadow.utils.misc.methods;
 
 import alix.common.utils.other.annotation.AlixIntrinsified;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCloseWindow;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.types.AlixUser;
 
@@ -49,8 +50,13 @@ public final class MethodProvider {
     }
 
     @AlixIntrinsified(method = "Player#kickPlayer")
+    public static void kickAsyncLoginDynamic(Channel channel, String kickMessage) {
+        NettyUtils.closeAfterDynamicSend(channel, OutDisconnectKickPacketConstructor.constructDynamicAtLoginPhase(kickMessage));
+    }
+
+    @AlixIntrinsified(method = "Player#kickPlayer")
     public static void kickAsync(AlixUser user, ByteBuf disconnectPacket) {
-        NettyUtils.writeAndFlushConst(user.silentContext(), disconnectPacket).addListener(ChannelFutureListener.CLOSE);
+        NettyUtils.closeAfterConstSend(user.silentContext(), disconnectPacket);
     }
 
     public static final PlayerTeleportEvent.TeleportCause ASYNC_TP_CAUSE = PlayerTeleportEvent.TeleportCause.SPECTATE;

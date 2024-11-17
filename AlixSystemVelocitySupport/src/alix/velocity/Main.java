@@ -1,7 +1,7 @@
 package alix.velocity;
 
-import alix.loaders.velocity.VelocityAlixMain;
 import alix.loaders.classloader.LoaderBootstrap;
+import alix.loaders.velocity.VelocityAlixMain;
 import alix.velocity.server.AlixServer;
 import alix.velocity.systems.autoin.PremiumAutoIn;
 import alix.velocity.systems.events.Events;
@@ -11,13 +11,12 @@ import com.velocitypowered.proxy.VelocityServer;
 
 public final class Main implements LoaderBootstrap {
 
-    public static VelocityAlixMain instance;
+    public static final VelocityAlixMain instance = VelocityAlixMain.instance;
     public static PluginManager pm;
     private final VelocityServer server;
 
     public Main(VelocityAlixMain plugin) {
         this.server = (VelocityServer) plugin.getServer();
-        instance = plugin;
         pm = this.server.getPluginManager();
     }
 

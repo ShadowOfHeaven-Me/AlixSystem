@@ -4,8 +4,6 @@ import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.algorithms.connection.types.JoinCounterAlgorithm;
 import alix.common.antibot.algorithms.connection.types.Name2IPAlgorithm;
 import alix.common.antibot.algorithms.ping.PingRequestAlgorithm;
-import alix.common.antibot.algorithms.ping.types.TotalCounterPingAlgorithm;
-import alix.common.connection.filters.ConnectionManager;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.config.ConfigProvider;
 
@@ -61,7 +59,7 @@ public final class ConnectionThreadManager {
         public void run() {
             for (ConnectionAlgorithm a : connectionAlgorithms) a.onThreadRepeat();
             for (PingRequestAlgorithm a : pingRequestAlgorithms) a.onThreadRepeat();
-            if (ConnectionManager.isEnabled) ConnectionManager.tick();
+            //if (ConnectionManager.isEnabled) ConnectionManager.tick();
         }
 
             /*if (!joins.isEmpty()) {
@@ -89,7 +87,7 @@ public final class ConnectionThreadManager {
                     //new RequestAmountAlgorithm()
             };
             this.pingRequestAlgorithms = new PingRequestAlgorithm[]{
-                    new TotalCounterPingAlgorithm()
+                    //new TotalCounterPingAlgorithm()
             };
         }
     }

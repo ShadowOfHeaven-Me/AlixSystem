@@ -1,15 +1,16 @@
+/*
 package shadow.systems.login.captcha.consumer;
 
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.protocol.particle.Particle;
-import com.github.retrooper.packetevents.protocol.particle.data.ParticleDustData;
-import com.github.retrooper.packetevents.protocol.particle.type.ParticleTypes;
-import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.util.Vector3d;
-import com.github.retrooper.packetevents.util.Vector3f;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerParticle;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.protocol.particle.Particle;
+import alix.libs.com.github.retrooper.packetevents.protocol.particle.data.ParticleDustData;
+import alix.libs.com.github.retrooper.packetevents.protocol.particle.type.ParticleTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.world.Location;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3f;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerFlying;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerParticle;
+import alix.libs.io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import shadow.Main;
 import shadow.systems.login.captcha.subtypes.ConstReCaptcha;
 import shadow.systems.login.captcha.subtypes.ReCaptcha;
@@ -29,9 +30,11 @@ public final class BedrockReCaptchaConsumer extends AbstractCaptchaConsumer<Cons
             lastYaw,
             lastPitch;
 
-    /*static {
+    */
+/*static {
         dist = SpigotConversionUtil.fromBukkitLocation(ReCaptcha.HEAD_LOC).getPosition().distance(PLAYER_HEAD_POS);
-    }*/
+    }*//*
+
 
     BedrockReCaptchaConsumer(UnverifiedUser user) {
         super(user);
@@ -88,4 +91,4 @@ public final class BedrockReCaptchaConsumer extends AbstractCaptchaConsumer<Cons
         Particle particle = new Particle(ParticleTypes.DUST, new ParticleDustData(1.5f, color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f));
         return new WrapperPlayServerParticle(particle, false, pos, Vector3f.zero(), 0, 1);
     }
-}
+}*/

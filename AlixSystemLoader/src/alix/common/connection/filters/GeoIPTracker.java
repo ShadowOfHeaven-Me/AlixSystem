@@ -91,7 +91,7 @@ public final class GeoIPTracker implements ConnectionFilter {
         if (initialized) INSTANCE.add0(ip);
     }
 
-    //removed only on quit of unregistered users
+    //removed only on quit of unregistered users (or when data is removed per /as frd <user>)
     public static void removeIP(InetAddress ip) {
         if (initialized) INSTANCE.remove0(ip);
     }

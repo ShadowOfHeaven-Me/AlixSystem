@@ -1,11 +1,11 @@
 package shadow.utils.misc.packet.constructors;
 
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
+import alix.libs.io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;

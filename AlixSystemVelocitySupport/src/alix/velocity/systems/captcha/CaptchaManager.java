@@ -1,6 +1,5 @@
 package alix.velocity.systems.captcha;
 
-import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import alix.velocity.systems.captcha.impl.MapCaptcha;
 
@@ -8,7 +7,7 @@ import java.util.Random;
 
 public final class CaptchaManager {
 
-    private final AlixDeque<Captcha> pool;
+    private final ConcurrentAlixDeque<Captcha> pool;
     private final char[] generationChars;
     private final Random random;
     private final int captchaLength;

@@ -4,16 +4,18 @@ import alix.common.utils.AlixCommonUtils;
 
 import java.util.function.Consumer;
 
-public class AlixDeque<T> {
+public class AlixDeque<T> implements AlixQueue<T> {
 
     private Node<T> first;
     private Node<T> last;
     private int size;
 
+    @Override
     public void offerLast(T element) {
         this.addNodeLast(new Node<>(element));
     }
 
+    @Override
     public T pollFirst() {
         if (first == null) return null;
         T element = first.element;

@@ -1,3 +1,4 @@
+/*
 package shadow.systems.executors;
 
 import alix.common.scheduler.AlixScheduler;
@@ -41,10 +42,12 @@ public final class OnlineExecutors extends UniversalExecutors {
         remove(e.getPlayer());
     }
 
+*/
 /*    @EventHandler
     public void onTabComplete(TabCompleteEvent event) {
         event.setCompletions(UserManager.notVanishedUserNicknames);
-    }*/
+    }*//*
+
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onCommand(PlayerCommandPreprocessEvent e) {
@@ -65,9 +68,11 @@ public final class OnlineExecutors extends UniversalExecutors {
         //WarpFileManager.save(); For now disabled
     }
 
+*/
 /*    @EventHandler
     public void onReloadCommand(ServerCommandEvent e) {
         if (e.isCancelled()) return;
         handleReloadCommand(removeSlash(e.getCommand().toLowerCase()));
-    }*/
-}
+    }*//*
+
+}*/

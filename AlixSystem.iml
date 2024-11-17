@@ -23,7 +23,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="gson-2.9.0" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="FastLoginBukkit" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="spigot-1.14.4" level="project" />
     <orderEntry type="module" module-name="AlixSystemLoader" />
     <orderEntry type="library" scope="PROVIDED" name="LuckPerms-Bukkit-5.4.71" level="project" />
@@ -43,15 +42,6 @@
     <orderEntry type="library" scope="PROVIDED" name="commons-io-2.11.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="ViaVersion-4.10.2" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="paper-1.20.4" level="project" />
-    <orderEntry type="module-library" scope="PROVIDED">
-      <library>
-        <CLASSES>
-          <root url="jar://$USER_HOME$/Downloads/FastLoginVelocity.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="library" name="byte-buddy-agent-1.14.18" level="project" />
     <orderEntry type="library" name="asm-9.7" level="project" />
     <orderEntry type="library" name="asm-tree-9.7" level="project" />
@@ -69,6 +59,7 @@
     <orderEntry type="library" name="spigot-1.12.2" level="project" />
     <orderEntry type="library" name="Geyser-Spigot" level="project" />
     <orderEntry type="library" name="floodgate-spigot" level="project" />
-    <orderEntry type="library" name="packetevents-spigot-2.5.0" level="project" />
+    <orderEntry type="library" name="jfiglet-0.0.2-20140131.163250-1" level="project" />
+    <orderEntry type="library" name="PacketEvents-Shaded-2.6.0-all" level="project" />
   </component>
 </module>

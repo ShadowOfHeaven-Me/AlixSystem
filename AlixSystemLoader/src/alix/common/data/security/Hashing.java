@@ -7,12 +7,18 @@ import alix.common.utils.other.throwable.AlixException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 public final class Hashing {
 
     public static final byte CONFIG_HASH_ID;
     private static final HashingAlgorithm[] hashingAlgorithms;
     private static final HashingAlgorithm configHash;
+    private static final SecureRandom SECURE_RANDOM;
+
+    public static String hash(HashingAlgorithm algorithm, String unhashedPassword, String salt) {
+        return algorithm.hash((salt != null ? salt : "") + unhashedPassword);
+    }
 
     public static HashingAlgorithm ofHashId(byte hashId) {
         return hashingAlgorithms[hashId];//will throw the error if the index is messed up regardless
@@ -22,6 +28,10 @@ public final class Hashing {
 
     public static HashingAlgorithm getConfigHashingAlgorithm() {
         return configHash;
+    }
+
+    public static String generateSalt() {
+        return Long.toHexString(SECURE_RANDOM.nextLong());
     }
 
     private static final class Hash0 implements HashingAlgorithm {
@@ -161,17 +171,12 @@ public final class Hashing {
         int i = ConfigProvider.config.getInt("password-hash-type");
         byte b = (byte) i;
 
-        if (b != i || b < 0 || b > 3) b = 2;//Default
+        if (b != i || b < 0 || b > 3) b = 3;//Default
 
         CONFIG_HASH_ID = b; //Set from the config
-
-        /*if (false) {//only get the hashing instance in a cracked server, no need for getting the algorithms to generate in a premium server
-            hash0 = hash1 = hash2 = hash3 = defaultHash = null;
-        } else {*/
         hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3()};
-
         configHash = ofHashId(CONFIG_HASH_ID);
-        //}
+        SECURE_RANDOM = new SecureRandom();
     }
 
     public static void init() {

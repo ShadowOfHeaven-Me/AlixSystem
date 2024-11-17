@@ -9,10 +9,11 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
-import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityEffect;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerRemoveEntityEffect;
+import alix.libs.com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import alix.libs.com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.potion.PotionTypes;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.epoll.EpollServerSocketChannel;
@@ -22,19 +23,21 @@ import org.apache.logging.log4j.core.Logger;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginManager;
 import shadow.Main;
-import shadow.systems.executors.*;
+import shadow.systems.executors.OfflineExecutors;
+import shadow.systems.executors.PaperSpawnExecutors;
+import shadow.systems.executors.ServerPingListener;
+import shadow.systems.executors.SpigotSpawnExecutors;
 import shadow.systems.executors.gui.GUIExecutors;
-import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.systems.login.result.LoginInfo;
 import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.constructors.OutEntityPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutGameStatePacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.netty.NettyUtils;
@@ -45,6 +48,7 @@ import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.users.types.VerifiedUser;
+import shadow.utils.world.AlixWorld;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -129,14 +133,48 @@ public final class AlixHandler {
     slowness = 2
     jump boost = 8
     */
-    private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(1)));//default: fovModifier = 0.1f, flySpeed = 0.05f
+    public static final int KEEP_ALIVE_ID = 2137;
+    private static final ByteBuf ANTIBOT_KEEP_ALIVE = NettyUtils.constBuffer(new WrapperPlayServerKeepAlive(KEEP_ALIVE_ID));
+
+    private static final int spectateEntityId = 420_096;
+    private static final ByteBuf SPAWN_ENTITY = OutEntityPacketConstructor.constSpawn(spectateEntityId, EntityTypes.ARMOR_STAND, AlixWorld.TELEPORT_LOCATION);
+    private static final ByteBuf SPAWN_ENTITY_INVIS = OutEntityPacketConstructor.constData(spectateEntityId, new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20));
+    private static final ByteBuf SPECTATE_ENTITY = NettyUtils.constBuffer(new WrapperPlayServerCamera(spectateEntityId));
+
+    //private static final ByteBuf SPECTATE_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(5)));//default: fovModifier = 0.1f, flySpeed = 0.05f
+    private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(1)));//default: flySpeed = 0.05f, fovModifier = 0.1f
 
     public static void sendLoginEffectsPackets(UnverifiedUser user) {
-        //user.writeDynamicSilently(new WrapperPlayServerEntityEffect(user.getPlayer().getEntityId(), PotionTypes.INVISIBILITY, 255, 999999999, (byte) 0));
+        if (!user.hasCompletedCaptcha()) {
+            /*if (true) {//for testing
+                user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
+                user.writeAndFlushDynamicSilently(new WrapperPlayServerPlayerAbilities(true, true, true, false, 0.05f, 0.1f));
+                return;
+            }*/
+
+            //user.writeDynamicSilently(new WrapperPlayServerEntityAnimation(user.getPlayer().getEntityId(), WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM));
+
+            if (CaptchaVisualType.hasPositionLock()) {
+                user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
+                user.writeConstSilently(SPAWN_ENTITY);
+                user.writeConstSilently(SPAWN_ENTITY_INVIS);
+                user.writeConstSilently(SPECTATE_ENTITY);
+            } else user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
+            //user.writeConstSilently(AlixHandler.ANTIBOT_KEEP_ALIVE);
+            user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
+
+            //user.armSwingSent = System.currentTimeMillis();
+            //user.keepAliveSent = System.currentTimeMillis();
+
+            user.getChannel().eventLoop().schedule(() -> {
+                if (user.getChannel().isOpen()) user.writeAndFlushConstSilently(ANTIBOT_KEEP_ALIVE);
+            }, 200, TimeUnit.MILLISECONDS);//being really generous with the amount of time here
+
+            //Main.debug("SENT ARM SWING AND KEEP ALIVE");
+            return;
+        }
         user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
         user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
-        //user.writeAndFlushDynamicSilently(new WrapperPlayServerUpdateAttributes(user.getPlayer().getEntityId(), Collections.singletonList(new WrapperPlayServerUpdateAttributes.Property(Attributes.GENERIC_MOVEMENT_SPEED, ))));
-        //user.sendDynamicMessageSilently("GAMEMODE SPOOOOOOOF");
         //user.writeAndFlushConstSilently(TIME_NIGHT);
 
         if (sendBlindness)
@@ -208,7 +246,7 @@ public final class AlixHandler {
 
     public static ConnectionFilter[] getConnectionFilters() {//set up in the most efficient way
         List<ConnectionFilter> filters = new ArrayList<>();
-        if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.INSTANCE);
+        //if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.INSTANCE);
         //Moved to AlixChannelHandler
         //if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
         //if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
@@ -224,14 +262,14 @@ public final class AlixHandler {
     }
 
     public static void initExecutors(PluginManager pm) {
-        if (isOfflineExecutorRegistered) {
-            pm.registerEvents(new OfflineExecutors(), Main.plugin);
-            pm.registerEvents(
-                    AlixCommonUtils.isValidClass("com.destroystokyo.paper.event.player.PlayerSetSpawnEvent")
-                    ? new PaperSpawnExecutors() : new SpigotSpawnExecutors(), Main.plugin);
+        //if (isOfflineExecutorRegistered) {
+        pm.registerEvents(new OfflineExecutors(), Main.plugin);
+        pm.registerEvents(
+                AlixCommonUtils.isValidClass("com.destroystokyo.paper.event.player.PlayerSetSpawnEvent")
+                        ? new PaperSpawnExecutors() : new SpigotSpawnExecutors(), Main.plugin);
 
-            initializeAlixInterceptor();
-            //PaperAccess.initializeFireWall();
+        initializeAlixInterceptor();
+        //PaperAccess.initializeFireWall();
                 /*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER)
                     PaperAccess.initializeFireWall();
                 else if (Dependencies.isPacketEventsPresent) PacketEventsAccess.initializeFireWall();
@@ -251,25 +289,25 @@ public final class AlixHandler {
 
             /*if (Dependencies.isPacketEventsPresent) new PacketEventsListener();
             else */
-            pm.registerEvents(new GUIExecutors(), Main.plugin);
+        pm.registerEvents(new GUIExecutors(), Main.plugin);
             /*if (anvilPasswordGui) {
                 pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
                 Main.logError("drftgyhjuik");
             }*/
-            if (AlixUtils.antibotService || ServerPingManager.isRegistered())
-                pm.registerEvents(new ServerPingListener(), Main.plugin);
-            /*            if (requireCaptchaVerification) {
-             *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
+        if (AlixUtils.antibotService || ServerPingManager.isRegistered())
+            pm.registerEvents(new ServerPingListener(), Main.plugin);
+        /*            if (requireCaptchaVerification) {
+         *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
                     Main.logInfo("Enabling Async Tab Completion support.");
                     pm.registerEvents(new PaperTabCompletionExecutors(), Main.plugin);
                 } else *//*
                 //pm.registerEvents(new BukkitTabCompletionExecutors(), Main.plugin);
             }*/
 
-            Listener listener = PremiumAutoIn.getAutoLoginListener();
+        //Listener listener = PremiumAutoIn.getAutoLoginListener();
 
-            if (listener != null) pm.registerEvents(listener, Main.plugin);
-        } else pm.registerEvents(new OnlineExecutors(), Main.plugin);
+        //if (listener != null) pm.registerEvents(listener, Main.plugin);
+        //} else pm.registerEvents(new OnlineExecutors(), Main.plugin);
     }
 
     public static void updateConsoleFilter() {
@@ -296,7 +334,10 @@ public final class AlixHandler {
         //JavaScheduler.repeatAsync(ServerPingManager::clear, 10, TimeUnit.MINUTES);
     }
 
-    private static final ByteBuf autoLoginMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.autoLoginMessage);
+    private static final ByteBuf
+            autoLoginMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.autoLoginMessage),
+            autoLoginPremiumMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("auto-login-premium")),
+            autoRegisterPremiumMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("auto-register-premium"));
 
     public static UnverifiedUser handleVirtualPlayerJoin(Player p, TemporaryUser user) {
         LoginInfo login = user.getLoginInfo();
@@ -312,11 +353,11 @@ public final class AlixHandler {
                 return Verifications.add(p, user);
             case REGISTER_PREMIUM:
                 autoRegisterCommandList.invoke(p);
-                UserManager.addVerifiedUser(p, user);
+                UserManager.addVerifiedUser(p, user).writeAndFlushConstSilently(autoRegisterPremiumMessageBuffer);
                 return null;
             case LOGIN_PREMIUM:
                 autoLoginCommandList.invoke(p);
-                UserManager.addVerifiedUser(p, user);
+                UserManager.addVerifiedUser(p, user).writeAndFlushConstSilently(autoLoginPremiumMessageBuffer);
                 return null;
             case IP_AUTO_LOGIN:
                 autoLoginCommandList.invoke(p);

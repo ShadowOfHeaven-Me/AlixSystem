@@ -2,14 +2,16 @@ package alix.common.connection.filters;
 
 import alix.common.connection.vpn.ProxyCheckManager;
 import alix.common.messages.Messages;
+import alix.common.utils.config.ConfigProvider;
 
 import java.net.InetAddress;
 
 
 public final class AntiVPN implements ConnectionFilter {
 
+    private static final boolean isEnabled = ConfigProvider.config.getBoolean("anti-vpn");
     public static final AntiVPN INSTANCE = new AntiVPN();
-    private final String s = Messages.get("anti-vpn");
+    public static final String antiVpnMessage = Messages.get("anti-vpn");
     private final ProxyCheckManager proxyCheck = ProxyCheckManager.INSTANCE;
 
     private AntiVPN() {
@@ -18,6 +20,10 @@ public final class AntiVPN implements ConnectionFilter {
     @Override
     public boolean disallowJoin(InetAddress ip, String strAddress, String name) {
         return this.proxyCheck.isProxy(ip, strAddress);
+    }
+
+    public static boolean disallowJoin(InetAddress ip) {
+        return isEnabled && INSTANCE.disallowJoin(ip, ip.getHostAddress(), null);
     }
 
     /*try {
@@ -31,6 +37,6 @@ public final class AntiVPN implements ConnectionFilter {
 
     @Override
     public String getReason() {
-        return s;
+        return antiVpnMessage;
     }
 }

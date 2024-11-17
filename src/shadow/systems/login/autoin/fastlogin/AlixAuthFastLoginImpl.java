@@ -1,3 +1,4 @@
+/*
 package shadow.systems.login.autoin.fastlogin;
 
 import alix.common.data.Password;
@@ -21,10 +22,12 @@ public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
         //Main.logError("forceLogin");
         AlixUser user = UserManager.get(player.getUniqueId());
 
-        if (user == null) throw new AlixException("Could not automatically log in player " + player.getName() + ", because the AlixUser object is null!"); //something went wrong
+        if (user == null)
+            throw new AlixException("Could not automatically log in player " + player.getName() + ", because the AlixUser object is null!"); //something went wrong
 
         if (user instanceof UnverifiedUser) ((UnverifiedUser) user).logIn();
-        else if (user instanceof TemporaryUser) ((TemporaryUser) user).getLoginInfo().setVerdict(LoginVerdict.LOGIN_PREMIUM);
+        else if (user instanceof TemporaryUser)
+            ((TemporaryUser) user).getLoginInfo().setVerdict(LoginVerdict.LOGIN_PREMIUM);
 
         return true;//was probably already auto-logged in by PremiumAutoIn
     }
@@ -34,7 +37,8 @@ public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
         //Main.logError("forceRegister");
         AlixUser user = UserManager.get(player.getUniqueId());
 
-        if (user == null) throw new AlixException("Could not automatically register player " + player.getName() + ", because the AlixUser object is null!"); //something went wrong
+        if (user == null)
+            throw new AlixException("Could not automatically register player " + player.getName() + ", because the AlixUser object is null!"); //something went wrong
 
         if (user instanceof UnverifiedUser) ((UnverifiedUser) user).registerAsync(password);
         else if (user instanceof TemporaryUser) {
@@ -42,13 +46,13 @@ public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
 
             if (info.getData() == null)
                 info.setData(PersistentUserData.createFromPremiumInfo(player.getName(),
-                    player.getAddress().getAddress(),
-                    Password.fromUnhashed(password)));
-            //info.getData().setPassword(password);//
+                        player.getAddress().getAddress(),
+                        Password.fromUnhashed(password)));
+
             info.setVerdict(LoginVerdict.REGISTER_PREMIUM);
         }
 
-        return true;//was probably already auto-registered in by PremiumAutoIn
+        return true;//was probably already auto-registered by PremiumAutoIn
     }
 
     @Override
@@ -56,4 +60,4 @@ public final class AlixAuthFastLoginImpl implements AuthPlugin<Player> {
         //Main.logError("isRegistered");
         return UserFileManager.hasName(s);
     }
-}
+}*/

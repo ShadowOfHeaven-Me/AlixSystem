@@ -1,6 +1,6 @@
 package shadow.utils.objects.savable.data.gui.virtual;
 
-import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
 import shadow.utils.misc.packet.constructors.AlixInventoryType;

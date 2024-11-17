@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public enum FireWallType {
 
+    NOT_USED,
     NETTY,
     INTERNAL_NIO_INTERCEPTOR,
     FAST_UNSAFE_EPOLL,

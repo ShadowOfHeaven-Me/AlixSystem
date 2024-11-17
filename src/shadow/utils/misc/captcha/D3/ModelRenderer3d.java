@@ -1,6 +1,6 @@
 package shadow.utils.misc.captcha.D3;
 
-import com.github.retrooper.packetevents.util.Vector3d;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
@@ -17,10 +17,10 @@ public final class ModelRenderer3d {
     //Source code: https://github.com/fishydarwin/CraftEffect3D/blob/main/src/main/java/me/darwj1/crafteffect3d/bukkit/commands/DebugCommand.java
 
     public static List<Vector> renderingRelativePoints(Vector center) {
-        try (InputStream stream = ModelRenderer3d.class.getResourceAsStream("Pointer3.obj")) {
+        try (InputStream stream = ModelRenderer3d.class.getResourceAsStream("railgun.obj")) {
             ObjShape shape = new ObjShape(stream);
-            float precision = 0.8f;
-            float scale = 0.8f;
+            float precision = 0.5f;
+            float scale = 10f;
 
             shape.xyzScaleAroundPoint(center.clone(), scale, scale, scale);
             //shape.yRotateAroundPoint(center.clone(), (float) Math.toRadians(180));
@@ -35,7 +35,6 @@ public final class ModelRenderer3d {
         for (Vector v : bukkit) retroop.add(new Vector3d(v.getX(), v.getY(), v.getZ()));
         return retroop;
     }
-
 
 /*    public static void render() {
         try (InputStream stream = ParticleRenderer3d.class.getResourceAsStream("Pointer.obj")) {

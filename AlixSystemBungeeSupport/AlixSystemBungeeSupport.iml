@@ -23,7 +23,6 @@
     <orderEntry type="jdk" jdkName="corretto-21" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="AlixSystemLoader" />
-    <orderEntry type="library" name="FastLoginBukkit" level="project" />
     <orderEntry type="library" name="gson-2.9.0" level="project" />
     <orderEntry type="module-library">
       <library>

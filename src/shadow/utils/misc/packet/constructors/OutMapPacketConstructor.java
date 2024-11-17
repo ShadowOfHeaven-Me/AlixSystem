@@ -1,6 +1,6 @@
 package shadow.utils.misc.packet.constructors;
 
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerMapData;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerMapData;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.netty.NettyUtils;
 

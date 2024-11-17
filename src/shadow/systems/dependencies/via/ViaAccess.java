@@ -1,9 +1,9 @@
 package shadow.systems.dependencies.via;
 
 
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.netty.buffer.ByteBufHelper;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.protocol.ProtocolPathEntry;
 import com.viaversion.viaversion.api.protocol.packet.Direction;

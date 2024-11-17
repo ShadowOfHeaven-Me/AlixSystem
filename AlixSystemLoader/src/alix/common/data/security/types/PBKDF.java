@@ -34,10 +34,13 @@ public class PBKDF {
      * @param dkLen Intended length, in octets, of the derived key.
      * @throws GeneralSecurityException
      */
+
+    private static final int maxLen = (int) Math.pow(2, 32) - 1;
+
     public static void pbkdf2(Mac mac, byte[] S, int c, byte[] DK, int dkLen) throws GeneralSecurityException {
         int hLen = mac.getMacLength();
 
-        if (dkLen > (Math.pow(2, 32) - 1) * hLen) {
+        if (dkLen > maxLen * hLen) {
             throw new GeneralSecurityException("Requested key length too long");
         }
 

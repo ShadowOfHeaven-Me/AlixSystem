@@ -1,7 +1,7 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
@@ -35,6 +35,8 @@ public final class GUIPacketBlocker extends PacketBlocker {
                 this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());
                 //this.user.getVerificationGUI().getVirtualGUI().spoofAllItems();
                 break;
+            case PLUGIN_MESSAGE:
+            case PONG:
             case KEEP_ALIVE://will time out without this one
                 return;
         }

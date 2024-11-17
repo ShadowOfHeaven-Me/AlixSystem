@@ -10,7 +10,7 @@ import alix.common.utils.i18n.HttpsHandler;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.throwable.AlixException;
-import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
+import alix.libs.com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +25,7 @@ import shadow.Main;
 import shadow.systems.commands.ExecutableCommandList;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
+import shadow.utils.math.MathUtils;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.misc.skull.SkullSupplier;
@@ -60,7 +61,7 @@ public final class AlixUtils {
     public static final long autoLoginExpiry;
     public static final int maximumTotalAccounts, maxCaptchaTime, maxLoginTime, maxLoginAttempts, maxCaptchaAttempts;//, lowestTeleportableYLevel;
     public static final byte captchaLength;
-    public static final boolean isOperatorCommandRestricted, isPluginLanguageEnglish, isOfflineExecutorRegistered, requireCaptchaVerification,
+    public static final boolean isOperatorCommandRestricted, isPluginLanguageEnglish, requireCaptchaVerification,
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
             anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService,
@@ -191,7 +192,6 @@ public final class AlixUtils {
         isOnlineModeEnabled = Bukkit.getServer().getOnlineMode();
         antibotService = config.getBoolean("antibot-service");
         requirePasswordRepeatInRegister = config.getBoolean("require-password-repeat-in-register");
-        isOfflineExecutorRegistered = config.getBoolean("offline-login-requirement") && !isOnlineModeEnabled;
         maxLoginAttempts = config.getInt("max-login-attempts");
         isDebugEnabled = config.getBoolean("debug");
         userDataAutoSave = config.getBoolean("auto-save");
@@ -199,7 +199,7 @@ public final class AlixUtils {
         chatFormat = translateColors(config.getString("chat-format"));
         //banFormat = translateColors(config.getString("ban-format"));
 
-        requireCaptchaVerification = isOfflineExecutorRegistered && config.getBoolean("captcha");
+        requireCaptchaVerification = config.getBoolean("captcha");
         requirePingCheckVerification = requireCaptchaVerification && config.getBoolean("ping-check");
         int maxCaptchaTime0 = config.getInt("max-captcha-time");
 
@@ -235,7 +235,6 @@ public final class AlixUtils {
         doubledDefaultWalkSpeed = 0.2F;
         doubledDefaultFlySpeed = 0.1F;
         if (config.getBoolean("ping-before-join")) AlixHandler.initializeServerPingManager();
-        AlixHandler.updateConsoleFilter();
     }
 
     public static void getMethodTime(Executable method) {
@@ -763,7 +762,7 @@ public final class AlixUtils {
         return a;
     }*/
 
-    public static boolean checkBooleanString(String a, Player p) {
+/*    public static boolean checkBooleanString(String a, Player p) {
         if (a != null) {
             if (a.equalsIgnoreCase("true")) return true;
             if (a.equalsIgnoreCase("false")) return false;
@@ -771,7 +770,7 @@ public final class AlixUtils {
             return random.nextBoolean();
         }
         throw new RuntimeException("Boolean check of nullified string");
-    }
+    }*/
 
     public static void setSkin(Player p, JsonObject texture) {
 /*        try {
@@ -1146,6 +1145,7 @@ public final class AlixUtils {
         return new long[]{run.freeMemory() / division, run.maxMemory() / division, run.totalMemory() / division};
     }
 
+    //Delegate to MathUtils.round?
     public static float round(float a, int b) {
         float c = powerIntegers(10, b);
         float d = a * c;
@@ -1154,15 +1154,7 @@ public final class AlixUtils {
     }
 
     public static int powerIntegers(int a, int b) {
-        switch (b) {
-            case 0:
-                return 1;
-            case 1:
-                return a;
-        }
-        int c = a;
-        for (int d = 1; d < b; d++) c *= a;
-        return c;
+        return MathUtils.pow(a, b);
     }
 
     public static String getListOfAllOnlinePlayers(Collection<? extends Player> onlines) {

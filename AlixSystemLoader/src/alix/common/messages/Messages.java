@@ -34,10 +34,15 @@ public final class Messages {
     }
 
     public static String[] getSplit(String s) {
-        return get(s).split(" -nl ");
+        return get0(s).split(" -nl ");
     }
 
     public static String get(String s) {
+        //String newLine = Pattern.quote("\n");
+        return get0(s);//.replaceAll(newLine, "\n 0777").replaceAll(" -nl ", "\n");
+    }
+
+    private static String get0(String s) {
         String m = file.getMap().get(s);
         if (m == null)
             AlixCommonMain.logWarning("Message '" + s + "' was not found in the messages.txt file! Report this immediately!");

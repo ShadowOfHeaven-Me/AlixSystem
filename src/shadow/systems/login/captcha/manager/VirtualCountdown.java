@@ -38,7 +38,7 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
     }
 
     public void tickNoPacket() {
-        if (--this.index == 0) MethodProvider.kickAsync(this.user, timeOutError);
+        if (--this.index == 0) MethodProvider.kickAsync(this.user, this.user.captchaInitialized() ? captchaTimePassedKickPacket : timeOutError);
     }
 
     public void restartAsLogin() {

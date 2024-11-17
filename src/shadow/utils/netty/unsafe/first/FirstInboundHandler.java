@@ -1,7 +1,6 @@
 package shadow.utils.netty.unsafe.first;
 
 import alix.common.utils.other.annotation.ScheduledForFix;
-import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -20,7 +19,10 @@ public abstract class FirstInboundHandler extends ChannelInboundHandlerAdapter {
     public final void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         if (ctx.pipeline().first() != this) {
-            if (this.reAdded) throw new AlixException("Circular re-adding!");
+            if (this.reAdded) {
+                this.reAdded = false;
+                return; //give up //throw new AlixException("Circular re-adding!");
+            }
             this.reAdded = true;
             ctx.pipeline().remove(name);
             ctx.pipeline().addFirst(name, this);

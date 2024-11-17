@@ -1,3 +1,4 @@
+/*
 package shadow.systems.login.autoin.fastlogin;
 
 import com.github.games647.fastlogin.bukkit.FastLoginBukkit;
@@ -21,4 +22,4 @@ public final class FastLoginAuth implements LoginAuthenticator {
         //Main.logError("STATUS: " + base.getStatus(uuid) + " all " + base.getPremiumPlayers());
         return base.getStatus(uuid) == PremiumStatus.PREMIUM;
     }
-}
+}*/

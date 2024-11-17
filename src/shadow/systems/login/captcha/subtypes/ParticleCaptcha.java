@@ -67,6 +67,11 @@ public final class ParticleCaptcha extends Captcha {
     }
 
     @Override
+    protected boolean isReleased() {
+        return false;
+    }
+
+    @Override
     public void release() {
         //Main.logError("UNINJECTED " + Arrays.toString(Thread.currentThread().getStackTrace()));
         //AlixUnsafe.getUnsafe().throwException(new AlixException(""));

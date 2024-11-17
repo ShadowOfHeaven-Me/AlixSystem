@@ -21,4 +21,9 @@ public final class MessageCaptcha extends Captcha {
     public void sendPackets(UnverifiedUser user) {
         user.writeAndFlushSilently(this.packet);
     }
+
+    @Override
+    protected boolean isReleased() {
+        return false;
+    }
 }

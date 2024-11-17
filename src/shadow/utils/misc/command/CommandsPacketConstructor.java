@@ -1,9 +1,9 @@
 package shadow.utils.misc.command;
 
 import alix.common.messages.Messages;
-import com.github.retrooper.packetevents.protocol.chat.Node;
-import com.github.retrooper.packetevents.protocol.chat.Parsers;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
+import alix.libs.com.github.retrooper.packetevents.protocol.chat.Node;
+import alix.libs.com.github.retrooper.packetevents.protocol.chat.Parsers;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
 import io.netty.buffer.ByteBuf;
 import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandManager;
@@ -40,10 +40,7 @@ public final class CommandsPacketConstructor {
     }
 
     private static ByteBuf constructOneArg(List<String> commands, String argName) {
-        //if(commands.isEmpty())
-
         List<Node> list = new ArrayList<>();
-
         List<Integer> indices = new ArrayList<>();
 
         //Main.logError("SUPPORT ALL CHARS " + supportAllChars + " " + Main.config.getKeys(false) + " " + Main.config.contains("command-support-all-characters") + " " + Main.config.getString("command-support-all-characters") + " B GET NOW " + Main.config.getBoolean("command-support-all-characters"));
@@ -67,7 +64,6 @@ public final class CommandsPacketConstructor {
 
     private static ByteBuf constructTwoArg(List<String> commands, String arg1Name, String arg2Name) {
         List<Node> list = new ArrayList<>();
-
         List<Integer> indices = new ArrayList<>(commands.size());
 
         int index = supportAllChars ? 2 : 3;
@@ -95,11 +91,16 @@ public final class CommandsPacketConstructor {
         return NettyUtils.constBuffer(new WrapperPlayServerDeclareCommands(list, 0));
     }
 
-    public static void spoofFor(UnverifiedUser user) {
-        if (!user.hasCompletedCaptcha()) return;
+    public static void writeAndFlush(UnverifiedUser user) {
+        if (user.hasCompletedCaptcha()) user.writeAndFlushConstSilently(buffer(user));
+    }
 
-        ByteBuf buf = user.isRegistered() ? LOGIN : REGISTER;
-        user.writeAndFlushConstSilently(buf);
+    public static void write(UnverifiedUser user) {
+        if (user.hasCompletedCaptcha()) user.writeConstSilently(buffer(user));
+    }
+
+    private static ByteBuf buffer(UnverifiedUser user) {
+        return user.isRegistered() ? LOGIN : REGISTER;
     }
 
     private static Node newNode0(NodeType nodeType, String name, List<Integer> children, Parsers.Parser parser, List<Object> properties, NodeFlag... flags) {

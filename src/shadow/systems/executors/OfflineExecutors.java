@@ -2,10 +2,10 @@ package shadow.systems.executors;
 
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
-import alix.common.connection.filters.ConnectionFilter;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
 import alix.common.data.file.UserFileManager;
+import alix.common.data.premium.PremiumData;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.file.managers.IpsCacheFileManager;
@@ -17,9 +17,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import shadow.Main;
-import shadow.systems.login.autoin.PremiumAutoIn;
+import shadow.systems.login.autoin.PremiumAccountCache;
 import shadow.systems.login.result.LoginVerdictManager;
-import shadow.utils.main.AlixHandler;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.misc.methods.MethodProvider;
@@ -32,7 +31,7 @@ import static shadow.utils.main.AlixUtils.*;
 public final class OfflineExecutors extends UniversalExecutors {
 
     //private final LoginAuthenticator authenticator = PremiumAutoIn.support;
-    private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
+    //private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
     private final String playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
     //serverIsFull = Messages.get("server-is-full");
     //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
@@ -78,28 +77,31 @@ public final class OfflineExecutors extends UniversalExecutors {
         //Main.logInfo("PREMIUM " + PremiumAutoIn.getPremiumPlayers().contains(name) + " DATA EXISTS " + (data != null));
 
         if (data != null) {//the account exists
-            if (PremiumAutoIn.remove(name)) LoginVerdictManager.addOnline(name, ip, data, false, e);
+            if (data.getPremiumData().getStatus().isPremium()) LoginVerdictManager.addOnline(name, ip, data, false, e);
             else LoginVerdictManager.addOffline(name, ip, data, e);
             return;
         }
 
-        if (PremiumAutoIn.remove(name)) {
-            for (ConnectionFilter filter : premiumFilters) {
+        PremiumData premiumData = PremiumAccountCache.get(name);
+
+        if (premiumData != null && premiumData.getStatus().isPremium()) {
+            /*for (ConnectionFilter filter : premiumFilters) {
                 if (filter.disallowJoin(e.getAddress(), ip, name)) {
                     e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                     return;
                 }
-            }
-            LoginVerdictManager.addOnline(name, ip, PersistentUserData.createFromPremiumInfo(name, e.getAddress()), true, e);
+            }*/
+            LoginVerdictManager.addOnline(name, ip, PersistentUserData.createFromPremiumInfo(name, e.getAddress(), premiumData), true, e);
+            PremiumAccountCache.remove(name);
             return;
         }
 
-        for (ConnectionFilter filter : filters) {
+        /*for (ConnectionFilter filter : filters) {
             if (filter.disallowJoin(e.getAddress(), ip, name)) {
                 e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());
                 return;
             }
-        }
+        }*/
         LoginVerdictManager.addOffline(name, ip, data, e);
     }
     //Pre-to-join executors - end

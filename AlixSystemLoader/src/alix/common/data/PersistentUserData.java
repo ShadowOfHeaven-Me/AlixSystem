@@ -5,6 +5,8 @@ import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.AlixLocationList;
 import alix.common.data.loc.provider.LocationListProvider;
+import alix.common.data.premium.PremiumData;
+import alix.common.utils.file.SaveUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetAddress;
@@ -13,14 +15,17 @@ import java.util.Arrays;
 public final class PersistentUserData {
 
     private static final LocationListProvider homesProvider = LocationListProvider.createImpl();
-    private static final int CURRENT_DATA_LENGTH = 9;
+    private static final int CURRENT_DATA_LENGTH = 10;
     private final AlixLocationList homes;
     private final String name;
     private final LoginParams loginParams;
-    private @NotNull InetAddress ip;
-    private long mutedUntil, lastSuccessfulLogin;
+    @NotNull
+    private volatile PremiumData premiumData;
+    @NotNull
+    private volatile InetAddress ip;
+    private volatile long mutedUntil, lastSuccessfulLogin;
 
-    //name | password1 ; password2 | ip | homes | mutedUntil | login type1 ; login type2 | login settings
+    //name | password1 ; password2 | ip | homes | mutedUntil | login type1 ; login type2 | login settings | premium data
     private PersistentUserData(String[] splitData) {
         //splitData = ensureSplitDataCorrectness(splitData);
         this.name = splitData[0];
@@ -32,6 +37,7 @@ public final class PersistentUserData {
         this.loginParams.initSettings(splitData[6]);
         this.loginParams.initAuthSettings(splitData[7]);
         this.lastSuccessfulLogin = Long.parseLong(splitData[8]);
+        this.premiumData = PremiumData.fromSavable(splitData[9]);
         UserFileManager.putData(this);
         GeoIPTracker.addIP(this.ip);//Add it here, as it was loaded
     }
@@ -41,8 +47,13 @@ public final class PersistentUserData {
         this.ip = ip;
         this.loginParams = new LoginParams(password);
         this.homes = homesProvider.newList();
+        this.premiumData = PremiumData.UNKNOWN;
         UserFileManager.putData(this);
         //The GeoIPTracker add should not be invoked
+    }
+
+    public static boolean isRegistered(PersistentUserData data) {
+        return data != null && data.getPassword().isSet();//registered - data exists and password is set
     }
 
     public static PersistentUserData from(String data) {
@@ -53,15 +64,12 @@ public final class PersistentUserData {
         return new PersistentUserData(name, ip, password);
     }
 
-    public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip) {
-        return createFromPremiumInfo(name, ip, Password.createRandom());
-    }
-
-    public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip, Password password) {
+    public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip, PremiumData premiumData) {
         //By creating a password we ensure the account cannot be stolen in case
-        //the server suddenly ever switches to offline mode, and does not use FastLogin
-        PersistentUserData data = new PersistentUserData(name, ip, password);
+        //the server suddenly ever switches to offline mode
+        PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
         data.setLoginType(LoginType.COMMAND);
+        data.setPremiumData(premiumData);
 
         return data;
     }
@@ -76,7 +84,6 @@ public final class PersistentUserData {
         String[] correctData = new String[correctLength];
 
         System.arraycopy(splitData, 0, correctData, 0, splitDataLength);
-
         Arrays.fill(correctData, splitDataLength, correctLength, "0");
 
         return correctData;
@@ -88,8 +95,19 @@ public final class PersistentUserData {
 
     @Override
     public String toString() {
-        return name + "|" + loginParams.passwordsToSavable() + "|" + ip.getHostAddress() + "|" + homes.toSavable() + "|" + mutedUntil + "|"
-                + loginParams.settingsToSavable() + "|" + loginParams.authSettingsToSavable() + "|" + lastSuccessfulLogin; //originalWorldUUID;
+        //return name + "|" + loginParams.passwordsToSavable() + "|" + ip.getHostAddress() + "|" + homes.toSavable() + "|" + mutedUntil + "|"
+        //        + loginParams.settingsToSavable() + "|" + loginParams.authSettingsToSavable() + "|" + lastSuccessfulLogin; //originalWorldUUID;
+        return SaveUtils.asSavable('|',
+                name,
+                loginParams.passwordsToSavable(),
+                ip.getHostAddress(),
+                homes.toSavable(),
+                mutedUntil,
+                loginParams.loginTypesToSavable(),
+                loginParams.ipAutoLoginToSavable(),
+                loginParams.authSettingsToSavable(),
+                lastSuccessfulLogin,
+                premiumData.toSavable());
     }
 
     public String getName() {
@@ -110,6 +128,10 @@ public final class PersistentUserData {
 
     public AlixLocationList getHomes() {
         return homes;
+    }
+
+    public PremiumData getPremiumData() {
+        return premiumData;
     }
 
     public long getMutedUntil() {
@@ -144,12 +166,18 @@ public final class PersistentUserData {
         this.loginParams.setPassword(password);
     }
 
+    public PersistentUserData setPremiumData(PremiumData premiumData) {
+        this.premiumData = premiumData;
+        return this;
+    }
+
     public void resetPasswords() {
         this.loginParams.setPassword(Password.empty());
         this.loginParams.setExtraPassword(null);
         this.loginParams.setExtraLoginType(null);
         this.loginParams.setAuthSettings(AuthSetting.PASSWORD);
         this.loginParams.setHasProvenAuthAccess(false);
+        this.premiumData = PremiumData.UNKNOWN;//is this right?
     }
 
     public PersistentUserData setIP(InetAddress ip) {

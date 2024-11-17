@@ -22,4 +22,9 @@ public final class XesCaptcha extends Captcha {
         for (ByteBuf buf : buffers) user.writeSilently(buf);
         user.flush();
     }
+
+    @Override
+    protected boolean isReleased() {
+        return false;
+    }
 }

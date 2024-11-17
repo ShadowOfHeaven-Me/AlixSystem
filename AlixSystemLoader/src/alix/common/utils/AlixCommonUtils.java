@@ -2,6 +2,7 @@ package alix.common.utils;
 
 import alix.common.AlixCommonMain;
 import alix.common.data.LoginType;
+import alix.common.utils.collections.RandomCharIterator;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -15,6 +16,8 @@ import static alix.common.utils.config.ConfigParams.defaultLoginType;
 
 public final class AlixCommonUtils {
 
+    public static final char[] generationChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-+=".toCharArray();
+    private static final RandomCharIterator RANDOM_CHAR_ITERATOR = new RandomCharIterator(generationChars);
     public static final Consumer EMPTY_CONSUMER = e -> {};
     //public static final Predicate FALSE_PREDICATE = e -> false;
     public static final Random random = new Random();
@@ -29,6 +32,23 @@ public final class AlixCommonUtils {
             isGraphicEnvironmentHeadless0 = true;
         }
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
+    }
+
+    public static boolean isValidClass(String clazzPath) {
+        try {
+            Class.forName(clazzPath);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    public static char randomChar() {
+        return RANDOM_CHAR_ITERATOR.next();
+    }
+
+    public static String randomStr(int len) {
+        return new String(RANDOM_CHAR_ITERATOR.next(len));
     }
 
     public static LoginType readLoginType(String s, LoginType defaultForNull) {
@@ -103,15 +123,6 @@ public final class AlixCommonUtils {
     public static <T> void fillArray(T[] array, Supplier<T> supplier) {
         for (int i = 0; i < array.length; i++) {
             array[i] = supplier.get();
-        }
-    }
-
-    public static boolean isValidClass(String clazzPath) {
-        try {
-            Class.forName(clazzPath);
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
         }
     }
 

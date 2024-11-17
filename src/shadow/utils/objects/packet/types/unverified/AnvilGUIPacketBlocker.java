@@ -1,10 +1,10 @@
 package shadow.utils.objects.packet.types.unverified;
 
 import alix.common.data.LoginType;
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientNameItem;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPluginMessage;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.objects.savable.data.gui.builders.VirtualAnvilPasswordBuilder;
 import shadow.utils.users.types.TemporaryUser;
@@ -58,6 +58,7 @@ public final class AnvilGUIPacketBlocker extends PacketBlocker {
                 event.getPostTasks().add(user::openVerificationGUI);
                 break;
             case KEEP_ALIVE:
+            case PONG:
                 return;
         }
         event.setCancelled(true);

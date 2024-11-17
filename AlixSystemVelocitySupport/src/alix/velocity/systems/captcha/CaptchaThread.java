@@ -1,17 +1,17 @@
 package alix.velocity.systems.captcha;
 
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.collections.queue.AlixDeque;
+import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 final class CaptchaThread implements Runnable {
 
-    private final AlixDeque<Captcha> pool;
+    private final ConcurrentAlixDeque<Captcha> pool;
     private final CaptchaManager captchaManager;
     private final AtomicInteger captchasToRegen;
 
-    CaptchaThread(AlixDeque<Captcha> pool, CaptchaManager captchaManager) {
+    CaptchaThread(ConcurrentAlixDeque<Captcha> pool, CaptchaManager captchaManager) {
         this.pool = pool;
         this.captchaManager = captchaManager;
         this.captchasToRegen = new AtomicInteger();

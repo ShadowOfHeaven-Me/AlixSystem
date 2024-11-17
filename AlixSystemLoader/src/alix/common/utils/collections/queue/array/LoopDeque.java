@@ -23,7 +23,7 @@ public final class LoopDeque<T> {
         return next;
     }
 
-    public void offerNext(T t) {
+    public void setNext(T t) {
         this.list.setNext(t);
     }
 

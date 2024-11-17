@@ -15,8 +15,8 @@ public final class AlixConsoleFilterHolder implements Filter {
     public static final AlixConsoleFilterHolder INSTANCE = new AlixConsoleFilterHolder();
     public static final boolean
             alixJoinLog = Main.config.getBoolean("custom-join-log"),
-            hideFailedJoinAttempts = Main.config.getBoolean("hide-failed-join-attempts"),
-            filterFastLoginDebug = Main.config.getBoolean("hide-failed-join-attempts");
+            hideFailedJoinAttempts = Main.config.getBoolean("hide-failed-join-attempts");
+            //filterFastLoginDebug = Main.config.getBoolean("filter-fastlogin-debug");
     private final ConsoleFilter delegate;
 
     private AlixConsoleFilterHolder() {
@@ -60,9 +60,13 @@ public final class AlixConsoleFilterHolder implements Filter {
             }*/
             if (message.isEmpty()) return Result.NEUTRAL;
 
-            if (filterFastLoginDebug && message.startsWith("[FastLogin]")) return Result.DENY;
+            /*if (filterFastLoginDebug && (e.getLoggerName().equals("FastLogin") || message.startsWith("[FastLogin]"))) {
+                //new Exception().printStackTrace();
+                return Result.DENY;
+            }*/
 
-            //Make sure not to use any
+
+            //Make sure not to use AlixUtils or any other external classes that could throw an exception during <clinit>
             if (hideFailedJoinAttempts && (AlixCommonUtils.startsWith(message, "UUID of player",
                     "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()"))) //|| this.isLostCon0(msgChars = message.toCharArray())))
                 return Result.DENY;
@@ -121,6 +125,11 @@ public final class AlixConsoleFilterHolder implements Filter {
 
         private ConsoleFilter() {
         }
+    }
+
+    @Override
+    public Result filter(LogEvent e) {
+        return this.delegate.filter(e);
     }
 
     @Override
@@ -197,11 +206,6 @@ public final class AlixConsoleFilterHolder implements Filter {
     public Result filter(Logger logger, Level level, Marker marker, Message message, Throwable t) {
         //Main.logWarning("SEXXXXXXXX: " + t.getClass().getSimpleName() + " " + t.getMessage());
         return Result.NEUTRAL;
-    }
-
-    @Override
-    public Result filter(LogEvent e) {
-        return this.delegate.filter(e);
     }
 
     @Override

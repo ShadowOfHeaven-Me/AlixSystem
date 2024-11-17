@@ -32,7 +32,6 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="limboapi-1.1.23" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -42,5 +41,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="limboapi-1.1.26" level="project" />
   </component>
 </module>

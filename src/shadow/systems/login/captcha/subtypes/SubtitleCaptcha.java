@@ -1,6 +1,6 @@
 package shadow.systems.login.captcha.subtypes;
 
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerClearTitles;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerClearTitles;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.login.captcha.Captcha;
 import shadow.utils.misc.packet.constructors.OutTitlePacketConstructor;
@@ -23,6 +23,11 @@ public final class SubtitleCaptcha extends Captcha {
     public void sendPackets(UnverifiedUser user) {
         for (ByteBuf buf : buffers) user.writeSilently(buf);
         user.flush();
+    }
+
+    @Override
+    protected boolean isReleased() {
+        return true;
     }
 
     @Override

@@ -1,7 +1,7 @@
 package shadow.systems.login.captcha.subtypes;
 
-import com.github.retrooper.packetevents.protocol.world.Location;
-import com.github.retrooper.packetevents.util.Vector3d;
+import alix.libs.com.github.retrooper.packetevents.protocol.world.Location;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
 import io.netty.buffer.ByteBuf;
 import shadow.Main;
 import shadow.systems.login.captcha.Captcha;
@@ -54,6 +54,11 @@ public final class ModelCaptcha extends Captcha {
     public void sendPackets(UnverifiedUser user) {
         this.injected = true;
         for (ByteBuf buf : this.buffers) user.writeSilently(buf);
+    }
+
+    @Override
+    protected boolean isReleased() {
+        return false;
     }
 
     @Override

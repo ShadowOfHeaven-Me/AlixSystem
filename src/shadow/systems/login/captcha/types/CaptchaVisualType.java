@@ -28,4 +28,12 @@ public enum CaptchaVisualType {
                 return true;
         }
     }
+
+    public static boolean isRecaptcha() {
+        return AlixUtils.captchaVerificationVisualType == RECAPTCHA;
+    }
+
+    public static boolean hasPositionLock() {
+        return AlixUtils.captchaVerificationVisualType == SMOOTH;
+    }
 }

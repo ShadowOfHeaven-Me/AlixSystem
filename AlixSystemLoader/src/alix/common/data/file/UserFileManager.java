@@ -4,7 +4,6 @@ import alix.common.AlixCommonMain;
 import alix.common.data.PersistentUserData;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,15 +36,19 @@ public final class UserFileManager {
         return name != null ? map.get(name) : null;
     }
 
+    public static PersistentUserData remove(String name) {
+        return map.remove(name);
+    }
+
     public static boolean hasName(String name) {
         return get(name) != null;
     }
 
-    public static PersistentUserData getOrCreatePremiumInformation(String name, InetAddress ip) {
+    /*public static PersistentUserData getOrCreatePremiumInformation(String name, InetAddress ip) {
         PersistentUserData data = get(name);
 
         return data != null ? data : PersistentUserData.createFromPremiumInfo(name, ip);
-    }
+    }*/
 
     public static void putData(PersistentUserData data) {
         map.put(data.getName(), data);

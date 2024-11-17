@@ -1,9 +1,9 @@
 package shadow.utils.objects.packet.check.fall;
 
-import alix.common.utils.other.annotation.ScheduledForFix;
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityAnimation;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.buffered.BufferedPackets;
@@ -16,7 +16,7 @@ public final class VirtualFallPhase {
 
     //private static final double MIN_Y = AlixWorld.TELEPORT_LOCATION.getY() - 10;
     private static final int NOT_FALLING_TELEPORT_ID = AlixUtils.getRandom(13456789, 34567898) + 96;// ;]
-    private static final int TIMEOUT = BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND * 7;//timeout the player after 7 seconds
+    private static final int TIMEOUT = BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND * 3;//timeout the player after 3 seconds
     public static final ByteBuf FALL_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_FALL_LOCATION, 10);
     public static final ByteBuf NOT_FALLING_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_LOCATION, NOT_FALLING_TELEPORT_ID);
     //private static final ByteBuf BARRIER = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, -1, 0), SpigotConversionUtil.fromBukkitBlockData(Material.DIRT.createBlockData()).getGlobalId()));
@@ -28,12 +28,17 @@ public final class VirtualFallPhase {
     //public static final ByteBuf BLOCK_SET_AIR = new WrapperPlayServerBlockChange(new Vector3i(0, 2, 0), 0);
     //public static final ByteBuf FALL_STOP_SOUND = OutSoundPacketConstructor
     //public static final ByteBuf FALL_CHECK_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, 100, 0));
+    //private static final ByteBuf END_PORTAL = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, 1, 0), SpigotConversionUtil.fromBukkitBlockData(Material.END_GATEWAY.createBlockData()).getGlobalId()));
+    //private static final ByteBuf END_PORTAL2 = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, 2, 0), SpigotConversionUtil.fromBukkitBlockData(Material.END_GATEWAY.createBlockData()).getGlobalId()));
+    //private static final ByteBuf END_PORTAL3 = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, 3, 0), SpigotConversionUtil.fromBukkitBlockData(Material.END_GATEWAY.createBlockData()).getGlobalId()));
+
+
     private final UnverifiedUser user;
     //private long sendTime;//, time;
     //private long lastCorrectingTeleport;
     private int tillTimeout;
     private byte waitPackets;
-    private boolean packetsSent, tpConfirmReceived, firstPlayPacketReceived, noCobwebSent, chunkSent;
+    private boolean packetsSent, tpConfirmReceived, firstPlayPacketReceived;//, noCobwebSent, chunkSent;
 
     public VirtualFallPhase(UnverifiedUser user) {
         this.user = user;
@@ -45,14 +50,20 @@ public final class VirtualFallPhase {
         //this.user.writeAndFlushConstSilently(FALL_CHECK_TELEPORT);
     }
 
-    private static final ByteBuf PLAYER_ABILITIES_FALL_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.0f, 0.0f));//default: fovModifier = 0.1f, flySpeed = 0.05f
+    private static final ByteBuf PLAYER_ABILITIES_FALL_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.0f, 0.0f));//default: flySpeed = 0.05f, fovModifier = 0.1f
 
     public void playPhase() {
         if (firstPlayPacketReceived) return;
 
+        //Main.debug(this.user.getChannel().pipeline().names() + " ");
+
+        this.user.writeDynamicSilently(new WrapperPlayServerEntityAnimation(user.getPlayer().getEntityId(), WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM));
         this.user.writeConstSilently(PLAYER_ABILITIES_FALL_PACKET);
         this.user.writeAndFlushConstSilently(FALL_TELEPORT);
         this.firstPlayPacketReceived = true;
+        //this.user.keepAliveSent = System.currentTimeMillis();
+        //user.writeAndFlushDynamicSilently(new WrapperPlayServerKeepAlive(2137));
+        //this.t = System.currentTimeMillis();
     }
 
     public void tpPosCorrect() {
@@ -60,11 +71,12 @@ public final class VirtualFallPhase {
         //this.lastCorrectingTeleport = System.currentTimeMillis();
     }
 
-    public void noCobwebSpoof() {
+/*    public void noCobwebSpoof() {
         //this.user.writeAndFlushConstSilently(NO_COBWEB);
-    }
+    }*/
 
     public void trySpoofPackets(PacketPlayReceiveEvent event) {
+        //Main.debug("MOVE RECEIVEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
         //this.user.sendDynamicMessageSilently(AlixUtils.getFields(this));
         //Main.logError(AlixUtils.getFields(this));
 
@@ -91,32 +103,29 @@ public final class VirtualFallPhase {
 
         if (packetsSent) return;
 
-        if (this.waitPackets != 20) {
+        if (this.waitPackets != 5) {
             this.waitPackets++;
             return;
         }
 
-        //if (!chunkSent) return;
-
+        //long time = System.currentTimeMillis() - t;
+        //Main.debug("TIME MILLIS TO COMPLETE FALL: " + time);
         this.waitPackets = 0;
         this.packetsSent = true;
         this.user.spoofVerificationPackets();
+        //this.user.writeConstSilently(END_PORTAL);
+        //this.user.writeConstSilently(END_PORTAL2);
+        //this.user.writeConstSilently(END_PORTAL3);
         this.user.writeAndFlushConstSilently(NOT_FALLING_TELEPORT);
-        //this.user.writeConstSilently(NO_COBWEB);
-
-
-        //this.user.getPlayer().stopSound(Sound.ENTITY_GENERIC_SMALL_FALL);//as much as it pains me, it can only be done this way for now
-        //this.user.getPlayer().stopSound(Sound.ENTITY_PLAYER_SMALL_FALL);
     }
 
+    //long t;
+
     public void setChunkSent() {
-        this.chunkSent = true;
+        //this.chunkSent = true;
     }
 
     //returns true if should be kicked out
-
-    //Currently uses a pretty unreliable way of determining the timeout
-    @ScheduledForFix
     public boolean timeoutTick() {
         return !tpConfirmReceived && --tillTimeout == 0;
     }
@@ -128,8 +137,12 @@ public final class VirtualFallPhase {
     public void tpConfirm(PacketPlayReceiveEvent event) {
         if (tpConfirmReceived) return;
         WrapperPlayClientTeleportConfirm wrapper = new WrapperPlayClientTeleportConfirm(event);
+/*        if (wrapper.getTeleportId() == 10) {
+            Main.debug("FALL TP CONFIRM ");
+        }*/
         if (wrapper.getTeleportId() == NOT_FALLING_TELEPORT_ID) {
             this.tpConfirmReceived = true;
+            //Main.debug("FALL TP CONFIRM--------------------------EWFFFFFF ");
         }
     }
 }

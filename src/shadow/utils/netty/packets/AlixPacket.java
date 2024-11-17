@@ -1,6 +1,6 @@
 package shadow.utils.netty.packets;
 
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.types.AlixUser;

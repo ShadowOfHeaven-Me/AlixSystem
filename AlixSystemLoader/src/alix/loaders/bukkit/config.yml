@@ -76,14 +76,13 @@ max-captcha-time: 45
 
 #Config used when the player is in the login phase, either trying to login in or register
 
-
 #Defines how the register/login message reminders should be presented
 #Available:
 # title - A title paired with a subtitle will be used
 # action_bar - An action bar message will be used
 verification-reminder-type: title
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)
-verification-blindness: true
+verification-blindness: false
 #Defines whether the registering user should have to repeat the password he's trying to set whilst registering
 #Parameter 'true' would result in the format /register <password> <password>
 #Parameter 'false' would result in the format /register <password>
@@ -100,8 +99,6 @@ auto-login: true
 forcefully-disable-auto-login: false
 #Defines how long (in seconds) should be a player allowed to be on the server not logged in (must be greater than zero)
 max-login-time: 75
-#Defines whether, if the server is set to offline mode, the players should be required to log in using a set beforehand password
-offline-login-requirement: true
 #Defines how many attempts does a user have when entering his password (setting it too high could be risky because of password crackers)
 max-login-attempts: 2
 #Defines how many attempts should a player be allowed to have to enter the 2FA code from the app
@@ -114,10 +111,12 @@ max-auth-app-attempts: 2
 password-hash-type: 3
 #Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure his ip autologin, right after registering
 auto-ip-autologin-ask: true
-#Requires FastLogin (https://ci.codemc.io/job/Games647/job/FastLogin/lastSuccessfulBuild/), but allows premium users to join without the need of registering or logging in
-premium-auto-in: true
-#Defines whether all of FastLogin's debug messages should be disabled, as they can be annoying
-filter-fastlogin-debug: true
+#Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server join if account ownership is not proven. If successfully proven, the account will from now on be automatically logged in
+#Possible values:
+# never - Allows cracked players to join with premium nicknames
+# unregistered - Unregistered players with premium nicknames will always be requested to authenticate their account ownership
+# always - Premium nicknames will always be requested to perform premium authentication (WARNING: This technically allows any premium player to steal a cracked user's account by simply changing their name to match theirs)
+require-ownership-of-premium-nickname: unregistered
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
 #An example would be
@@ -203,10 +202,6 @@ prefix: "&c[System] > &7"
 append-prefix: true
 #Defines (in milliseconds) the teleportation delay for user teleports (such as /tpa, /spawn etc.)
 user-teleportation-delay: 5000
-#Defines whether the /op and /deop commands should require a password (except when the console is executing it)
-restrict-op-command: false
-#Password required for /op and /deop commands if the parameter above is set to true
-op-command-password: ILikePie
 
 #------------------------------------------------#
 #                   TECHNICAL                    #

@@ -1,5 +1,6 @@
 package alix.common.utils.i18n;
 
+import alix.common.utils.other.throwable.AlixException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -12,17 +13,36 @@ import java.util.Scanner;
 
 public final class HttpsHandler {
 
-    public static JsonElement readURL(String uri) throws IOException {
-        JsonElement output = null;
-        URL url = new URL(uri);
-        HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-        if (connection.getResponseCode() == 200) {//HttpsURLConnection.HTTP_OK
-            try (InputStream inputStream = connection.getInputStream()) {
-                output = new JsonParser().parse(new InputStreamReader(inputStream));
-            }
+    public static JsonElement getResponse(String urlLink) {
+        try {
+            return readURL(urlLink);
+        } catch (IOException e) {
+            throw new AlixException(e);
         }
-        connection.disconnect();
-        return output;
+    }
+
+    public static JsonElement readURL(String urlLink) throws IOException {
+        HttpsURLConnection connection = null;
+        try {
+            JsonElement out;
+            URL url = new URL(urlLink);
+            connection = (HttpsURLConnection) url.openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            if (connection.getResponseCode() == 200) {//HttpsURLConnection.HTTP_OK
+                try (InputStream inputStream = connection.getInputStream()) {
+                    out = new JsonParser().parse(new InputStreamReader(inputStream));
+                }
+            } else {
+                connection.disconnect();//make sure we close the connection
+                return null;//probably out of queries or maybe the server is down
+            }
+            return out;
+        } catch (Exception e) {
+            return null;//some sort of error occurred, assume the service is unavailable
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
     }
 
     public static String getHtmlResponse(String uri) {

@@ -1,7 +1,7 @@
 package shadow.utils.misc.packet.constructors;
 
-import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
+import alix.libs.com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import shadow.utils.netty.NettyUtils;
@@ -35,6 +35,16 @@ public final class OutDisconnectKickPacketConstructor {
             throw new ExceptionInInitializerError(e);
         }
     }*/
+
+    public static ByteBuf constructDynamicAtLoginPhase(String message) {
+        try {
+            return NettyUtils.createBuffer(new WrapperLoginServerDisconnect(Component.text(message)));
+            //Object chatComponent = ReflectionUtils.constructTextComponents(message)[0];
+            //return loginPhasePacketConstructor.newInstance(chatComponent);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static ByteBuf constructConstAtLoginPhase(String message) {
         try {

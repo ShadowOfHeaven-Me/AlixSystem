@@ -31,8 +31,6 @@ public final class AlixEpollConnection {
                 // 8 bytes:
                 // - 4  == ipaddress
                 // - 4  == port
-                //AlixHandler.SERVER_CHANNEL_FUTURE.channel().eventLoop().
-                //Integer.toUnsignedLong(
                 long val = Integer.toUnsignedLong(((addr[1] & 0xff) << 24) + ((addr[2] & 0xff) << 16) + ((addr[3] & 0xff) << 8) + (addr[4] & 0xff));
 
                 //long tA = System.nanoTime();

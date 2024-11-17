@@ -1,8 +1,8 @@
 package shadow.systems.gui.impl;
 
 import alix.common.messages.Messages;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

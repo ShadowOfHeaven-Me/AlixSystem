@@ -1,30 +1,30 @@
 package shadow.utils.objects.packet;
 
-import alix.common.utils.collections.queue.AlixDeque;
+import alix.common.utils.collections.queue.network.AlixNetworkDeque;
 import alix.common.utils.other.annotation.ScheduledForFix;
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChangeGameState;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
-import shadow.utils.objects.packet.map.BlockedPacketsMap;
+import shadow.utils.objects.packet.map.BlockedPacketsQueue;
 
 import static shadow.utils.objects.packet.types.unverified.PacketBlocker.filterAllEntityPackets;
 
 public final class TemporaryUnverifiedProcessor implements PacketProcessor {
 
-    public final AlixDeque<Component> blockedChatMessages;
-    public final BlockedPacketsMap packetMap;
+    public final AlixNetworkDeque<Component> blockedChatMessages;
+    public final BlockedPacketsQueue packetMap;
     public boolean chunkSent;
 
-    //ByteBufs in BlockedPacketsMap might not get released if the disconnect appears just in between play phase switch and sync join
+    //ByteBufs in BlockedPacketsQueue might not get released if the disconnect appears just in-between play phase switch and sync join
     @ScheduledForFix
     public TemporaryUnverifiedProcessor() {
-        this.blockedChatMessages = new AlixDeque<>();
-        this.packetMap = new BlockedPacketsMap();
+        this.blockedChatMessages = new AlixNetworkDeque<>(10);
+        this.packetMap = new BlockedPacketsQueue();
     }
 
     @Override
@@ -32,6 +32,7 @@ public final class TemporaryUnverifiedProcessor implements PacketProcessor {
         switch (event.getPacketType()) {
             case KEEP_ALIVE:
             case PLUGIN_MESSAGE:
+            case PONG:
                 return;
         }
         event.setCancelled(true);
@@ -74,6 +75,7 @@ public final class TemporaryUnverifiedProcessor implements PacketProcessor {
             case DEATH_COMBAT_EVENT://fix for death
             case UPDATE_HEALTH://fix for death and damage
             case SET_EXPERIENCE:
+            case EXPLOSION:
             case SPAWN_PLAYER:
             case UPDATE_ATTRIBUTES:
                 //case TIME_UPDATE:

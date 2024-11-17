@@ -5,9 +5,9 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.utils.file.update.UpdateChecker;
 import alix.common.utils.formatter.AlixFormatter;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
 import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.classloader.LoaderBootstrap;
-import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -19,7 +19,6 @@ import shadow.systems.dependencies.Dependencies;
 import shadow.systems.executors.PreStartUpExecutors;
 import shadow.systems.executors.packetevents.PacketEventsManager;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
-import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.systems.metrics.Metrics;
@@ -49,6 +48,21 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
+    //+ Updated PacketEvents
+    //+ Alix now no longer needs FastLogin and performs premium checks internally!
+    //+ Removed 'premium-auto-in' in favour of the newly added 'require-ownership-of-premium-nickname' in config.yml
+    //+ Added many different optimizations to the packet resending mechanic
+    //* Fixed incompatibility with GrimAC and packetevents
+    //* Fixed incompatibility when packetevents was a separate plugin
+    //* Fixed 'antibot-service' set to false not fully disabling the antibot
+    //* When using FastLogin, by default, cracked accounts will no longer be able to register using premium nicknames
+    //* Fixed floodgate incompatibility with java players
+    //* All non-login commands are now fully disabled by default
+    //* 'verification-blindness' is now false by default
+    //- Removed /op command restrict option from config.yml
+    //- Removed 'offline-login-requirement' from config.yml
+
+
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
     //todo: Add a custom data structure for unverified users
@@ -98,6 +112,7 @@ public final class Main implements LoaderBootstrap {
         //Main.logError("LOADERRRR " + PacketEvents.class.getClassLoader());
         config = (YamlConfiguration) plugin.getConfig();
         this.metrics = Metrics.createMetrics();
+        //logError(FigletFont.convertOneLine("SEX12"));
         kickAll("Reload");
         //PacketType.Play.Server.PLUGIN_MESSAGE
     }
@@ -121,11 +136,10 @@ public final class Main implements LoaderBootstrap {
         //AlixScheduler.async(UserVirtualization::init);
         //MappingHolder.CHAT_TYPE_119.type();
         Dependencies.initAdditional();
-        PremiumAutoIn.checkForInit();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
-        CommandManager.register();
         AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
-        if (Bukkit.getServer().getOnlineMode()) AlixScheduler.sync(() -> Main.logError("Online mode is enabled! Alix is now mainly an offline mode plugin! Bear that in mind!"));
+        if (Bukkit.getServer().getOnlineMode())
+            AlixScheduler.sync(() -> Main.logError("Online mode is enabled! Alix is now mainly an offline mode plugin! Bear that in mind!"));
         UserSemiVirtualization.init();
         //AlixScheduler.sync(UserVirtualization::init);
     }
@@ -138,7 +152,6 @@ public final class Main implements LoaderBootstrap {
         FileManager.saveFiles();
         //if (AlixInterceptor.fireWallType == FireWallType.FAST_UNSAFE_NIO) AlixFastUnsafeNIO.unregister();
         UserSemiVirtualization.RETURN_ORIGINAL_SETUP.run();
-        PacketEvents.getAPI().terminate();
         Captcha.cleanUp();
         //logConsoleInfo("Saved!");
         //Verifications.disable();
@@ -148,6 +161,7 @@ public final class Main implements LoaderBootstrap {
         if (this.metrics != null) this.metrics.shutdown();
         AlixThread.shutdownAllAlixThreads();
         AlixInterceptor.onDisable();
+        PacketEvents.getAPI().terminate();
 
         //if (preStartUpExecutors != null) HandlerList.unregisterAll(preStartUpExecutors);
         //if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) PaperAccess.unregisterChannelListener();
@@ -190,9 +204,12 @@ public final class Main implements LoaderBootstrap {
 
     private void setUp(PreStartUpExecutors preStartUpExecutors) {
         en = AlixUtils.isPluginLanguageEnglish;
+        AlixHandler.updateConsoleFilter();
         AlixInterceptor.init();
+        CommandManager.register();
         AlixHandler.initExecutors(pm);
         //AlixHandler.kickAll("Reload");
+        //PacketEventsManager.onLoad();
         PacketEventsManager.onEnable();
         ReflectionUtils.replaceBansToConcurrent();
         UpdateChecker.checkForUpdates();
@@ -220,6 +237,10 @@ public final class Main implements LoaderBootstrap {
         }*/
         // String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         //logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
+
+        if (pm.isPluginEnabled("FastLogin")) {
+            logConsoleInfo("As of version 3.5.0, Alix no longer needs FastLogin! Premium verification has been built into Alix!");
+        }
 
         FileManager.loadFiles();//load all the classes before enabling the ability to join
         HandlerList.unregisterAll(preStartUpExecutors);

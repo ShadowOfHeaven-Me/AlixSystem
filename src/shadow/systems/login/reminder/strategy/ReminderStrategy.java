@@ -3,6 +3,7 @@ package shadow.systems.login.reminder.strategy;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.login.captcha.manager.VirtualCountdown;
+import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.utils.misc.packet.buffered.BufferedPackets;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
@@ -47,11 +48,11 @@ public abstract class ReminderStrategy implements Runnable {
         VirtualCountdown countdown = blocker.getCountdown();
         VirtualFallPhase fallPhase = blocker.getFallPhase();
 
-        if (fallPhase.isOngoing()) countdown.tickNoPacket();
+        if (fallPhase.isOngoing() || this.user.captchaInitialized() && CaptchaVisualType.hasPositionLock()) countdown.tickNoPacket();
         else countdown.tick();
 
         if (!this.user.hasCompletedCaptcha() && fallPhase.timeoutTick()) {
-            NettyUtils.closeAfterConstSend(this.user.getChannel(), timeOutError);
+            NettyUtils.closeAfterConstSend(this.user.silentContext(), timeOutError);
             return;
         }
         this.tick();

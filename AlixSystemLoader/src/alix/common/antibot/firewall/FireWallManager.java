@@ -24,21 +24,6 @@ public final class FireWallManager {
     private static final ConcurrentInt62Set intIpv4Set = FireWallType.isIPv4FastLookUpEnabled() ? new ConcurrentInt62Set(1 << 19) : null;
     //private static final IntOpenHashSet intIpv4Set = FireWallType.isIPv4FastLookUpEnabled() ? new IntOpenHashSet(1 << 19) : null;
 
-    static {
-        AlixScheduler.async(() -> {
-            try (InputStream is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
-                AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), new FireWallEntry(null)), false);
-                int builtIn = map.size();
-                file.load();
-                int total = map.size();
-                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Built-in blacklisted IPs: " + builtIn + " Blacklisted by this server: " + (total - builtIn) + " Total: " + total);
-                //if(isOsFireWallInUse) osFireWall.blacklist("");
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
 
     public static void addCauseException(InetSocketAddress ip, Throwable t) {
         addCauseException(ip.getAddress(), t);
@@ -110,6 +95,18 @@ public final class FireWallManager {
     }
 
     public static void init() {
+        AlixScheduler.async(() -> {
+            try (InputStream is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
+                AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), new FireWallEntry(null)), false);
+                int builtIn = map.size();
+                file.load();
+                int total = map.size();
+                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Built-in blacklisted IPs: " + builtIn + " Blacklisted by this server: " + (total - builtIn) + " Total: " + total);
+                //if(isOsFireWallInUse) osFireWall.blacklist("");
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     private FireWallManager() {

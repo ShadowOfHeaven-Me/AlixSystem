@@ -1,7 +1,7 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
@@ -34,6 +34,7 @@ public final class AuthGUIPacketBlocker extends PacketBlocker {
             case CLICK_WINDOW://item spoofing happens here \/
                 this.user.getVerificationGUI().select(new WrapperPlayClientClickWindow(event).getSlot());
                 break;
+            case PONG:
             case KEEP_ALIVE://will time out without this one
                 return;
         }

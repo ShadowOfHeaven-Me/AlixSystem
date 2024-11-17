@@ -1,10 +1,8 @@
 package shadow.utils.users.types;
 
 import alix.common.data.PersistentUserData;
-import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.impl.bukkit.BukkitHomeList;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Location;
@@ -62,13 +60,9 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
         this(player, user.getLoginInfo().getData(), user.reetrooperUser(), NettyUtils.getSilentContext(user.getChannel()));
     }
 
-    private VerifiedUser(Player p, User user) {
+    /*private VerifiedUser(Player p, User user) {
         this(p, UserFileManager.getOrCreatePremiumInformation(p.getName(), p.getAddress().getAddress()), user, NettyUtils.getSilentContext((Channel) user.getChannel()));
-    }
-
-    public VerifiedUser(Player player) {
-        this(player, PacketEvents.getAPI().getPlayerManager().getUser(player));
-    }
+    }*/
 
     public Player getPlayer() {
         return player;

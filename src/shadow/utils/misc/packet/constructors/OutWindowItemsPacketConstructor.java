@@ -1,8 +1,8 @@
 package shadow.utils.misc.packet.constructors;
 
 
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
+import alix.libs.io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.inventory.ItemStack;
 import shadow.utils.netty.NettyUtils;
@@ -55,12 +55,12 @@ public final class OutWindowItemsPacketConstructor {
         return constructConst0(windowId, list.size(), createRetrooperItemList(list));
     }
 
-    public static ByteBuf constructConst0(int windowId, int stateId, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
+    public static ByteBuf constructConst0(int windowId, int stateId, List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
         return NettyUtils.constBuffer(new WrapperPlayServerWindowItems(windowId, stateId, retrooperList, null));
         //return newerConstructor ? construct_1_17(windowId, stateId, nmsList) : construct_old(windowId, nmsList);
     }
 
-    public static WrapperPlayServerWindowItems constructDynamic0(int windowId, int stateId, List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
+    public static WrapperPlayServerWindowItems constructDynamic0(int windowId, int stateId, List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperList) {
         return new WrapperPlayServerWindowItems(windowId, stateId, retrooperList, null);
         //return newerConstructor ? construct_1_17(windowId, stateId, nmsList) : construct_old(windowId, nmsList);
     }
@@ -84,8 +84,8 @@ public final class OutWindowItemsPacketConstructor {
         }
     }*/
 
-    public static List<com.github.retrooper.packetevents.protocol.item.ItemStack> createRetrooperItemList(List<ItemStack> spigotItemList) {
-        List<com.github.retrooper.packetevents.protocol.item.ItemStack> list = new ArrayList<>(spigotItemList.size());
+    public static List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> createRetrooperItemList(List<ItemStack> spigotItemList) {
+        List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> list = new ArrayList<>(spigotItemList.size());
 
         for (ItemStack itemStack : spigotItemList) list.add(SpigotConversionUtil.fromBukkitItemStack((itemStack)));
 

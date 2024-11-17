@@ -22,8 +22,8 @@ import java.io.File;
 import java.nio.file.Path;
 
 @MainClass
-@Plugin(id = "alixsystem", name = "AlixSystem", version = "2.8.0", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
-        authors = "ShadowOfHeaven", dependencies = @Dependency(id = "FastLogin", optional = true))
+@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.0.0", description = "AntiBot", url = "https://www.spigotmc.org/resources/alixsystem.109144/",
+        authors = "ShadowOfHeaven", dependencies = @Dependency(id = "fastlogin", optional = true))
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
     public static VelocityAlixMain instance;

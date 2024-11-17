@@ -2,25 +2,28 @@ package shadow.utils.misc.captcha;
 
 import alix.common.antibot.captcha.CaptchaImageGenerator;
 import alix.common.antibot.captcha.ColorGenerator;
+import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
-import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
-import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
-import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.protocol.item.type.ItemType;
-import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import com.github.retrooper.packetevents.protocol.particle.Particle;
-import com.github.retrooper.packetevents.protocol.particle.data.ParticleDustData;
-import com.github.retrooper.packetevents.protocol.particle.type.ParticleTypes;
-import com.github.retrooper.packetevents.protocol.player.Equipment;
-import com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
-import com.github.retrooper.packetevents.protocol.world.BlockFace;
-import com.github.retrooper.packetevents.util.Vector3d;
-import com.github.retrooper.packetevents.util.Vector3f;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
-import com.github.retrooper.packetevents.wrapper.play.server.*;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import alix.libs.com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import alix.libs.com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack;
+import alix.libs.com.github.retrooper.packetevents.protocol.item.type.ItemType;
+import alix.libs.com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.particle.Particle;
+import alix.libs.com.github.retrooper.packetevents.protocol.particle.data.ParticleDustData;
+import alix.libs.com.github.retrooper.packetevents.protocol.particle.type.ParticleTypes;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.Equipment;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.EquipmentSlot;
+import alix.libs.com.github.retrooper.packetevents.protocol.world.BlockFace;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3d;
+import alix.libs.com.github.retrooper.packetevents.util.Vector3f;
+import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.*;
+import alix.libs.io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -47,11 +50,14 @@ import static java.lang.Math.*;
 public final class ImageRenderer {
 
     private static final ConstLocation
-            MODEL_3D_START = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(2, -40, 2).toConst(),
+            MODEL_3D_START = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(-0.5, -2, -0.5).toConst(),
             MODEL_CENTER = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, -5, -4).toConst(),
-            SMOOTH_CENTER = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, -4, -3).toConst(),
+            SMOOTH_CENTER = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, -4.62, -4).toConst(),
+            NAME_CENTER = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, -4.62, -4).toConst(),
             PARTICLE_CENTER = AlixWorld.TELEPORT_LOCATION.asModifiableCopy().add(0, -3, -3).toConst();
-    private static final Quaternion ROTATION = new Quaternion(new Vec3f(1, 0, 0), 45);
+    private static final Quaternion
+            ROTATION = new Quaternion(new Vec3f(1, 0, 0), 45),
+            ROTATION_SMOOTH = new Quaternion(new Vec3f(1, 0f, 0f), 45);
     private static final Vector3f OFFSET = new Vector3f(0, 0, 0);
     private static final Map<Color, ItemType> COLOR_TO_MODEL_ITEM;
 
@@ -91,7 +97,7 @@ public final class ImageRenderer {
     //Source code: https://github.com/whileSam/bukkit-image-renderer/blob/master/src/main/java/me/trysam/imagerenderer/particle/ImageRenderer.java
 
     public static ByteBuf[] recaptcha(Location loc, Function<PacketWrapper<?>, ByteBuf> transformer) {
-        List<ByteBuf> list = new ArrayList<>();
+        List<ByteBuf> list = new ArrayList<>(3);
         int entityId = ENTITY_ID_START;
 
         entityId++;
@@ -101,17 +107,21 @@ public final class ImageRenderer {
         WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND,
                 SpigotConversionUtil.fromBukkitLocation(loc).getPosition(), 0, 0, 0,
                 BlockFace.NORTH.getFaceValue(), Optional.of(Vector3d.zero()));
+        //https://wiki.vg/Entity_metadata#Armor_Stand
+        //https://haselkern.com/Minecraft-ArmorStand/
+        WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+                Arrays.asList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20),
+                        new EntityData(16, EntityDataTypes.ROTATION, new Vector3f(0, 45, 0))));
         WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId,
                 Collections.singletonList(new Equipment(EquipmentSlot.HELMET, item)));
 
         //https://wiki.vg/Entity_metadata#Item_Frame
-        WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
-                Collections.singletonList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20)));
+        //WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+        //         Collections.singletonList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20)));
 
         list.add(transformer.apply(entity));
-        //list.add(transformer.apply(metadata));
+        list.add(transformer.apply(metadata));
         list.add(transformer.apply(equipment));
-
 
         //Main.logError("BUFFERS " + list.size());
 
@@ -359,9 +369,39 @@ public final class ImageRenderer {
         return armorStands.toArray(new ByteBuf[0]);
     }
 
-    public static ByteBuf[] smoothModelBuffers(BufferedImage image, int imgSize) {
+    public static ByteBuf[] railGun() {
+        List<ByteBuf> buffers = new ArrayList<>(1 << 11);//2048
+        List<Vector3d> vectors = ModelRenderer3d.fromBukkit(ModelRenderer3d.renderingRelativePoints(MODEL_3D_START.toVector()));
+        //PositionHashCompressor compressor = new PositionHashCompressor();
+
+        int entityId = ENTITY_ID_START;
+
+        //Main.debug("LOC: " + vectors.get(0));
+
+        for (Vector3d rendererLoc : vectors) {
+            //if (!compressor.add(rendererLoc)) continue;
+            entityId++;
+            WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND, rendererLoc, 0, 0, 0, 0, Optional.of(Vector3d.zero()));
+            //https://wiki.vg/Entity_metadata#Armor_Stand
+            //https://haselkern.com/Minecraft-ArmorStand/
+            WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+                    Collections.singletonList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20)));
+
+            ItemType type = ItemTypes.STONE_BUTTON;
+
+            WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId, Collections.singletonList(new Equipment(EquipmentSlot.HELMET, new ItemStack.Builder().type(type).build())));
+
+            buffers.add(NettyUtils.createBuffer(entity));
+            buffers.add(NettyUtils.createBuffer(metadata));
+            buffers.add(NettyUtils.createBuffer(equipment));
+        }
+        //Main.debug("BUFS: " + buffers.size());
+        return buffers.toArray(new ByteBuf[0]);
+    }
+
+    public static ByteBuf[] nameCaptchaBuffers(BufferedImage image, int imgSize) {
         //The scaling factor determines how dense the particles should be together (the higher the denominator, the less the space between the particles/pixels)
-        float scalingFactor = 1f / 8f;//było 1/8f
+        float scalingFactor = 1f / 9f;//było 1/8f
         List<ByteBuf> list = new ArrayList<>(1 << 11);//2048
 
         int entityId = ENTITY_ID_START;
@@ -388,6 +428,76 @@ public final class ImageRenderer {
                 }
 
                 //Set the renderer's location to the center + the calculated pixel coordinates.
+                Vector3d rendererLoc = new Vector3d(NAME_CENTER.getX() + px, NAME_CENTER.getY() + py, NAME_CENTER.getZ() + pz);
+
+                Color color = new Color(image.getRGB(x, y), true);
+
+                //If there is some transparency in the pixel, go to the next pixel if there is some.
+                if (color.getAlpha() < 255 || !ColorGenerator.PARTICLE_COLOR_LIST.contains(color)) continue;
+                //Set the color of the particle param to the pixel color
+                entityId++;
+
+                char c = AlixCommonUtils.randomChar();
+
+                WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId,
+                        Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND, rendererLoc,
+                        45, 0, 0, 0, Optional.of(Vector3d.zero()));
+                //https://wiki.vg/Entity_metadata#Armor_Stand
+                //https://haselkern.com/Minecraft-ArmorStand/
+                //https://wiki.vg/Entity_metadata#Entity
+                WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+                        Arrays.asList(
+                                new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20),
+                                new EntityData(3, EntityDataTypes.BOOLEAN, true),
+                                new EntityData(2, EntityDataTypes.OPTIONAL_ADV_COMPONENT, Optional.of(Component.text(c)))));
+
+                list.add(NettyUtils.createBuffer(entity));
+                list.add(NettyUtils.createBuffer(metadata));
+            }
+        }
+        return list.toArray(new ByteBuf[0]);
+    }
+
+    @FunctionalInterface
+    private interface BufCreator {
+
+        void createBuffers(List<ByteBuf> list, Vector3d loc, Color color, int entityId);
+
+    }
+
+    private static ByteBuf[] createBuffers0(BufferedImage image, float scalingFactor, Quaternion rotation, BufCreator consumer) {
+        //The scaling factor determines how dense the particles should be together (the higher the denominator, the less the space between the particles/pixels)
+        //float scalingFactor = 1f / 9f;//było 1/8f
+        List<ByteBuf> list = new ArrayList<>(1 << 11);//2048
+
+        int entityId = ENTITY_ID_START;
+
+        //Iterates through all the pixels
+        if (image.getWidth() != image.getHeight())
+            throw new AlixError("DIMENSIONS DIFFER: WIDTH: " + image.getWidth() + " HEIGHT: " + image.getHeight() + ". Report this as an error immediately!");
+        int imgSize = image.getWidth();
+
+        for (int x = 0; x < imgSize; x++) {
+            for (int y = 0; y < imgSize; y++) {
+
+                //if (x % 6 == 0 || y % 6 == 0) continue;
+
+                float px = ((float) x * scalingFactor) - ((imgSize * scalingFactor) / 2);
+                float py = 0;
+                float pz = ((float) y * scalingFactor) - ((imgSize * scalingFactor) / 2);
+
+                //If there is some rotation assigned, rotate the px, py, and pz coordinates by the given quaternion.
+                if (rotation != null) {
+                    Quaternion point = new Quaternion(0, px, py, pz);
+                    Quaternion rotated = rotation.multiplied(point).multiplied(rotation.getInverse());
+                    px = rotated.getX();
+                    py = rotated.getY();
+                    pz = rotated.getZ();
+                }
+
+                //double sineWave = sin(PI * x / (imgSize * 2)) * 2;
+
+                //Set the renderer's location to the center + the calculated pixel coordinates.
                 Vector3d rendererLoc = new Vector3d(SMOOTH_CENTER.getX() + px, SMOOTH_CENTER.getY() + py, SMOOTH_CENTER.getZ() + pz);
 
                 Color color = new Color(image.getRGB(x, y), true);
@@ -395,29 +505,34 @@ public final class ImageRenderer {
                 //If there is some transparency in the pixel, go to the next pixel if there is some.
                 if (color.getAlpha() < 255 || !ColorGenerator.PARTICLE_COLOR_LIST.contains(color)) continue;
                 //Set the color of the particle param to the pixel color
-                //ItemTypes.values().toArray(new ItemType[0])[(int) (random() * ItemTypes.values().size())]
-                ItemType type = COLOR_TO_MODEL_ITEM.getOrDefault(color, ItemTypes.RED_BANNER);
-                ItemStack HEAD_ITEM = new ItemStack.Builder().type(type).build();
+
                 entityId++;
-                //WrapperPlayServerSpawnEntity
-                //WrapperPlayServerSpawnLivingEntity entity = new WrapperPlayServerSpawnLivingEntity(entityId, UUID.randomUUID(), EntityTypes.ARMOR_STAND, rendererLoc, 0, 0, 0, Vector3d.zero(), Arrays.asList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20),
-                //        new EntityData(16, EntityDataTypes.ROTATION, new Vector3f(45, 0, 0))));
-                //WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId, Collections.singletonList(new Equipment(EquipmentSlot.HELMET, HEAD_ITEM)));
 
-                WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND, rendererLoc, 45, 0, 0, 0, Optional.of(Vector3d.zero()));
-                //https://wiki.vg/Entity_metadata#Armor_Stand
-                //https://haselkern.com/Minecraft-ArmorStand/
-                WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
-                        Arrays.asList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20),
-                                new EntityData(16, EntityDataTypes.ROTATION, new Vector3f(45, 0, 0))));
-                WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId, Collections.singletonList(new Equipment(EquipmentSlot.HELMET, HEAD_ITEM)));
-
-                list.add(NettyUtils.createBuffer(entity));
-                list.add(NettyUtils.createBuffer(metadata));
-                list.add(NettyUtils.createBuffer(equipment));
+                consumer.createBuffers(list, rendererLoc, color, entityId);
             }
         }
+        //int bytesCount = list.stream().mapToInt(ByteBuf::readableBytes).sum();
+        //Main.debug("BUFFERS: " + list.size() + " BYTES: " + bytesCount);
         return list.toArray(new ByteBuf[0]);
+    }
+
+    public static ByteBuf[] smoothModelBuffers(BufferedImage image) {
+        return createBuffers0(image, 1f / 9f, ROTATION_SMOOTH, (list, rendererLoc, color, entityId) -> {
+            ItemType type = COLOR_TO_MODEL_ITEM.getOrDefault(color, ItemTypes.RED_BANNER);
+            ItemStack HEAD_ITEM = new ItemStack.Builder().type(type).build();
+
+            WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ARMOR_STAND, rendererLoc, 45, 0, 0, 0, Optional.of(Vector3d.zero()));
+            //https://wiki.vg/Entity_metadata#Armor_Stand
+            //https://haselkern.com/Minecraft-ArmorStand/
+            WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
+                    Arrays.asList(new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20),
+                            new EntityData(16, EntityDataTypes.ROTATION, new Vector3f(45, 0, 0))));
+            WrapperPlayServerEntityEquipment equipment = new WrapperPlayServerEntityEquipment(entityId, Collections.singletonList(new Equipment(EquipmentSlot.HELMET, HEAD_ITEM)));
+
+            list.add(NettyUtils.createBuffer(entity));
+            list.add(NettyUtils.createBuffer(metadata));
+            list.add(NettyUtils.createBuffer(equipment));
+        });
     }
 
     public static ByteBuf[] particleBuffers(BufferedImage image) {

@@ -2,33 +2,34 @@ package shadow.systems.netty;
 
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.ConnectionThreadManager;
+import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
-import alix.common.data.file.UserFileManager;
+import alix.common.data.PersistentUserData;
 import alix.common.messages.Messages;
 import alix.common.utils.other.annotation.OptimizationCandidate;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
-import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
+import alix.libs.io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.jetbrains.annotations.NotNull;
-import shadow.systems.dependencies.Dependencies;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
-import shadow.utils.misc.packet.getters.LoginInStartGetter;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.UserManager;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static io.netty.channel.ChannelHandler.Sharable;
 
@@ -132,17 +133,19 @@ public final class AlixChannelHandler {
             Channel channel = ctx.channel();
             ChannelPipeline pipeline = channel.pipeline();
 
-            pipeline.addBefore("packet_handler", CHANNEL_MONITOR_NAME, CHANNEL_MONITOR);
-            PacketEventsDecoder decoder = (PacketEventsDecoder) pipeline.context(PacketEvents.DECODER_NAME).handler();
+            if (AlixUtils.antibotService) {
+                pipeline.addBefore("packet_handler", CHANNEL_MONITOR_NAME, CHANNEL_MONITOR);
+                PacketEventsDecoder decoder = (PacketEventsDecoder) pipeline.context(PacketEvents.DECODER_NAME).handler();
 
-            //Fix for invalid packet attacks
-            //used until automatically removed during handler relocation after set compression
-            pipeline.replace(PacketEvents.DECODER_NAME, PacketEvents.DECODER_NAME, new AlixPEDecoder(decoder));
+                //Fix for invalid packet attacks
+                //used until automatically removed during handler relocation after SET_COMPRESSION
+                pipeline.replace(PacketEvents.DECODER_NAME, PacketEvents.DECODER_NAME, new AlixPEDecoder(decoder));
 
-            TIMEOUT_TASKS.put(channel, channel.eventLoop().schedule(() -> {
-                TIMEOUT_TASKS.remove(channel);
-                NettyUtils.closeAfterConstSend(channel, timeOutError);
-            }, 7, TimeUnit.SECONDS));
+                TIMEOUT_TASKS.put(channel, channel.eventLoop().schedule(() -> {
+                    TIMEOUT_TASKS.remove(channel);
+                    NettyUtils.closeAfterConstSend(channel, timeOutError);
+                }, 7, TimeUnit.SECONDS));
+            }
         }
 
         /*        @Override
@@ -280,7 +283,8 @@ public final class AlixChannelHandler {
             invalidNamePacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked")),
             alreadyConnectingPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("already-connecting")),
             preventFirstTimeJoinPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(ConnectionManager.preventFirstTimeJoinMessage),
-            maxTotalAccountsPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(GeoIPTracker.maxAccountsReached);
+            maxTotalAccountsPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(GeoIPTracker.maxAccountsReached),
+            vpnDetectedPacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(AntiVPN.antiVpnMessage);
 
 
     //private static final ByteBuf invalidNamePacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked"));
@@ -294,6 +298,7 @@ public final class AlixChannelHandler {
 
     public static void onHandshake(PacketReceiveEvent event) {
         WrapperHandshakingClientHandshake wrapper = new WrapperHandshakingClientHandshake(event);
+        //Main.debug("HANDSHAKE RECEIVED BY BUKKIT SERVER: " + AlixUtils.getFields(wrapper));
         Channel channel = (Channel) event.getChannel();
         channel.attr(JOINED_WITH_IP).set(wrapper.getServerAddress());
     }
@@ -303,12 +308,14 @@ public final class AlixChannelHandler {
         return channel.attr(JOINED_WITH_IP).get();
     }
 
+    private static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]*");
 
     //Thanks onechris ;]
     //https://github.com/onebeastchris/GeyserPackSync/blob/master/common%2Fsrc%2Fmain%2Fjava%2Fnet%2Fonebeastchris%2Fgeyserpacksync%2Fcommon%2Futils%2FFloodgateUtil.java#L12-L15
-    @OptimizationCandidate
-    public static void onLoginStart(PacketReceiveEvent event) {
-        User user = event.getUser();
+
+    //returns true on allowed, false on disallowed login and closed connection
+    public static boolean onLoginStart(User user, String name, PersistentUserData data, boolean deemedPremium) {
+        //User user = event.getUser();
         Channel channel = (Channel) user.getChannel();
 
         removeFromTimeOut(channel);
@@ -321,36 +328,44 @@ public final class AlixChannelHandler {
             return;
         }*/
 
-        String nameInPacket = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
+        //String name = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
         //ChannelWrapper
 
-        //Main.logError("NAME IN LOGIN START: " + nameInPacket + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
-        if (nameInPacket == null) {
-            FireWallManager.add(user.getAddress().getAddress(), "E1");
+        //Main.logError("NAME IN LOGIN START: " + name + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
+        if (name.length() > 16 || name.isEmpty() || !NAME_PATTERN.matcher(name).matches()) {
+            //FireWallManager.add(user.getAddress().getAddress(), "E1");
             NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
             //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
-            event.setCancelled(true);
-            return;
+            //event.setCancelled(true);
+            return false;
         }
 
-        String name = Dependencies.getCorrectUsername(channel, nameInPacket); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + nameInPacket : nameInPacket;
-        //String name = nameInPacket;
+        //String name = Dependencies.getCorrectUsername(channel, name); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + name : name;
+        //String name = name;
 
         //AlixScheduler.async(() -> (?)
-        if (AlixUtils.antibotService)
-            ConnectionThreadManager.onJoinAttempt(name, user.getAddress().getAddress());
+        InetAddress address = user.getAddress().getAddress();
 
-        if (!UserFileManager.hasName(name)) {
-            if (ConnectionManager.disallowJoin(name)) {//Close the connection before the auth thread is started
+        if (AlixUtils.antibotService)
+            ConnectionThreadManager.onJoinAttempt(name, address);
+
+        if (data == null) {
+            if (!deemedPremium && ConnectionManager.disallowJoin(name)) {//Close the connection before the auth thread is started
                 NettyUtils.closeAfterConstSend(channel, preventFirstTimeJoinPacket);
-                event.setCancelled(true);
-                return;
+                //event.setCancelled(true);
+                return false;
             }
 
-            if (GeoIPTracker.disallowJoin(user.getAddress().getAddress(), name)) {
+            if (GeoIPTracker.disallowJoin(address, name)) {
                 NettyUtils.closeAfterConstSend(channel, maxTotalAccountsPacket);
-                event.setCancelled(true);
-                return;
+                //event.setCancelled(true);
+                return false;
+            }
+
+            if (AntiVPN.disallowJoin(address)) {
+                NettyUtils.closeAfterConstSend(channel, vpnDetectedPacket);
+                //event.setCancelled(true);
+                return false;
             }
         }
 
@@ -364,8 +379,10 @@ public final class AlixChannelHandler {
         //fix for a race condition caused by two players connecting with the same nickname
         if (cU != user) {
             NettyUtils.closeAfterConstSend(channel, alreadyConnectingPacket);
-            event.setCancelled(true);
+            //event.setCancelled(true);
+            return false;
         }
+        return true;
     }
 
     /*private static final ChannelFutureListener REMOVE_CONNECTING = future -> {

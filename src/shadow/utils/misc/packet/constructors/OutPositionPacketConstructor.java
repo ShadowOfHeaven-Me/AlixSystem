@@ -1,6 +1,6 @@
 package shadow.utils.misc.packet.constructors;
 
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerPositionAndLook;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Location;
 import shadow.utils.netty.NettyUtils;

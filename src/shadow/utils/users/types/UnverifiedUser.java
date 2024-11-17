@@ -8,7 +8,7 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.config.ConfigParams;
-import com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -48,7 +48,6 @@ import static shadow.utils.main.AlixUtils.requireCaptchaVerification;
 
 public final class UnverifiedUser implements AlixUser {
 
-    //private static final String registerSuccess = Messages.get("register-success");
     private static final ByteBuf loginSuccessMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("login-success"));
     private final Player player;
     private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
@@ -66,8 +65,6 @@ public final class UnverifiedUser implements AlixUser {
     private final String strAddress;
     private final InetAddress address;
     //private PacketProcessor processor;
-    //private final Location currentLocation;
-    //private final GameMode originalGameMode;
     private final boolean captchaInitialized, originalCollidableState, joinedRegistered, isBedrock;
     private final PotionEffectHandler potionEffectHandler;
     private final VerificationMessage verificationMessage;
@@ -76,11 +73,14 @@ public final class UnverifiedUser implements AlixUser {
     private LoginVerification loginVerification;
     private AlixVerificationGui alixGui;
     public int loginAttempts, captchaAttempts, authAppAttempts;
-    private boolean hasCompletedCaptcha, isGUIInitialized, isGuiUser;
+    private boolean hasCompletedCaptcha, isGuiUser;//, isGUIInitialized;
     //Virtualization values
     public boolean blindnessSent;
     public String originalJoinMessage;
     public Location originalSpawnEventLocation;
+    //AntiBot values
+    public boolean keepAliveReceived, armSwingReceived;
+    //public long armSwingSent, keepAliveSent;
 
     public UnverifiedUser(Player player, TemporaryUser tempUser) {
         //UserManager.putAttr(this);
@@ -148,8 +148,8 @@ public final class UnverifiedUser implements AlixUser {
         //Main.logError("PIPELINE: " + this.getChannel().pipeline().names());
         if (!isGuiUser && !isBedrock) this.verificationMessage.updateMessage();
 
+        CommandsPacketConstructor.write(this);
         AlixHandler.sendLoginEffectsPackets(this);
-        CommandsPacketConstructor.spoofFor(this);
 
         if (captchaInitialized)
             this.captchaFuture.whenCompleted(c -> c.sendPackets(this), this.getChannel().eventLoop());
@@ -165,7 +165,7 @@ public final class UnverifiedUser implements AlixUser {
         this.getChannel().eventLoop().schedule(() -> {
             AlixHandler.sendLoginEffectsPackets(this);
             this.blocker.getFallPhase().tpPosCorrect();
-            this.blocker.getFallPhase().noCobwebSpoof();
+            //this.blocker.getFallPhase().noCobwebSpoof();
         }, 1, TimeUnit.SECONDS);
     }
 
@@ -180,7 +180,7 @@ public final class UnverifiedUser implements AlixUser {
 
     public void uninject() {//reverses back all changes (but does not teleport back)
         //release allocated
-        if (captchaInitialized) this.captchaFuture.whenCompleted(Captcha::release);
+        if (captchaInitialized) Captcha.uninject(this.captchaFuture); //this.captchaFuture.whenCompleted(Captcha::release);
         this.reminderTask.cancel(true);
         this.verificationMessage.destroy();
         if (this.alixGui != null) this.alixGui.destroy();
@@ -279,7 +279,7 @@ public final class UnverifiedUser implements AlixUser {
         this.hasCompletedCaptcha = true;
 
         if (!this.isBedrock()) this.verificationMessage.updateAfterCaptchaComplete();
-        CommandsPacketConstructor.spoofFor(this);
+        CommandsPacketConstructor.writeAndFlush(this);
         //this.writeAndFlushRaw(this.rawVerificationMessageBuffer);
 
         this.blocker.startLoginKickTask();
@@ -515,7 +515,7 @@ public final class UnverifiedUser implements AlixUser {
     }
 
     public boolean isRegistered() {
-        return hasAccount() && data.getPassword().isSet();
+        return this.hasAccount() && data.getPassword().isSet();
     }
 
     @Override

@@ -1,11 +1,12 @@
 package shadow.utils.users.types;
 
-import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.PacketWrapper;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
+import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
+import shadow.Main;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
@@ -25,7 +26,7 @@ public interface AlixUser {
 
     ChannelHandlerContext silentContext();
 
-    //does not account for the TemporaryUser
+    //does not account for TemporaryUser
     default boolean isAssignable(AlixUser user) {
         return this.silentContext() == user.silentContext();
     }
@@ -69,6 +70,11 @@ public interface AlixUser {
         NettyUtils.writeAndFlushDynamicWrapper(OutMessagePacketConstructor.packetWrapper(Component.text(message)), this.silentContext());
     }
 
+    default void debug(String message) {
+        this.sendDynamicMessageSilently(message);
+        Main.debug(message);
+    }
+
     //According to PacketTransformationUtil.transform(PacketWrapper<?>), this way of sending the packets silently is just fine
     default void writeDynamicSilently(PacketWrapper<?> packet) {
         NettyUtils.writeDynamicWrapper(packet, this.silentContext());
@@ -107,9 +113,7 @@ public interface AlixUser {
     }
 
     default void writeAllConstAndThenFlushSilently(ByteBuf[] bufs) {
-        for (ByteBuf buf : bufs) {
-            this.writeConstSilently(buf);
-        }
+        for (ByteBuf buf : bufs) this.writeConstSilently(buf);
         this.flush();
     }
 

@@ -4,35 +4,42 @@ package alix.common.data;
 import alix.common.data.security.Hashing;
 import alix.common.data.security.HashingAlgorithm;
 import alix.common.utils.AlixCommonUtils;
-import alix.common.utils.collections.LoopCharIterator;
-import com.google.common.io.ByteArrayDataInput;
-import com.google.common.io.ByteArrayDataOutput;
+import alix.common.utils.collections.SecureRandomCharIterator;
+import alix.common.utils.file.SaveUtils;
+import alix.common.utils.other.throwable.AlixError;
 
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import static alix.common.utils.AlixCommonUtils.generationChars;
 
 public final class Password {
 
-    private static final LoopCharIterator loopCharIterator;
+    private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars));
     private final String hashedPassword;
     private final HashingAlgorithm hashing;
+    private final String salt;
     //private final String savablePassword;
 
-    private Password(String hashedPassword, byte hashId) {
+    private Password(String hashedPassword, byte hashId, String salt) {
         this.hashedPassword = hashedPassword;
         this.hashing = Hashing.ofHashId(hashId);
+        this.salt = salt;
     }
 
-    private Password(String hashedPassword, HashingAlgorithm hashing) {
+    private Password(String hashedPassword, HashingAlgorithm hashing, String salt) {
         this.hashedPassword = hashedPassword;
         this.hashing = hashing;
+        this.salt = salt;
     }
 
     public String toSavable() {
-        return hashedPassword + ":" + hashing.hashId();
+        //return hashedPassword + ":" + hashing.hashId() + ":" + salt;
+        if (!this.hasSalt()) return SaveUtils.asSavable(':', hashedPassword, hashing.hashId());
+        return SaveUtils.asSavable(':', hashedPassword, hashing.hashId(), salt);
     }
 
     public boolean isEqualTo(String unhashedPassword) {
-        return this.hashedPassword != null && this.hashedPassword.equals(this.hashing.hash(unhashedPassword));
+        return this.hashedPassword != null && this.hashedPassword.equals(Hashing.hash(this.hashing, unhashedPassword, this.salt));
     }
 
 /*    public boolean isCorrectLiteral(String hashedPassword) {
@@ -51,8 +58,13 @@ public final class Password {
         return hashedPassword;
     }
 
+    //false if the password was reset via /as rp <user>
     public boolean isSet() {
         return hashedPassword != null;//this != SHARED_EMPTY
+    }
+
+    private boolean hasSalt() {
+        return salt != null;
     }
 
 /*    public HashingAlgorithm getHashing() {
@@ -62,22 +74,22 @@ public final class Password {
     public static Password createRandom() {
         int length = 8 + AlixCommonUtils.random.nextInt(8);//min char length + 3 + (0-8) because 2^n results in a faster generation
 
-        return fromUnhashed(new String(loopCharIterator.next(length)));
+        return fromUnhashed(new String(RANDOM_CHAR_ITERATOR.next(length)));
     }
 
-    public static Password fromHashed(String hashedPassword, byte hashId) {
+/*    public static Password fromHashed(String hashedPassword, byte hashId) {
         return new Password(hashedPassword, hashId);
-    }
+    }*/
 
 /*    public static Password generatePseudoRandom(String generationBase) {
         byte hashId = 1;
         return new Password(ofHashId(hashId).hash(generationBase), hashId);
     }*/
 
-    private static final Password SHARED_EMPTY = new Password(null, (byte) 0);
+    private static final Password SHARED_EMPTY = new Password(null, (byte) 0, null);
     private static final HashingAlgorithm CONFIG_HASH = Hashing.getConfigHashingAlgorithm();
 
-    public static void write(Password password, ByteArrayDataOutput output) {
+/*    public static void write(Password password, ByteArrayDataOutput output) {
         if (!password.isSet()) {
             output.writeByte(-1);
             return;
@@ -87,13 +99,13 @@ public final class Password {
         byte[] passBytes = password.getHashedPassword().getBytes(StandardCharsets.UTF_8);
         output.writeShort(passBytes.length);
         output.write(passBytes);
-    }
+    }*/
 
     public static Password empty() {
         return SHARED_EMPTY;
     }
 
-    public static Password read(ByteArrayDataInput input) {
+/*    public static Password read(ByteArrayDataInput input) {
         byte hashId = input.readByte();
         if (hashId == -1) return empty();
         short length = input.readShort();
@@ -101,26 +113,29 @@ public final class Password {
         byte[] passBytes = new byte[length];
         input.readFully(passBytes);
         return fromHashed(new String(passBytes, StandardCharsets.UTF_8), hashId);
-    }
+    }*/
 
     public static Password fromUnhashed(String unhashedPassword) {
-        String hashed = CONFIG_HASH.hash(unhashedPassword);
-        return new Password(hashed, CONFIG_HASH);
+        String salt = Hashing.generateSalt();
+        String hashed = Hashing.hash(CONFIG_HASH, unhashedPassword, salt);
+        return new Password(hashed, CONFIG_HASH, salt);
     }
 
     public static Password readFromSaved(String savablePassword) {
         String[] s = savablePassword.split(":");
         String password = s[0];
 
-        if (password.equals("null")) password = null;
-        if (s.length == 1)
-            return password == null ? empty() : fromUnhashed(password); //the old formatting support - we know it's unhashed since the hashing id was not saved
+        if (password.equals("null")) return empty();
 
-        return password == null ? empty() : new Password(password, Byte.parseByte(s[1]));
-    }
-
-    static {
-        char[] generationChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-+=".toCharArray();
-        loopCharIterator = new LoopCharIterator(AlixCommonUtils.shuffle(generationChars));
+        switch (s.length) {
+            case 1:
+                return fromUnhashed(password); //the old formatting support - we know it's unhashed since the hashing id was not saved
+            case 2:
+                return new Password(password, Byte.parseByte(s[1]), null);//support old, unsalted passwords read
+            case 3:
+                return new Password(password, Byte.parseByte(s[1]), s[2]);
+            default:
+                throw new AlixError("Invalid savable password: '" + savablePassword + "' for savable length " + s.length + " with savable parts " + Arrays.toString(s) + "!");
+        }
     }
 }

@@ -1,16 +1,18 @@
 package shadow.systems.executors.packetevents;
 
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.*;
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
-import com.github.retrooper.packetevents.protocol.chat.Node;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.util.TimeStampMode;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.event.*;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import alix.libs.com.github.retrooper.packetevents.protocol.chat.Node;
+import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import alix.libs.com.github.retrooper.packetevents.util.TimeStampMode;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
+import alix.libs.io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import io.netty.channel.Channel;
 import shadow.Main;
+import shadow.systems.login.autoin.premium.PremiumAuthenticator;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
@@ -21,7 +23,7 @@ public final class PacketEventsManager {
 
     public static void onLoad() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(Main.plugin));
-        PacketEvents.getAPI().getSettings().timeStampMode(TimeStampMode.NONE).bStats(true).debug(false).reEncodeByDefault(false).downsampleColors(false);
+        PacketEvents.getAPI().getSettings().timeStampMode(TimeStampMode.NONE).bStats(true).debug(false).reEncodeByDefault(false).downsampleColors(false).checkForUpdates(false);
         PacketEvents.getAPI().load();
     }
 
@@ -41,6 +43,8 @@ public final class PacketEventsManager {
 
     private static final class GeneralListener extends PacketListenerAbstract {
 
+        private final PremiumAuthenticator premiumAuthenticator = new PremiumAuthenticator();
+
         @Override
         public void onPacketReceive(PacketReceiveEvent event) {
             //if (event.getUser().getUUID() == null) return;
@@ -53,7 +57,7 @@ public final class PacketEventsManager {
                 Main.logError("CLIENT PACKS: " + new WrapperConfigClientSelectKnownPacks(event).getKnownPacks());
             }*/
 
-            //Main.logInfo("PACKET IN: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
+            //Main.debug("PACKET IN: " + event.getPacketType().getName());// + " NAMES " + ((Channel) event.getUser().getChannel()).pipeline().names());
 
             /*if (event.getPacketType() == PacketType.Configuration.Client.CLIENT_SETTINGS) {
                 Main.logError("SETTINGS: " + AlixUtils.getFields(new WrapperConfigClientSettings(event)));
@@ -66,6 +70,8 @@ public final class PacketEventsManager {
                 Main.logError("ABILITIES: " + AlixUtils.getFields(new WrapperPlayClientPlayerAbilities(event)));
             }*/
 
+            //Main.debug("PACKET IN: " + event.getPacketType().getName());
+            //Main.debug("PACKET IN: " + event.getPacketType().getName() + " PIPELINE: " + ((Channel) event.getUser().getChannel()).pipeline().names());
 
             AlixUser user;
 
@@ -82,8 +88,13 @@ public final class PacketEventsManager {
                 return;
             }
 
-            if (event.getPacketType() == PacketType.Login.Client.LOGIN_START) {
-                AlixChannelHandler.onLoginStart(event);
+            if (event.getClass() == PacketLoginReceiveEvent.class) {
+                PacketLoginReceiveEvent e = (PacketLoginReceiveEvent) event;
+                switch (e.getPacketType()) {
+                    case LOGIN_START:
+                    case ENCRYPTION_RESPONSE:
+                        this.premiumAuthenticator.onLoginStartPacketReceive(e);
+                }
             }
             /*if (event.getPacketType() == PacketType.Play.Client.CHAT_PREVIEW || event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE || event.getPacketType() == PacketType.Play.Client.CHAT_ACK) {
                 Main.logInfo("PACKET IN: " + event.getPacketType().getName() + " CANCELLED: " + event.isCancelled());
@@ -98,7 +109,6 @@ public final class PacketEventsManager {
         @Override
         public void onPacketSend(PacketSendEvent event) {
             //if (event.getUser().getUUID() == null) return;
-            AlixUser user;
 
 
 /*            if (event.getPacketType() == PacketType.Play.Server.UPDATE_VIEW_POSITION) {
@@ -172,14 +182,17 @@ public final class PacketEventsManager {
                 }*/
 
 
-            //Main.logInfo("PACKET OUT: " + event.getPacketType().getName());
+            //Main.debug("PACKET OUT: " + event.getPacketType().getName());
 
 /*            if (event.getPacketType() == PacketType.Play.Server.WINDOW_PROPERTY) {
                 Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerWindowProperty(event)));
             }*/
+            AlixUser user;
 
             if (event.getClass() == PacketPlaySendEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
                 user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
+
+            //if (!event.isCancelled()) Main.debug("PACKET OUT ALLOWED: " + event.getPacketType().getName());
 
             /*else if (event.getPacketType() == PacketType.Status.Server.RESPONSE) {
                 WrapperStatusServerResponse wrapper = new WrapperStatusServerResponse(event);

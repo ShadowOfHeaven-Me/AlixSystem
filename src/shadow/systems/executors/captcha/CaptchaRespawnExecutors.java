@@ -10,6 +10,7 @@ import shadow.utils.users.types.UnverifiedUser;
 
 public final class CaptchaRespawnExecutors implements Listener {
 
+    //currently unused
     public CaptchaRespawnExecutors(boolean forceRespawn) {
         //if (forceRespawn) Main.pm.registerEvents(new ImmediateRespawnExecutors(), Main.plugin);
     }

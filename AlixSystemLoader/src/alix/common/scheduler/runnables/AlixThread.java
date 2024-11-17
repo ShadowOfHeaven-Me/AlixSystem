@@ -1,14 +1,10 @@
 package alix.common.scheduler.runnables;
 
-import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class AlixThread extends Thread {
 
-    private static final AlixDeque<AlixThread> alixThreads = new ConcurrentAlixDeque<>();
+    private static final ConcurrentAlixDeque<AlixThread> alixThreads = new ConcurrentAlixDeque<>();
     private final Runnable command;
     private final long millisDelay;
     private volatile boolean running = true;
@@ -38,14 +34,14 @@ public final class AlixThread extends Thread {
                 try {
                     Thread.sleep(diff);//non-zero sleep time
                 } catch (InterruptedException e) {
-                    //ignore the interruption
+                    this.interrupt();
                 }
             }//else the command execution took more than the delay - do nothing
         }
     }
 
     public static void shutdownAllAlixThreads() {
-        AlixDeque.forEach(AlixThread::shutdown, alixThreads);
+        alixThreads.forEach(AlixThread::shutdown);
         alixThreads.clear();
     }
 

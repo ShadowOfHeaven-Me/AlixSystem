@@ -1,6 +1,6 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
 
@@ -28,6 +28,7 @@ public final class BedrockPacketBlocker extends PacketBlocker {
                 break;
             case PLUGIN_MESSAGE:
             case CLOSE_WINDOW:
+            case PONG:
             case KEEP_ALIVE://will time out without this one
                 return;
         }

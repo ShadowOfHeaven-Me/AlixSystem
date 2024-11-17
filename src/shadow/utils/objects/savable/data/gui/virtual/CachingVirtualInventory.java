@@ -1,10 +1,10 @@
 package shadow.utils.objects.savable.data.gui.virtual;
 
 import alix.common.utils.AlixCommonUtils;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
+import alix.libs.com.github.retrooper.packetevents.PacketEvents;
+import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
+import alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;

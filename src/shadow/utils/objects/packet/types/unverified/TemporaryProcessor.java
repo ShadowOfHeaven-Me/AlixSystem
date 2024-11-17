@@ -1,8 +1,8 @@
 package shadow.utils.objects.packet.types.unverified;
 
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import alix.libs.com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import alix.libs.com.github.retrooper.packetevents.event.PacketSendEvent;
+import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketType;
 
 public final class TemporaryProcessor {
 

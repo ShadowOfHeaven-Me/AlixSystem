@@ -3,8 +3,8 @@ package shadow.utils.objects.savable.data.gui;
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
 import alix.common.utils.formatter.AlixFormatter;
-import com.github.retrooper.packetevents.protocol.sound.Sounds;
-import io.github.retrooper.packetevents.util.SpigotConversionUtil;
+import alix.libs.com.github.retrooper.packetevents.protocol.sound.Sounds;
+import alix.libs.io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -29,7 +29,7 @@ import java.util.List;
 public final class PasswordGui {
 
     public static final ItemStack BACKGROUND_ITEM;
-    public static final com.github.retrooper.packetevents.protocol.item.ItemStack RETROOPER_BACKGROUND_ITEM;
+    public static final alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack RETROOPER_BACKGROUND_ITEM;
 
     static {
         String config = Main.config.getString("background-item").toUpperCase();
@@ -71,10 +71,10 @@ public final class PasswordGui {
             invalidPassword = Messages.get("password-invalid-gui");
 
     public static final ItemStack[] digits = getDigits();
-    public static final com.github.retrooper.packetevents.protocol.item.ItemStack[] retrooperDigits = toRetrooperItems(getDigits());
+    public static final alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack[] retrooperDigits = toRetrooperItems(getDigits());
 
     public static final ItemStack BARRIER = rename(new ItemStack(Material.BARRIER), "§f");
-    public static final com.github.retrooper.packetevents.protocol.item.ItemStack RETROOPER_BARRIER = SpigotConversionUtil.fromBukkitItemStack(BARRIER);
+    public static final alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack RETROOPER_BARRIER = SpigotConversionUtil.fromBukkitItemStack(BARRIER);
     public static final int[] EMPTY_DIGIT_SLOTS = new int[]{13, 14, 15, 16};
     public static final int FIRST_EMPTY_DIGIT_SLOT = EMPTY_DIGIT_SLOTS[0];
     public static final int[] PIN_DIGIT_SLOTS = new int[]{28, 0, 1, 2, 9, 10, 11, 18, 19, 20};
@@ -102,16 +102,16 @@ public final class PasswordGui {
             PIN_LEAVE_ITEM = rename(AlixMaterials.BLACK_WOOL.getItemCloned(), pinLeave);
 
     private static final ItemStack[] pinVerificationGuiItems = createPINVerificationItems();
-    public static final List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperPinVerificationGuiItems = Arrays.asList(toRetrooperItems(pinVerificationGuiItems));
+    public static final List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> retrooperPinVerificationGuiItems = Arrays.asList(toRetrooperItems(pinVerificationGuiItems));
 
-    public static com.github.retrooper.packetevents.protocol.item.ItemStack[] toRetrooperItems(ItemStack[] bukkit) {
-        com.github.retrooper.packetevents.protocol.item.ItemStack[] retrooper = new com.github.retrooper.packetevents.protocol.item.ItemStack[bukkit.length];
+    public static alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack[] toRetrooperItems(ItemStack[] bukkit) {
+        alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack[] retrooper = new alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack[bukkit.length];
         for (int i = 0; i < bukkit.length; i++) retrooper[i] = SpigotConversionUtil.fromBukkitItemStack(bukkit[i]);
         return retrooper;
     }
 
-    public static List<com.github.retrooper.packetevents.protocol.item.ItemStack> toRetrooperItems(List<ItemStack> bukkit) {
-        List<com.github.retrooper.packetevents.protocol.item.ItemStack> retrooper = new ArrayList<>(bukkit.size());
+    public static List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> toRetrooperItems(List<ItemStack> bukkit) {
+        List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack> retrooper = new ArrayList<>(bukkit.size());
         for (ItemStack itemStack : bukkit) retrooper.add(SpigotConversionUtil.fromBukkitItemStack(itemStack));
         return retrooper;
     }

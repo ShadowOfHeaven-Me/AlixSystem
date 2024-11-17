@@ -28,7 +28,7 @@ public final class AlixWorldGenerator extends WorldCreator {
     }
 
     private static void init(World world) {
-        world.setTime(18000);
+        world.setTime(20_000);
         //world.setFullTime(18000);
         world.setAmbientSpawnLimit(-1);
         world.setAnimalSpawnLimit(-1);

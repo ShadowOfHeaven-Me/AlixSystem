@@ -22,4 +22,9 @@ public final class ConstReCaptcha extends Captcha {
         for (ByteBuf buf : this.buffers) user.writeAndFlushConstSilently(buf);
         //user.sendDynamicMessageSilently("sent packets");
     }
+
+    @Override
+    protected boolean isReleased() {
+        return false;
+    }
 }
