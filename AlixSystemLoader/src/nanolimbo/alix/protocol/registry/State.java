@@ -17,6 +17,9 @@
 
 package nanolimbo.alix.protocol.registry;
 
+import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import nanolimbo.alix.protocol.Packet;
 import nanolimbo.alix.protocol.packets.PacketHandshake;
 import nanolimbo.alix.protocol.packets.configuration.PacketFinishConfiguration;
@@ -78,6 +81,8 @@ public enum State {
             clientBound.register(PacketLoginPluginRequest::new,
                     map(0x04, Version.getMin(), Version.getMax())
             );
+            clientBound.registerRetrooper(PacketInSetCompression::new,
+                    PacketType.Login.Server.SET_COMPRESSION, V1_8, Version.getMax());
         }
     },
     CONFIGURATION(3) {
@@ -393,6 +398,15 @@ public enum State {
             return registry.getOrDefault(version, registry.get(getMin()));
         }
 
+        //Gotta love packetevents ;]
+        private void registerRetrooper(Supplier<?> packet, PacketTypeCommon type, Version from, Version to) {
+            for (Version ver : getRange(from, to)) {
+                PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
+                int packetId = type.getId(ClientVersion.getById(ver.getProtocolNumber()));
+                reg.register(packetId, packet);
+            }
+        }
+
         private void register(Supplier<?> packet, Mapping... mappings) {
             for (Mapping mapping : mappings) {
                 for (Version ver : getRange(mapping)) {
@@ -403,8 +417,11 @@ public enum State {
         }
 
         private Collection<Version> getRange(Mapping mapping) {
-            Version from = mapping.from;
-            Version curr = mapping.to;
+            return getRange(mapping.from, mapping.to);
+        }
+
+        private Collection<Version> getRange(Version from, Version to) {
+            Version curr = to;
 
             if (curr == from)
                 return Collections.singletonList(from);
@@ -420,7 +437,6 @@ public enum State {
 
             return versions;
         }
-
     }
 
     public static final class PacketRegistry {
@@ -458,7 +474,7 @@ public enum State {
         private final Version from;
         private final Version to;
 
-        public Mapping(int packetId, Version from, Version to) {
+        private Mapping(int packetId, Version from, Version to) {
             this.from = from;
             this.to = to;
             this.packetId = packetId;
@@ -467,13 +483,13 @@ public enum State {
 
     /**
      * Map packet id to version range
+     *
      * @param packetId Packet id
-     * @param from Minimal version (include)
-     * @param to Last version (include)
+     * @param from     Minimal version (include)
+     * @param to       Last version (include)
      * @return Created mapping
      */
     private static Mapping map(int packetId, Version from, Version to) {
         return new Mapping(packetId, from, to);
     }
-
 }

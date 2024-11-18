@@ -1,5 +1,6 @@
 package alix.common.utils.netty;
 
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 
 public final class FastNettyUtils {
@@ -65,6 +66,19 @@ public final class FastNettyUtils {
         if ((i & (0xFFFFFFFF << 21)) == 0) return 3;
         if ((i & (0xFFFFFFFF << 28)) == 0) return 4;
         return 5;
+    }
+
+    public static int readVarInt(ByteBuf buf) {
+        int i = 0;
+        int maxRead = Math.min(5, buf.readableBytes());
+
+        for (int j = 0; j < maxRead; j++) {
+            int k = buf.readByte();
+            i |= (k & 0x7F) << j * 7;
+            if ((k & 0x80) != 128) return i;
+        }
+
+        throw new AlixException("fucked up");
     }
 
     public static void init() {

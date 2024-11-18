@@ -71,16 +71,23 @@ public final class PacketHandler {
 
     public void handle(ClientConnection conn, PacketLoginStart packet) {
         conn.getFrameDecoder().stopResendCollection();
-        if (!this.server.getIntegration().onLoginStart(conn, packet)) {
-            conn.getFrameDecoder().releaseCollected();
-            return;
+        switch (this.server.getIntegration().onLoginStart(conn, packet)) {
+            case DISCONNECTED:
+                conn.getFrameDecoder().releaseCollected();
+                return;
+            case CONNECT_TO_MAIN_SERVER:
+                conn.uninject();
+                return;
+            case CONNECT_TO_LIMBO:
+                break;
         }
 
-        if (this.server.getIntegration().hasCompletedCaptcha(packet.getUsername(), conn.getChannel())) {
+        /*if (this.server.getIntegration().hasCompletedCaptcha(packet.getUsername(), conn.getChannel())) {
             conn.uninject();
             return;
-        }
+        }*/
         conn.getFrameDecoder().releaseCollected();
+        conn.getDuplexHandler().tryEnableCompression();
 
         if (server.getConfig().getMaxPlayers() > 0 &&
                 server.getConnections().getCount() >= server.getConfig().getMaxPlayers()) {

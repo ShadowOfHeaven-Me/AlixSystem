@@ -25,6 +25,12 @@ public class PacketDisconnect implements PacketOut {
 
     private String reason;
 
+    public PacketDisconnect() {
+
+    }
+    public PacketDisconnect(String reason) {
+        this.reason = reason;
+    }
     public void setReason(String reason) {
         this.reason = reason;
     }

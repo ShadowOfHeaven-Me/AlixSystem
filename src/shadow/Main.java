@@ -48,19 +48,6 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //+ Updated PacketEvents
-    //+ Alix now no longer needs FastLogin and performs premium checks internally!
-    //+ Removed 'premium-auto-in' in favour of the newly added 'require-ownership-of-premium-nickname' in config.yml
-    //+ Added many different optimizations to the packet resending mechanic
-    //* Fixed incompatibility with GrimAC and packetevents
-    //* Fixed incompatibility when packetevents was a separate plugin
-    //* Fixed 'antibot-service' set to false not fully disabling the antibot
-    //* When using FastLogin, by default, cracked accounts will no longer be able to register using premium nicknames
-    //* Fixed floodgate incompatibility with java players
-    //* All non-login commands are now fully disabled by default
-    //* 'verification-blindness' is now false by default
-    //- Removed /op command restrict option from config.yml
-    //- Removed 'offline-login-requirement' from config.yml
 
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)

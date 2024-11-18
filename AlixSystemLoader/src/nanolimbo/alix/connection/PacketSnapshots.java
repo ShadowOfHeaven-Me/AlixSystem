@@ -21,6 +21,7 @@ import nanolimbo.alix.LimboConstants;
 import nanolimbo.alix.protocol.PacketSnapshot;
 import nanolimbo.alix.protocol.packets.configuration.PacketFinishConfiguration;
 import nanolimbo.alix.protocol.packets.configuration.PacketRegistryData;
+import nanolimbo.alix.protocol.packets.login.PacketInSetCompression;
 import nanolimbo.alix.protocol.packets.login.PacketLoginSuccess;
 import nanolimbo.alix.protocol.packets.play.*;
 import nanolimbo.alix.server.LimboServer;
@@ -40,6 +41,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public final class PacketSnapshots {
 
+    public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketInSetCompression());
     public static PacketSnapshot PACKET_LOGIN_SUCCESS;
     public static PacketSnapshot PACKET_JOIN_GAME;
     public static PacketSnapshot PACKET_SPAWN_POSITION;

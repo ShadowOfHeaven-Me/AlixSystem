@@ -18,6 +18,7 @@
 package nanolimbo.alix;
 
 import io.netty.channel.Channel;
+import nanolimbo.alix.integration.LimboIntegration;
 import nanolimbo.alix.server.LimboServer;
 import nanolimbo.alix.server.Log;
 

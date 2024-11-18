@@ -65,7 +65,7 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         }
 
         boolean readerIndex0 = in.readerIndex() == 0;
-        Log.error("READER IDX=0: " + readerIndex0);
+        //Log.error("READER IDX=0: " + readerIndex0);
 
         this.reader.reset();
         int varIntEnd = in.forEachByte(reader);

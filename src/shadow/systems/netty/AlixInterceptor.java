@@ -10,13 +10,16 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
+import nanolimbo.alix.NanoLimbo;
 import nanolimbo.alix.connection.pipeline.NoTimeoutHandler;
+import nanolimbo.alix.server.LimboServer;
 import shadow.Main;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.netty.unsafe.first.FirstInboundHandler;
 import shadow.utils.objects.AlixConsoleFilterHolder;
+import shadow.virtualization.LimboServerIntegration;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -99,7 +102,9 @@ public final class AlixInterceptor {
         }
 
         //https://github.com/Nan1t/NanoLimbo/blob/main/src/main/java/ua/nanit/limbo/server/LimboServer.java
-
+        private static final LimboServer limbo = AlixUtils.requireCaptchaVerification
+               ? NanoLimbo.load(AlixHandler.SERVER_CHANNEL_FUTURE.channel(), new LimboServerIntegration())
+                : null;
 //        private static final LimboServer limbo = AlixUtils.requireCaptchaVerification
 //                ? NanoLimbo.load(AlixHandler.SERVER_CHANNEL_FUTURE.channel(), new LimboServerIntegration())
 //                : null;
@@ -116,7 +121,7 @@ public final class AlixInterceptor {
 //            //Main.debug("SERVER PIPELINE: " + AlixHandler.SERVER_CHANNEL_FUTURE.channel().pipeline().names());
 //        }
 
-        private static final boolean testing = false;
+        private static final boolean testing = true;
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -159,7 +164,7 @@ public final class AlixInterceptor {
 
                 //Main.debug("REMOVED: " + channel.pipeline().names());
 
-                //limbo.getClientChannelInitializer().initChannel(channel);
+                limbo.getClientChannelInitializer().initChannel(channel);
                 config.setAutoRead(true);
                 Main.debug("INITIALIZED: " + channel.pipeline().names());
                 return;

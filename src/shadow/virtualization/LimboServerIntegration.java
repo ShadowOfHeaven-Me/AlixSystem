@@ -4,8 +4,9 @@ import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.Channel;
-import nanolimbo.alix.LimboIntegration;
+import nanolimbo.alix.integration.LimboIntegration;
 import nanolimbo.alix.connection.ClientConnection;
+import nanolimbo.alix.integration.PreLoginResult;
 import nanolimbo.alix.protocol.packets.PacketHandshake;
 import nanolimbo.alix.protocol.packets.login.PacketLoginStart;
 import shadow.systems.login.captcha.Captcha;
@@ -37,7 +38,7 @@ public final class LimboServerIntegration implements LimboIntegration {
     }
 
     @Override
-    public boolean onLoginStart(ClientConnection connection, PacketLoginStart loginStart) {
-        return true;
+    public PreLoginResult onLoginStart(ClientConnection connection, PacketLoginStart loginStart) {
+        return PreLoginResult.CONNECT_TO_LIMBO;
     }
 }

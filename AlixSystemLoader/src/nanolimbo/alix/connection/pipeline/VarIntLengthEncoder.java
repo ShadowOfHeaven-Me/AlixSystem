@@ -26,13 +26,13 @@ import nanolimbo.alix.protocol.ByteMessage;
 
 public final class VarIntLengthEncoder extends MessageToByteEncoder<ByteBuf> {
 
-    static ByteBuf encode(ByteMessage msg) {
+    static ByteBuf encode(ByteBuf msg) {
         int toEncode = msg.readableBytes();
         byte varIntBytes = FastNettyUtils.countBytesToEncodeVarInt(toEncode);
 
         ByteBuf prefixedBuf = Unpooled.directBuffer(msg.capacity() + varIntBytes);
         FastNettyUtils.writeVarInt(prefixedBuf, toEncode, varIntBytes);
-        prefixedBuf.writeBytes(msg.getBuf());
+        prefixedBuf.writeBytes(msg);
 
         msg.release();
 

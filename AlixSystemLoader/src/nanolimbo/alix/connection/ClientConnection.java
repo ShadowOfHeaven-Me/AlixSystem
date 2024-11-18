@@ -21,7 +21,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import nanolimbo.alix.connection.pipeline.PacketDuplexHandler;
 import nanolimbo.alix.connection.pipeline.VarIntFrameDecoder;
-import nanolimbo.alix.protocol.ByteMessage;
 import nanolimbo.alix.protocol.Packet;
 import nanolimbo.alix.protocol.PacketSnapshot;
 import nanolimbo.alix.protocol.packets.login.PacketDisconnect;
@@ -30,12 +29,8 @@ import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.LimboServer;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -52,8 +47,6 @@ public final class ClientConnection {
     private State state;
     private Version clientVersion;
     private SocketAddress address;
-
-    private int velocityLoginMessageId = -1;
 
     public ClientConnection(Channel channel, LimboServer server, PacketDuplexHandler duplexHandler, VarIntFrameDecoder frameDecoder) {
         this.server = server;
@@ -80,6 +73,10 @@ public final class ClientConnection {
 
     public VarIntFrameDecoder getFrameDecoder() {
         return frameDecoder;
+    }
+
+    public PacketDuplexHandler getDuplexHandler() {
+        return duplexHandler;
     }
 
     public UUID getUuid() {
@@ -253,19 +250,19 @@ public final class ClientConnection {
         else this.channel.eventLoop().execute(task);
     }
 
-    public void sendPacket(Object packet) {
+    public void sendPacket(Packet packet) {
         if (isConnected())
-            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket((Packet) packet));
+            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet));
     }
 
-    public void sendPacketAndClose(Object packet) {
+    public void sendPacketAndClose(Packet packet) {
         if (isConnected())
-            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket((Packet) packet, this.channel.newPromise()).addListener(ChannelFutureListener.CLOSE));
+            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet, this.channel.newPromise()).addListener(ChannelFutureListener.CLOSE));
     }
 
-    public void writePacket(Object packet) {
+    public void writePacket(Packet packet) {
         if (isConnected())
-            this.safeExecute(() -> this.duplexHandler.writePacket((Packet) packet));
+            this.safeExecute(() -> this.duplexHandler.writePacket(packet));
     }
 
     public boolean isConnected() {
@@ -329,7 +326,7 @@ public final class ClientConnection {
         return true;
     }*/
 
-    int getVelocityLoginMessageId() {
+    /*int getVelocityLoginMessageId() {
         return velocityLoginMessageId;
     }
 
@@ -355,5 +352,5 @@ public final class ClientConnection {
         if (version != 1)
             throw new IllegalStateException("Unsupported forwarding version " + version + ", wanted " + '\001');
         return true;
-    }
+    }*/
 }

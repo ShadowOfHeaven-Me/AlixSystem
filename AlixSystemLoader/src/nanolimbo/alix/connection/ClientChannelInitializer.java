@@ -18,7 +18,6 @@
 package nanolimbo.alix.connection;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import nanolimbo.alix.connection.pipeline.PacketDuplexHandler;
@@ -71,7 +70,7 @@ public final class ClientChannelInitializer {
     public void uninject(ClientConnection connection) {
         //set autoRead to false after login start
         Channel channel = connection.getChannel();
-        ChannelConfig config = channel.config();
+        //ChannelConfig config = channel.config();
         ChannelPipeline pipeline = channel.pipeline();
 
         //config.setAutoRead(false);

@@ -62,20 +62,7 @@ public final class ByteMessage {
     /* Minecraft's protocol methods */
 
     public int readVarInt() {
-        int i = 0;
-        int maxRead = Math.min(5, buf.readableBytes());
-
-        for (int j = 0; j < maxRead; j++) {
-            int k = buf.readByte();
-            i |= (k & 0x7F) << j * 7;
-            if ((k & 0x80) != 128) {
-                return i;
-            }
-        }
-
-        buf.readBytes(maxRead);
-
-        throw new IllegalArgumentException("Cannot read VarInt");
+        return FastNettyUtils.readVarInt(this.buf);
     }
 
     public void writeVarInt(int value) {
@@ -193,6 +180,8 @@ public final class ByteMessage {
             stream.writeByte(binaryTag.type().id());
 
             // TODO Find a way to improve this...
+            //binaryTag.type().write(binaryTag, stream);
+
             if (binaryTag instanceof CompoundBinaryTag) {
                 CompoundBinaryTag tag = (CompoundBinaryTag) binaryTag;
                 tag.type().write(tag, stream);

@@ -1,4 +1,4 @@
-package nanolimbo.alix;
+package nanolimbo.alix.integration;
 
 import io.netty.channel.Channel;
 import nanolimbo.alix.connection.ClientConnection;
@@ -17,6 +17,5 @@ public interface LimboIntegration {
 
     void onHandshake(ClientConnection connection, PacketHandshake handshake);
 
-    //returns true if the connection is allowed, false if it was closed
-    boolean onLoginStart(ClientConnection connection, PacketLoginStart loginStart);
+    PreLoginResult onLoginStart(ClientConnection connection, PacketLoginStart loginStart);
 }
