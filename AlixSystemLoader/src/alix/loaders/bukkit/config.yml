@@ -30,6 +30,8 @@ max-total-accounts: 1
 anti-vpn: true
 #Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
 antibot-service: true
+#Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
+validate-name: true
 
 
 #----------------------------------------------#
@@ -120,7 +122,7 @@ require-ownership-of-premium-nickname: unregistered
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
 #An example would be
-#- "say 3333 %name% -p".
+#- say 3333 %name% -p"
 after-register-commands:
 #Works exactly the same as the parameter above with the sole difference of being invoked after a successful, manual login
 after-login-commands:

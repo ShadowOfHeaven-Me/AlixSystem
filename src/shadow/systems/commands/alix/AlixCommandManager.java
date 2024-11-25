@@ -63,7 +63,7 @@ public final class AlixCommandManager {
         return b;
     }
 
-    private static final ByteBuf
+    public static final ByteBuf
             formatRegisterMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatRegister),
             formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin);
 

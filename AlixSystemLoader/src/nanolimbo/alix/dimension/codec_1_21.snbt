@@ -703,6 +703,15 @@
                     message_id: "witherSkull"
                 }
             },
+            {
+                name: "minecraft:ender_pearl",
+                id: 43,
+                element: {
+                    scaling: "when_caused_by_living_non_player",
+                    exhaustion: 0.1f,
+                    message_id: "witherSkull"
+                }
+            },
         ]
     },
     "minecraft:worldgen/biome": {

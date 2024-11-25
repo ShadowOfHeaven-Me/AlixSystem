@@ -1,5 +1,6 @@
 package shadow.utils.misc.packet.constructors;
 
+import alix.common.utils.netty.WrapperTransformer;
 import alix.libs.com.github.retrooper.packetevents.PacketEvents;
 import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
 import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -9,9 +10,6 @@ import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPl
 import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTitle;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
-import shadow.utils.netty.NettyUtils;
-
-import java.util.function.Function;
 
 public final class OutTitlePacketConstructor {
 
@@ -20,14 +18,14 @@ public final class OutTitlePacketConstructor {
     //From User#sendTitle
 
     public static ByteBuf[] constructConst(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks) {
-        return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, NettyUtils::constBuffer);
+        return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, WrapperTransformer.CONST);
     }
 
     public static ByteBuf[] constructDynamic(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks) {
-        return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, NettyUtils::createBuffer);
+        return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, WrapperTransformer.DYNAMIC);
     }
 
-    public static ByteBuf[] construct(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks, Function<PacketWrapper, ByteBuf> transformer) {
+    public static ByteBuf[] construct(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks, WrapperTransformer transformer) {
         Component title = titleText != null ? Component.text(titleText) : null;
         Component subtitle = subtitleText != null ? Component.text(subtitleText) : null;
         PacketWrapper<?> setTitle = null;

@@ -17,6 +17,7 @@
 
 package nanolimbo.alix.protocol.packets.play;
 
+
 import nanolimbo.alix.protocol.ByteMessage;
 import nanolimbo.alix.protocol.PacketOut;
 import nanolimbo.alix.protocol.registry.Version;
@@ -109,7 +110,7 @@ public class PacketJoinGame implements PacketOut {
     public void encode(ByteMessage msg, Version version) {
         msg.writeInt(entityId);
 
-        if (version.fromTo(Version.V1_7_2, Version.V1_7_6)) {
+        if (version.fromTo(Version.V1_7_6, Version.V1_7_6)) {
             msg.writeByte(gameMode == 3 ? 1 : gameMode);
             msg.writeByte(dimensionRegistry.getDefaultDimension_1_16().getId());
             msg.writeByte(0); // Difficulty
@@ -301,5 +302,4 @@ public class PacketJoinGame implements PacketOut {
             msg.writeBoolean(secureProfile);
         }
     }
-
 }

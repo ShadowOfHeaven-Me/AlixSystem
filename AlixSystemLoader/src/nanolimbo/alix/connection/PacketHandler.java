@@ -18,11 +18,10 @@
 package nanolimbo.alix.connection;
 
 import nanolimbo.alix.protocol.packets.PacketHandshake;
-import nanolimbo.alix.protocol.packets.configuration.PacketFinishConfiguration;
+import nanolimbo.alix.protocol.packets.configuration.PacketInFinishConfiguration;
 import nanolimbo.alix.protocol.packets.login.PacketLoginAcknowledged;
 import nanolimbo.alix.protocol.packets.login.PacketLoginPluginResponse;
 import nanolimbo.alix.protocol.packets.login.PacketLoginStart;
-import nanolimbo.alix.protocol.packets.status.PacketStatusPing;
 import nanolimbo.alix.protocol.packets.status.PacketStatusRequest;
 import nanolimbo.alix.server.LimboServer;
 import nanolimbo.alix.server.Log;
@@ -65,12 +64,13 @@ public final class PacketHandler {
         //conn.sendPacket(new PacketStatusResponse(server));
     }
 
-    public void handle(ClientConnection conn, PacketStatusPing packet) {
+    /*public void handle(ClientConnection conn, PacketStatusPing packet) {
         conn.sendPacketAndClose(packet);
-    }
+    }*/
 
     public void handle(ClientConnection conn, PacketLoginStart packet) {
         conn.getFrameDecoder().stopResendCollection();
+        conn.getGameProfile().setUsername(packet.getUsername());
         switch (this.server.getIntegration().onLoginStart(conn, packet)) {
             case DISCONNECTED:
                 conn.getFrameDecoder().releaseCollected();
@@ -148,7 +148,7 @@ public final class PacketHandler {
         conn.onLoginAcknowledgedReceived();
     }
 
-    public void handle(ClientConnection conn, PacketFinishConfiguration packet) {
+    public void handle(ClientConnection conn, PacketInFinishConfiguration packet) {
         conn.spawnPlayer();
     }
 }

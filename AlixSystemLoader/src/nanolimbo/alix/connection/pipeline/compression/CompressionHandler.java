@@ -1,33 +1,23 @@
 package nanolimbo.alix.connection.pipeline.compression;
 
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 
-public final class CompressionHandler {
+public interface CompressionHandler {
 
-    public static final int COMPRESSION_THRESHOLD = 256;
-    private final PacketCompressor compressor;
-    private final PacketDecompressor decompressor;
+    ByteBuf compress(ByteBuf in) throws Exception;
 
-    public CompressionHandler(Channel channel) {
-        ByteBufAllocator alloc = channel.alloc();
-        this.compressor = new CompressorJImpl(alloc);
-        this.decompressor = new DecompressorJImpl(alloc);
+    ByteBuf decompress(ByteBuf in) throws Exception;
 
-        channel.closeFuture().addListener(f -> this.release());
+    int COMPRESSION_THRESHOLD = 128;
+
+    static CompressionHandler getHandler(Channel channel) {
+        if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in eventLoop");
+        return CompressionHandlerImpl.getHandler0();
     }
 
-    public ByteBuf compress(ByteBuf in) throws Exception {
-        return this.compressor.compress(in);
-    }
-
-    public ByteBuf decompress(ByteBuf in) throws Exception {
-        return this.decompressor.decompress(in);
-    }
-
-    private void release() {
-        this.compressor.release();
-        this.decompressor.release();
+    static void releaseAll() {
+        CompressionHandlerImpl.releaseAll();
     }
 }

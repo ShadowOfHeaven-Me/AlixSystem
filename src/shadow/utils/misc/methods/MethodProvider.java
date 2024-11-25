@@ -9,7 +9,7 @@ import io.papermc.lib.PaperLib;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.types.AlixUser;
 
@@ -51,7 +51,7 @@ public final class MethodProvider {
 
     @AlixIntrinsified(method = "Player#kickPlayer")
     public static void kickAsyncLoginDynamic(Channel channel, String kickMessage) {
-        NettyUtils.closeAfterDynamicSend(channel, OutDisconnectKickPacketConstructor.constructDynamicAtLoginPhase(kickMessage));
+        NettyUtils.closeAfterDynamicSend(channel, OutDisconnectPacketConstructor.constructDynamicAtLoginPhase(kickMessage));
     }
 
     @AlixIntrinsified(method = "Player#kickPlayer")

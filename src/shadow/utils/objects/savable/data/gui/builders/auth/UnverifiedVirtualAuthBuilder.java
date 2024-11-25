@@ -4,14 +4,14 @@ import alix.common.messages.Messages;
 import io.netty.buffer.ByteBuf;
 import shadow.Main;
 import shadow.utils.misc.methods.MethodProvider;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.types.UnverifiedUser;
 
 public final class UnverifiedVirtualAuthBuilder extends VirtualAuthBuilder {
 
-    private static final ByteBuf kickInvalidCodeMessagePacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("google-auth-invalid-code"));
+    private static final ByteBuf kickInvalidCodeMessagePacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("google-auth-invalid-code"));
     private static final ByteBuf invalidCodeMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("google-auth-invalid-code-chat-message"));
 
     private static final int maxInputAttempts = Main.config.getInt("max-auth-app-attempts");

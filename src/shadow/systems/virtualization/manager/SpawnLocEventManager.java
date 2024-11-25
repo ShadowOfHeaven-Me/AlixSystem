@@ -60,7 +60,8 @@ final class SpawnLocEventManager extends VirtualEventManager {
                     event.setSpawnLocation(OriginalLocationsManager.getOriginalLocation(player));//tp back if the user is verified but in the captcha world
                     return;
                 }
-                user.originalSpawnEventLocation = joinLoc;
+                //user.originalSpawnEventLocation = joinLoc;
+                OriginalLocationsManager.add(player, joinLoc);
                 event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//ensure it's at the correct location
                 //Main.logError("SET LOC");
                 return;
@@ -80,7 +81,7 @@ final class SpawnLocEventManager extends VirtualEventManager {
             if (originLoc != null && !originLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD))
                 OriginalLocationsManager.add(player, originLoc);//remember the original spawn location
 
-            user.originalSpawnEventLocation = joinLoc;
+            OriginalLocationsManager.add(player, joinLoc);
             event.setSpawnLocation(AlixWorld.TELEPORT_LOCATION);//ensure it's at the correct location
             //Main.logError("SET LOC2");
         }

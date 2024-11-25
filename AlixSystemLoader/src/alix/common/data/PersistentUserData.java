@@ -166,9 +166,8 @@ public final class PersistentUserData {
         this.loginParams.setPassword(password);
     }
 
-    public PersistentUserData setPremiumData(PremiumData premiumData) {
+    public void setPremiumData(PremiumData premiumData) {
         this.premiumData = premiumData;
-        return this;
     }
 
     public void resetPasswords() {

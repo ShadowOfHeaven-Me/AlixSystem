@@ -12,7 +12,6 @@ import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +25,7 @@ import shadow.systems.login.reminder.message.VerificationMessage;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
-import shadow.utils.misc.command.CommandsPacketConstructor;
+import shadow.utils.misc.CommandsPacketManager;
 import shadow.utils.misc.effect.PotionEffectHandler;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
@@ -37,7 +36,6 @@ import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
-import shadow.utils.world.AlixWorld;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
@@ -77,7 +75,7 @@ public final class UnverifiedUser implements AlixUser {
     //Virtualization values
     public boolean blindnessSent;
     public String originalJoinMessage;
-    public Location originalSpawnEventLocation;
+    //public Location originalSpawnEventLocation;
     //AntiBot values
     public boolean keepAliveReceived, armSwingReceived;
     //public long armSwingSent, keepAliveSent;
@@ -148,7 +146,7 @@ public final class UnverifiedUser implements AlixUser {
         //Main.logError("PIPELINE: " + this.getChannel().pipeline().names());
         if (!isGuiUser && !isBedrock) this.verificationMessage.updateMessage();
 
-        CommandsPacketConstructor.write(this);
+        CommandsPacketManager.write(this);
         AlixHandler.sendLoginEffectsPackets(this);
 
         if (captchaInitialized)
@@ -279,7 +277,7 @@ public final class UnverifiedUser implements AlixUser {
         this.hasCompletedCaptcha = true;
 
         if (!this.isBedrock()) this.verificationMessage.updateAfterCaptchaComplete();
-        CommandsPacketConstructor.writeAndFlush(this);
+        CommandsPacketManager.writeAndFlush(this);
         //this.writeAndFlushRaw(this.rawVerificationMessageBuffer);
 
         this.blocker.startLoginKickTask();
@@ -390,9 +388,11 @@ public final class UnverifiedUser implements AlixUser {
         //this.player.setPersistent(true);//the user is no longer virtualized, so allow his data to be saved again
         this.player.setCollidable(this.originalCollidableState);//return the original collidable state
 
-        Location loc = this.originalSpawnEventLocation; //UserSemiVirtualization.invokeVirtualizedSpawnLocationEventNoTeleport(this);//unvirtualize spawn loc
+        //Location loc = this.originalSpawnEventLocation; //UserSemiVirtualization.invokeVirtualizedSpawnLocationEventNoTeleport(this);//unvirtualize spawn loc
 
-        CompletableFuture<Boolean> future = loc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? OriginalLocationsManager.teleportBack(player) : MethodProvider.teleportAsync(player, loc);
+        //CompletableFuture<Boolean> future = loc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? OriginalLocationsManager.teleportBack(player) : MethodProvider.teleportAsync(player, loc);
+        CompletableFuture<Boolean> future = OriginalLocationsManager.teleportBack(player);
+
         //future.thenAccept(b -> UserSemiVirtualization.invokeVirtualizedJoinEvent(this));//unvirtualize join event
 
         return future;

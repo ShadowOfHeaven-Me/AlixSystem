@@ -28,7 +28,7 @@ import shadow.systems.login.autoin.PremiumSetting;
 import shadow.systems.login.autoin.PremiumUtils;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 
 import javax.crypto.Cipher;
@@ -56,13 +56,13 @@ public final class PremiumAuthenticator {
     private final boolean isReverseProxyEnabled = false;
 
     private static final ByteBuf
-            illegalEncryptionState = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Illegal encryption state"),
-            invalidNonce = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Invalid nonce"),
-            cannotDecryptSharedSecret = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Cannot decrypt shared secret"),
-            invalidSession = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Invalid session"),
-            cannotVerifySession = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Cannot verify session"),
-            internalErrorEncryption = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Internal error (Encryption)"),
-            couldNotEnableEncryption = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase("Couldn't enable encryption");
+            illegalEncryptionState = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Illegal encryption state"),
+            invalidNonce = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Invalid nonce"),
+            cannotDecryptSharedSecret = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Cannot decrypt shared secret"),
+            invalidSession = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Invalid session"),
+            cannotVerifySession = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Cannot verify session"),
+            internalErrorEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Internal error (Encryption)"),
+            couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("Couldn't enable encryption");
 
     //with caffeine
     @OptimizationCandidate

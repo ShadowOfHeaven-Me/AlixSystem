@@ -48,7 +48,10 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-
+    //* Fixed invalid player spawn storing mechanic
+    //* Fixed /changepassword changing the password but not the login type
+    //* Fixed name checks affecting bedrock players
+    //* Temporarily disabled empty connection timeout
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 

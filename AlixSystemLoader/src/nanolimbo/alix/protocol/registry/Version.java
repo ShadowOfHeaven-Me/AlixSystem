@@ -17,13 +17,19 @@
 
 package nanolimbo.alix.protocol.registry;
 
+import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
+import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.ClientVersion;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public enum Version {
 
     UNDEFINED(-1),
-    V1_7_2(4),
+    //Remove 1.7.2-1.7.5 support, since packetevents only supports client versions from 1.7.6+
+    //V1_7_2(4),
     // 1.7.2-1.7.5 has same protocol numbers
     V1_7_6(5),
     // 1.7.6-1.7.10 has same protocol numbers
@@ -74,7 +80,10 @@ public enum Version {
     V1_20_3(765),
     V1_20_5(766),
     // 1.20.6 has same protocol number
-    V1_21(767);
+    V1_21(767),
+    V1_21_2(768);
+    // 1.21.3 has same protocol number
+    // 1.21.3 has same protocol number
 
     private static final Map<Integer, Version> VERSION_MAP;
     private static final Version MAX;
@@ -93,11 +102,41 @@ public enum Version {
         }
     }
 
+    private final ServerVersion retrooperVersion;
     private final int protocolNumber;
     private Version prev;
 
     Version(int protocolNumber) {
         this.protocolNumber = protocolNumber;
+        ClientVersion version = ClientVersion.getById(this.protocolNumber);
+
+        if (version == null)
+            throw new AlixException("Unsupported protocol: " + this.protocolNumber + ", cannot be registered.");
+
+        this.retrooperVersion = toServerVersion(version);
+
+        if (this.retrooperVersion == null)
+            throw new AlixError("ERROR: protocol: " + this.protocolNumber + " FOR VERSION: " + version + " is NULL, cannot be registered.");
+    }
+
+    //Literally ClientVersion.V_1_9_1(108) is the only one that outputs null with toServerVersion()
+    private static ServerVersion toServerVersion(ClientVersion client) {
+        int leastDiff = Integer.MAX_VALUE;
+        ServerVersion bestFind = null;
+        for (ServerVersion server : ServerVersion.values()) {
+            int diff = client.getProtocolVersion() - server.getProtocolVersion();
+            if (diff == 0) return server;
+            if (diff > 0 && diff < leastDiff) {
+                leastDiff = diff;
+                bestFind = server;
+            }
+        }
+        //Log.error("CLIENT: " + client + " SERVER: " + bestFind);
+        return bestFind;
+    }
+
+    public ServerVersion getRetrooperVersion() {
+        return retrooperVersion;
     }
 
     public int getProtocolNumber() {
@@ -133,7 +172,7 @@ public enum Version {
     }
 
     public static Version getMin() {
-        return V1_7_2;
+        return V1_7_6;
     }
 
     public static Version getMax() {

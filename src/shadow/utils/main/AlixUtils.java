@@ -907,6 +907,35 @@ public final class AlixUtils {
         return list.toArray(new String[0]);
     }
 
+    @AlixIntrinsified(method = "String#split")
+    public static String[] split(String a, char b, int limit) {
+        if (limit == 1) return new String[]{a};
+
+        char[] c = a.toCharArray();
+        int lM1 = c.length - 1;
+        int regexes = getCharsCount(c, b);//it's usually faster to count the array's size rather than resize it
+        int j = 0, k = 0, n = c.length - regexes;//'n' is the known amount of chars left
+        String[] d = new String[Math.min(regexes + 1, limit)];//we already know how big the array should be
+        char[] e = new char[n];
+        for (int i = 0; i < c.length; i++) {
+            char f = c[i];
+            if (f != b) e[k++] = f;//it's more common for the char to not be the regex
+            else {
+                if (j == d.length - 1) {
+                    int offset = i - k;
+                    d[d.length - 1] = new String(c, offset, c.length - offset);
+                    return d;
+                }
+                d[j++] = new String(e, 0, k);
+                n -= k;
+                e = new char[n];
+                k = 0;
+            }
+            if (i == lM1) d[j++] = new String(e, 0, k);//apply the remaining chars
+        }
+        return d;
+    }
+
     //A faster String#split implementation
     //for non-complex Strings
     @AlixIntrinsified(method = "String#split")

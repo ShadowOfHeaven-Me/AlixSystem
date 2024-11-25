@@ -17,20 +17,32 @@
 
 package nanolimbo.alix.protocol.registry;
 
+import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import alix.libs.com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import nanolimbo.alix.protocol.Packet;
+import nanolimbo.alix.protocol.PacketIn;
+import nanolimbo.alix.protocol.PacketOut;
 import nanolimbo.alix.protocol.packets.PacketHandshake;
-import nanolimbo.alix.protocol.packets.configuration.PacketFinishConfiguration;
+import nanolimbo.alix.protocol.packets.configuration.PacketInFinishConfiguration;
+import nanolimbo.alix.protocol.packets.configuration.PacketOutFinishConfiguration;
 import nanolimbo.alix.protocol.packets.configuration.PacketRegistryData;
 import nanolimbo.alix.protocol.packets.login.*;
 import nanolimbo.alix.protocol.packets.play.*;
-import nanolimbo.alix.protocol.packets.status.PacketStatusPing;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketInConfigKeepAlive;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketOutConfigKeepAlive;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketOutPlayKeepAlive;
+import nanolimbo.alix.protocol.packets.status.PacketInStatusPing;
+import nanolimbo.alix.protocol.packets.status.PacketOutStatusPing;
 import nanolimbo.alix.protocol.packets.status.PacketStatusRequest;
 import nanolimbo.alix.protocol.packets.status.PacketStatusResponse;
+import nanolimbo.alix.util.map.ConcurrentVersionMap;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static nanolimbo.alix.protocol.registry.Version.*;
@@ -49,13 +61,13 @@ public enum State {
             serverBound.register(PacketStatusRequest::new,
                     map(0x00, Version.getMin(), Version.getMax())
             );
-            serverBound.register(PacketStatusPing::new,
+            serverBound.register(PacketInStatusPing::new,
                     map(0x01, Version.getMin(), Version.getMax())
             );
             clientBound.register(PacketStatusResponse::new,
                     map(0x00, Version.getMin(), Version.getMax())
             );
-            clientBound.register(PacketStatusPing::new,
+            clientBound.register(PacketOutStatusPing::new,
                     map(0x01, Version.getMin(), Version.getMax())
             );
         }
@@ -72,7 +84,8 @@ public enum State {
                     PacketLoginAcknowledged::new,
                     map(0x03, V1_20_2, Version.getMax())
             );
-            clientBound.register(PacketDisconnect::new,
+
+            clientBound.register(PacketLoginDisconnect::new,
                     map(0x00, Version.getMin(), Version.getMax())
             );
             clientBound.register(PacketLoginSuccess::new,
@@ -81,29 +94,27 @@ public enum State {
             clientBound.register(PacketLoginPluginRequest::new,
                     map(0x04, Version.getMin(), Version.getMax())
             );
-            clientBound.registerRetrooper(PacketInSetCompression::new,
-                    PacketType.Login.Server.SET_COMPRESSION, V1_8, Version.getMax());
+            clientBound.registerRetrooper(PacketOutSetCompression::new, PacketType.Login.Server.SET_COMPRESSION);
         }
     },
     CONFIGURATION(3) {
         {
-            clientBound.register(
-                    PacketPluginMessage::new,
-                    map(0x00, V1_20_2, V1_20_3),
-                    map(0x01, V1_20_5, V1_21)
+            clientBound.registerRetrooper(
+                    PacketConfigPluginMessage::new,
+                    PacketType.Configuration.Server.PLUGIN_MESSAGE
             );
             clientBound.register(
-                    PacketDisconnect::new,
+                    PacketConfigDisconnect::new,
                     map(0x01, V1_20_2, V1_20_3),
                     map(0x02, V1_20_5, V1_21)
             );
             clientBound.register(
-                    PacketFinishConfiguration::new,
+                    PacketOutFinishConfiguration::new,
                     map(0x02, V1_20_2, V1_20_3),
                     map(0x03, V1_20_5, V1_21)
             );
             clientBound.register(
-                    PacketKeepAlive::new,
+                    PacketOutConfigKeepAlive::new,
                     map(0x03, V1_20_2, V1_20_3),
                     map(0x04, V1_20_5, V1_21)
             );
@@ -113,18 +124,18 @@ public enum State {
                     map(0x07, V1_20_5, V1_21)
             );
 
-            serverBound.register(
+            /*serverBound.register(
                     PacketPluginMessage::new,
                     map(0x01, V1_20_2, V1_20_3),
                     map(0x02, V1_20_2, V1_21)
-            );
+            );*/
             serverBound.register(
-                    PacketFinishConfiguration::new,
+                    PacketInFinishConfiguration::new,
                     map(0x02, V1_20_2, V1_20_3),
                     map(0x03, V1_20_5, V1_21)
             );
             serverBound.register(
-                    PacketKeepAlive::new,
+                    PacketInConfigKeepAlive::new,
                     map(0x03, V1_20_2, V1_20_3),
                     map(0x04, V1_20_5, V1_21)
             );
@@ -132,8 +143,11 @@ public enum State {
     },
     PLAY(4) {
         {
-            serverBound.register(PacketKeepAlive::new,
-                    map(0x00, V1_7_2, V1_8),
+            serverBound.registerRetrooper(PacketInCommand::new, PacketType.Play.Client.CHAT_COMMAND);
+            serverBound.registerRetrooper(PacketInCommandUnsigned::new, PacketType.Play.Client.CHAT_COMMAND_UNSIGNED);
+
+            serverBound.register(PacketInPlayKeepAlive::new,
+                    map(0x00, Version.V1_7_6, V1_8),
                     map(0x0B, V1_9, V1_11_1),
                     map(0x0C, V1_12, V1_12),
                     map(0x0B, V1_12_1, V1_12_2),
@@ -149,8 +163,8 @@ public enum State {
                     map(0x15, V1_20_3, V1_20_3),
                     map(0x18, V1_20_5, V1_21)
             );
-
-            clientBound.register(PacketDeclareCommands::new,
+            clientBound.registerRetrooper(PacketOutCommands::new, PacketType.Play.Server.DECLARE_COMMANDS);
+            /*clientBound.register(PacketDeclareCommands::new,
                     map(0x11, V1_13, V1_14_4),
                     map(0x12, V1_15, V1_15_2),
                     map(0x11, V1_16, V1_16_1),
@@ -160,9 +174,9 @@ public enum State {
                     map(0x0E, V1_19_3, V1_19_3),
                     map(0x10, V1_19_4, V1_20),
                     map(0x11, V1_20_2, V1_21)
-            );
+            );*/
             clientBound.register(PacketJoinGame::new,
-                    map(0x01, V1_7_2, V1_8),
+                    map(0x01, Version.V1_7_6, V1_8),
                     map(0x23, V1_9, V1_12_2),
                     map(0x25, V1_13, V1_14_4),
                     map(0x26, V1_15, V1_15_2),
@@ -176,22 +190,13 @@ public enum State {
                     map(0x29, V1_20_2, V1_20_3),
                     map(0x2B, V1_20_5, V1_21)
             );
-            clientBound.register(PacketPluginMessage::new,
-                    map(0x19, V1_13, V1_13_2),
-                    map(0x18, V1_14, V1_14_4),
-                    map(0x19, V1_15, V1_15_2),
-                    map(0x18, V1_16, V1_16_1),
-                    map(0x17, V1_16_2, V1_16_4),
-                    map(0x18, V1_17, V1_18_2),
-                    map(0x15, V1_19, V1_19),
-                    map(0x16, V1_19_1, V1_19_1),
-                    map(0x15, V1_19_3, V1_19_3),
-                    map(0x17, V1_19_4, V1_20),
-                    map(0x18, V1_20_2, V1_20_3),
-                    map(0x19, V1_20_5, V1_21)
+
+            clientBound.registerRetrooper(
+                    PacketPlayPluginMessage::new,
+                    PacketType.Play.Server.PLUGIN_MESSAGE
             );
             clientBound.register(PacketPlayerAbilities::new,
-                    map(0x39, V1_7_2, V1_8),
+                    map(0x39, Version.V1_7_6, V1_8),
                     map(0x2B, V1_9, V1_12),
                     map(0x2C, V1_12_1, V1_12_2),
                     map(0x2E, V1_13, V1_13_2),
@@ -208,7 +213,7 @@ public enum State {
                     map(0x38, V1_20_5, V1_21)
             );
             clientBound.register(PacketPlayerPositionAndLook::new,
-                    map(0x08, V1_7_2, V1_8),
+                    map(0x08, Version.V1_7_6, V1_8),
                     map(0x2E, V1_9, V1_12),
                     map(0x2F, V1_12_1, V1_12_2),
                     map(0x32, V1_13, V1_13_2),
@@ -224,8 +229,8 @@ public enum State {
                     map(0x3E, V1_20_2, V1_20_3),
                     map(0x40, V1_20_5, V1_21)
             );
-            clientBound.register(PacketKeepAlive::new,
-                    map(0x00, V1_7_2, V1_8),
+            clientBound.register(PacketOutPlayKeepAlive::new,
+                    map(0x00, Version.V1_7_6, V1_8),
                     map(0x1F, V1_9, V1_12_2),
                     map(0x21, V1_13, V1_13_2),
                     map(0x20, V1_14, V1_14_4),
@@ -241,7 +246,7 @@ public enum State {
                     map(0x26, V1_20_5, V1_21)
             );
             clientBound.register(PacketChatMessage::new,
-                    map(0x02, V1_7_2, V1_8),
+                    map(0x02, Version.V1_7_6, V1_8),
                     map(0x0F, V1_9, V1_12_2),
                     map(0x0E, V1_13, V1_14_4),
                     map(0x0F, V1_15, V1_15_2),
@@ -265,7 +270,7 @@ public enum State {
                     map(0x0A, V1_20_2, V1_21)
             );*/
             clientBound.register(PacketPlayerInfo::new,
-                    map(0x38, V1_7_2, V1_8),
+                    map(0x38, Version.V1_7_6, V1_8),
                     map(0x2D, V1_9, V1_12),
                     map(0x2E, V1_12_1, V1_12_2),
                     map(0x30, V1_13, V1_13_2),
@@ -367,11 +372,26 @@ public enum State {
     }*/
 
     private final int stateId;
-    public final ProtocolMappings serverBound = new ProtocolMappings();
-    public final ProtocolMappings clientBound = new ProtocolMappings();
+    public final ProtocolMappings<PacketIn> serverBound = new ProtocolMappings<>();
+    public final ProtocolMappings<PacketOut> clientBound = new ProtocolMappings<>();
 
     State(int stateId) {
         this.stateId = stateId;
+    }
+
+    public static boolean isCompressible(State state, Class<? extends PacketOut> clazz) {
+        switch (state) {
+            case HANDSHAKING:
+            case STATUS:
+                return false;
+            case LOGIN:
+                return clazz == PacketLoginSuccess.class || clazz == PacketLoginPluginRequest.class;
+            case PLAY:
+            case CONFIGURATION:
+                return true;
+            default:
+                throw new AlixError("Invalid state: " + state + ", clazz " + clazz);
+        }
     }
 
     public static State getHandshakeStateId(int stateId) {
@@ -390,24 +410,37 @@ public enum State {
         return STATE_BY_ID.get(stateId);
     }*/
 
-    public static final class ProtocolMappings {
+    public static final class ProtocolMappings<T extends Packet> {
 
-        private final Map<Version, PacketRegistry> registry = new EnumMap<>(Version.class);
+        private static final Set<Class<? extends Packet>> nuhUh = ConcurrentHashMap.newKeySet();
+        private final ConcurrentVersionMap<PacketRegistry> registry = new ConcurrentVersionMap<>();
+        //private final Map<Version, PacketRegistry> registry = new EnumMap<>(Version.class);
 
         public PacketRegistry getRegistry(Version version) {
             return registry.getOrDefault(version, registry.get(getMin()));
         }
 
+        private static void ensureNoDuplicate(Supplier<? extends Packet> packet) {
+            Class<? extends Packet> clazz = packet.get().getClass();
+            if (!nuhUh.add(clazz)) throw new AlixException("Packet clazz duplicate! - " + clazz.getSimpleName());
+        }
+
         //Gotta love packetevents ;]
-        private void registerRetrooper(Supplier<?> packet, PacketTypeCommon type, Version from, Version to) {
-            for (Version ver : getRange(from, to)) {
-                PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
+        private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
+            ensureNoDuplicate(packet);
+            for (Version ver : Version.values()) {
+                if (!ver.isSupported()) continue;
+
                 int packetId = type.getId(ClientVersion.getById(ver.getProtocolNumber()));
+                if (packetId < 0) continue;//check if the packet exists on the specified version
+
+                PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
                 reg.register(packetId, packet);
             }
         }
 
-        private void register(Supplier<?> packet, Mapping... mappings) {
+        private void register(Supplier<T> packet, Mapping... mappings) {
+            ensureNoDuplicate(packet);
             for (Mapping mapping : mappings) {
                 for (Version ver : getRange(mapping)) {
                     PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
@@ -442,7 +475,7 @@ public enum State {
     public static final class PacketRegistry {
 
         private final Version version;
-        private final Map<Integer, Supplier<?>> packetsById = new HashMap<>();
+        private final Map<Integer, Supplier<? extends Packet>> packetsById = new HashMap<>();
         private final Map<Class<?>, Integer> packetIdByClass = new IdentityHashMap<>();
 
         public PacketRegistry(Version version) {
@@ -454,15 +487,19 @@ public enum State {
         }
 
         public Packet getPacket(int packetId) {
-            Supplier<?> supplier = packetsById.get(packetId);
-            return supplier == null ? null : (Packet) supplier.get();
+            Supplier<? extends Packet> supplier = packetsById.get(packetId);
+            return supplier == null ? null : supplier.get();
+        }
+
+        public boolean hasPacket(Class<?> packetClass) {
+            return packetIdByClass.containsKey(packetClass);
         }
 
         public int getPacketId(Class<?> packetClass) {
             return packetIdByClass.getOrDefault(packetClass, -1);
         }
 
-        public void register(int packetId, Supplier<?> supplier) {
+        public void register(int packetId, Supplier<? extends Packet> supplier) {
             packetsById.put(packetId, supplier);
             packetIdByClass.put(supplier.get().getClass(), packetId);
         }

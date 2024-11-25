@@ -5,17 +5,17 @@ import alix.common.utils.other.annotation.OptimizationCandidate;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.buffered.BufferedPackets;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 
 public final class VirtualCountdown {//shows xp countdown and kicks out
 
     private static final ByteBuf
-            captchaTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-time-passed")),
-            registerTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("register-time-passed")),
-            loginTimePassedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("login-time-passed"));
+            captchaTimePassedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-time-passed")),
+            registerTimePassedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("register-time-passed")),
+            loginTimePassedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("login-time-passed"));
 
-    private static final ByteBuf timeOutError = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase("§cTimed Out No Packet [Alix]");
+    private static final ByteBuf timeOutError = OutDisconnectPacketConstructor.constructConstAtPlayPhase("§cTimed Out No Packet [Alix]");
     //private final ChannelHandlerContext ctx;
     private final UnverifiedUser user;
     private ByteBuf[] packets;

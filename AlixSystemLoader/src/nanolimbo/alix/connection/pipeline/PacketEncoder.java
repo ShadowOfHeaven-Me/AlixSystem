@@ -17,39 +17,27 @@
 
 package nanolimbo.alix.connection.pipeline;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
 import nanolimbo.alix.protocol.ByteMessage;
 import nanolimbo.alix.protocol.Packet;
-import nanolimbo.alix.protocol.PacketSnapshot;
 import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.Log;
 
-public class PacketEncoder extends MessageToByteEncoder<Packet> {
-
-    private State.PacketRegistry registry;
-    private Version version;
-
-    public PacketEncoder() {
-        updateVersion(Version.getMin());
-        updateState(State.HANDSHAKING);
-    }
+public final class PacketEncoder {
 
     static ByteMessage encode(Packet packet, State.PacketRegistry registry, Version version) {
         if (registry == null) return null;
 
         ByteMessage msg = ByteMessage.create();
-        int packetId;
+        int packetId = registry.getPacketId(packet.getClass());
 
-        if (packet instanceof PacketSnapshot) {
+        /*if (packet instanceof PacketSnapshot) {
             packetId = registry.getPacketId(((PacketSnapshot) packet).getWrappedPacket().getClass());
         } else {
             packetId = registry.getPacketId(packet.getClass());
-        }
+        }*/
 
-        if (packetId == -1) {
+        if (packetId < 0) {
             Log.warning("Undefined packet class: %s[0x%s] (%d bytes)", packet.getClass().getName(), Integer.toHexString(packetId), msg.readableBytes());
             return null;
         }
@@ -64,48 +52,9 @@ public class PacketEncoder extends MessageToByteEncoder<Packet> {
             }
             return msg;
         } catch (Exception e) {
-            Log.error("Cannot encode packet 0x%s: %s", Integer.toHexString(packetId), e.getMessage());
+            Log.error("Cannot encode packet 0x%s (%s): %s", Integer.toHexString(packetId), packet.getClass().getSimpleName(), e.getMessage());
+            e.printStackTrace();
         }
         return null;
     }
-
-    @Override
-    protected void encode(ChannelHandlerContext ctx, Packet packet, ByteBuf out) throws Exception {
-        if (registry == null) return;
-
-        ByteMessage msg = new ByteMessage(out);
-        int packetId;
-
-        if (packet instanceof PacketSnapshot) {
-            packetId = registry.getPacketId(((PacketSnapshot) packet).getWrappedPacket().getClass());
-        } else {
-            packetId = registry.getPacketId(packet.getClass());
-        }
-
-        if (packetId == -1) {
-            Log.warning("Undefined packet class: %s[0x%s] (%d bytes)", packet.getClass().getName(), Integer.toHexString(packetId), msg.readableBytes());
-            return;
-        }
-
-        msg.writeVarInt(packetId);
-
-        try {
-            packet.encode(msg, version);
-
-            if (Log.isDebug()) {
-                Log.debug("Sending %s[0x%s] packet (%d bytes)", packet.toString(), Integer.toHexString(packetId), msg.readableBytes());
-            }
-        } catch (Exception e) {
-            Log.error("Cannot encode packet 0x%s: %s", Integer.toHexString(packetId), e.getMessage());
-        }
-    }
-
-    public void updateVersion(Version version) {
-        this.version = version;
-    }
-
-    public void updateState(State state) {
-        this.registry = state.clientBound.getRegistry(version);
-    }
-
 }

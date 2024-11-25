@@ -18,13 +18,17 @@
 package nanolimbo.alix.server;
 
 import io.netty.channel.Channel;
-import nanolimbo.alix.integration.LimboIntegration;
+import io.netty.util.ResourceLeakDetector;
+import nanolimbo.alix.commands.CommandHandler;
 import nanolimbo.alix.configuration.LimboConfig;
 import nanolimbo.alix.connection.ClientChannelInitializer;
 import nanolimbo.alix.connection.ClientConnection;
 import nanolimbo.alix.connection.PacketHandler;
-import nanolimbo.alix.connection.PacketSnapshots;
+import nanolimbo.alix.connection.pipeline.compression.CompressionHandler;
+import nanolimbo.alix.integration.LimboIntegration;
+import nanolimbo.alix.protocol.PacketSnapshots;
 import nanolimbo.alix.world.DimensionRegistry;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledFuture;
@@ -36,17 +40,22 @@ public final class LimboServer {
     private final ClientChannelInitializer clientChannelInitializer;
     private final LimboConfig config;
     private final PacketHandler packetHandler;
+    private final CommandHandler commandHandler;
     private final Connections connections;
     private final DimensionRegistry dimensionRegistry;
     private final ScheduledFuture<?> keepAliveTask;
 
+    @TestOnly
     public LimboServer(Channel serverChannel, LimboIntegration integration) throws IOException {
         this.integration = integration;
         config = new LimboConfig();
 
         Log.info("Starting server...");
 
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+
         packetHandler = new PacketHandler(this);
+        this.commandHandler = integration.createCommandHandler();
         dimensionRegistry = new DimensionRegistry(this);
         dimensionRegistry.load(config.getDimensionType());
         connections = new Connections();
@@ -55,7 +64,7 @@ public final class LimboServer {
 
         keepAliveTask = serverChannel.eventLoop().parent().scheduleAtFixedRate(this::broadcastKeepAlive, 0L, 5L, TimeUnit.SECONDS);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(this::stop, "NanoLimbo shutdown thread"));
+        //Runtime.getRuntime().addShutdownHook(new Thread(this::onDisable, "NanoLimbo shutdown thread"));
 
         Log.info("Server started.");
 
@@ -74,6 +83,10 @@ public final class LimboServer {
         return packetHandler;
     }
 
+    public CommandHandler getCommandHandler() {
+        return commandHandler;
+    }
+
     public Connections getConnections() {
         return connections;
     }
@@ -90,13 +103,14 @@ public final class LimboServer {
         connections.getAllConnections().forEach(ClientConnection::sendKeepAlive);
     }
 
-    private void stop() {
+    public void onDisable() {
         Log.info("Stopping server...");
 
+        CompressionHandler.releaseAll();
         if (keepAliveTask != null) {
             keepAliveTask.cancel(true);
         }
 
-        Log.info("Server stopped, Goodbye!");
+        Log.info("Server stopped.");
     }
 }

@@ -8,11 +8,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import lombok.SneakyThrows;
 import nanolimbo.alix.connection.ClientConnection;
-import nanolimbo.alix.connection.PacketSnapshots;
 import nanolimbo.alix.connection.pipeline.compression.CompressionHandler;
-import nanolimbo.alix.protocol.ByteMessage;
-import nanolimbo.alix.protocol.Packet;
-import nanolimbo.alix.protocol.packets.login.PacketDisconnect;
+import nanolimbo.alix.protocol.*;
+import nanolimbo.alix.protocol.packets.login.PacketConfigDisconnect;
 import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.LimboServer;
@@ -39,22 +37,22 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = this.tryDecompress((ByteBuf) msg);
+        if (buf == null) throw new AlixException("Invalid buf");
 
         //Log.error("VALID BUF - " + buf);
 
         //PacketDecoder
         Packet packet = PacketDecoder.decode(buf, this.decoderMappings, this.version);
+        buf.release();
         if (packet == null) {
             buf.release();
             return;
         }
 
-        //Log.error("VALID PACKET - " + packet);
-        try {
+        Log.error("VALID PACKET - " + packet);
+
             packet.handle(this.connection, this.server);
-        } finally {
-            buf.release();
-        }
+
     }
 
     @Override
@@ -88,7 +86,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         Log.error("Error in pipeline", cause);
-        connection.sendPacketAndClose(new PacketDisconnect(""));
+        this.connection.sendPacketAndClose(new PacketConfigDisconnect("§cInternal limbo error"));
     }
 
     //Compression - start
@@ -99,8 +97,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     private void enableCompression() {
+        //both of these need to be invoked eventLoop, writeAndFlushPacket already does the check
         this.writeAndFlushPacket(PacketSnapshots.SET_COMPRESSION);
-        this.compression = new CompressionHandler(this.channel);
+        this.compression = CompressionHandler.getHandler(this.channel);
     }
 
     private ByteBuf tryDecompress(ByteBuf buf) throws Exception {
@@ -124,35 +123,40 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         this.channel.unsafe().flush();
     }
 
-    public void writeAndFlushPacket(Packet packet) {
+    public void writeAndFlushPacket(PacketOut packet) {
         this.writeAndFlushPacket(packet, this.channel.voidPromise());
     }
 
-    public ChannelPromise writeAndFlushPacket(Packet packet, ChannelPromise promise) {
+    public ChannelPromise writeAndFlushPacket(PacketOut packet, ChannelPromise promise) {
         this.writePacket(packet, promise);
         this.flush();
         return promise;
     }
 
-    public void writePacket(Packet packet) {
+    public void writePacket(PacketOut packet) {
         this.writePacket(packet, this.channel.voidPromise());
+    }
+
+    //actually does the encoding
+    public static ByteBuf encodeToRaw0(PacketOut packet, State.PacketRegistry encoderMappings, Version version, CompressionHandler handler) throws Exception {
+        //Prefix with packet Id and write contents
+        ByteMessage byteMessage = PacketEncoder.encode(packet, encoderMappings, version);
+        if (byteMessage == null) throw new AlixException("encodeToRaw() error");
+
+        ByteBuf maybeCompressed = handler != null ? handler.compress(byteMessage.getBuf()) : byteMessage.getBuf();
+        return VarIntLengthEncoder.encode(maybeCompressed);
     }
 
     @SneakyThrows
     @SuppressWarnings("UnusedReturnValue")
-    public ChannelPromise writePacket(Packet packet, ChannelPromise promise) {
-        //Log.error("OUT: " + packet);
+    public ChannelPromise writePacket(PacketOut packet, ChannelPromise promise) {
+        Log.error("OUT: " + packet);
         this.assertEventLoop();
 
-        //Prefix with packet Id and write contents
-        ByteMessage byteMessage = PacketEncoder.encode(packet, this.encoderMappings, this.version);
-        if (byteMessage == null) return promise;
-
-        ByteBuf buf = VarIntLengthEncoder.encode(this.tryCompress(byteMessage.getBuf()));
-        /*if (buf == null) {
-            byteMessage.release();
-            return promise;
-        }*/
+        ByteBuf buf;
+        if (packet instanceof PacketSnapshot) buf = ((PacketSnapshot) packet).getCached(this.version);
+        else buf = encodeToRaw0(packet, this.encoderMappings, this.version, this.compression);
+        //Log.error("OUT BUF: " + Arrays.toString(new ByteMessage(buf).toByteArray()));
 
         this.channel.unsafe().outboundBuffer().addMessage(buf, buf.readableBytes(), promise);
         return promise;

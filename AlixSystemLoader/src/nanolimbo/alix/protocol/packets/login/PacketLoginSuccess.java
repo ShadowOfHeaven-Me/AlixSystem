@@ -23,7 +23,7 @@ import nanolimbo.alix.protocol.registry.Version;
 
 import java.util.UUID;
 
-public class PacketLoginSuccess implements PacketOut {
+public final class PacketLoginSuccess implements PacketOut {
 
     private UUID uuid;
     private String username;

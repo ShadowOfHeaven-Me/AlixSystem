@@ -3,7 +3,7 @@ package shadow.utils.objects.savable.data.gui;
 import alix.common.data.LoginType;
 import io.netty.buffer.ByteBuf;
 import org.jetbrains.annotations.NotNull;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 
 public interface AlixVerificationGui {
 
@@ -54,7 +54,7 @@ public interface AlixVerificationGui {
     @NotNull
     String getPasswordBuilt();
 
-    ByteBuf pinLeaveFeedbackKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(PasswordGui.pinLeaveFeedback);
+    ByteBuf pinLeaveFeedbackKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(PasswordGui.pinLeaveFeedback);
 
 /*    static void onSyncClick(UnverifiedUser user, InventoryClickEvent event) {
         AlixVerificationGui builder = user.getPasswordBuilder();

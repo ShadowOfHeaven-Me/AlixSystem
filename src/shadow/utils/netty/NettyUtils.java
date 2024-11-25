@@ -1,15 +1,12 @@
 package shadow.utils.netty;
 
 
+import alix.common.utils.netty.BufUtils;
 import alix.common.utils.other.annotation.ScheduledForFix;
-import alix.common.utils.other.throwable.AlixException;
 import alix.libs.com.github.retrooper.packetevents.PacketEvents;
 import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.*;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.users.types.AlixUser;
@@ -25,24 +22,16 @@ public final class NettyUtils {
         Main.logError("MAPPED: " + mapper.get(packetId));
     }*/
 
-    //have the bufs managed by the GC (for now disabled)
-    private static final ByteBufAllocator ALLOC = new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
-    //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
-
-/*    static {
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
-    }*/
-
     public static ByteBuf buffer() {
-        return directBuffer(); //ALLOC.ioBuffer();
+        return BufUtils.buffer(); //ALLOC.ioBuffer();
     }
 
-    public static ByteBuf directBuffer() {
-        return ALLOC.directBuffer();
+    public static ByteBuf directPooledBuffer() {
+        return BufUtils.directUnpooledBuffer();
     }
 
-    public static ByteBuf directBuffer(int capacity) {
-        return ALLOC.directBuffer(capacity);
+    public static ByteBuf directPooledBuffer(int capacity) {
+        return BufUtils.directPooledBuffer(capacity);
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -121,44 +110,27 @@ public final class NettyUtils {
     }
 
     public static ByteBuf dynamic(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
-        return createBuffer0(wrapper, context.alloc().buffer());
+        return BufUtils.createBuffer0(wrapper, context.alloc().buffer());
     }
 
     public static ByteBuf createBuffer(PacketWrapper<?> wrapper) {
-        return createBuffer(wrapper, true);
+        return BufUtils.createBuffer(wrapper);
     }
 
     public static ByteBuf createBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return createBuffer0(wrapper, direct ? directBuffer() : buffer());
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static ByteBuf createBuffer0(PacketWrapper<?> wrapper, ByteBuf emptyByteBuf) {
-        if (wrapper.buffer != null)
-            throw new AlixException("Incorrect invocation of NettyUtils.createBuffer - buffer exists");
-
-        int packetId = wrapper.getPacketTypeData().getNativePacketId();
-        if (packetId < 0) throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in server version "
-                + PacketEvents.getAPI().getServerManager().getVersion() + "! Contact the developer and show him this error! " +
-                "Otherwise Alix will not work as intended!");
-
-        wrapper.buffer = emptyByteBuf;
-        wrapper.writeVarInt(packetId);
-        wrapper.write();
-
-        return emptyByteBuf;//(ByteBuf) wrapper.buffer;
+        return BufUtils.createBuffer(wrapper, direct);
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper) {
-        return constBuffer(wrapper, true);
+        return BufUtils.constBuffer(wrapper, true);
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return constBuffer(createBuffer(wrapper, direct));
+        return BufUtils.constBuffer(createBuffer(wrapper, direct));
     }
 
-    public static ByteBuf constBuffer(ByteBuf dynamicBuf) {//Unreleasable(ReadOnly(ByteBuf)))
-        return Unpooled.unreleasableBuffer(dynamicBuf.asReadOnly());
+    public static ByteBuf constBuffer(ByteBuf dynamicBuf) {
+        return BufUtils.constBuffer(dynamicBuf);
     }
 
     //From PacketDataSerializer#j

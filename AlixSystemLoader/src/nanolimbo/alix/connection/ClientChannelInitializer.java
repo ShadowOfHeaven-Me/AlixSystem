@@ -44,7 +44,7 @@ public final class ClientChannelInitializer {
         //PacketDecoder decoder = new PacketDecoder();
         //PacketEncoder encoder = new PacketEncoder();
 
-        ClientConnection connection = new ClientConnection(channel, server, duplexHandler, frameDecoder);
+        ClientConnection connection = this.server.getIntegration().newConnection(channel, server, duplexHandler, frameDecoder);
         duplexHandler.setClientConnection(connection);
 
         pipeline.addFirst(duplexHandlerName, duplexHandler);
@@ -77,7 +77,7 @@ public final class ClientChannelInitializer {
 
         //NoTimeoutHandler timeOutHandler = (NoTimeoutHandler) pipeline.context("timeout").handler();
 
-        pipeline.replace("timeout","timeout", new ReadTimeoutHandler(30));
+        if (pipeline.context("--timeout") != null) pipeline.replace("--timeout", "timeout", new ReadTimeoutHandler(30));
         pipeline.remove(duplexHandlerName);
         pipeline.remove(frameDecoderName);
 

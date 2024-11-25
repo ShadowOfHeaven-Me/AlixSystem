@@ -19,6 +19,7 @@ final class ConstantAlixPackets implements AlixPacket {
 
     @Override
     public void writeAndFlush(AlixUser user) {
-        for (ByteBuf buf : this.buffers) user.silentContext().writeAndFlush(buf.duplicate());
+        for (ByteBuf buf : this.buffers) user.writeConstSilently(buf);
+        user.flush();
     }
 }

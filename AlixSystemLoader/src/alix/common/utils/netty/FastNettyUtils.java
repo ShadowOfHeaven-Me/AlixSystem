@@ -68,17 +68,53 @@ public final class FastNettyUtils {
         return 5;
     }
 
-    public static int readVarInt(ByteBuf buf) {
-        int i = 0;
-        int maxRead = Math.min(5, buf.readableBytes());
+    //https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/netty/FallbackVarInt21FrameDecoder.java#L69
 
-        for (int j = 0; j < maxRead; j++) {
-            int k = buf.readByte();
-            i |= (k & 0x7F) << j * 7;
-            if ((k & 0x80) != 128) return i;
+    public static int readVarInt(final ByteBuf buf) {
+        if (buf.readableBytes() < 4)
+            return readRawVarIntSmallBuffer(buf);
+
+        // take the last three bytes and check if any of them have the high bit set
+        final int wholeOrMore = buf.getIntLE(buf.readerIndex());
+        final int atStop = ~wholeOrMore & 0x808080;
+        if (atStop == 0) throw new AlixException("fucked up - VarInt too big");
+
+        final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;
+        buf.skipBytes(bitsToKeep >> 3);
+
+        // https://github.com/netty/netty/pull/14050#issuecomment-2107750734
+        int preservedBytes = wholeOrMore & (atStop ^ (atStop - 1));
+
+        // https://github.com/netty/netty/pull/14050#discussion_r1597896639
+        preservedBytes = (preservedBytes & 0x007F007F) | ((preservedBytes & 0x00007F00) >> 1);
+        preservedBytes = (preservedBytes & 0x00003FFF) | ((preservedBytes & 0x3FFF0000) >> 2);
+        return preservedBytes;
+    }
+
+    private static int readRawVarIntSmallBuffer(final ByteBuf buf) {
+        if (!buf.isReadable()) return 0;
+
+        int rIdx = buf.readerIndex();
+
+        byte tmp = buf.readByte();
+        if (tmp >= 0) return tmp;
+
+        int result = tmp & 0x7F;
+        if (!buf.isReadable()) {
+            buf.readerIndex(rIdx);
+            return 0;
         }
 
-        throw new AlixException("fucked up");
+        if ((tmp = buf.readByte()) >= 0) return result | tmp << 7;
+
+        result |= (tmp & 0x7F) << 7;
+        if (!buf.isReadable()) {
+            buf.readerIndex(rIdx);
+            return 0;
+        }
+        if ((tmp = buf.readByte()) >= 0) return result | tmp << 14;
+
+        return result | (tmp & 0x7F) << 14;
     }
 
     public static void init() {
@@ -94,19 +130,22 @@ public final class FastNettyUtils {
     }*/
 
     //Using Paper's VarInt optimizations
-/*    public static void writeVarInt(ByteBuf buf, int i) {
-        // Paper start - Optimize VarInts
-        // Peel the one and two byte count cases explicitly as they are the most common VarInt sizes
-        // that the proxy will write, to improve inlining.
-        if ((i & (0xFFFFFFFF << 7)) == 0) {
-            buf.writeByte(i);
-        } else if ((i & (0xFFFFFFFF << 14)) == 0) {
-            int w = (i & 0x7F | 0x80) << 8 | (i >>> 7);
-            buf.writeShort(w);
-        } else writeSlow(buf, i);
-    }
+/*
 
-    private static void writeSlow(ByteBuf buf, int i) {
+/*    public static int readVarInt(ByteBuf buf) {
+        int i = 0;
+        int maxRead = Math.min(5, buf.readableBytes());
+
+        for (int j = 0; j < maxRead; j++) {
+            int k = buf.readByte();
+            i |= (k & 0x7F) << j * 7;
+            if ((k & 0x80) != 128) return i;
+        }
+
+        throw new AlixException("fucked up");
+    }*/
+
+/*    private static void writeSlow(ByteBuf buf, int i) {
         // Paper end - Optimize VarInts
         while ((i & -128) != 0) {
             buf.writeByte(i & 127 | 128);

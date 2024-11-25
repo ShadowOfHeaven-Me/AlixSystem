@@ -17,6 +17,7 @@
 
 package nanolimbo.alix;
 
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import nanolimbo.alix.integration.LimboIntegration;
 import nanolimbo.alix.server.LimboServer;
@@ -31,7 +32,7 @@ public final class NanoLimbo {
             return new LimboServer(serverChannel, integration);
         } catch (Exception e) {
             Log.error("Cannot start server: ", e);
-            throw new RuntimeException(e);
+            throw new AlixException(e);
         }
     }
 }

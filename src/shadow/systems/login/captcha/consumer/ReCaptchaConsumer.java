@@ -16,7 +16,7 @@ import shadow.systems.commands.CommandManager;
 import shadow.systems.login.captcha.subtypes.ReCaptcha;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.world.AlixWorld;
@@ -91,7 +91,7 @@ public final class ReCaptchaConsumer extends AbstractCaptchaConsumer<ReCaptcha> 
         }*/
     }
 
-    private static final ByteBuf captchaFailedKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-fail-kick"));
+    private static final ByteBuf captchaFailedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-fail-kick"));
     private static final ByteBuf captchaFailedMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-fail-chat"));
 
     private static final double dist = SpigotConversionUtil.fromBukkitLocation(ReCaptcha.HEAD_LOC).getPosition().distance(PLAYER_HEAD_POS);

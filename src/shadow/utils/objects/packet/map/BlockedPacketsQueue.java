@@ -29,7 +29,7 @@ public final class BlockedPacketsQueue {
         //4 - (Integer.numberOfLeadingZeros(packetId) >> 3);//count the int's bytes
 
         ByteBuf eventBuf = (ByteBuf) event.getByteBuf();
-        ByteBuf buf = NettyUtils.directBuffer(eventBuf.capacity() + varIntBytes);
+        ByteBuf buf = NettyUtils.directPooledBuffer(eventBuf.capacity() + varIntBytes);
 
         //prefix the ByteBuf with the packet id
         FastNettyUtils.writeVarInt(buf, packetId, varIntBytes);//reuse the known VarInt's size

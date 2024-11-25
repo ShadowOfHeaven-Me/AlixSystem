@@ -4,6 +4,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import alix.common.messages.Messages;
+import alix.common.packets.command.CommandsWrapperConstructor;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import io.netty.buffer.ByteBuf;
@@ -33,7 +34,7 @@ import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
-import shadow.utils.misc.packet.constructors.OutDisconnectKickPacketConstructor;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.UnverifiedUser;
@@ -377,7 +378,7 @@ public final class CommandManager {
             //registerPermissionlessCommandForcibly("captcha", new CaptchaVerifyCommand());
 
             /**
-             * Logic moved to {@link shadow.utils.misc.command.CommandsPacketConstructor}
+             * Logic moved to {@link CommandsWrapperConstructor}
              **/
             //registerPermissionlessCommandForcibly("register", new RegisterCommand());
             //registerPermissionlessCommandForcibly("login", new LoginCommand());
@@ -1386,7 +1387,7 @@ public final class CommandManager {
         sendMessage(sender, incorrectCaptcha);
     }*/
 
-    private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(incorrectCaptcha);
+    private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(incorrectCaptcha);
     public static final ByteBuf
             incorrectCaptchaMessagePacket = OutMessagePacketConstructor.constructConst(incorrectCaptcha),
             captchaCompleteMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.getWithPrefix("captcha-complete-register-password-repeat") : Messages.getWithPrefix("captcha-complete"));
@@ -1441,7 +1442,7 @@ public final class CommandManager {
         }
     }
 
-    public static final ByteBuf incorrectPasswordKickPacket = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase(Messages.getWithPrefix("incorrect-password"));
+    public static final ByteBuf incorrectPasswordKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.getWithPrefix("incorrect-password"));
     public static final ByteBuf
             incorrectPasswordMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("incorrect-password")),
             captchaReminderMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-reminder-command")),

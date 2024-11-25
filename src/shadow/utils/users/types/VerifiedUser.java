@@ -1,5 +1,6 @@
 package shadow.utils.users.types;
 
+import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.loc.impl.bukkit.BukkitHomeList;
 import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
@@ -119,6 +120,7 @@ public final class VerifiedUser implements AlixUser {// implements ObjectSeriali
 
     public void changePassword(String password) {
         this.data.setPassword(password);
+        this.data.setLoginType(LoginType.COMMAND);
         //saveData();
     }
 

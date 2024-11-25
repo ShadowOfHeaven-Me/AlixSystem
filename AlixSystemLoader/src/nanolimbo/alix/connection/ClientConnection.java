@@ -21,21 +21,21 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import nanolimbo.alix.connection.pipeline.PacketDuplexHandler;
 import nanolimbo.alix.connection.pipeline.VarIntFrameDecoder;
-import nanolimbo.alix.protocol.Packet;
+import nanolimbo.alix.protocol.PacketOut;
 import nanolimbo.alix.protocol.PacketSnapshot;
-import nanolimbo.alix.protocol.packets.login.PacketDisconnect;
-import nanolimbo.alix.protocol.packets.play.PacketKeepAlive;
+import nanolimbo.alix.protocol.PacketSnapshots;
+import nanolimbo.alix.protocol.packets.login.PacketConfigDisconnect;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketOutPlayKeepAlive;
 import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.LimboServer;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-public final class ClientConnection {
+public abstract class ClientConnection {
 
     private final LimboServer server;
     private final Channel channel;
@@ -164,10 +164,11 @@ public final class ClientConnection {
                 writePacket(PacketSnapshots.PACKET_PLAYER_INFO);
 
             if (clientVersion.moreOrEqual(Version.V1_13)) {
-                writePacket(PacketSnapshots.PACKET_DECLARE_COMMANDS);
+                //LimboCommand command = (LimboCommand) this.server.getCommandHandler().getCommandToSend().apply(this);
+                //this.writePacket(command.getPacketSnapshot());
 
-                if (PacketSnapshots.PACKET_PLUGIN_MESSAGE != null)
-                    writePacket(PacketSnapshots.PACKET_PLUGIN_MESSAGE);
+                /*if (PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE != null)
+                    writePacket(PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE);*/
             }
 
             if (PacketSnapshots.PACKET_BOSS_BAR != null && clientVersion.moreOrEqual(Version.V1_9))
@@ -203,8 +204,8 @@ public final class ClientConnection {
     public void onLoginAcknowledgedReceived() {
         updateState(State.CONFIGURATION);
 
-        if (PacketSnapshots.PACKET_PLUGIN_MESSAGE != null)
-            writePacket(PacketSnapshots.PACKET_PLUGIN_MESSAGE);
+        if (PacketSnapshots.PACKET_CONFIG_PLUGIN_MESSAGE != null)
+            writePacket(PacketSnapshots.PACKET_CONFIG_PLUGIN_MESSAGE);
 
         if (clientVersion.moreOrEqual(Version.V1_20_5)) {
             for (PacketSnapshot packet : PacketSnapshots.PACKETS_REGISTRY_DATA) {
@@ -219,7 +220,7 @@ public final class ClientConnection {
 
     public void disconnectLogin(String reason) {
         if (isConnected() && state == State.LOGIN) {
-            PacketDisconnect disconnect = new PacketDisconnect();
+            PacketConfigDisconnect disconnect = new PacketConfigDisconnect();
             disconnect.setReason(reason);
             sendPacketAndClose(disconnect);
         }
@@ -239,7 +240,7 @@ public final class ClientConnection {
 
     public void sendKeepAlive() {
         if (state.equals(State.PLAY)) {
-            PacketKeepAlive keepAlive = new PacketKeepAlive();
+            PacketOutPlayKeepAlive keepAlive = new PacketOutPlayKeepAlive();
             keepAlive.setId(ThreadLocalRandom.current().nextLong());
             sendPacket(keepAlive);
         }
@@ -250,17 +251,17 @@ public final class ClientConnection {
         else this.channel.eventLoop().execute(task);
     }
 
-    public void sendPacket(Packet packet) {
+    public void sendPacket(PacketOut packet) {
         if (isConnected())
             this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet));
     }
 
-    public void sendPacketAndClose(Packet packet) {
+    public void sendPacketAndClose(PacketOut packet) {
         if (isConnected())
             this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet, this.channel.newPromise()).addListener(ChannelFutureListener.CLOSE));
     }
 
-    public void writePacket(Packet packet) {
+    public void writePacket(PacketOut packet) {
         if (isConnected())
             this.safeExecute(() -> this.duplexHandler.writePacket(packet));
     }
@@ -283,9 +284,9 @@ public final class ClientConnection {
         this.duplexHandler.updateVersion(version);
     }
 
-    public void setAddress(String host) {
+    /*public void setAddress(String host) {
         this.address = new InetSocketAddress(host, ((InetSocketAddress) this.address).getPort());
-    }
+    }*/
 
 /*    boolean checkBungeeGuardHandshake(String handshake) {
         String[] split = handshake.split("\00");

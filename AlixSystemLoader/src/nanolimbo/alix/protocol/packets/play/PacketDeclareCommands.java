@@ -13,7 +13,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+ *//*
+
 
 package nanolimbo.alix.protocol.packets.play;
 
@@ -23,9 +24,11 @@ import nanolimbo.alix.protocol.registry.Version;
 
 import java.util.List;
 
+*/
 /**
  * Packet for 1.13+
- */
+ *//*
+
 public class PacketDeclareCommands implements PacketOut {
 
     private List<String> commands;
@@ -71,3 +74,4 @@ public class PacketDeclareCommands implements PacketOut {
     }
 
 }
+*/
