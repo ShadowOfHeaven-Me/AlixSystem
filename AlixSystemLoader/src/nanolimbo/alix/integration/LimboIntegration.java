@@ -11,22 +11,22 @@ import nanolimbo.alix.server.LimboServer;
 
 public interface LimboIntegration<T extends ClientConnection> {
 
+    //Netty integration
+    void invokeSilentServerChannelRead(Channel channel);
+
     T newConnection(Channel channel, LimboServer server, PacketDuplexHandler duplexHandler, VarIntFrameDecoder frameDecoder);
 
     //Captcha
-
     boolean hasCompletedCaptcha(String name, Channel channel);
 
     void completeCaptcha(T conn);
 
     //Packets
-
     void onHandshake(T connection, PacketHandshake handshake);
 
     PreLoginResult onLoginStart(T connection, PacketLoginStart loginStart);
 
     //Commands
-
     CommandHandler<T> createCommandHandler();
 
 }

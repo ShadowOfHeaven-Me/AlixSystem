@@ -18,25 +18,21 @@
 package nanolimbo.alix.connection.pipeline;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
 import nanolimbo.alix.protocol.ByteMessage;
 import nanolimbo.alix.protocol.Packet;
 import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.Log;
 
-import java.util.List;
+public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
 
-public final class PacketDecoder extends MessageToMessageDecoder<ByteBuf> {
-
-    private State.PacketRegistry mappings;
+    /*private State.PacketRegistry mappings;
     private Version version;
 
     public PacketDecoder() {
         updateVersion(Version.getMin());
         updateState(State.HANDSHAKING);
-    }
+    }*/
 
     static Packet decode(ByteBuf buf, State.PacketRegistry mappings, Version version) {
         if (mappings == null) return null;
@@ -66,7 +62,7 @@ public final class PacketDecoder extends MessageToMessageDecoder<ByteBuf> {
         return null;
     }
 
-    @Override
+    /*@Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) throws Exception {
         if (!ctx.channel().isActive() || mappings == null) return;
 
@@ -98,5 +94,5 @@ public final class PacketDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     public void updateState(State state) {
         this.mappings = state.serverBound.getRegistry(version);
-    }
+    }*/
 }

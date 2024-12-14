@@ -20,7 +20,6 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.jetbrains.annotations.NotNull;
 import shadow.Main;
-import shadow.systems.dependencies.Dependencies;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
@@ -337,7 +336,7 @@ public final class AlixChannelHandler {
         //ChannelWrapper
 
         //Main.logError("NAME IN LOGIN START: " + name + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
-        if (validateName && (name.length() > 16 || name.isEmpty() || !Dependencies.isBedrock(channel) && !NAME_PATTERN.matcher(name).matches())) {
+        if (validateName && (name.length() > 16 || name.isEmpty() || !NAME_PATTERN.matcher(name).matches())) {
             //FireWallManager.add(user.getAddress().getAddress(), "E1");
             NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
             //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)

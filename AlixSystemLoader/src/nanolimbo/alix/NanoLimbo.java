@@ -18,7 +18,7 @@
 package nanolimbo.alix;
 
 import alix.common.utils.other.throwable.AlixException;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import nanolimbo.alix.integration.LimboIntegration;
 import nanolimbo.alix.server.LimboServer;
 import nanolimbo.alix.server.Log;
@@ -27,9 +27,9 @@ public final class NanoLimbo {
 
     //https://github.com/Nan1t/NanoLimbo
 
-    public static LimboServer load(Channel serverChannel, LimboIntegration integration) {
+    public static LimboServer load(ChannelHandlerContext silentServerContext, LimboIntegration integration) {
         try {
-            return new LimboServer(serverChannel, integration);
+            return new LimboServer(silentServerContext, integration);
         } catch (Exception e) {
             Log.error("Cannot start server: ", e);
             throw new AlixException(e);

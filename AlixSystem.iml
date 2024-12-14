@@ -61,5 +61,6 @@
     <orderEntry type="library" name="floodgate-spigot" level="project" />
     <orderEntry type="library" name="jfiglet-0.0.2-20140131.163250-1" level="project" />
     <orderEntry type="library" name="PacketEvents-Shaded-2.6.0-all" level="project" />
+    <orderEntry type="library" name="Pcap4J-1.0-SNAPSHOT" level="project" />
   </component>
 </module>

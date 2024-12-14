@@ -13,7 +13,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+ *//*
+
 
 package nanolimbo.alix.protocol.packets.status;
 
@@ -64,3 +65,4 @@ public class PacketStatusResponse implements PacketOut {
         return String.format(TEMPLATE, version, protocol, maxPlayers, online, description);
     }
 }
+*/

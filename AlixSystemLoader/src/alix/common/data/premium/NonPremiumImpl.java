@@ -4,6 +4,9 @@ import java.util.UUID;
 
 final class NonPremiumImpl implements PremiumData {
 
+    NonPremiumImpl() {
+    }
+
     @Override
     public UUID premiumUUID() {
         return null;

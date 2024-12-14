@@ -25,10 +25,10 @@ import nanolimbo.alix.server.Log;
 
 public final class PacketEncoder {
 
-    static ByteMessage encode(Packet packet, State.PacketRegistry registry, Version version) {
+    static ByteMessage encode(Packet packet, State.PacketRegistry registry, Version version, boolean pooled) {
         if (registry == null) return null;
 
-        ByteMessage msg = ByteMessage.create();
+        ByteMessage msg = pooled ? ByteMessage.pooled() : ByteMessage.unpooled();
         int packetId = registry.getPacketId(packet.getClass());
 
         /*if (packet instanceof PacketSnapshot) {

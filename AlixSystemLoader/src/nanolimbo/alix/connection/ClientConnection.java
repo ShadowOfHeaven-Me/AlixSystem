@@ -17,15 +17,18 @@
 
 package nanolimbo.alix.connection;
 
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
+import nanolimbo.alix.connection.captcha.Captcha3d;
+import nanolimbo.alix.connection.captcha.CaptchaState;
+import nanolimbo.alix.connection.captcha.PacketPings;
 import nanolimbo.alix.connection.pipeline.PacketDuplexHandler;
 import nanolimbo.alix.connection.pipeline.VarIntFrameDecoder;
 import nanolimbo.alix.protocol.PacketOut;
 import nanolimbo.alix.protocol.PacketSnapshot;
 import nanolimbo.alix.protocol.PacketSnapshots;
 import nanolimbo.alix.protocol.packets.login.PacketConfigDisconnect;
-import nanolimbo.alix.protocol.packets.play.keepalive.PacketOutPlayKeepAlive;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketPlayOutKeepAlive;
 import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.LimboServer;
@@ -44,6 +47,8 @@ public abstract class ClientConnection {
     private final PacketDuplexHandler duplexHandler;
     private final VarIntFrameDecoder frameDecoder;
 
+    private final CaptchaState captchaState;
+
     private State state;
     private Version clientVersion;
     private SocketAddress address;
@@ -53,18 +58,18 @@ public abstract class ClientConnection {
         this.channel = channel;
         this.duplexHandler = duplexHandler;
         this.frameDecoder = frameDecoder;
-        this.address = channel.remoteAddress();
+        this.address = channel.unsafe().remoteAddress();
         this.gameProfile = new GameProfile();
+        this.captchaState = new CaptchaState(this);
     }
 
-    //removes the virtual handlers, sends the original packets to the server and allows a normal join
+    //removes the limbo handlers, sends the original packets to the server and allows a normal join
     public void uninject() {
         this.server.getClientChannelInitializer().uninject(this);
     }
 
     public void resendCollected() {
-        this.frameDecoder.forEachCollected(buf ->
-                this.channel.pipeline().fireChannelRead(buf));
+        this.frameDecoder.resendCollected(this.channel);
     }
 
     public Channel getChannel() {
@@ -99,7 +104,11 @@ public abstract class ClientConnection {
         return gameProfile;
     }
 
-/*    @Override
+    public CaptchaState getCaptchaState() {
+        return captchaState;
+    }
+
+    /*    @Override
     public void channelInactive(@NotNull ChannelHandlerContext ctx) throws Exception {
         if (state.equals(State.PLAY) || state.equals(State.CONFIGURATION)) {
             server.getConnections().removeConnection(this);
@@ -131,7 +140,7 @@ public abstract class ClientConnection {
             return;
         }*/
 
-        sendPacket(PacketSnapshots.PACKET_LOGIN_SUCCESS);
+        writeAndFlushPacket(PacketSnapshots.PACKET_LOGIN_SUCCESS);
 
         server.getConnections().addConnection(this);
 
@@ -149,12 +158,16 @@ public abstract class ClientConnection {
 
         Runnable sendPlayPackets = () -> {
             writePacket(PacketSnapshots.PACKET_JOIN_GAME);
-            writePacket(PacketSnapshots.PACKET_PLAYER_ABILITIES);
+            writePacket(PacketSnapshots.PLAYER_ABILITIES_FALL);
 
             if (clientVersion.less(Version.V1_9)) {
+                //the first packet here is unnecessary, but we do it to keep consistent across versions in bot checks
                 writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_LEGACY);
+                writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID);
             } else {
+                //first packet is necessary here to
                 writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK);
+                writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_VALID);
             }
 
             if (clientVersion.moreOrEqual(Version.V1_19_3))
@@ -163,13 +176,13 @@ public abstract class ClientConnection {
             if (server.getConfig().isUsePlayerList() || clientVersion.equals(Version.V1_16_4))
                 writePacket(PacketSnapshots.PACKET_PLAYER_INFO);
 
-            if (clientVersion.moreOrEqual(Version.V1_13)) {
-                //LimboCommand command = (LimboCommand) this.server.getCommandHandler().getCommandToSend().apply(this);
-                //this.writePacket(command.getPacketSnapshot());
+            /*if (clientVersion.moreOrEqual(Version.V1_13)) {
+                LimboCommand command = (LimboCommand) this.server.getCommandHandler().getCommandToSend().apply(this);
+                this.writePacket(command.getPacketSnapshot());
 
-                /*if (PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE != null)
-                    writePacket(PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE);*/
-            }
+                *//*if (PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE != null)
+                    writePacket(PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE);*//*
+            }*/
 
             if (PacketSnapshots.PACKET_BOSS_BAR != null && clientVersion.moreOrEqual(Version.V1_9))
                 writePacket(PacketSnapshots.PACKET_BOSS_BAR);
@@ -191,7 +204,11 @@ public abstract class ClientConnection {
                 }
             }
 
-            sendKeepAlive();
+            this.writePacket(PacketPings.INITIAL_PING);
+            this.captchaState.sendInitialKeepAlive();
+
+            Captcha3d.spinningDonut(this);
+            //sendKeepAlive();
         };
 
         if (clientVersion.lessOrEqual(Version.V1_7_6)) {
@@ -215,11 +232,12 @@ public abstract class ClientConnection {
             writePacket(PacketSnapshots.PACKET_REGISTRY_DATA);
         }
 
-        sendPacket(PacketSnapshots.PACKET_FINISH_CONFIGURATION);
+        writeAndFlushPacket(PacketSnapshots.PACKET_FINISH_CONFIGURATION);
     }
 
     public void disconnectLogin(String reason) {
-        if (isConnected() && state == State.LOGIN) {
+        if(!isConnected()) return;
+        if (state == State.CONFIGURATION) {
             PacketConfigDisconnect disconnect = new PacketConfigDisconnect();
             disconnect.setReason(reason);
             sendPacketAndClose(disconnect);
@@ -240,10 +258,14 @@ public abstract class ClientConnection {
 
     public void sendKeepAlive() {
         if (state.equals(State.PLAY)) {
-            PacketOutPlayKeepAlive keepAlive = new PacketOutPlayKeepAlive();
+            PacketPlayOutKeepAlive keepAlive = new PacketPlayOutKeepAlive();
             keepAlive.setId(ThreadLocalRandom.current().nextLong());
-            sendPacket(keepAlive);
+            writeAndFlushPacket(keepAlive);
         }
+    }
+
+    private void assertEventLoop() {
+        if (!this.channel.eventLoop().inEventLoop()) throw new AlixException("Not in eventLoop");
     }
 
     private void safeExecute(Runnable task) {
@@ -251,19 +273,29 @@ public abstract class ClientConnection {
         else this.channel.eventLoop().execute(task);
     }
 
-    public void sendPacket(PacketOut packet) {
-        if (isConnected())
-            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet));
+    public void writeAndFlushPacket(PacketOut packet) {
+        this.duplexHandler.writeAndFlushPacket(packet);
+        /*if (isConnected())
+            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet));*/
     }
 
     public void sendPacketAndClose(PacketOut packet) {
-        if (isConnected())
-            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet, this.channel.newPromise()).addListener(ChannelFutureListener.CLOSE));
+        //Log.error(String.joi (Thread.currentThread().getStackTrace()));
+        new Exception().printStackTrace();
+        this.duplexHandler.writeAndFlushPacket(packet, this.channel.newPromise()).addListener(UnsafeCloseFuture.INSTANCE);
+        //this.channel.close();
+        /*if (isConnected())
+            this.safeExecute(() -> this.duplexHandler.writeAndFlushPacket(packet, this.channel.newPromise()).addListener(ChannelFutureListener.CLOSE));*/
+    }
+
+    public void flush() {
+        this.duplexHandler.flush();
     }
 
     public void writePacket(PacketOut packet) {
-        if (isConnected())
-            this.safeExecute(() -> this.duplexHandler.writePacket(packet));
+        this.duplexHandler.writePacket(packet);
+        /*if (isConnected())
+            this.safeExecute(() -> this.duplexHandler.writePacket(packet));*/
     }
 
     public boolean isConnected() {

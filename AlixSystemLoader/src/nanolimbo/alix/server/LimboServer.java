@@ -17,22 +17,18 @@
 
 package nanolimbo.alix.server;
 
-import io.netty.channel.Channel;
-import io.netty.util.ResourceLeakDetector;
+import io.netty.channel.ChannelHandlerContext;
 import nanolimbo.alix.commands.CommandHandler;
 import nanolimbo.alix.configuration.LimboConfig;
 import nanolimbo.alix.connection.ClientChannelInitializer;
-import nanolimbo.alix.connection.ClientConnection;
 import nanolimbo.alix.connection.PacketHandler;
 import nanolimbo.alix.connection.pipeline.compression.CompressionHandler;
 import nanolimbo.alix.integration.LimboIntegration;
 import nanolimbo.alix.protocol.PacketSnapshots;
 import nanolimbo.alix.world.DimensionRegistry;
-import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 public final class LimboServer {
 
@@ -45,14 +41,13 @@ public final class LimboServer {
     private final DimensionRegistry dimensionRegistry;
     private final ScheduledFuture<?> keepAliveTask;
 
-    @TestOnly
-    public LimboServer(Channel serverChannel, LimboIntegration integration) throws IOException {
+    public LimboServer(ChannelHandlerContext silentServerContext, LimboIntegration integration) throws IOException {
         this.integration = integration;
         config = new LimboConfig();
 
         Log.info("Starting server...");
 
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+        //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
 
         packetHandler = new PacketHandler(this);
         this.commandHandler = integration.createCommandHandler();
@@ -62,13 +57,13 @@ public final class LimboServer {
 
         PacketSnapshots.initPackets(this);
 
-        keepAliveTask = serverChannel.eventLoop().parent().scheduleAtFixedRate(this::broadcastKeepAlive, 0L, 5L, TimeUnit.SECONDS);
+        keepAliveTask = null;//serverChannel.eventLoop().parent().scheduleAtFixedRate(this::broadcastKeepAlive, 0L, 5L, TimeUnit.SECONDS);
 
         //Runtime.getRuntime().addShutdownHook(new Thread(this::onDisable, "NanoLimbo shutdown thread"));
 
         Log.info("Server started.");
 
-        this.clientChannelInitializer = new ClientChannelInitializer(this);
+        this.clientChannelInitializer = new ClientChannelInitializer(this, silentServerContext);
     }
 
     public LimboIntegration getIntegration() {
@@ -99,17 +94,16 @@ public final class LimboServer {
         return clientChannelInitializer;
     }
 
-    private void broadcastKeepAlive() {
+    /*private void broadcastKeepAlive() {
         connections.getAllConnections().forEach(ClientConnection::sendKeepAlive);
-    }
+    }*/
 
     public void onDisable() {
         Log.info("Stopping server...");
 
         CompressionHandler.releaseAll();
-        if (keepAliveTask != null) {
-            keepAliveTask.cancel(true);
-        }
+        PacketSnapshots.releaseAll();
+        if (keepAliveTask != null) keepAliveTask.cancel(true);
 
         Log.info("Server stopped.");
     }

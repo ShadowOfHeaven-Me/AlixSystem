@@ -26,8 +26,8 @@ public class PacketConfigDisconnect implements PacketOut {
     private String reason;
 
     public PacketConfigDisconnect() {
-
     }
+
     public PacketConfigDisconnect(String reason) {
         this.reason = reason;
     }

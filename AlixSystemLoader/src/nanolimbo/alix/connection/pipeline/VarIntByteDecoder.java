@@ -13,7 +13,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+ *//*
+
 
 package nanolimbo.alix.connection.pipeline;
 
@@ -22,7 +23,7 @@ import io.netty.util.ByteProcessor;
 public final class VarIntByteDecoder implements ByteProcessor {
 
     private int readVarInt;
-    private int bytesRead;
+    private byte bytesRead;
     private DecodeResult result = DecodeResult.TOO_SHORT;
 
     @Override
@@ -49,7 +50,7 @@ public final class VarIntByteDecoder implements ByteProcessor {
         return readVarInt;
     }
 
-    public int getBytesRead() {
+    public byte getBytesRead() {
         return bytesRead;
     }
 
@@ -62,4 +63,4 @@ public final class VarIntByteDecoder implements ByteProcessor {
         TOO_SHORT,
         TOO_BIG
     }
-}
+}*/

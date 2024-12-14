@@ -4,6 +4,9 @@ import java.util.UUID;
 
 final class UnknownPremiumImpl implements PremiumData {
 
+    UnknownPremiumImpl() {
+    }
+
     @Override
     public String toSavable() {
         return "0";

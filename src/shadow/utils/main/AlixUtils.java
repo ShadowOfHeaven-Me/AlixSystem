@@ -289,7 +289,7 @@ public final class AlixUtils {
                 f.setAccessible(true);
                 try {
                     Object w = f.get(o);
-                    sb.append(f.getName()).append(": ").append(w.getClass().isArray() ? Arrays.toString((Object[]) w) : w).append(", ");
+                    sb.append(f.getName()).append(": ").append(w != null && w.getClass().isArray() ? Arrays.toString((Object[]) w) : w).append(", ");
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }

@@ -6,6 +6,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.AlixLocationList;
 import alix.common.data.loc.provider.LocationListProvider;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.security.password.Password;
 import alix.common.utils.file.SaveUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -140,6 +141,10 @@ public final class PersistentUserData {
 
     public long getLastSuccessfulLogin() {
         return lastSuccessfulLogin;
+    }
+
+    public void setLastSuccessfulLogin(long lastSuccessfulLogin) {
+        this.lastSuccessfulLogin = lastSuccessfulLogin;
     }
 
     public void updateLastSuccessfulLoginTime() {

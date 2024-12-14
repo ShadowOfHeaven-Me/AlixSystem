@@ -17,9 +17,11 @@
 
 package nanolimbo.alix.protocol.packets.play.keepalive;
 
+import nanolimbo.alix.connection.ClientConnection;
 import nanolimbo.alix.protocol.ByteMessage;
 import nanolimbo.alix.protocol.PacketIn;
 import nanolimbo.alix.protocol.registry.Version;
+import nanolimbo.alix.server.LimboServer;
 
 public class PacketInPlayKeepAlive implements PacketIn {
 
@@ -42,6 +44,11 @@ public class PacketInPlayKeepAlive implements PacketIn {
         } else {
             this.id = msg.readInt();
         }
+    }
+
+    @Override
+    public void handle(ClientConnection conn, LimboServer server) {
+        conn.getCaptchaState().handle(this);
     }
 
     @Override

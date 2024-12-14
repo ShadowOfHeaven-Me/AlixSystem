@@ -437,7 +437,7 @@ public final class UnverifiedUser implements AlixUser {
 
     private void logIn0() {
         this.writeAndFlushConstSilently(loginSuccessMessagePacket);//invoked here, since the this::initDoubleVer can prevent this method from being invoked
-        this.data.updateLastSuccessfulLoginTime();
+        //this.data.updateLastSuccessfulLoginTime();
         UserManager.addVerifiedUser(player, data, this.getIPAddress(), retrooperUser, silentContext);//invoked before onSuccessfulVerification to remove UnverifiedUser from UserManager, to indicate that he's verified
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
@@ -485,7 +485,7 @@ public final class UnverifiedUser implements AlixUser {
     private void register0(String password) {//the common part
         //AlixScheduler.async(() -> {
         PersistentUserData data = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext);
-        data.updateLastSuccessfulLoginTime();
+        //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
@@ -515,7 +515,7 @@ public final class UnverifiedUser implements AlixUser {
     }
 
     public boolean isRegistered() {
-        return this.hasAccount() && data.getPassword().isSet();
+        return PersistentUserData.isRegistered(this.data); //this.hasAccount() && data.getPassword().isSet();
     }
 
     @Override

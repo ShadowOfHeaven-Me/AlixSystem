@@ -51,7 +51,7 @@ public final class LimboConfig {
         maxPlayers = 20;
         pingData = new PingData("Ping Sex", "{\"text\": \"&9NanoLimbo\"}", -1);
         dimensionType = "the_end";
-        gameMode = 3;
+        gameMode = 2;
 
         brandName = "AlixVirtualLimbo";
         joinMessage = Colors.of("{\"text\": \"&eWelcome to the Limbo!\"}");

@@ -25,5 +25,4 @@ public interface PacketIn extends Packet {
     default void encode(ByteMessage msg, Version version) {
         // Can be ignored for incoming packets
     }
-
 }

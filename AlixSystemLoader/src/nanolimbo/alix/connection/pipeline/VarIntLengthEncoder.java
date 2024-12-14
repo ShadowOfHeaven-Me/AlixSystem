@@ -17,29 +17,29 @@
 
 package nanolimbo.alix.connection.pipeline;
 
+import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
-import nanolimbo.alix.protocol.ByteMessage;
 
-public final class VarIntLengthEncoder extends MessageToByteEncoder<ByteBuf> {
+final class VarIntLengthEncoder {// extends MessageToByteEncoder<ByteBuf> {
 
-    static ByteBuf encode(ByteBuf msg) {
-        int toEncode = msg.readableBytes();
-        byte varIntBytes = FastNettyUtils.countBytesToEncodeVarInt(toEncode);
+    static ByteBuf encode(ByteBuf msg, boolean pooled) {
+        int readableBytes = msg.readableBytes();
+        byte varIntBytes = FastNettyUtils.countBytesToEncodeVarInt(readableBytes);
 
-        ByteBuf prefixedBuf = Unpooled.directBuffer(msg.capacity() + varIntBytes);
-        FastNettyUtils.writeVarInt(prefixedBuf, toEncode, varIntBytes);
-        prefixedBuf.writeBytes(msg);
+        //prefix the buf with the VarInt length of it's byte length
+        int newCapacity = readableBytes + varIntBytes;
+        ByteBuf out = pooled ? BufUtils.pooledBuffer(newCapacity) : BufUtils.unpooledBuffer(newCapacity); //Unpooled.directBuffer(msg.capacity() + varIntBytes);
+
+        FastNettyUtils.writeVarInt(out, readableBytes, varIntBytes);
+        out.writeBytes(msg);
 
         msg.release();
 
-        return prefixedBuf;
+        return out;
     }
 
-    @Override
+    /*@Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf buf, ByteBuf out) {
         ByteMessage msg = new ByteMessage(out);
         msg.writeVarInt(buf.readableBytes());
@@ -50,5 +50,5 @@ public final class VarIntLengthEncoder extends MessageToByteEncoder<ByteBuf> {
     protected ByteBuf allocateBuffer(ChannelHandlerContext ctx, ByteBuf msg, boolean preferDirect) {
         int anticipatedRequiredCapacity = 5 + msg.readableBytes();
         return ctx.alloc().heapBuffer(anticipatedRequiredCapacity);
-    }
+    }*/
 }

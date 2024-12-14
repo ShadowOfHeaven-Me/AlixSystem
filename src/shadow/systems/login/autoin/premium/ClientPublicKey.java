@@ -5,7 +5,7 @@ import alix.libs.com.github.retrooper.packetevents.util.crypto.SignatureData;
 import java.security.PublicKey;
 import java.time.Instant;
 
-final class ClientPublicKey {
+public final class ClientPublicKey {
 
     private final Instant expire;
     private final PublicKey key;

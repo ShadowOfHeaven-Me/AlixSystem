@@ -2,7 +2,7 @@
 package alix.bungee.systems.message.redirector;
 
 import alix.bungee.systems.message.AlixMessenger;
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;

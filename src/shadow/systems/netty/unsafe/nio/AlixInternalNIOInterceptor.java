@@ -33,7 +33,7 @@ public final class AlixInternalNIOInterceptor {
     static {
         try {
             //cast the class to ensure we got the right one
-            NioServerSocketChannel serverSocketChannel = (NioServerSocketChannel) AlixHandler.SERVER_CHANNEL_FUTURE.channel();
+            NioServerSocketChannel serverSocketChannel = (NioServerSocketChannel) AlixHandler.SERVER_CHANNEL;
 
             chField = AbstractNioChannel.class.getDeclaredField("ch");
             chField.setAccessible(true);
@@ -133,7 +133,7 @@ public final class AlixInternalNIOInterceptor {
 
     public static void unregister() {
         try {
-            NioServerSocketChannel serverSocketChannel = (NioServerSocketChannel) AlixHandler.SERVER_CHANNEL_FUTURE.channel();
+            NioServerSocketChannel serverSocketChannel = (NioServerSocketChannel) AlixHandler.SERVER_CHANNEL;
             chField.set(serverSocketChannel, delegate);//return the original socket
         } catch (IllegalAccessException e) {
             throw new AlixException(e);

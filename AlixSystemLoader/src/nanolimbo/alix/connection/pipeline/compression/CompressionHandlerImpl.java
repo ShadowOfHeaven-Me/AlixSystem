@@ -11,6 +11,8 @@ import nanolimbo.alix.server.Log;
 final class CompressionHandlerImpl implements CompressionHandler {
 
     private static final AlixQueue<CompressionHandlerImpl> handlers = new ConcurrentAlixDeque<>();
+    //Why the hell is a normal Thread used instead of FastThreadLocalThread in ServerConnection?
+    //The whole fuckin netty performance would increase... bruh
     private static final ThreadLocal<CompressionHandlerImpl> CACHE = new ThreadLocal<>();
     private final ByteBufAllocator alloc;
     private final CompressionImpl impl;
@@ -39,13 +41,8 @@ final class CompressionHandlerImpl implements CompressionHandler {
             throw new AlixException("Thread " + Thread.currentThread() + " is not a Netty thread!");
     }*/
 
-    //Why the hell is a normal Thread used instead of FastThreadLocalThread?
-    //The whole fuckin netty performance would increase
+    //Must be invoked in the netty eventLoop
     static CompressionHandlerImpl getHandler0() {
-        //assertFastThreadLocalThread();
-        //assertNettyThread();
-
-        //Must be invoked in the netty eventLoop
         CompressionHandlerImpl cache = CACHE.get();
         if (cache != null) return cache;
 
@@ -63,12 +60,17 @@ final class CompressionHandlerImpl implements CompressionHandler {
     @Override
     public ByteBuf compress(ByteBuf in) throws Exception {
         int readableBytes = in.readableBytes();
-        if (readableBytes > 1 << 23) Log.warning("Compressing a packet larger than 2^23 bytes");
+        //https://wiki.vg/Protocol#With_compression
+        //21 bits for 3x 7 encoding bits, and 2 continuation bits = 23 bits
+        if (readableBytes > 1 << 21) Log.warning("Compressing a packet larger than 2^21 bytes");
 
         if (readableBytes < COMPRESSION_THRESHOLD) {
             ByteBuf out = this.alloc.directBuffer(readableBytes + 1);
             out.writeByte(0);//no compression
             out.writeBytes(in);
+
+            in.release();
+
             return out;
         }
 

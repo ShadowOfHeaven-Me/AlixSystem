@@ -17,35 +17,17 @@
 
 package nanolimbo.alix.protocol.packets.play.keepalive;
 
-import nanolimbo.alix.protocol.ByteMessage;
-import nanolimbo.alix.protocol.PacketOut;
-import nanolimbo.alix.protocol.registry.Version;
+import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerKeepAlive;
+import nanolimbo.alix.protocol.packets.retrooper.OutRetrooperPacket;
 
-public class PacketOutPlayKeepAlive implements PacketOut {
+public final class PacketPlayOutKeepAlive extends OutRetrooperPacket<WrapperPlayServerKeepAlive> {
 
-    private long id;
-
-    public long getId() {
-        return id;
+    public PacketPlayOutKeepAlive() {
+        super(WrapperPlayServerKeepAlive.class);
     }
 
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    @Override
-    public void encode(ByteMessage msg, Version version) {
-        if (version.moreOrEqual(Version.V1_12_2)) {
-            msg.writeLong(id);
-        } else if (version.moreOrEqual(Version.V1_8)) {
-            msg.writeVarInt((int) id);
-        } else {
-            msg.writeInt((int) id);
-        }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
+    public PacketPlayOutKeepAlive setId(long id) {
+        this.wrapper().setId(id);
+        return this;
     }
 }

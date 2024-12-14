@@ -3,7 +3,7 @@ package alix.bungee.systems.message;
 
 
 import alix.bungee.utils.users.data.UserFileManager;
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 import alix.common.utils.other.throwable.AlixException;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;

@@ -31,6 +31,8 @@ import nanolimbo.alix.util.map.VersionMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import static nanolimbo.alix.protocol.PacketSnapshots.snapshots;
+
 /**
  * PacketSnapshot encodes a packet to byte array for each MC version.
  * Some versions have the same snapshot, so there are mappings to avoid data copying
@@ -40,18 +42,26 @@ public final class PacketSnapshot implements PacketOut {
     private static final CompressionHandler COMPRESSION = GlobalCompressionHandler.INSTANCE;
     private final PacketOut packet;
     //private final Map<Version, ByteBuf> cache = new ConcurrentHashMap<>();
-    private final VersionMap<ByteBuf> cache;
+    private final VersionMap<ByteBuf> encodings;
 
     //private final Map<Version, byte[]> versionMessages = new EnumMap<>(Version.class);
     //private final Map<Version, Version> mappings = new EnumMap<>(Version.class);
 
     private PacketSnapshot(PacketOut packet) {
         this.packet = packet;
-        this.cache = encode(packet);
+        this.encodings = encode(packet);
+        snapshots.offerLast(this);
     }
 
-    public ByteBuf getCached(Version version) {
-        return this.cache.get(version);
+    void release() {
+        this.encodings.forEach(buf -> {
+            int refCnt = buf.refCnt();
+            if (refCnt != 0) buf.release(refCnt);
+        });
+    }
+
+    public ByteBuf getEncoded(Version version) {
+        return this.encodings.get(version);
     }
 
 /*    public ByteBuf getOrCreateRaw(State.PacketRegistry encoderMappings, Version version, CompressionHandler handler) throws Exception {
@@ -69,13 +79,13 @@ public final class PacketSnapshot implements PacketOut {
         return newBuf;
     }*/
 
-    public PacketOut getWrappedPacket() {
+    /*public PacketOut getWrappedPacket() {
         return packet;
-    }
+    }*/
 
     @SneakyThrows
     private static VersionMap<ByteBuf> encode(PacketOut packet) {
-        VersionMap<ByteBuf> cache = new VersionMap<>();
+        VersionMap<ByteBuf> encodings = new VersionMap<>();
         Map<ByteBuf, Version> encoded = new HashMap<>();
 
         for (Version version : Version.values()) {
@@ -87,22 +97,23 @@ public final class PacketSnapshot implements PacketOut {
 
                 CompressionHandler compression;
 
-                if (version.lessOrEqual(Version.V1_7_6) || !State.isCompressible(state, packet.getClass())) compression = null;
+                if (version.lessOrEqual(Version.V1_7_6) || !State.isCompressible(state, packet.getClass()))
+                    compression = null;
                 else compression = COMPRESSION;
 
-                ByteBuf buf = PacketDuplexHandler.encodeToRaw0(packet, mappings, version, compression);
+                ByteBuf buf = PacketDuplexHandler.encodeToRaw0(packet, mappings, version, compression, false);
                 Version alreadyCached = encoded.get(buf);
 
                 if (alreadyCached != null) {
-                    cache.put(version, cache.get(alreadyCached));
+                    encodings.put(version, encodings.get(alreadyCached));
                     buf.release();
                 } else {
                     encoded.put(buf, version);
-                    cache.put(version, BufUtils.constBuffer(buf));
+                    encodings.put(version, BufUtils.constBuffer(buf));
                 }
             }
         }
-        return cache;
+        return encodings;
     }
 
     /*public void encode() {
@@ -146,6 +157,11 @@ public final class PacketSnapshot implements PacketOut {
     @Override
     public String toString() {
         return packet.getClass().getSimpleName();
+    }
+
+    @Override
+    public PacketSnapshot toSnapshot() {
+        return this;
     }
 
     public static PacketSnapshot of(PacketOut packet) {

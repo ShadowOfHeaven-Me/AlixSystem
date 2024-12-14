@@ -245,6 +245,11 @@ public final class PacketEventsManager {
             //processor.setUser(user);
         }*/
 
+        /*@Override
+        public void onUserConnect(UserConnectEvent event) {
+            Main.debug("CONNECTED: " + event.getUser().getChannel());
+        }*/
+
         @Override
         public void onUserDisconnect(UserDisconnectEvent event) {
             String name = event.getUser().getName();

@@ -26,4 +26,7 @@ public interface PacketOut extends Packet {
         // Can be ignored for outgoing packets
     }
 
+    default PacketSnapshot toSnapshot() {
+        return PacketSnapshot.of(this);
+    }
 }

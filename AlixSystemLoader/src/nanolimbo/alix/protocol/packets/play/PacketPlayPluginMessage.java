@@ -40,6 +40,6 @@ public class PacketPlayPluginMessage implements PacketOut {
 
     @Override
     public void encode(ByteMessage msg, Version version) {
-        WrapperUtils.writeNoID(msg.getBuf(), new WrapperPlayServerPluginMessage(this.channel, this.message.getBytes(StandardCharsets.UTF_8)), version.getRetrooperVersion());
+        WrapperUtils.writeNoID(new WrapperPlayServerPluginMessage(this.channel, this.message.getBytes(StandardCharsets.UTF_8)), msg.getBuf(), version.getRetrooperVersion());
     }
 }

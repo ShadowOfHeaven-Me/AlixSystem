@@ -22,6 +22,8 @@ import alix.common.utils.other.throwable.AlixException;
 import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import alix.libs.com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import alix.libs.com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import io.netty.util.collection.IntObjectHashMap;
+import io.netty.util.collection.IntObjectMap;
 import nanolimbo.alix.protocol.Packet;
 import nanolimbo.alix.protocol.PacketIn;
 import nanolimbo.alix.protocol.PacketOut;
@@ -31,15 +33,28 @@ import nanolimbo.alix.protocol.packets.configuration.PacketOutFinishConfiguratio
 import nanolimbo.alix.protocol.packets.configuration.PacketRegistryData;
 import nanolimbo.alix.protocol.packets.login.*;
 import nanolimbo.alix.protocol.packets.play.*;
+import nanolimbo.alix.protocol.packets.play.blocks.PacketPlayOutBlockSectionUpdate;
+import nanolimbo.alix.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
+import nanolimbo.alix.protocol.packets.play.entity.PacketPlayOutEntityMetadata;
+import nanolimbo.alix.protocol.packets.play.entity.PacketPlayOutSpawnEntity;
 import nanolimbo.alix.protocol.packets.play.keepalive.PacketInConfigKeepAlive;
 import nanolimbo.alix.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
 import nanolimbo.alix.protocol.packets.play.keepalive.PacketOutConfigKeepAlive;
-import nanolimbo.alix.protocol.packets.play.keepalive.PacketOutPlayKeepAlive;
+import nanolimbo.alix.protocol.packets.play.keepalive.PacketPlayOutKeepAlive;
+import nanolimbo.alix.protocol.packets.play.map.PacketPlayOutMap;
+import nanolimbo.alix.protocol.packets.play.move.PacketPlayInFlying;
+import nanolimbo.alix.protocol.packets.play.move.PacketPlayInPosition;
+import nanolimbo.alix.protocol.packets.play.move.PacketPlayInPositionAndRotation;
+import nanolimbo.alix.protocol.packets.play.move.PacketPlayInRotation;
+import nanolimbo.alix.protocol.packets.play.ping.PacketPlayInPong;
+import nanolimbo.alix.protocol.packets.play.ping.PacketPlayOutPing;
+import nanolimbo.alix.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
+import nanolimbo.alix.protocol.packets.play.transaction.PacketPlayInTransaction;
+import nanolimbo.alix.protocol.packets.play.transaction.PacketPlayOutTransaction;
 import nanolimbo.alix.protocol.packets.status.PacketInStatusPing;
 import nanolimbo.alix.protocol.packets.status.PacketOutStatusPing;
 import nanolimbo.alix.protocol.packets.status.PacketStatusRequest;
-import nanolimbo.alix.protocol.packets.status.PacketStatusResponse;
-import nanolimbo.alix.util.map.ConcurrentVersionMap;
+import nanolimbo.alix.util.map.VersionMap;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,14 +64,14 @@ import static nanolimbo.alix.protocol.registry.Version.*;
 
 public enum State {
 
-    HANDSHAKING(0) {
+    HANDSHAKING {
         {
             serverBound.register(PacketHandshake::new,
                     map(0x00, Version.getMin(), Version.getMax())
             );
         }
     },
-    STATUS(1) {
+    STATUS {
         {
             serverBound.register(PacketStatusRequest::new,
                     map(0x00, Version.getMin(), Version.getMax())
@@ -64,15 +79,15 @@ public enum State {
             serverBound.register(PacketInStatusPing::new,
                     map(0x01, Version.getMin(), Version.getMax())
             );
-            clientBound.register(PacketStatusResponse::new,
+            /*clientBound.register(PacketStatusResponse::new,
                     map(0x00, Version.getMin(), Version.getMax())
-            );
+            );*/
             clientBound.register(PacketOutStatusPing::new,
                     map(0x01, Version.getMin(), Version.getMax())
             );
         }
     },
-    LOGIN(2) {
+    LOGIN {
         {
             serverBound.register(PacketLoginStart::new,
                     map(0x00, Version.getMin(), Version.getMax())
@@ -97,7 +112,7 @@ public enum State {
             clientBound.registerRetrooper(PacketOutSetCompression::new, PacketType.Login.Server.SET_COMPRESSION);
         }
     },
-    CONFIGURATION(3) {
+    CONFIGURATION {
         {
             clientBound.registerRetrooper(
                     PacketConfigPluginMessage::new,
@@ -141,13 +156,21 @@ public enum State {
             );
         }
     },
-    PLAY(4) {
+    PLAY {
         {
             serverBound.registerRetrooper(PacketInCommand::new, PacketType.Play.Client.CHAT_COMMAND);
             serverBound.registerRetrooper(PacketInCommandUnsigned::new, PacketType.Play.Client.CHAT_COMMAND_UNSIGNED);
+            serverBound.registerRetrooper(PacketPlayInFlying::new, PacketType.Play.Client.PLAYER_FLYING);
+            serverBound.registerRetrooper(PacketPlayInPosition::new, PacketType.Play.Client.PLAYER_POSITION);
+            serverBound.registerRetrooper(PacketPlayInPositionAndRotation::new, PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION);
+            serverBound.registerRetrooper(PacketPlayInRotation::new, PacketType.Play.Client.PLAYER_ROTATION);
+
+            serverBound.registerRetrooper(PacketPlayInPong::new, PacketType.Play.Client.PONG);
+            serverBound.registerRetrooper(PacketPlayInTeleportConfirm::new, PacketType.Play.Client.TELEPORT_CONFIRM);
+            serverBound.registerRetrooper(PacketPlayInTransaction::new, PacketType.Play.Client.WINDOW_CONFIRMATION);
 
             serverBound.register(PacketInPlayKeepAlive::new,
-                    map(0x00, Version.V1_7_6, V1_8),
+                    map(0x00, V1_7_6, V1_8),
                     map(0x0B, V1_9, V1_11_1),
                     map(0x0C, V1_12, V1_12),
                     map(0x0B, V1_12_1, V1_12_2),
@@ -163,7 +186,16 @@ public enum State {
                     map(0x15, V1_20_3, V1_20_3),
                     map(0x18, V1_20_5, V1_21)
             );
+            clientBound.registerRetrooper(PacketPlayOutTransaction::new, PacketType.Play.Server.WINDOW_CONFIRMATION);
+            clientBound.registerRetrooper(PacketPlayPluginMessage::new, PacketType.Play.Server.PLUGIN_MESSAGE);
+            clientBound.registerRetrooper(PacketPlayOutPing::new, PacketType.Play.Server.PING);
             clientBound.registerRetrooper(PacketOutCommands::new, PacketType.Play.Server.DECLARE_COMMANDS);
+            clientBound.registerRetrooper(PacketPlayOutKeepAlive::new, PacketType.Play.Server.KEEP_ALIVE);
+            clientBound.registerRetrooper(PacketPlayOutDisconnect::new, PacketType.Play.Server.DISCONNECT);
+            clientBound.registerRetrooper(PacketPlayOutBlockSectionUpdate::new, PacketType.Play.Server.MULTI_BLOCK_CHANGE);
+            clientBound.registerRetrooper(PacketPlayOutEntityMetadata::new, PacketType.Play.Server.ENTITY_METADATA);
+            clientBound.registerRetrooper(PacketPlayOutSpawnEntity::new, PacketType.Play.Server.SPAWN_ENTITY);
+            clientBound.registerRetrooper(PacketPlayOutMap::new, PacketType.Play.Server.SPAWN_ENTITY);
             /*clientBound.register(PacketDeclareCommands::new,
                     map(0x11, V1_13, V1_14_4),
                     map(0x12, V1_15, V1_15_2),
@@ -176,7 +208,7 @@ public enum State {
                     map(0x11, V1_20_2, V1_21)
             );*/
             clientBound.register(PacketJoinGame::new,
-                    map(0x01, Version.V1_7_6, V1_8),
+                    map(0x01, V1_7_6, V1_8),
                     map(0x23, V1_9, V1_12_2),
                     map(0x25, V1_13, V1_14_4),
                     map(0x26, V1_15, V1_15_2),
@@ -191,12 +223,8 @@ public enum State {
                     map(0x2B, V1_20_5, V1_21)
             );
 
-            clientBound.registerRetrooper(
-                    PacketPlayPluginMessage::new,
-                    PacketType.Play.Server.PLUGIN_MESSAGE
-            );
             clientBound.register(PacketPlayerAbilities::new,
-                    map(0x39, Version.V1_7_6, V1_8),
+                    map(0x39, V1_7_6, V1_8),
                     map(0x2B, V1_9, V1_12),
                     map(0x2C, V1_12_1, V1_12_2),
                     map(0x2E, V1_13, V1_13_2),
@@ -213,7 +241,7 @@ public enum State {
                     map(0x38, V1_20_5, V1_21)
             );
             clientBound.register(PacketPlayerPositionAndLook::new,
-                    map(0x08, Version.V1_7_6, V1_8),
+                    map(0x08, V1_7_6, V1_8),
                     map(0x2E, V1_9, V1_12),
                     map(0x2F, V1_12_1, V1_12_2),
                     map(0x32, V1_13, V1_13_2),
@@ -229,24 +257,8 @@ public enum State {
                     map(0x3E, V1_20_2, V1_20_3),
                     map(0x40, V1_20_5, V1_21)
             );
-            clientBound.register(PacketOutPlayKeepAlive::new,
-                    map(0x00, Version.V1_7_6, V1_8),
-                    map(0x1F, V1_9, V1_12_2),
-                    map(0x21, V1_13, V1_13_2),
-                    map(0x20, V1_14, V1_14_4),
-                    map(0x21, V1_15, V1_15_2),
-                    map(0x20, V1_16, V1_16_1),
-                    map(0x1F, V1_16_2, V1_16_4),
-                    map(0x21, V1_17, V1_18_2),
-                    map(0x1E, V1_19, V1_19),
-                    map(0x20, V1_19_1, V1_19_1),
-                    map(0x1F, V1_19_3, V1_19_3),
-                    map(0x23, V1_19_4, V1_20),
-                    map(0x24, V1_20_2, V1_20_3),
-                    map(0x26, V1_20_5, V1_21)
-            );
             clientBound.register(PacketChatMessage::new,
-                    map(0x02, Version.V1_7_6, V1_8),
+                    map(0x02, V1_7_6, V1_8),
                     map(0x0F, V1_9, V1_12_2),
                     map(0x0E, V1_13, V1_14_4),
                     map(0x0F, V1_15, V1_15_2),
@@ -270,7 +282,7 @@ public enum State {
                     map(0x0A, V1_20_2, V1_21)
             );*/
             clientBound.register(PacketPlayerInfo::new,
-                    map(0x38, Version.V1_7_6, V1_8),
+                    map(0x38, V1_7_6, V1_8),
                     map(0x2D, V1_9, V1_12),
                     map(0x2E, V1_12_1, V1_12_2),
                     map(0x30, V1_13, V1_13_2),
@@ -371,12 +383,10 @@ public enum State {
         }
     }*/
 
-    private final int stateId;
     public final ProtocolMappings<PacketIn> serverBound = new ProtocolMappings<>();
     public final ProtocolMappings<PacketOut> clientBound = new ProtocolMappings<>();
 
-    State(int stateId) {
-        this.stateId = stateId;
+    State() {
     }
 
     public static boolean isCompressible(State state, Class<? extends PacketOut> clazz) {
@@ -385,6 +395,7 @@ public enum State {
             case STATUS:
                 return false;
             case LOGIN:
+                //PacketLoginDisconnect is compressible after COMPRESSION SET
                 return clazz == PacketLoginSuccess.class || clazz == PacketLoginPluginRequest.class;
             case PLAY:
             case CONFIGURATION:
@@ -413,7 +424,8 @@ public enum State {
     public static final class ProtocolMappings<T extends Packet> {
 
         private static final Set<Class<? extends Packet>> nuhUh = ConcurrentHashMap.newKeySet();
-        private final ConcurrentVersionMap<PacketRegistry> registry = new ConcurrentVersionMap<>();
+        //No need to use ConcurrentVersionMap here
+        private final VersionMap<PacketRegistry> registry = new VersionMap<>();
         //private final Map<Version, PacketRegistry> registry = new EnumMap<>(Version.class);
 
         public PacketRegistry getRegistry(Version version) {
@@ -475,7 +487,7 @@ public enum State {
     public static final class PacketRegistry {
 
         private final Version version;
-        private final Map<Integer, Supplier<? extends Packet>> packetsById = new HashMap<>();
+        private final IntObjectMap<Supplier<? extends Packet>> packetsById = new IntObjectHashMap<>();
         private final Map<Class<?>, Integer> packetIdByClass = new IdentityHashMap<>();
 
         public PacketRegistry(Version version) {
@@ -500,8 +512,8 @@ public enum State {
         }
 
         public void register(int packetId, Supplier<? extends Packet> supplier) {
-            packetsById.put(packetId, supplier);
-            packetIdByClass.put(supplier.get().getClass(), packetId);
+            this.packetsById.put(packetId, supplier);
+            this.packetIdByClass.put(supplier.get().getClass(), packetId);
         }
     }
 

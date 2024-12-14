@@ -24,6 +24,10 @@ public final class AlixCommonMain {
         LOGGER_PROVIDER.getLoggerAdapter().error(error);
     }
 
+    public static void errorF(String error, Object... args) {
+        LOGGER_PROVIDER.getLoggerAdapter().error(String.format(error, args));
+    }
+
     public static void debug(String debug) {
         if (ConfigParams.isDebugEnabled) LOGGER_PROVIDER.getLoggerAdapter().debug(debug);
     }

@@ -23,6 +23,10 @@ final class CompressorVelocityImpl implements CompressionImpl {
         this.compressor = factory.create(-1);
     }
 
+   /* private static ByteBufAllocator getCompatibleAlloc(ByteBufAllocator allocator) {
+
+    }*/
+
     @Override
     public ByteBuf compress0(ByteBuf in) throws Exception {
         int readableBytes = in.readableBytes();
@@ -56,6 +60,7 @@ final class CompressorVelocityImpl implements CompressionImpl {
     private static ByteBuf ensureCompatible(ByteBufAllocator alloc, Native nativeStuff, ByteBuf buf) {
         if (isCompatible(nativeStuff, buf)) return buf;
 
+        //throw new AlixError("INCOMPATIBLE: GOT: " + buf + " PREFERRED: " + nativeStuff.preferredBufferType());
         Log.error("INCOMPATIBLE: GOT: " + buf + " PREFERRED: " + nativeStuff.preferredBufferType());
 
         ByteBuf newBuf = MoreByteBufUtils.preferredBuffer(alloc, nativeStuff, buf.readableBytes());

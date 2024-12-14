@@ -2,9 +2,9 @@ package shadow.systems.login.autoin;
 
 import alix.common.data.premium.PremiumData;
 import alix.common.utils.i18n.HttpsHandler;
-import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import nanolimbo.alix.util.UUIDUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -24,11 +24,8 @@ public final class PremiumUtils {
         return PremiumData.UNKNOWN;//we don't know
     }
 
-    //From NanoLimbo UuidUtil
-    @OptimizationCandidate
     private static UUID fromString(String str) {
-        if (str.contains("-")) return UUID.fromString(str);
-        return UUID.fromString(str.replaceFirst("(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5"));
+        return UUIDUtil.fromString(str);
     }
 
     private enum NameCheck {

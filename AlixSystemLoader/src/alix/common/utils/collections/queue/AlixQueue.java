@@ -11,5 +11,4 @@ public interface AlixQueue<T> {
     void clear();
 
     void forEach(Consumer<T> action);
-
 }

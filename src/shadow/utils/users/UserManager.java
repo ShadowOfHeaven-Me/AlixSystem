@@ -1,6 +1,6 @@
 package shadow.utils.users;
 
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 import alix.common.data.PersistentUserData;
 import alix.common.utils.other.throwable.AlixException;
 import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
@@ -72,6 +72,7 @@ public final class UserManager {
 
     private static VerifiedUser putVer(VerifiedUser u) {
         USERS.put(u.getUUID(), u);
+        u.getData().updateLastSuccessfulLoginTime();
         return u;
     }
 

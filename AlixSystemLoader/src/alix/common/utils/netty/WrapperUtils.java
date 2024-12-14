@@ -5,6 +5,7 @@ import alix.common.utils.other.throwable.AlixException;
 import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
 import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
+import lombok.SneakyThrows;
 import sun.misc.Unsafe;
 
 public final class WrapperUtils {
@@ -20,23 +21,52 @@ public final class WrapperUtils {
         }
     }
 
-    public static <T extends PacketWrapper> T writeNoID(ByteBuf buf, T wrapper, ServerVersion version) {
+    @SneakyThrows
+    public static <T extends PacketWrapper> T allocEmpty(Class<T> wrapperClazz) {
+        return (T) UNSAFE.allocateInstance(wrapperClazz);
+    }
+
+    /*public static <T extends PacketWrapper> T initEmpty(ByteBuf buf, ServerVersion version, T wrapper) {
+        T wrapper = allocEmpty(wrapperClazz);
+        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        wrapper.buffer = buf;
+        return wrapper;
+    }*/
+
+    public static <T extends PacketWrapper> T allocNoBuf(ServerVersion version, Class<T> wrapperClazz) {
+        T wrapper = allocEmpty(wrapperClazz);
+        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        return wrapper;
+    }
+
+    public static <T extends PacketWrapper> T alloc(ByteBuf buf, ServerVersion version, Class<T> wrapperClazz) {
+        T wrapper = allocEmpty(wrapperClazz);
+        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        wrapper.buffer = buf;
+        return wrapper;
+    }
+
+    public static <T extends PacketWrapper> T allocUnpooled(ServerVersion version, Class<T> wrapperClazz) {
+        return alloc(BufUtils.unpooledBuffer(), version, wrapperClazz);
+    }
+
+    public static <T extends PacketWrapper> void writeNoID(T wrapper, ByteBuf buf, ServerVersion version) {
         UNSAFE.putObject(wrapper, serverVersionOffset, version);
         wrapper.buffer = buf;
         wrapper.write();
-        return wrapper;
+    }
+
+    //getPacketType() invoked on the returned object here will be null
+    public static <T extends PacketWrapper> void readEmptyWrapperNoID(ByteBuf buf, ServerVersion version, T emptyWrapper) {
+        UNSAFE.putObject(emptyWrapper, serverVersionOffset, version);
+        emptyWrapper.buffer = buf;
+        emptyWrapper.read();
     }
 
     //getPacketType() invoked on the returned object here will be null
     public static <T extends PacketWrapper> T readNoID(ByteBuf buf, ServerVersion version, Class<T> wrapperClazz) {
-        try {
-            T wrapper = (T) UNSAFE.allocateInstance(wrapperClazz);
-            UNSAFE.putObject(wrapper, serverVersionOffset, version);
-            wrapper.buffer = buf;
-            wrapper.read();
-            return wrapper;
-        } catch (InstantiationException e) {
-            throw new AlixException(e);
-        }
+        T wrapper = alloc(buf, version, wrapperClazz);
+        wrapper.read();
+        return wrapper;
     }
 }

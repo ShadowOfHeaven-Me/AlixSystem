@@ -17,11 +17,12 @@
 
 package nanolimbo.alix.world;
 
+
+import nanolimbo.alix.server.LimboServer;
+import nanolimbo.alix.server.Log;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.ListBinaryTag;
 import net.kyori.adventure.nbt.TagStringIO;
-import nanolimbo.alix.server.LimboServer;
-import nanolimbo.alix.server.Log;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +36,8 @@ public final class DimensionRegistry {
     private Dimension defaultDimension_1_18_2;
     private Dimension dimension_1_20_5;
     private Dimension dimension_1_21;
+    private Dimension dimension_1_21_2;
+    private Dimension dimension_1_21_4;
 
     private CompoundBinaryTag codec_1_16;
     private CompoundBinaryTag codec_1_18_2;
@@ -42,8 +45,13 @@ public final class DimensionRegistry {
     private CompoundBinaryTag codec_1_19_1;
     private CompoundBinaryTag codec_1_19_4;
     private CompoundBinaryTag codec_1_20;
+    private CompoundBinaryTag codec_1_20_5;
     private CompoundBinaryTag codec_1_21;
+    private CompoundBinaryTag codec_1_21_2;
+    private CompoundBinaryTag codec_1_21_4;
     private CompoundBinaryTag oldCodec;
+
+    private CompoundBinaryTag tags_1_20_5;
 
     public DimensionRegistry(LimboServer server) {
         this.server = server;
@@ -73,8 +81,20 @@ public final class DimensionRegistry {
         return codec_1_20;
     }
 
+    public CompoundBinaryTag getCodec_1_20_5() {
+        return codec_1_20_5;
+    }
+
     public CompoundBinaryTag getCodec_1_21() {
         return codec_1_21;
+    }
+
+    public CompoundBinaryTag getCodec_1_21_2() {
+        return codec_1_21_2;
+    }
+
+    public CompoundBinaryTag getCodec_1_21_4() {
+        return codec_1_21_4;
     }
 
     public CompoundBinaryTag getOldCodec() {
@@ -97,63 +117,92 @@ public final class DimensionRegistry {
         return dimension_1_21;
     }
 
+    public Dimension getDimension_1_21_2() {
+        return dimension_1_21_2;
+    }
+
+    public Dimension getDimension_1_21_4() {
+        return dimension_1_21_4;
+    }
+
+    public CompoundBinaryTag getTags_1_20_5() {
+        return tags_1_20_5;
+    }
+
     public void load(String def) throws IOException {
         // On 1.16-1.16.1 different codec format
-        oldCodec = readCodecFile("/nanolimbo/alix/dimension/codec_old.snbt");
-        codec_1_16 = readCodecFile("/nanolimbo/alix/dimension/codec_1_16.snbt");
-        codec_1_18_2 = readCodecFile("/nanolimbo/alix/dimension/codec_1_18_2.snbt");
-        codec_1_19 = readCodecFile("/nanolimbo/alix/dimension/codec_1_19.snbt");
-        codec_1_19_1 = readCodecFile("/nanolimbo/alix/dimension/codec_1_19_1.snbt");
-        codec_1_19_4 = readCodecFile("/nanolimbo/alix/dimension/codec_1_19_4.snbt");
-        codec_1_20 = readCodecFile("/nanolimbo/alix/dimension/codec_1_20.snbt");
-        codec_1_21 = readCodecFile("/nanolimbo/alix/dimension/codec_1_21.snbt");
+        oldCodec = readSnbtFile("dimension/codec_old.snbt");
+        codec_1_16 = readSnbtFile("dimension/codec_1_16.snbt");
+        codec_1_18_2 = readSnbtFile("dimension/codec_1_18_2.snbt");
+        codec_1_19 = readSnbtFile("dimension/codec_1_19.snbt");
+        codec_1_19_1 = readSnbtFile("dimension/codec_1_19_1.snbt");
+        codec_1_19_4 = readSnbtFile("dimension/codec_1_19_4.snbt");
+        codec_1_20 = readSnbtFile("dimension/codec_1_20.snbt");
+        codec_1_20_5 = readSnbtFile("dimension/codec_1_20_5.snbt");
+        codec_1_21 = readSnbtFile("dimension/codec_1_21.snbt");
+        codec_1_21_2 = readSnbtFile("dimension/codec_1_21_2.snbt");
+        codec_1_21_4 = readSnbtFile("dimension/codec_1_21_4.snbt");
+
+        tags_1_20_5 = readSnbtFile("dimension/tags_1_20_5.snbt");
 
         defaultDimension_1_16 = getDefaultDimension(def, codec_1_16);
         defaultDimension_1_18_2 = getDefaultDimension(def, codec_1_18_2);
 
-        dimension_1_20_5 = getModernDimension(def, codec_1_20);
+        dimension_1_20_5 = getModernDimension(def, codec_1_20_5);
         dimension_1_21 = getModernDimension(def, codec_1_21);
+        dimension_1_21_2 = getModernDimension(def, codec_1_21_2);
+        dimension_1_21_4 = getModernDimension(def, codec_1_21_4);
     }
 
     private Dimension getDefaultDimension(String def, CompoundBinaryTag tag) {
         ListBinaryTag dimensions = tag.getCompound("minecraft:dimension_type").getList("value");
 
-        CompoundBinaryTag overWorld = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(0)).get("element");
-        CompoundBinaryTag nether = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(2)).get("element");
-        CompoundBinaryTag theEnd = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(3)).get("element");
-
-        switch (def.toLowerCase()) {
-            case "overworld":
-                return new Dimension(0, "minecraft:overworld", overWorld);
-            case "the_nether":
-                return new Dimension(-1, "minecraft:nether", nether);
-            case "the_end":
-                return new Dimension(1, "minecraft:the_end", theEnd);
-            default:
-                Log.warning("Undefined dimension type: '%s'. Using THE_END as default", def);
-                return new Dimension(1, "minecraft:the_end", theEnd);
+        switch (def) {
+            case "minecraft:overworld": {
+                CompoundBinaryTag overWorld = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(0)).get("element");
+                return new Dimension(0, def, overWorld);
+            }
+            case "minecraft:the_nether": {
+                CompoundBinaryTag theNether = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(2)).get("element");
+                return new Dimension(-1, def, theNether);
+            }
+            case "minecraft:the_end": {
+                CompoundBinaryTag theEnd = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(3)).get("element");
+                return new Dimension(1, def, theEnd);
+            }
+            default: {
+                CompoundBinaryTag theEnd = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(3)).get("element");
+                Log.warning("Undefined dimension type: '%s'. Using OVERWORLD as default", def);
+                return new Dimension(0, "minecraft:overworld", theEnd);
+            }
         }
     }
 
     private Dimension getModernDimension(String def, CompoundBinaryTag tag) {
-        switch (def.toLowerCase()) {
-            case "overworld":
-                return new Dimension(0, "minecraft:overworld", tag);
-            case "the_nether":
-                return new Dimension(2, "minecraft:nether", tag);
-            case "the_end":
-                return new Dimension(3, "minecraft:the_end", tag);
-            default:
-                Log.warning("Undefined dimension type: '%s'. Using THE_END as default", def);
-                return new Dimension(3, "minecraft:the_end", tag);
+        ListBinaryTag dimensions = tag.getCompound("minecraft:dimension_type").getList("value");
+
+        for (int i = 0; i < dimensions.size(); i++) {
+            CompoundBinaryTag dimension = (CompoundBinaryTag) dimensions.get(i);
+
+            String name = dimension.getString("name");
+            CompoundBinaryTag world = (CompoundBinaryTag) dimension.get("element");
+
+            if (name.startsWith(def)) {
+                return new Dimension(i, name, world);
+            }
         }
+
+        CompoundBinaryTag overWorld = (CompoundBinaryTag) ((CompoundBinaryTag) dimensions.get(0)).get("element");
+        Log.warning("Undefined dimension type: '%s'. Using OVERWORLD as default", def);
+        return new Dimension(0, "minecraft:overworld", overWorld);
     }
 
-    private CompoundBinaryTag readCodecFile(String resPath) throws IOException {
-        InputStream in = server.getClass().getResourceAsStream(resPath);
+    private CompoundBinaryTag readSnbtFile(String resPath) throws IOException {
+        InputStream in = DimensionRegistry.class.getResourceAsStream(resPath);
 
-        if (in == null)
-            throw new FileNotFoundException("Cannot find dimension registry file");
+        if (in == null) {
+            throw new FileNotFoundException("Cannot find snbt file " + resPath);
+        }
 
         return TagStringIO.get().asCompound(streamToString(in));
     }

@@ -17,6 +17,8 @@
 
 package nanolimbo.alix.protocol;
 
+import alix.common.utils.collections.queue.AlixQueue;
+import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import nanolimbo.alix.LimboConstants;
 import nanolimbo.alix.protocol.packets.configuration.PacketOutFinishConfiguration;
 import nanolimbo.alix.protocol.packets.configuration.PacketRegistryData;
@@ -26,7 +28,6 @@ import nanolimbo.alix.protocol.packets.play.*;
 import nanolimbo.alix.server.LimboServer;
 import nanolimbo.alix.server.data.Title;
 import nanolimbo.alix.util.NbtMessageUtil;
-import nanolimbo.alix.util.UuidUtil;
 import nanolimbo.alix.world.Dimension;
 import net.kyori.adventure.nbt.BinaryTag;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
@@ -35,17 +36,18 @@ import net.kyori.adventure.nbt.ListBinaryTag;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 public final class PacketSnapshots {
 
+    static final AlixQueue<PacketSnapshot> snapshots = new ConcurrentAlixDeque<>();
     public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketOutSetCompression());
     public static PacketSnapshot PACKET_LOGIN_SUCCESS;
     public static PacketSnapshot PACKET_JOIN_GAME;
     public static PacketSnapshot PACKET_SPAWN_POSITION;
     public static PacketSnapshot PACKET_CONFIG_PLUGIN_MESSAGE;
     public static PacketSnapshot PACKET_PLAY_PLUGIN_MESSAGE;
-    public static PacketSnapshot PACKET_PLAYER_ABILITIES;
+    public static PacketSnapshot PLAYER_ABILITIES_FALL;
+    public static PacketSnapshot PLAYER_ABILITIES_FLY;
     public static PacketSnapshot PACKET_PLAYER_INFO;
     //public static PacketSnapshot PACKET_DECLARE_COMMANDS;
     public static PacketSnapshot PACKET_JOIN_MESSAGE;
@@ -53,8 +55,17 @@ public final class PacketSnapshots {
     public static PacketSnapshot PACKET_HEADER_AND_FOOTER;
 
     public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY;
+    public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID;
+
+    public static final int TELEPORT_ID = 1;
+    public static final int TELEPORT_VALID_ID = 2;
+
+    public static final int TELEPORT_Y = 400;
+    public static final int TELEPORT_VALID_Y = 64;
+
     // For 1.19 we need to spawn player outside the world to avoid stuck in terrain loading
     public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK;
+    public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_VALID;
 
     public static PacketSnapshot PACKET_TITLE_TITLE;
     public static PacketSnapshot PACKET_TITLE_SUBTITLE;
@@ -74,13 +85,17 @@ public final class PacketSnapshots {
     private PacketSnapshots() {
     }
 
+    public static void releaseAll() {
+        snapshots.forEach(PacketSnapshot::release);
+    }
+
     public static void initPackets(LimboServer server) {
-        final String username = server.getConfig().getPingData().getVersion();
+        /*final String username = server.getConfig().getPingData().getVersion();
         final UUID uuid = UuidUtil.getOfflineModeUuid(username);
 
         PacketLoginSuccess loginSuccess = new PacketLoginSuccess();
         loginSuccess.setUsername(username);
-        loginSuccess.setUuid(uuid);
+        loginSuccess.setUUID(uuid);*/
 
         PacketJoinGame joinGame = new PacketJoinGame();
         String worldName = "minecraft:" + server.getConfig().getDimensionType().toLowerCase();
@@ -99,18 +114,14 @@ public final class PacketSnapshots {
         joinGame.setHashedSeed(0);
         joinGame.setDimensionRegistry(server.getDimensionRegistry());
 
-        PacketPlayerAbilities playerAbilities = new PacketPlayerAbilities();
-        playerAbilities.setFlyingSpeed(0.0F);
-        playerAbilities.setFlags(0x02);
-        playerAbilities.setFieldOfView(0.1F);
+        PacketPlayerAbilities abilities = new PacketPlayerAbilities();
+        abilities.wrapper().setFlySpeed(0.0F);
+        abilities.wrapper().setFlying(false);
+        abilities.wrapper().setFOVModifier(0.1F);
 
-        int teleportId = ThreadLocalRandom.current().nextInt();
-
-        PacketPlayerPositionAndLook positionAndLookLegacy
-                = new PacketPlayerPositionAndLook(0, 64, 0, 0, 0, teleportId);
-
-        PacketPlayerPositionAndLook positionAndLook
-                = new PacketPlayerPositionAndLook(0, 400, 0, 0, 0, teleportId);
+        PLAYER_ABILITIES_FALL = PacketSnapshot.of(abilities);
+        abilities.wrapper().setFlying(true);
+        PLAYER_ABILITIES_FLY = PacketSnapshot.of(abilities);
 
         PacketSpawnPosition packetSpawnPosition = new PacketSpawnPosition(0, 400, 0);
 
@@ -120,14 +131,15 @@ public final class PacketSnapshots {
         PacketPlayerInfo info = new PacketPlayerInfo();
         info.setUsername(server.getConfig().getPlayerListUsername());
         info.setGameMode(server.getConfig().getGameMode());
-        info.setUuid(uuid);
+        info.setUuid(UUID.randomUUID());
 
-        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(loginSuccess);
+        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername("Mort").setUUID(UUID.randomUUID()));
         PACKET_JOIN_GAME = PacketSnapshot.of(joinGame);
-        PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(positionAndLookLegacy);
-        PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(positionAndLook);
+        PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(0, TELEPORT_Y, 0, 0, 0, TELEPORT_ID));
+        PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(0, TELEPORT_VALID_Y, 0, 0, 0, TELEPORT_VALID_ID));
+        PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(new PacketPlayerPositionAndLook(0, TELEPORT_Y, 0, 0, 0, TELEPORT_ID));
+        PACKET_PLAYER_POS_AND_LOOK_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(0, TELEPORT_VALID_Y, 0, 0, 0, TELEPORT_VALID_ID));
         PACKET_SPAWN_POSITION = PacketSnapshot.of(packetSpawnPosition);
-        PACKET_PLAYER_ABILITIES = PacketSnapshot.of(playerAbilities);
         PACKET_PLAYER_INFO = PacketSnapshot.of(info);
 
         //PACKET_DECLARE_COMMANDS = PacketSnapshot.of(declareCommands);

@@ -1,5 +1,7 @@
 package alix.common.data.premium;
 
+import nanolimbo.alix.util.UUIDUtil;
+
 import java.util.UUID;
 
 public interface PremiumData {
@@ -23,6 +25,10 @@ public interface PremiumData {
 
     static PremiumData createNew(UUID premiumUUID) {
         return new PremiumDataImpl(premiumUUID);
+    }
+
+    static PremiumData createNew(String premiumUUID) {
+        return new PremiumDataImpl(UUIDUtil.fromString(premiumUUID));
     }
 
     PremiumData NON_PREMIUM = new NonPremiumImpl();

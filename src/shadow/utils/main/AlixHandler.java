@@ -15,6 +15,7 @@ import alix.libs.com.github.retrooper.packetevents.protocol.entity.type.EntityTy
 import alix.libs.com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import alix.libs.com.github.retrooper.packetevents.wrapper.play.server.*;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +34,6 @@ import shadow.systems.executors.SpigotSpawnExecutors;
 import shadow.systems.executors.gui.GUIExecutors;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.systems.login.result.LoginInfo;
-import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
@@ -53,6 +53,7 @@ import shadow.utils.world.AlixWorld;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +72,9 @@ public final class AlixHandler {
     private static final long teleportDelay = Main.config.getLong("user-teleportation-delay");
     private static final boolean isTeleportDelayed = teleportDelay > 0;
     private static final String delayedTeleportMessage = Messages.get("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
-    public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
-    public static final boolean isEpollTransport = SERVER_CHANNEL_FUTURE.channel().getClass() == EpollServerSocketChannel.class;
+    //public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
+    public static final Channel SERVER_CHANNEL = getServerChannelFuture().channel();
+    public static final boolean isEpollTransport = SERVER_CHANNEL.getClass() == EpollServerSocketChannel.class;
 
     public static void resetBlindness(UnverifiedUser user) {
         if (!user.blindnessSent) return;
@@ -186,9 +188,9 @@ public final class AlixHandler {
         user.blindnessSent = true;
     }
 
-    private static void initializeAlixInterceptor() {
-        AlixInterceptor.injectIntoServerPipeline(SERVER_CHANNEL_FUTURE.channel().pipeline());
-    }
+/*    private static void initializeAlixInterceptor() {
+        AlixInterceptor.injectIntoServerPipeline(SERVER_CHANNEL.pipeline());
+    }*/
 
     private static ChannelFuture getServerChannelFuture() {
         try {
@@ -216,10 +218,10 @@ public final class AlixHandler {
                     return futures.get(0);//it should contain only one handler
                 }
             }
+            throw new AlixError("No Server Channel found! - " + Arrays.toString(serverConnectionClass.getDeclaredFields()));
         } catch (Exception e) {
             throw new AlixError(e);
         }
-        throw new AlixError("No Server Channel found!");
     }
 
     public static void delayedConfigTeleportExecute(Runnable r, Player p) {
@@ -268,7 +270,7 @@ public final class AlixHandler {
                 AlixCommonUtils.isValidClass("com.destroystokyo.paper.event.player.PlayerSetSpawnEvent")
                         ? new PaperSpawnExecutors() : new SpigotSpawnExecutors(), Main.plugin);
 
-        initializeAlixInterceptor();
+        //initializeAlixInterceptor();
         //PaperAccess.initializeFireWall();
                 /*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER)
                     PaperAccess.initializeFireWall();

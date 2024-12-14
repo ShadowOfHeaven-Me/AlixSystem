@@ -84,7 +84,7 @@ public final class LoginVerdictManager {
         //Main.logError("CREATED A VERDICT: " + info.getVerdict().readableName());
     }
 
-    private static final boolean sessionExpireEnabled = AlixUtils.autoLoginExpiry > 0;
+    private static final boolean isSessionExpiryEnabled = AlixUtils.autoLoginExpiry > 0;
 
     private static LoginVerdict getVerdict(InetAddress ip, PersistentUserData data) {
         if (data == null)//not registered - no data
@@ -101,7 +101,7 @@ public final class LoginVerdictManager {
 
     private static boolean isSessionNotExpired(PersistentUserData data) {
         //Main.logError("SES " + sessionExpireEnabled + " LAST SUCC " + data.getLastSuccessfulLogin() + " EXPIRY " + AlixUtils.autoLoginExpiry + " TIME: " + System.currentTimeMillis());
-        return !sessionExpireEnabled ||
+        return !isSessionExpiryEnabled ||
                 data.getLastSuccessfulLogin() + AlixUtils.autoLoginExpiry > System.currentTimeMillis();//sessionExpireEnabled must be true here
     }
 

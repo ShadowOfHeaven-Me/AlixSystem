@@ -7,25 +7,31 @@ import io.netty.buffer.*;
 
 public final class BufUtils {
 
-    //have the bufs managed by the GC (for now disabled)
-    //TODO: Add a PooledByteBufAllocator option for dynamic bufs
     public static final ByteBufAllocator POOLED = PooledByteBufAllocator.DEFAULT;
-    public static final ByteBufAllocator UNPOOLED = new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
+    public static final ByteBufAllocator UNPOOLED = UnpooledByteBufAllocator.DEFAULT; //new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
     //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
 
 /*    static {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
     }*/
 
-    public static ByteBuf buffer() {
-        return directUnpooledBuffer(); //ALLOC.ioBuffer();
-    }
+    /*public static ByteBuf buffer() {
+        return unpooledBuffer(); //ALLOC.ioBuffer();
+    }*/
 
-    public static ByteBuf directUnpooledBuffer() {
+    public static ByteBuf unpooledBuffer() {
         return UNPOOLED.directBuffer();
     }
 
-    public static ByteBuf directPooledBuffer(int capacity) {
+    public static ByteBuf unpooledBuffer(int capacity) {
+        return UNPOOLED.directBuffer(capacity);
+    }
+
+    public static ByteBuf pooledBuffer() {
+        return POOLED.directBuffer();
+    }
+
+    public static ByteBuf pooledBuffer(int capacity) {
         return POOLED.directBuffer(capacity);
     }
 
@@ -33,9 +39,8 @@ public final class BufUtils {
         return createBuffer(wrapper, true);
     }
 
-    //a lotta sense with the "direct ? directBuffer() : buffer()" xd
-    public static ByteBuf createBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return createBuffer0(wrapper, direct ? directUnpooledBuffer() : buffer());
+    public static ByteBuf createBuffer(PacketWrapper<?> wrapper, boolean unpooled) {
+        return createBuffer0(wrapper, unpooled ? unpooledBuffer() : pooledBuffer());
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -56,7 +61,7 @@ public final class BufUtils {
     }
 
     public static ByteBuf createBufferNoID(PacketWrapper<?> wrapper) {
-        return createBufferNoID(wrapper, directUnpooledBuffer());
+        return createBufferNoID(wrapper, unpooledBuffer());
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -74,8 +79,8 @@ public final class BufUtils {
         return constBuffer(wrapper, true);
     }
 
-    public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return constBuffer(createBuffer(wrapper, direct));
+    public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean unpooled) {
+        return constBuffer(createBuffer(wrapper, unpooled));
     }
 
     public static ByteBuf constBuffer(ByteBuf dynamicBuf) {//Unreleasable(ReadOnly(ByteBuf)))

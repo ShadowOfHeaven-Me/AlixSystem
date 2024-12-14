@@ -2,19 +2,17 @@ package nanolimbo.alix.connection.pipeline;
 
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import lombok.SneakyThrows;
 import nanolimbo.alix.connection.ClientConnection;
 import nanolimbo.alix.connection.pipeline.compression.CompressionHandler;
 import nanolimbo.alix.protocol.*;
-import nanolimbo.alix.protocol.packets.login.PacketConfigDisconnect;
 import nanolimbo.alix.protocol.registry.State;
 import nanolimbo.alix.protocol.registry.Version;
 import nanolimbo.alix.server.LimboServer;
 import nanolimbo.alix.server.Log;
+
+import java.net.SocketException;
 
 public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
@@ -44,15 +42,10 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         //PacketDecoder
         Packet packet = PacketDecoder.decode(buf, this.decoderMappings, this.version);
         buf.release();
-        if (packet == null) {
-            buf.release();
-            return;
-        }
+        if (packet == null) return;
 
-        Log.error("VALID PACKET - " + packet);
-
-            packet.handle(this.connection, this.server);
-
+        Log.error("IN: " + packet);
+        packet.handle(this.connection, this.server);
     }
 
     @Override
@@ -83,10 +76,13 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         Log.error("HANDLER ADDED: " + ctx.pipeline().names());
     }*/
 
+
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if (cause instanceof SocketException) return;
         Log.error("Error in pipeline", cause);
-        this.connection.sendPacketAndClose(new PacketConfigDisconnect("§cInternal limbo error"));
+        ctx.close();
+        //this.connection.sendPacketAndClose(new PacketConfigDisconnect("§cInternal limbo error"));
     }
 
     //Compression - start
@@ -97,7 +93,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     private void enableCompression() {
-        //both of these need to be invoked eventLoop, writeAndFlushPacket already does the check
+        //both of these need to be invoked on the eventLoop
         this.writeAndFlushPacket(PacketSnapshots.SET_COMPRESSION);
         this.compression = CompressionHandler.getHandler(this.channel);
     }
@@ -107,10 +103,10 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         return this.compression != null ? this.compression.decompress(buf) : buf;
     }
 
-    private ByteBuf tryCompress(ByteBuf buf) throws Exception {
+    /*private ByteBuf tryCompress(ByteBuf buf) throws Exception {
         //Log.error("COMPRESSION ENABLED WRITE: " + (this.compression != null));
         return this.compression != null ? this.compression.compress(buf) : buf;
-    }
+    }*/
 
     //Compression - end
 
@@ -119,7 +115,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     public void flush() {
-        this.assertEventLoop();
+        //this.assertEventLoop();
         this.channel.unsafe().flush();
     }
 
@@ -138,13 +134,13 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     //actually does the encoding
-    public static ByteBuf encodeToRaw0(PacketOut packet, State.PacketRegistry encoderMappings, Version version, CompressionHandler handler) throws Exception {
+    public static ByteBuf encodeToRaw0(PacketOut packet, State.PacketRegistry encoderMappings, Version version, CompressionHandler handler, boolean pooled) throws Exception {
         //Prefix with packet Id and write contents
-        ByteMessage byteMessage = PacketEncoder.encode(packet, encoderMappings, version);
+        ByteMessage byteMessage = PacketEncoder.encode(packet, encoderMappings, version, pooled);
         if (byteMessage == null) throw new AlixException("encodeToRaw() error");
 
         ByteBuf maybeCompressed = handler != null ? handler.compress(byteMessage.getBuf()) : byteMessage.getBuf();
-        return VarIntLengthEncoder.encode(maybeCompressed);
+        return VarIntLengthEncoder.encode(maybeCompressed, pooled);
     }
 
     @SneakyThrows
@@ -154,11 +150,15 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         this.assertEventLoop();
 
         ByteBuf buf;
-        if (packet instanceof PacketSnapshot) buf = ((PacketSnapshot) packet).getCached(this.version);
-        else buf = encodeToRaw0(packet, this.encoderMappings, this.version, this.compression);
+        if (packet instanceof PacketSnapshot) buf = ((PacketSnapshot) packet).getEncoded(this.version);
+        else buf = encodeToRaw0(packet, this.encoderMappings, this.version, this.compression, true);
         //Log.error("OUT BUF: " + Arrays.toString(new ByteMessage(buf).toByteArray()));
 
-        this.channel.unsafe().outboundBuffer().addMessage(buf, buf.readableBytes(), promise);
+        ChannelOutboundBuffer outboundBuffer = this.channel.unsafe().outboundBuffer();
+
+        if (outboundBuffer != null) outboundBuffer.addMessage(buf, buf.readableBytes(), promise);
+        else buf.release();
+
         return promise;
     }
 
@@ -177,5 +177,15 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     public void setClientConnection(ClientConnection connection) {
         this.connection = connection;
+    }
+
+    //prevent the events from being passed onto the other handlers
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) {
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
     }
 }

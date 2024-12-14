@@ -1,9 +1,12 @@
 package alix.common.utils.netty;
 
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 
 public final class FastNettyUtils {
+
+    //https://steinborn.me/posts/performance/how-fast-can-you-write-a-varint/
 
     //Optimize VarInts with explicit cases
     public static void writeVarInt(ByteBuf buf, int i) {
@@ -31,7 +34,7 @@ public final class FastNettyUtils {
         }
     }
 
-    //Optimize VarInts with explicit cases when its exact size is known
+    //Optimize VarInts with explicit cases when their exact size is known
     public static void writeVarInt(ByteBuf buf, int i, byte bytesCount) {
         switch (bytesCount) {
             case 1:
@@ -71,50 +74,70 @@ public final class FastNettyUtils {
     //https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/netty/FallbackVarInt21FrameDecoder.java#L69
 
     public static int readVarInt(final ByteBuf buf) {
-        if (buf.readableBytes() < 4)
-            return readRawVarIntSmallBuffer(buf);
+        if (buf.readableBytes() < 4) return readVarIntSmallBuffer(buf);
 
-        // take the last three bytes and check if any of them have the high bit set
-        final int wholeOrMore = buf.getIntLE(buf.readerIndex());
-        final int atStop = ~wholeOrMore & 0x808080;
-        if (atStop == 0) throw new AlixException("fucked up - VarInt too big");
+        return readVarInt3Or4Byte(buf, buf.getIntLE(buf.readerIndex()));
+    }
 
+    private static int readVarIntSmallBuffer(ByteBuf buf) {
+        switch (buf.readableBytes()) {
+            case 3:
+                return readVarInt3Or4Byte(buf, buf.getMediumLE(buf.readerIndex()));
+            case 2:
+                return readVarInt2Byte(buf);
+            case 1: {
+                byte val = buf.readByte();
+                //check if it has the continuation bit set
+                if ((val & 0x80) != 0) throw new AlixException("VarInt too big for 1 byte");
+                return val;
+            }
+            case 0:
+                throw new AlixException("VarInt not readable");
+            default:
+                throw new AlixError("how");
+        }
+    }
+
+    private static int readVarInt3Or4Byte(final ByteBuf buf, final int wholeOrMore) {
+        // Read 3 bytes in little-endian order
+        final int atStop = ~wholeOrMore & 0x808080; // Check for stop bits
+
+        // If no stop bits are found, throw an exception
+        if (atStop == 0) throw new AlixException("VarInt too big for 3 bytes");
+
+        // Find the position of the first stop bit
         final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;
-        buf.skipBytes(bitsToKeep >> 3);
+        buf.skipBytes(bitsToKeep >> 3); // Skip the processed bytes
 
-        // https://github.com/netty/netty/pull/14050#issuecomment-2107750734
+        // Extract and preserve the valid bytes
         int preservedBytes = wholeOrMore & (atStop ^ (atStop - 1));
 
-        // https://github.com/netty/netty/pull/14050#discussion_r1597896639
+        // Compact the 7-bit chunks
         preservedBytes = (preservedBytes & 0x007F007F) | ((preservedBytes & 0x00007F00) >> 1);
         preservedBytes = (preservedBytes & 0x00003FFF) | ((preservedBytes & 0x3FFF0000) >> 2);
+
         return preservedBytes;
     }
 
-    private static int readRawVarIntSmallBuffer(final ByteBuf buf) {
-        if (!buf.isReadable()) return 0;
+    private static int readVarInt2Byte(final ByteBuf buf) {
+        // Read 2 bytes in little-endian order
+        final int wholeOrMore = buf.getShortLE(buf.readerIndex()); // Reads 2 bytes as an integer
+        final int atStop = ~wholeOrMore & 0x8080; // Identify stop bits in the two bytes
 
-        int rIdx = buf.readerIndex();
+        // If no stop bits are found, the VarInt is too large
+        if (atStop == 0) throw new AlixException("VarInt too big for 2 bytes");
 
-        byte tmp = buf.readByte();
-        if (tmp >= 0) return tmp;
+        // Find the first stop bit
+        final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;
+        buf.skipBytes(bitsToKeep >> 3); // Skip the number of processed bytes
 
-        int result = tmp & 0x7F;
-        if (!buf.isReadable()) {
-            buf.readerIndex(rIdx);
-            return 0;
-        }
+        // Extract and preserve the relevant 7-bit chunks
+        int preservedBytes = wholeOrMore & (atStop ^ (atStop - 1));
 
-        if ((tmp = buf.readByte()) >= 0) return result | tmp << 7;
+        // Compact the 7-bit chunks into a single integer
+        preservedBytes = (preservedBytes & 0x007F) | ((preservedBytes & 0x7F00) >> 1);
 
-        result |= (tmp & 0x7F) << 7;
-        if (!buf.isReadable()) {
-            buf.readerIndex(rIdx);
-            return 0;
-        }
-        if ((tmp = buf.readByte()) >= 0) return result | tmp << 14;
-
-        return result | (tmp & 0x7F) << 14;
+        return preservedBytes;
     }
 
     public static void init() {

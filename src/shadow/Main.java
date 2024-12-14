@@ -1,6 +1,6 @@
 package shadow;
 
-import alix.common.data.security.Hashing;
+import alix.common.data.security.password.hashing.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
 import alix.common.utils.file.update.UpdateChecker;
@@ -48,10 +48,7 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //* Fixed invalid player spawn storing mechanic
-    //* Fixed /changepassword changing the password but not the login type
-    //* Fixed name checks affecting bedrock players
-    //* Temporarily disabled empty connection timeout
+    //
 
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
@@ -228,9 +225,10 @@ public final class Main implements LoaderBootstrap {
         // String mode = PacketBlocker.serverboundNameVersion ? "ASYNC" : "SYNC";
         //logConsoleInfo(en ? "Booted in the mode: " + mode : "AlixSystem zostało uruchomione w trybie: " + mode);
 
-        if (pm.isPluginEnabled("FastLogin")) {
-            logConsoleInfo("As of version 3.5.0, Alix no longer needs FastLogin! Premium verification has been built into Alix!");
-        }
+        if (pm.getPlugin("FastLogin") != null)
+            logWarning("As of version 3.5.0, Alix no longer needs FastLogin! Premium verification has been built into Alix!");
+
+        //PcapManager.init();
 
         FileManager.loadFiles();//load all the classes before enabling the ability to join
         HandlerList.unregisterAll(preStartUpExecutors);

@@ -1,7 +1,7 @@
 /*
 package shadow.systems.bungee;
 
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 import alix.common.utils.other.throwable.AlixException;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;

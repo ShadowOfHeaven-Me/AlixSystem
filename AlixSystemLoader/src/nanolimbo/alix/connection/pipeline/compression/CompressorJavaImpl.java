@@ -4,7 +4,6 @@ import alix.common.utils.netty.FastNettyUtils;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import nanolimbo.alix.server.Log;
 
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
@@ -35,7 +34,6 @@ final class CompressorJavaImpl implements CompressionImpl {
     @Override
     public ByteBuf compress0(ByteBuf in) {
         int readableBytes = in.readableBytes();
-        if (readableBytes > 1 << 23) Log.warning("Sending a packet larger than 2^23 bytes");
 
         ByteBuf out = this.allocator.directBuffer();
 

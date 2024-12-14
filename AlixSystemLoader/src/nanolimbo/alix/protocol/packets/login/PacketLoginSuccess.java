@@ -17,46 +17,28 @@
 
 package nanolimbo.alix.protocol.packets.login;
 
-import nanolimbo.alix.protocol.ByteMessage;
-import nanolimbo.alix.protocol.PacketOut;
-import nanolimbo.alix.protocol.registry.Version;
+import alix.libs.com.github.retrooper.packetevents.protocol.player.UserProfile;
+import alix.libs.com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerLoginSuccess;
+import nanolimbo.alix.protocol.packets.retrooper.OutRetrooperPacket;
 
 import java.util.UUID;
 
-public final class PacketLoginSuccess implements PacketOut {
+public final class PacketLoginSuccess extends OutRetrooperPacket<WrapperLoginServerLoginSuccess> {
 
-    private UUID uuid;
-    private String username;
+    private final UserProfile profile = new UserProfile(null, null);
 
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public PacketLoginSuccess() {
+        super(WrapperLoginServerLoginSuccess.class);
+        this.wrapper().setUserProfile(profile);
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public PacketLoginSuccess setUUID(UUID uuid) {
+         this.profile.setUUID(uuid);
+         return this;
     }
 
-    @Override
-    public void encode(ByteMessage msg, Version version) {
-        if (version.moreOrEqual(Version.V1_16)) {
-            msg.writeUuid(uuid);
-        } else if (version.moreOrEqual(Version.V1_7_6)) {
-            msg.writeString(uuid.toString());
-        } else {
-            msg.writeString(uuid.toString().replace("-", ""));
-        }
-        msg.writeString(username);
-        if (version.moreOrEqual(Version.V1_19)) {
-            msg.writeVarInt(0);
-        }
-        if (version.fromTo(Version.V1_20_5, Version.V1_21)) {
-            msg.writeBoolean(true);
-        }
+    public PacketLoginSuccess setUsername(String username) {
+        this.profile.setName(username);
+        return this;
     }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
-    }
-
 }

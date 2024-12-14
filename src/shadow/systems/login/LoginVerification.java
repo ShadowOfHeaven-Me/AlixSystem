@@ -1,6 +1,6 @@
 package shadow.systems.login;
 
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 
 public final class LoginVerification {
 

@@ -22,16 +22,12 @@ public final class NettyUtils {
         Main.logError("MAPPED: " + mapper.get(packetId));
     }*/
 
-    public static ByteBuf buffer() {
-        return BufUtils.buffer(); //ALLOC.ioBuffer();
-    }
-
     public static ByteBuf directPooledBuffer() {
-        return BufUtils.directUnpooledBuffer();
+        return BufUtils.unpooledBuffer();
     }
 
     public static ByteBuf directPooledBuffer(int capacity) {
-        return BufUtils.directPooledBuffer(capacity);
+        return BufUtils.pooledBuffer(capacity);
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -110,23 +106,27 @@ public final class NettyUtils {
     }
 
     public static ByteBuf dynamic(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
-        return BufUtils.createBuffer0(wrapper, context.alloc().buffer());
+        return BufUtils.createBuffer0(wrapper, context.alloc().directBuffer());
+    }
+
+    public static ByteBuf dynamic(PacketWrapper<?> wrapper) {
+        return BufUtils.createBuffer0(wrapper, BufUtils.pooledBuffer());
     }
 
     public static ByteBuf createBuffer(PacketWrapper<?> wrapper) {
         return BufUtils.createBuffer(wrapper);
     }
 
-    public static ByteBuf createBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return BufUtils.createBuffer(wrapper, direct);
+    public static ByteBuf createBuffer(PacketWrapper<?> wrapper, boolean unpooled) {
+        return BufUtils.createBuffer(wrapper, unpooled);
     }
 
     public static ByteBuf constBuffer(PacketWrapper<?> wrapper) {
         return BufUtils.constBuffer(wrapper, true);
     }
 
-    public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean direct) {
-        return BufUtils.constBuffer(createBuffer(wrapper, direct));
+    public static ByteBuf constBuffer(PacketWrapper<?> wrapper, boolean unpooled) {
+        return BufUtils.constBuffer(createBuffer(wrapper, unpooled));
     }
 
     public static ByteBuf constBuffer(ByteBuf dynamicBuf) {

@@ -1,9 +1,10 @@
-package alix.common.data.security;
+package alix.common.data.security.password.hashing;
 
 import alix.common.data.security.types.Sha256;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.other.throwable.AlixException;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -11,13 +12,16 @@ import java.security.SecureRandom;
 
 public final class Hashing {
 
+    //Use com.google.common.hash.Hashing
     public static final byte CONFIG_HASH_ID;
+    public static final HashingAlgorithm SHA256_MIGRATE;
+    public static final HashingAlgorithm SHA512_MIGRATE;
     private static final HashingAlgorithm[] hashingAlgorithms;
     private static final HashingAlgorithm configHash;
     private static final SecureRandom SECURE_RANDOM;
 
-    public static String hash(HashingAlgorithm algorithm, String unhashedPassword, String salt) {
-        return algorithm.hash((salt != null ? salt : "") + unhashedPassword);
+    public static String hashSaltFirst(HashingAlgorithm algorithm, String unhashedPassword, String salt) {
+        return algorithm.hash(salt + unhashedPassword);
     }
 
     public static HashingAlgorithm ofHashId(byte hashId) {
@@ -102,6 +106,43 @@ public final class Hashing {
         }
     }
 
+    private static final class Hash4 implements HashingAlgorithm {
+
+        private final Sha256 sha256 = Sha256.INSTANCE;
+
+        @Override
+        public String hash(String s) {
+            byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+            byte[] hashedBytes = this.sha256.hash(bytes);
+
+            //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/MessageDigestCryptoProvider.java#L48
+            return String.format("%064x", new BigInteger(1, hashedBytes));
+        }
+
+        @Override
+        public byte hashId() {
+            return 4;
+        }
+    }
+
+    private static final class Hash5 implements HashingAlgorithm {
+
+        private final MessageDigest sha512 = getDigest("SHA-512");
+
+        @Override
+        public String hash(String s) {
+            byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+            byte[] hashedBytes = this.sha512.digest(bytes);
+
+            //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/MessageDigestCryptoProvider.java#L48
+            return String.format("%064x", new BigInteger(1, hashedBytes));
+        }
+
+        @Override
+        public byte hashId() {
+            return 5;
+        }
+    }
 /*    private static final class Hash4 implements HashingAlgorithm {
 
         @Override
@@ -168,13 +209,18 @@ public final class Hashing {
     }
 
     static {
+        SHA256_MIGRATE = new Hash4();
+        SHA512_MIGRATE = new Hash5();
+
+        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3(), SHA256_MIGRATE, SHA512_MIGRATE};
+
         int i = ConfigProvider.config.getInt("password-hash-type");
         byte b = (byte) i;
+        byte highestId = hashingAlgorithms[hashingAlgorithms.length - 1].hashId();//Or hashingAlgorithms.length - 1
 
-        if (b != i || b < 0 || b > 3) b = 3;//Default
+        if (b != i || b < 0 || b > highestId) b = 3;//Default
 
         CONFIG_HASH_ID = b; //Set from the config
-        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3()};
         configHash = ofHashId(CONFIG_HASH_ID);
         SECURE_RANDOM = new SecureRandom();
     }

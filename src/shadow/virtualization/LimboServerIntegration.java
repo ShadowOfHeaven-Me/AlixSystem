@@ -12,6 +12,7 @@ import nanolimbo.alix.protocol.packets.PacketHandshake;
 import nanolimbo.alix.protocol.packets.login.PacketLoginStart;
 import nanolimbo.alix.server.LimboServer;
 import shadow.systems.login.captcha.Captcha;
+import shadow.systems.netty.AlixInterceptor;
 import shadow.virtualization.commands.LimboCommandHandler;
 
 //https://wiki.vg/Protocol_FAQ
@@ -20,6 +21,11 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
     //with caffeine
     //@OptimizationCandidate
     //private final Cache<String, InetAddress> completedCaptchaCache = CacheBuilder.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build();
+
+    @Override
+    public void invokeSilentServerChannelRead(Channel channel) {
+        AlixInterceptor.invokeSilentChannelRead(channel);
+    }
 
     @Override
     public LimboConnection newConnection(Channel channel, LimboServer server, PacketDuplexHandler duplexHandler, VarIntFrameDecoder frameDecoder) {

@@ -24,7 +24,6 @@ public final class FireWallManager {
     private static final ConcurrentInt62Set intIpv4Set = FireWallType.isIPv4FastLookUpEnabled() ? new ConcurrentInt62Set(1 << 19) : null;
     //private static final IntOpenHashSet intIpv4Set = FireWallType.isIPv4FastLookUpEnabled() ? new IntOpenHashSet(1 << 19) : null;
 
-
     public static void addCauseException(InetSocketAddress ip, Throwable t) {
         addCauseException(ip.getAddress(), t);
     }

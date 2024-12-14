@@ -1,4 +1,4 @@
-package alix.common.data.security;
+package alix.common.data.security.password.hashing;
 
 public interface HashingAlgorithm {
 

@@ -27,7 +27,6 @@ public class PacketStatusRequest implements PacketIn {
 
     @Override
     public void decode(ByteMessage msg, Version version) {
-
     }
 
     @Override

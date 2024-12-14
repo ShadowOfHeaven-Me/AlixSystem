@@ -1,5 +1,6 @@
 package alix.common.data;
 
+import alix.common.data.security.password.Password;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import org.jetbrains.annotations.NotNull;

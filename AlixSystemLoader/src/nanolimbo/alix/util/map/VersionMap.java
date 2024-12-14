@@ -6,12 +6,12 @@ public final class VersionMap<T> extends AbstractVersionMap<T> {
     }
 
     @Override
-    protected void setElement(Object[] data, int i, T val) {
+    void setElement(Object[] data, int i, T val) {
         data[i] = val;
     }
 
     @Override
-    protected T getElement(Object[] data, int i) {
+    T getElement(Object[] data, int i) {
         return (T) data[i];
     }
 }

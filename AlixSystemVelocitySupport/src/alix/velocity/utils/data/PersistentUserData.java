@@ -1,6 +1,6 @@
 package alix.velocity.utils.data;
 
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 
 public final class PersistentUserData {
 

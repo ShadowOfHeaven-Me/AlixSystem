@@ -18,6 +18,7 @@
 package nanolimbo.alix.connection;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import nanolimbo.alix.connection.pipeline.PacketDuplexHandler;
@@ -31,9 +32,11 @@ public final class ClientChannelInitializer {
             duplexHandlerName = "--duplex_handler",
             frameDecoderName = "--frame_decoder";
     private final LimboServer server;
+    //private final ChannelInitImpl channelInitImpl;
 
-    public ClientChannelInitializer(LimboServer server) {
+    public ClientChannelInitializer(LimboServer server, ChannelHandlerContext silentServerContext) {
         this.server = server;
+        //this.channelInitImpl = new ChannelInitImpl(silentServerContext);
     }
 
     public void initChannel(Channel channel) {
@@ -49,6 +52,8 @@ public final class ClientChannelInitializer {
 
         pipeline.addFirst(duplexHandlerName, duplexHandler);
         pipeline.addFirst(frameDecoderName, frameDecoder);
+
+        //this.channelInitImpl.initialChannelRegister(channel);
 
         //pipeline.addLast("timeout", new ReadTimeoutHandler(server.getConfig().getReadTimeout(), TimeUnit.MILLISECONDS));
         //pipeline.addLast("frame_decoder", new VarIntFrameDecoder());
@@ -75,14 +80,52 @@ public final class ClientChannelInitializer {
 
         //config.setAutoRead(false);
 
+        //config.setAutoRead(false);
+
         //NoTimeoutHandler timeOutHandler = (NoTimeoutHandler) pipeline.context("timeout").handler();
 
         if (pipeline.context("--timeout") != null) pipeline.replace("--timeout", "timeout", new ReadTimeoutHandler(30));
         pipeline.remove(duplexHandlerName);
         pipeline.remove(frameDecoderName);
 
-        Log.error("UNINJECTED HANDLERS: " + pipeline.names());
+        pipeline.fireChannelRegistered();
+        pipeline.fireChannelActive();
+
         connection.resendCollected();
+        //config.setAutoRead(true);
+        //pipeline.firstContext()
+
+        Log.error("UNINJECTED HANDLERS: " + pipeline.names());
+
+        //Gotta listen to the promise:
+        //https://github.com/netty/netty/blob/4.1/transport/src/main/java/io/netty/channel/AbstractChannel.java#L802
+        /*this.channelInitImpl.unregister(channel).addListener(f -> {
+            if (!f.isSuccess()) {
+                channel.unsafe().closeForcibly();
+                return;
+            }
+            //this.channelInitImpl.invokeChannelReadInCtx(channel);
+            Log.error("UNREGISTERED: " + pipeline.names());
+            this.channelInitImpl.serverChannel().eventLoop().execute(() -> {
+
+                Log.error("AFTER INVOKING CHANNEL READ: " + pipeline.names());
+                this.server.getIntegration().invokeSilentServerChannelRead(channel);
+                //https://github.com/netty/netty/blob/4.1/transport/src/main/java/io/netty/channel/AbstractChannel.java#L521
+                //We've gotta re-fire channelActive manually
+                channel.pipeline().fireChannelActive();
+                Log.error("AFTER INVOKING CHANNEL READ: " + pipeline.names());
+
+                channel.eventLoop().execute(() -> {
+                    Log.error("eventLoop.execute " + pipeline.names());
+
+                    config.setAutoRead(false);
+                    connection.resendCollected();
+                    config.setAutoRead(true);
+                    Log.error("eventLoop.execute - END " + pipeline.names());
+                });
+            });
+        });*/
+
         //send packets - login start and handshake
         //config.setAutoRead(true);
     }

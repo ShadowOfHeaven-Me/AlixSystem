@@ -1,7 +1,7 @@
 /*
 package shadow.systems.login.autoin.fastlogin;
 
-import alix.common.data.Password;
+import alix.common.data.security.password.Password;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.login.LoginVerdict;

@@ -17,6 +17,7 @@
 
 package nanolimbo.alix.protocol;
 
+import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
 import io.netty.buffer.*;
 import io.netty.handler.codec.DecoderException;
@@ -1010,7 +1011,11 @@ public final class ByteMessage {
         return buf.release(decrement);
     }
 
-    public static ByteMessage create() {
-        return new ByteMessage(Unpooled.buffer());
+    public static ByteMessage unpooled() {
+        return new ByteMessage(BufUtils.unpooledBuffer());
+    }
+
+    public static ByteMessage pooled() {
+        return new ByteMessage(BufUtils.pooledBuffer());
     }
 }

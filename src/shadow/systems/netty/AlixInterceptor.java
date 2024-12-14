@@ -5,12 +5,14 @@ import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.AlixOSFireWall;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.FireWallType;
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
-import nanolimbo.alix.connection.pipeline.NoTimeoutHandler;
+import nanolimbo.alix.NanoLimbo;
 import nanolimbo.alix.server.LimboServer;
 import shadow.Main;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
@@ -18,13 +20,17 @@ import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.netty.unsafe.first.FirstInboundHandler;
 import shadow.utils.objects.AlixConsoleFilterHolder;
+import shadow.virtualization.LimboServerIntegration;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 
 public final class AlixInterceptor {
 
     private static final String name = "alix-interceptor";//, name2 = "AlixInjector";
+    private static final LimboServer limbo;
+    private static final boolean testing = true;
+    private static final Interceptor interceptor;
+    private static final ChannelHandlerContext silentServerCtx;
     public static final FireWallType fireWallType;
 
     static {
@@ -65,11 +71,23 @@ public final class AlixInterceptor {
 
         fireWallType = type;
         FireWallType.USED.set(fireWallType);
+
+        ChannelPipeline serverPipeline = AlixHandler.SERVER_CHANNEL.pipeline();
+        interceptor = new Interceptor();
+        injectIntoServerPipeline(serverPipeline);
+
+        silentServerCtx = serverPipeline.context(name);
+        //Main.debug("SILENT CTX: " + silentServerCtx.name() + " HASH: " + System.identityHashCode(silentServerCtx));
+        //Main.debug("HANDLERS: " + serverPipeline.toMap());
+
+        //https://github.com/Nan1t/NanoLimbo/blob/main/src/main/java/ua/nanit/limbo/server/LimboServer.java
+
+        limbo = testing && AlixUtils.requireCaptchaVerification ? NanoLimbo.load(silentServerCtx, new LimboServerIntegration()) : null;
     }
 
-    public static void injectIntoServerPipeline(ChannelPipeline serverPipeline) {//, ChannelHandler firewallHandler) {//the server pipeline
+    private static void injectIntoServerPipeline(ChannelPipeline serverPipeline) {//, ChannelHandler firewallHandler) {//the server pipeline
         if (serverPipeline.context(name) != null) serverPipeline.remove(name);
-        serverPipeline.addFirst(name, new Interceptor());//set up the new interceptor, possibly a more recent one if it was a reload and it's bytecode changed (a new version of this plugin was uploaded)
+        serverPipeline.addFirst(name, interceptor);//set up the new interceptor, possibly a more recent one if it was a reload and it's bytecode changed (a new version of this plugin was uploaded)
         //AlixInjector.injectIntoServerPipeline(serverPipeline);
         //Main.logError("SERVER NAMES " + serverPipeline.names());
         //Main.logError("SERVER NAME " + PacketEvents.SERVER_CHANNEL_HANDLER_NAME);
@@ -80,6 +98,7 @@ public final class AlixInterceptor {
     }
 
 
+    @Sharable
     private static final class Interceptor extends FirstInboundHandler {
 
         //private static final String delayedFireWallName = "AlixDelayedChannelFireWall";
@@ -98,10 +117,7 @@ public final class AlixInterceptor {
 
             AlixChannelHandler.init();
         }
-
-        //https://github.com/Nan1t/NanoLimbo/blob/main/src/main/java/ua/nanit/limbo/server/LimboServer.java
-        private static final LimboServer limbo = null;// AlixUtils.requireCaptchaVerification ? NanoLimbo.load(AlixHandler.SERVER_CHANNEL_FUTURE.channel(), new LimboServerIntegration()): null;
-//        private static final LimboServer limbo = AlixUtils.requireCaptchaVerification
+        //        private static final LimboServer limbo = AlixUtils.requireCaptchaVerification
 //                ? NanoLimbo.load(AlixHandler.SERVER_CHANNEL_FUTURE.channel(), new LimboServerIntegration())
 //                : null;
 //
@@ -117,34 +133,47 @@ public final class AlixInterceptor {
 //            //Main.debug("SERVER PIPELINE: " + AlixHandler.SERVER_CHANNEL_FUTURE.channel().pipeline().names());
 //        }
 
-        private static final boolean testing = limbo != null;
+        private void invokeSilentChannelRead(ChannelHandlerContext ctx, Channel ch) {
+            try {
+                super.channelRead(ctx, ch);
+            } catch (Exception e) {
+                throw new AlixException(e);
+            }
+        }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             Channel channel = (Channel) msg;
+            //Main.logError("CHANNEL: " + channel + " HASH: " + channel.hashCode() + " SERVER CHANNEL: " + (channel instanceof ServerChannel));
+            //Main.logError("CHANNEL IDENTITY HASH: " + System.identityHashCode(channel) + " CLAZZ: " + msg.getClass().getSimpleName());
+            //AlixUtils.debug(Thread.currentThread().getStackTrace());
+            //Main.logError("CTX NAME: " + ctx.name() + " HASH: " + System.identityHashCode(ctx));
 
             if (testing && AlixUtils.requireCaptchaVerification) {
                 Main.debug("Initializing the mfo");
 
                 ChannelConfig config = channel.config();
                 ChannelPipeline pipeline = channel.pipeline();
+                Main.debug("AUTO READ " + channel.config().isAutoRead());
+                config.setAutoRead(false);
 
-                if (config.isAutoRead())
-                    config.setAutoRead(false);
+                //if (config.isAutoRead()) config.setAutoRead(false);
 
+                limbo.getClientChannelInitializer().initChannel(channel);
                 super.channelRead(ctx, msg);
 
+                config.setAutoRead(true);
+
+                Main.debug("MFO HANDLERS: " + channel.pipeline().names() + " THREAD: " + Thread.currentThread());
+
+                //config.setAutoRead(false);
+
                 //prevent a race condition, where the server could read the packets without our handler being injected yet
-                if (config.isAutoRead())
-                    config.setAutoRead(false);
+                //if (config.isAutoRead()) config.setAutoRead(false);
 
                 //Remove TimeOut handler
-                if (pipeline.context("timeout") != null)
-                    pipeline.replace("timeout", "--timeout", NoTimeoutHandler.INSTANCE); //new NoTimeoutHandler(timeoutCtx.handler()));
 
-                List<String> list = channel.pipeline().names();
-
-                Main.debug("MFO HANDLERS: " + list + " THREAD: " + Thread.currentThread() + " EVENT LOOP THREAD: " + channel.eventLoop());
+                //if (pipeline.context("timeout") != null) pipeline.replace("timeout", "--timeout", NoTimeoutHandler.INSTANCE); //new NoTimeoutHandler(timeoutCtx.handler()));
 
                 /*for (String name : list) {
                     if (name.equals("DefaultChannelPipeline$TailContext#0")) return;
@@ -159,9 +188,8 @@ public final class AlixInterceptor {
 
                 //Main.debug("REMOVED: " + channel.pipeline().names());
 
-                limbo.getClientChannelInitializer().initChannel(channel);
-                config.setAutoRead(true);
-                Main.debug("INITIALIZED: " + channel.pipeline().names());
+
+                //Main.debug("INITIALIZED: " + channel.pipeline().names());
                 return;
             }
 
@@ -187,15 +215,20 @@ public final class AlixInterceptor {
         }
 
         private static void onDisable() {
+            interceptor.allowRemoval();
             if (limbo != null) limbo.onDisable();
         }
+    }
+
+    public static void invokeSilentChannelRead(Channel channel) {
+        interceptor.invokeSilentChannelRead(silentServerCtx, channel);
     }
 
     public static void onDisable() {
         Interceptor.onDisable();
         switch (fireWallType) {
             case NETTY:
-                ChannelPipeline pipeline = AlixHandler.SERVER_CHANNEL_FUTURE.channel().pipeline();
+                ChannelPipeline pipeline = AlixHandler.SERVER_CHANNEL.pipeline();
                 if (pipeline.context(name) != null) pipeline.remove(name);
                 break;
             case INTERNAL_NIO_INTERCEPTOR:
