@@ -1,7 +1,5 @@
 package shadow.utils.main;
 
-import alix.common.connection.filters.AntiVPN;
-import alix.common.connection.filters.ConnectionFilter;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
@@ -52,7 +50,6 @@ import shadow.utils.world.AlixWorld;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -246,7 +243,7 @@ public final class AlixHandler {
         return filters.toArray(new ConnectionFilter[0]);
     }*/
 
-    public static ConnectionFilter[] getConnectionFilters() {//set up in the most efficient way
+    /*public static ConnectionFilter[] getConnectionFilters() {//set up in the most efficient way
         List<ConnectionFilter> filters = new ArrayList<>();
         //if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.INSTANCE);
         //Moved to AlixChannelHandler
@@ -261,7 +258,7 @@ public final class AlixHandler {
         if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
         if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
         return filters.toArray(new ConnectionFilter[0]);
-    }
+    }*/
 
     public static void initExecutors(PluginManager pm) {
         //if (isOfflineExecutorRegistered) {

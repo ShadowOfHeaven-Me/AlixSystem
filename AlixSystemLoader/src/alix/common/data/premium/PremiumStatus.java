@@ -17,4 +17,8 @@ public enum PremiumStatus {
     public boolean isUnknown() {
         return this == UNKNOWN;
     }
+
+    public boolean isKnown() {
+        return !this.isUnknown();
+    }
 }

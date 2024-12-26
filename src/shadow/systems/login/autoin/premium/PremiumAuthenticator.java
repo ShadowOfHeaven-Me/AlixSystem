@@ -3,7 +3,6 @@ package shadow.systems.login.autoin.premium;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
-import alix.common.data.premium.PremiumStatus;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.annotation.ScheduledForFix;
@@ -13,7 +12,6 @@ import alix.libs.com.github.retrooper.packetevents.event.simple.PacketLoginRecei
 import alix.libs.com.github.retrooper.packetevents.manager.server.ServerVersion;
 import alix.libs.com.github.retrooper.packetevents.protocol.player.User;
 import alix.libs.com.github.retrooper.packetevents.util.crypto.SaltSignature;
-import alix.libs.com.github.retrooper.packetevents.util.crypto.SignatureData;
 import alix.libs.com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import alix.libs.com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import alix.libs.com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
@@ -21,6 +19,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.autoin.PremiumAccountCache;
@@ -30,6 +29,7 @@ import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
+import shadow.virtualization.LimboServerIntegration;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -40,7 +40,6 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +61,8 @@ public final class PremiumAuthenticator {
             invalidSession = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cInvalid session"),
             cannotVerifySession = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCannot verify session"),
             internalErrorEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cInternal error (Encryption)"),
-            couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCouldn't enable encryption");
+            couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCouldn't enable encryption"),
+            cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
 
     //with caffeine
     @OptimizationCandidate
@@ -103,7 +103,7 @@ public final class PremiumAuthenticator {
         }
 
         try {
-            if (!enableEncryption(loginKey, user, user.getChannel())) {
+            if (!enableEncryption(loginKey, user, (Channel) user.getChannel())) {
                 return;
             }
         } catch (Exception e) {
@@ -134,24 +134,15 @@ public final class PremiumAuthenticator {
     //private final boolean newerT
 
     private ClientPublicKey getClientKey(WrapperLoginClientLoginStart packet) {
-        if (getServerVersion().isNewerThanOrEquals(ServerVersion.V_1_19_3)) {
-            return null;
-        } else {
-            Optional<SignatureData> signature = packet.getSignatureData();
-
-            return signature.isPresent() ? signature.map(_data -> {
-                Instant expires = _data.getTimestamp();
-                PublicKey key = _data.getPublicKey();
-                byte[] signatureData = _data.getSignature();
-
-                return new ClientPublicKey(expires, key, signatureData);
-            }).get() : null;
-        }
+        if (getServerVersion().isNewerThanOrEquals(ServerVersion.V_1_19_3)) return null;
+        return ClientPublicKey.createKey(packet.getSignatureData().orElse(null));
     }
 
     private void onLoginStart(User user, WrapperLoginClientLoginStart packet) {
+
         //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " " + packet.getPlayerUUID().get().version());
 
+        InetAddress address = user.getAddress().getAddress();
         String sessionKey = user.getAddress().toString();
         String name = packet.getUsername();
         UUID uuid = packet.getPlayerUUID().orElse(null);
@@ -190,7 +181,16 @@ public final class PremiumAuthenticator {
 
         //Main.logError("IS PREMIUM: " + performPremiumCheck + " DATA: " + newPremiumData.premiumUUID() + " STORED PREMIUM: " + newPremiumData.getStatus().isPremium());
 
-        if (!AlixChannelHandler.onLoginStart(user, name, data, performPremiumCheck)) return;
+        String passedCaptchaNameCache = LimboServerIntegration.getCompletedCaptchaName(address);
+        if (passedCaptchaNameCache != null) {
+            if (!name.equals(passedCaptchaNameCache)) {
+                this.disconnectWith(user, cachedNameDoesNotMatch);
+                return;
+            }
+            //Since AlixChannelHandler.onLoginStart will not be invoked, add the connecting user manually
+            if (!AlixChannelHandler.putConnecting(user, name)) return;
+
+        } else if (!AlixChannelHandler.onLoginStart(user, name, data, performPremiumCheck)) return;
         //Alix - end
 
         if (Dependencies.isBedrock(channel)) {
@@ -210,8 +210,40 @@ public final class PremiumAuthenticator {
                 WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token);
                 encryptionDataCache.put(sessionKey, new EncryptionData(name, token, clientKey, newPremiumData.premiumUUID()));
 
+                ByteBuf dynamicWrapper = NettyUtils.dynamic(newPacket);
+                ChannelHandlerContext silentCtx = NettyUtils.getSilentContext(channel);
+                channel.eventLoop().execute(() -> {
+                    silentCtx.write(dynamicWrapper);
+                    //workaround to flush our current packet when FlushConsolidationHandler disallows to do so
+                    channel.unsafe().flush();
+                });
+                /*channel.eventLoop().execute(() -> {
+                    Main.debug("SENT ENCRYPTION REQ: " + name + " UUID: " + newPremiumData.premiumUUID() + " pipeline: " + channel.pipeline().names());
+                    PacketEvents.getAPI().getProtocolManager().sendPacketSilently(user.getChannel(), newPacket);
+                });*/
+
+                /*channel.pipeline().addAfter("timeout", "sex", new ChannelDuplexHandler() {
+
+                    @Override
+                    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                        Main.logError("SENDING HANDLED");
+                        super.write(ctx, msg, promise);
+                    }
+
+                    *//*@Override
+                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                        Main.logError("SENDING HANDLED");
+                        super.channelRead(ctx, msg);
+                    }*//*
+                });*/
+
+                //Main.debug("SENDING ENCRYPTION REQ: " + name + " UUID: " + newPremiumData.premiumUUID() + " pipeline: " + channel.pipeline().names());
+
+                /*NettyUtils.writeAndFlushDynamicWrapper(newPacket, NettyUtils.getSilentContext(channel)).addListener(f -> {
+                   Main.debug("WRITE OP SUCCESS: " + f.isSuccess());
+                });*/
                 //PacketEvents.getAPI().getProtocolManager().sendPacket(user.getChannel(), newPacket);
-                NettyUtils.getSilentContext(channel).writeAndFlush(NettyUtils.dynamic(newPacket));
+                //Main.debug("SENDING DONE.");
             } catch (Exception e) {
                 this.disconnectWith(user, internalErrorEncryption);
                 Main.logError("Failed to send encryption begin packet for player " + name + "! Kicking player.");
@@ -224,17 +256,14 @@ public final class PremiumAuthenticator {
     }
 
     private PremiumData performPremiumCheckNullData(String name, UUID uuid, ClientPublicKey clientPublicKey) {
-        PremiumData cache = PremiumAccountCache.get(name);
-        if (cache != null) return cache;
+        PremiumData cache = PremiumAccountCache.getOrUnknown(name);
+        if (cache.getStatus().isKnown()) return cache;
 
         if (!PremiumSetting.requirePremium(false, uuid, clientPublicKey)) return PremiumData.UNKNOWN;
         PremiumData newData = PremiumUtils.getPremiumData(name);
-        PremiumStatus status = newData.getStatus();
-
-        if (status.isUnknown()) return PremiumData.UNKNOWN;//fallback
-
         //cache the username's premium status when it isn't unknown
-        PremiumAccountCache.add(name, newData);
+        if (newData.getStatus().isKnown()) PremiumAccountCache.add(name, newData);
+
         return newData;
     }
 
@@ -280,7 +309,7 @@ public final class PremiumAuthenticator {
         AlixScheduler.async(r);
     }
 
-    public void onLoginStartPacketReceive(PacketLoginReceiveEvent event) {
+    public void onPacketReceive(PacketLoginReceiveEvent event) {
         event.setCancelled(true);
         PacketLoginReceiveEvent copy = event.clone();
 
@@ -319,7 +348,7 @@ public final class PremiumAuthenticator {
 
     public boolean hasJoined(String username, String serverHash, InetAddress hostIp) throws IOException {
         String url;
-        if (hostIp instanceof Inet6Address || isReverseProxyEnabled) {
+        if (isReverseProxyEnabled || hostIp instanceof Inet6Address) {
             url = String.format("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s", username, serverHash);
         } else {
             String encodedIP = URLEncoder.encode(hostIp.getHostAddress(), StandardCharsets.UTF_8);
@@ -338,8 +367,7 @@ public final class PremiumAuthenticator {
     /**
      * @author games647 and FastLogin contributors
      */
-    private boolean enableEncryption(SecretKey loginKey, User user, Object channel) throws IllegalArgumentException {
-
+    private boolean enableEncryption(SecretKey loginKey, User user, Channel channel) throws IllegalArgumentException {
         try {
             Object networkManager = AuthReflection.findNetworkManager(channel);
 

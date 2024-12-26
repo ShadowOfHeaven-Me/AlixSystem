@@ -45,7 +45,7 @@ public abstract class AlixFileManager {
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     //private static final boolean isUtf32;
-    public static int HIGHEST_CHAR = 382;
+    public static final int HIGHEST_CHAR = 382;
 
     public enum FileType {
 

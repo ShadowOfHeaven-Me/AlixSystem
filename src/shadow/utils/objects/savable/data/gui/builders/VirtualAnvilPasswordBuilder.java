@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
-import shadow.utils.misc.packet.buffered.PacketConstructor;
+import shadow.utils.misc.packet.buffered.AnvilPacketSuppliers;
 import shadow.utils.misc.packet.constructors.AlixInventoryType;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
@@ -21,11 +21,12 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
    /* private static final EmptyVirtualInventory
             registerGUI,
             loginGUI;*/
+    private static final boolean invisible = true;
     private final EmptyVirtualInventory gui;
     private final UnverifiedUser user;
 
     public VirtualAnvilPasswordBuilder(UnverifiedUser user) {
-        super(user.silentContext(), user.isRegistered(), i -> PacketConstructor.AnvilGUI.allItemsPacket, i -> PacketConstructor.AnvilGUI.invalidItemsPacket);
+        super(user.silentContext(), user.isRegistered(), invisible ? AnvilPacketSuppliers.newUnverifiedInvisibleSupplier() : AnvilPacketSuppliers.unverifiedVisibleSupplier());
         this.user = user;
         this.gui = new EmptyVirtualInventory(user.silentContext(), AlixInventoryType.ANVIL, user.isRegistered() ? PasswordGui.guiTitleLogin : PasswordGui.guiTitleRegister);
         //this.updateWindowId(1); <- broken
@@ -66,8 +67,8 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
                     this.user.sendDynamicMessageSilently(reason);
                     return;
                 }
-                this.user.writeAndFlushConstSilently(CommandManager.passwordRegisterMessagePacket);
-                this.user.registerAsync(password);
+                this.user.writeConstSilently(CommandManager.passwordRegisterMessagePacket);
+                this.user.registerAsync(password);//invokes flush
         }
     }
 

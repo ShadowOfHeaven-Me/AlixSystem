@@ -1,6 +1,7 @@
 package shadow.utils.main;
 
 import alix.common.data.LoginType;
+import alix.common.data.security.password.Password;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
@@ -289,7 +290,7 @@ public final class AlixUtils {
                 f.setAccessible(true);
                 try {
                     Object w = f.get(o);
-                    sb.append(f.getName()).append(": ").append(w != null && w.getClass().isArray() ? Arrays.toString((Object[]) w) : w).append(", ");
+                    sb.append(f.getName()).append(": ").append(w != null && w.getClass().isArray() ? Arrays.toString((Object[]) w) : w).append('\n');
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
@@ -597,13 +598,14 @@ public final class AlixUtils {
 
     public static String getInvalidityReason(String text, boolean canBeShort) {
         int l = text.length();
-        if (l > 30) return tooLongMessage;
+        if (l > Password.MAX_PASSWORD_LEN) return tooLongMessage;
         if (!canBeShort && l < 5) return tooShortMessage;
         char[] b = text.toCharArray();
         for (char c : b) {
             switch (c) {
-                case 58:
-                case 59:
+                case '*':
+                case ':':
+                case ';':
                     return AlixFormatter.format(invalidCharacterMessage, c);
                 default:
                     if (c < 35 || c > AlixFileManager.HIGHEST_CHAR || c > 90 && !Character.isLetter(c))
@@ -1299,6 +1301,10 @@ public final class AlixUtils {
 
     public static <T> void debug(T[] message) {
         debug(message, T::toString, '\n');
+    }
+
+    public static void debugFields(Object obj) {
+        Main.debug(getFields(obj));
     }
 
     public static void sendToAllPlayers(String message) {

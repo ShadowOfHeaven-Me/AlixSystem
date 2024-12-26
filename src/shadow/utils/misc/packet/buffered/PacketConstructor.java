@@ -1,5 +1,6 @@
 package shadow.utils.misc.packet.buffered;
 
+import alix.common.data.security.password.Password;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -10,7 +11,6 @@ import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 
 import java.util.Arrays;
-import java.util.List;
 
 public final class PacketConstructor {
 
@@ -22,16 +22,14 @@ public final class PacketConstructor {
 
     public static final class AnvilGUI {
 
-        public static final String USER_INPUT_STR = "§f";
-        public static final char[] USER_INPUT_CHAR_ARRAY = USER_INPUT_STR.toCharArray();
-        public static final short MAX_CACHED = 100;//the inventory id counter is always between 0-99
-        //private static final List<com.github.retrooper.packetevents.protocol.item.ItemStack> ALL_ITEMS, ALL_ITEMS_VERIFIED, INVALID_INDICATE_ITEMS, INVALID_INDICATE_ITEMS_VERIFIED;
-        public static final ByteBuf allItemsPacket, invalidItemsPacket;
+        private static final String USER_INPUT_STR = "§f";
+        private static final short MAX_CACHED = 100;//the inventory id counter is always between 0-99
+        private static final int MAX_PASSWORD_LEN = Password.MAX_PASSWORD_LEN;
         private static final ByteBuf[]
-                //allItemsPackets = new ByteBuf[MAX_CACHED],
-                allItemsVerifiedPackets = new ByteBuf[MAX_CACHED],
-                //invalidItemsPackets = new ByteBuf[MAX_CACHED],
-                invalidItemsVerifiedPackets = new ByteBuf[MAX_CACHED];
+                allItemsInvis = new ByteBuf[MAX_CACHED],
+                allItems = new ByteBuf[MAX_CACHED],
+                invalidItemsInvis = new ByteBuf[MAX_CACHED],
+                invalidItems = new ByteBuf[MAX_CACHED];
 
         static {
             ItemStack USER_INPUT = new ItemStack(Material.PAPER);
@@ -46,36 +44,44 @@ public final class PacketConstructor {
             rename(INVALID_PASSWORD, PasswordGui.invalidPassword);
             //rename(CANCEL, "§cCancel");
 
-            List<alix.libs.com.github.retrooper.packetevents.protocol.item.ItemStack>
-                    ALL_ITEMS = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, LEAVE_BUTTON, CONFIRM_BUTTON)),
-                    ALL_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, CANCEL, CONFIRM_BUTTON)),
-                    INVALID_INDICATE_ITEMS = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, LEAVE_BUTTON, INVALID_PASSWORD)),
-                    INVALID_INDICATE_ITEMS_VERIFIED = OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(USER_INPUT, CANCEL, INVALID_PASSWORD));
+            for (int i = 0; i <= MAX_PASSWORD_LEN; i++) {
+                ItemStack invisUserInput = new ItemStack(Material.PAPER);
+                String name = repeat('*', i);
+                rename(invisUserInput, name.isEmpty() ? USER_INPUT_STR : name);
 
-            for (int i = 0; i < MAX_CACHED; i++) {
-                //allItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS);
-                allItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, ALL_ITEMS_VERIFIED);
-                //invalidItemsPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS);
-                invalidItemsVerifiedPackets[i] = OutWindowItemsPacketConstructor.constructConst0(i + 1, 3, INVALID_INDICATE_ITEMS_VERIFIED);
+                allItemsInvis[i] = fromItems(1, invisUserInput, LEAVE_BUTTON, CONFIRM_BUTTON);
+                invalidItemsInvis[i] = fromItems(1, invisUserInput, LEAVE_BUTTON, INVALID_PASSWORD);
             }
-            allItemsPacket = OutWindowItemsPacketConstructor.constructConst0(1, 3, ALL_ITEMS);
-            invalidItemsPacket = OutWindowItemsPacketConstructor.constructConst0(1, 3, INVALID_INDICATE_ITEMS);
+            for (int i = 0; i < MAX_CACHED; i++) {
+                allItems[i] = fromItems(i + 1, USER_INPUT, CANCEL, CONFIRM_BUTTON);
+                invalidItems[i] = fromItems(i + 1, USER_INPUT, CANCEL, INVALID_PASSWORD);
+            }
         }
 
-/*        public static ByteBuf allItems(int id) {
-            return allItemsPackets[id - 1];
-        }*/
-
-        public static ByteBuf allItemsVerified(int id) {
-            return allItemsVerifiedPackets[id - 1];
+        private static ByteBuf fromItems(int id, ItemStack... items) {
+            return OutWindowItemsPacketConstructor.constructConst0(id, 3, OutWindowItemsPacketConstructor.createRetrooperItemList(Arrays.asList(items)));
         }
 
-/*        public static ByteBuf invalidIndicate(int id) {
-            return invalidItemsPackets[id - 1];
-        }*/
+        private static String repeat(char c, int len) {
+            char[] a = new char[len];
+            Arrays.fill(a, c);
+            return new String(a);
+        }
 
-        public static ByteBuf invalidIndicateVerified(int id) {
-            return invalidItemsVerifiedPackets[id - 1];
+        static ByteBuf allItems(int id) {
+            return allItems[id - 1];
+        }
+
+        static ByteBuf invalidIndicate(int id) {
+            return invalidItems[id - 1];
+        }
+
+        static ByteBuf allItemsInvis(int len) {
+            return allItemsInvis[Math.min(len, MAX_PASSWORD_LEN)];
+        }
+
+        static ByteBuf invalidIndicateInvis(int len) {
+            return invalidItemsInvis[Math.min(len, MAX_PASSWORD_LEN)];
         }
     }
 

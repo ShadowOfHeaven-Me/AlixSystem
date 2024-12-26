@@ -40,7 +40,8 @@ public final class NLoginSQLMigrateProvider implements MigrateSQLProvider {
         PersistentUserData data = UserFileManager.get(lastNickname);
         if (data == null) data = PersistentUserData.createDefault(lastNickname, InetAddress.getByName(ip), password);
 
-        if (premiumIdString != null && !data.getPremiumData().getStatus().isPremium()) data.setPremiumData(PremiumData.createNew(premiumIdString));
-        if(data.getLastSuccessfulLogin() < lastLogin) data.setLastSuccessfulLogin(lastLogin);
+        if (premiumIdString != null && !data.getPremiumData().getStatus().isPremium())
+            data.setPremiumData(PremiumData.createNew(premiumIdString));
+        if (data.getLastSuccessfulLogin() < lastLogin) data.setLastSuccessfulLogin(lastLogin);
     }
 }

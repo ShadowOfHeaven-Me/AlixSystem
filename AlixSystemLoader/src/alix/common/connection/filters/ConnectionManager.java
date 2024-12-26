@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class ConnectionManager {
 
-    public static final boolean isEnabled = ConfigProvider.config.getBoolean("prevent-first-time-join");
+    public static final boolean isEnabled = ConfigProvider.config.getBoolean("prevent-first-time-join-during-high-traffic");
     public static final String preventFirstTimeJoinMessage = Messages.get("prevent-first-time-join");
     //private static final ConcurrentLoopSet<ArrayKey> set;
     private static final long forgetInMillis = ConfigProvider.config.getInt("forget-connection-in") * 1000L;

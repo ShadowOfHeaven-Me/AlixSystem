@@ -43,6 +43,7 @@ public final class PacketEventsManager {
 
     private static final class GeneralListener extends PacketListenerAbstract {
 
+        private static final boolean debugPackets = false;
         private final PremiumAuthenticator premiumAuthenticator = new PremiumAuthenticator();
 
         @Override
@@ -70,7 +71,8 @@ public final class PacketEventsManager {
                 Main.logError("ABILITIES: " + AlixUtils.getFields(new WrapperPlayClientPlayerAbilities(event)));
             }*/
 
-            //Main.debug("PACKET IN: " + event.getPacketType().getName());
+            //if (event.getClass() != PacketPlayReceiveEvent.class) Main.debug("PACKET IN: " + event.getPacketType().getName());
+            if (debugPackets) Main.debug("PACKET IN: " + event.getPacketType().getName());
             //Main.debug("PACKET IN: " + event.getPacketType().getName() + " PIPELINE: " + ((Channel) event.getUser().getChannel()).pipeline().names());
 
             AlixUser user;
@@ -93,7 +95,7 @@ public final class PacketEventsManager {
                 switch (e.getPacketType()) {
                     case LOGIN_START:
                     case ENCRYPTION_RESPONSE:
-                        this.premiumAuthenticator.onLoginStartPacketReceive(e);
+                        this.premiumAuthenticator.onPacketReceive(e);
                 }
             }
             /*if (event.getPacketType() == PacketType.Play.Client.CHAT_PREVIEW || event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE || event.getPacketType() == PacketType.Play.Client.CHAT_ACK) {
@@ -181,8 +183,19 @@ public final class PacketEventsManager {
                     return;
                 }*/
 
+            //if (event.getClass() != PacketPlaySendEvent.class) Main.debug("PACKET OUT: " + event.getPacketType().getName());
+            if (debugPackets) Main.debug("PACKET OUT: " + event.getPacketType().getName());
+            /*Channel channel = (Channel) event.getUser().getChannel();
 
-            //Main.debug("PACKET OUT: " + event.getPacketType().getName());
+            if (event.getClass() == PacketLoginSendEvent.class
+                    && event.getPacketType() == PacketType.Login.Server.LOGIN_SUCCESS
+                    && LimboServerIntegration.hasCompletedCaptcha(channel)) {
+                channel.unsafe().flush();
+                Main.debug("FLUSHED");
+                //ChannelPipeline pipeline = channel.pipeline();
+                //ChannelHandlerContext ctx = pipeline.context("FlushConsolidationHandler#0");
+                //if (ctx != null) pipeline.replace(ctx.name(), ctx.name(), new FlushConsolidationHandler());
+            }*/
 
 /*            if (event.getPacketType() == PacketType.Play.Server.WINDOW_PROPERTY) {
                 Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerWindowProperty(event)));

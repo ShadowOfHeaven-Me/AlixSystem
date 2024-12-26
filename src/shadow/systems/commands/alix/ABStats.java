@@ -35,7 +35,7 @@ public final class ABStats {
                 AntiBotStatistics.INSTANCE.markViewed(false);
                 task.cancel();
                 task = null;
-                AntiBotStatistics.INSTANCE.reset();
+                //AntiBotStatistics.INSTANCE.reset();
                 break;
             case 1:
                 if (task != null) return v;
@@ -60,7 +60,7 @@ public final class ABStats {
                         this.reset = !this.reset;
                         if (reset) AntiBotStatistics.INSTANCE.reset();
                     }
-                }, 250, TimeUnit.MILLISECONDS);
+                }, 500, TimeUnit.MILLISECONDS);
                 break;
         }
         return v;

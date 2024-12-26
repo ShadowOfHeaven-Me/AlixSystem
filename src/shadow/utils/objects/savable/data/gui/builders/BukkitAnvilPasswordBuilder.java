@@ -8,8 +8,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import shadow.systems.gui.AbstractAlixGUI;
-import shadow.utils.misc.packet.buffered.PacketConstructor;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.misc.packet.buffered.AnvilPacketSuppliers;
 import shadow.utils.objects.savable.data.gui.bases.AnvilBuilderBase;
 import shadow.utils.users.types.VerifiedUser;
 
@@ -29,7 +29,7 @@ public final class BukkitAnvilPasswordBuilder extends AnvilBuilderBase implement
     private final Runnable returnOriginalGui;
 
     public BukkitAnvilPasswordBuilder(VerifiedUser user, boolean pin, Consumer<String> onValidPasswordConfirmation, Runnable returnOriginalGui) {
-        super(user.silentContext(), false, PacketConstructor.AnvilGUI::allItemsVerified, PacketConstructor.AnvilGUI::invalidIndicateVerified);
+        super(user.silentContext(), false, AnvilPacketSuppliers.newVerifiedSupplier());
         this.gui = pin ? pinChangeGUI : passwordChangeGUI;
         this.onValidPasswordConfirmation = onValidPasswordConfirmation;
         this.returnOriginalGui = returnOriginalGui;

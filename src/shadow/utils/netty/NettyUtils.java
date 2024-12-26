@@ -100,9 +100,9 @@ public final class NettyUtils {
         context.write(dynamic(wrapper, context));
     }
 
-    public static void writeAndFlushDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
+    public static ChannelFuture writeAndFlushDynamicWrapper(PacketWrapper<?> wrapper, ChannelHandlerContext context) {
         AlixUser.DEBUG_TIME();
-        context.writeAndFlush(dynamic(wrapper, context));
+        return context.writeAndFlush(dynamic(wrapper, context));
     }
 
     public static ByteBuf dynamic(PacketWrapper<?> wrapper, ChannelHandlerContext context) {

@@ -8,10 +8,15 @@
     <bytecodeTargetLevel>
       <module name="AlixMaven" target="17" />
       <module name="AnvilGUIBukkit" target="17" />
+      <module name="GradleCheckin" target="17" />
+      <module name="GradleCheckin.jmh" target="17" />
+      <module name="GradleCheckin.main" target="17" />
+      <module name="GradleCheckin.test" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="AlixSystemLoader" options="" />
       <module name="AlixSystemVelocitySupport" options="--add-exports java.base/jdk.internal.access=ALL-UNNAMED" />
     </option>
   </component>

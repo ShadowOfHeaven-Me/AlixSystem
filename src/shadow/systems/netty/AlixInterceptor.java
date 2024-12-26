@@ -12,16 +12,16 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
-import nanolimbo.alix.NanoLimbo;
-import nanolimbo.alix.server.LimboServer;
-import shadow.Main;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.netty.unsafe.first.FirstInboundHandler;
 import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.virtualization.LimboServerIntegration;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.server.LimboServer;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 public final class AlixInterceptor {
@@ -148,13 +148,23 @@ public final class AlixInterceptor {
             //Main.logError("CHANNEL IDENTITY HASH: " + System.identityHashCode(channel) + " CLAZZ: " + msg.getClass().getSimpleName());
             //AlixUtils.debug(Thread.currentThread().getStackTrace());
             //Main.logError("CTX NAME: " + ctx.name() + " HASH: " + System.identityHashCode(ctx));
+            AntiBotStatistics.INSTANCE.incrementJoins();
+            InetAddress address = ((InetSocketAddress) channel.unsafe().remoteAddress()).getAddress();
+            if (isNettyFireWall) {
+                //Channel serverChannel = AlixHandler.SERVER_CHANNEL_FUTURE.channel();
+                //Main.logInfo(channel + " " + serverChannel + " " + serverChannel.eventLoop());
+                if (FireWallManager.isBlocked(address)) {
+                    channel.unsafe().closeForcibly();
+                    return;
+                }
+            }
 
-            if (testing && AlixUtils.requireCaptchaVerification) {
-                Main.debug("Initializing the mfo");
+            if (testing && AlixUtils.requireCaptchaVerification/*&& !LimboServerIntegration.hasCompletedCaptcha(address)*/) {
+                //Main.debug("Initializing the mfo");
 
                 ChannelConfig config = channel.config();
-                ChannelPipeline pipeline = channel.pipeline();
-                Main.debug("AUTO READ " + channel.config().isAutoRead());
+                //ChannelPipeline pipeline = channel.pipeline();
+                //Main.debug("AUTO READ " + channel.config().isAutoRead());
                 config.setAutoRead(false);
 
                 //if (config.isAutoRead()) config.setAutoRead(false);
@@ -164,7 +174,7 @@ public final class AlixInterceptor {
 
                 config.setAutoRead(true);
 
-                Main.debug("MFO HANDLERS: " + channel.pipeline().names() + " THREAD: " + Thread.currentThread());
+                //Main.debug("MFO HANDLERS: " + channel.pipeline().names() + " THREAD: " + Thread.currentThread());
 
                 //config.setAutoRead(false);
 
@@ -196,15 +206,6 @@ public final class AlixInterceptor {
             //Main.logError("CHANNELLLLLLLLLLLLLLLLLLLLLL: " + channel);
 
             //VirtualServer.init(channel);
-            AntiBotStatistics.INSTANCE.incrementJoins();
-            if (isNettyFireWall) {
-                //Channel serverChannel = AlixHandler.SERVER_CHANNEL_FUTURE.channel();
-                //Main.logInfo(channel + " " + serverChannel + " " + serverChannel.eventLoop());
-                if (FireWallManager.isBlocked((InetSocketAddress) channel.unsafe().remoteAddress())) {
-                    channel.unsafe().closeForcibly();
-                    return;
-                }
-            }
             AlixChannelHandler.inject(channel);
             super.channelRead(ctx, msg);
         }

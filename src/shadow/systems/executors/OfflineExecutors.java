@@ -82,9 +82,9 @@ public final class OfflineExecutors extends UniversalExecutors {
             return;
         }
 
-        PremiumData premiumData = PremiumAccountCache.get(name);
+        PremiumData premiumData = PremiumAccountCache.getOrUnknown(name);
 
-        if (premiumData != null && premiumData.getStatus().isPremium()) {
+        if (premiumData.getStatus().isPremium()) {
             /*for (ConnectionFilter filter : premiumFilters) {
                 if (filter.disallowJoin(e.getAddress(), ip, name)) {
                     e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, filter.getReason());

@@ -16,6 +16,7 @@ import static alix.common.utils.AlixCommonUtils.generationChars;
 
 public final class Password {
 
+    public static final int MAX_PASSWORD_LEN = 30;
     private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars));
     private final String hashedPassword;
     private final HashingAlgorithm hashing;

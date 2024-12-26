@@ -5,6 +5,8 @@ import alix.libs.com.github.retrooper.packetevents.PacketEvents;
 import alix.libs.com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.*;
 
+import java.util.List;
+
 public final class BufUtils {
 
     public static final ByteBufAllocator POOLED = PooledByteBufAllocator.DEFAULT;
@@ -85,5 +87,9 @@ public final class BufUtils {
 
     public static ByteBuf constBuffer(ByteBuf dynamicBuf) {//Unreleasable(ReadOnly(ByteBuf)))
         return Unpooled.unreleasableBuffer(dynamicBuf.asReadOnly());
+    }
+
+    public static ByteBuf constCompositeBuffer(List<ByteBuf> bufs) {//Unreleasable(ReadOnly(ByteBuf)))
+        return Unpooled.unreleasableBuffer(Unpooled.unmodifiableBuffer(bufs.toArray(new ByteBuf[0])));
     }
 }

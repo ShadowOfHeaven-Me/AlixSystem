@@ -48,8 +48,15 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
-    //
+    //+ Added the Mort subsystem, that creates a Virtual Limbo Server the players join on the very same machine.
+    // The created "server" is guaranteed to handle player connections incomparably more efficiently than the main server.
+    // The Limbo performs automatic bot checks and sends the player back into the original server if the player passed them.
+    // Currently all exceptions will be printed
+    //+ Remastered "prevent-first-time-join" into "prevent-first-time-join-during-high-traffic"
 
+    //+ Added 1.21.4 support
+    //+ Updated PacketEvents
+    //Note:
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
 
     //todo: Add a custom data structure for unverified users
@@ -96,6 +103,7 @@ public final class Main implements LoaderBootstrap {
         //if (autoRestart()) return;
         logConsoleInfo("Successfully loaded the plugin from an external loader.");
         PacketEventsManager.onLoad();
+
         //Main.logError("LOADERRRR " + PacketEvents.class.getClassLoader());
         config = (YamlConfiguration) plugin.getConfig();
         this.metrics = Metrics.createMetrics();

@@ -23,13 +23,14 @@ public interface RawAlixPacket {
         writeRaw(rawBuffer, channel, channel.voidPromise());
     }
 
-    static void writeRaw(ByteBuf rawBuffer, Channel channel, ChannelPromise promise) {
+    static ChannelPromise writeRaw(ByteBuf rawBuffer, Channel channel, ChannelPromise promise) {
         try {
             ChannelOutboundBuffer buffer = channel.unsafe().outboundBuffer();
             if (buffer != null) buffer.addMessage(rawBuffer, rawBuffer.readableBytes(), promise);
         } catch (Throwable e) {
             AlixCommonUtils.logException(e);
         }
+        return promise;
     }
 
     static void checkLengthValid(ByteBuf buf) {

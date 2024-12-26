@@ -2,8 +2,10 @@ package shadow.systems.prelogin;
 
 public enum PreLoginVerdict {
 
-    ALLOWED_CHECK_PREMIUM,//allowed, but a premium check needs to be performed
-    ALLOWED_CRACKED,//allowed, cracked
-    DISALLOWED//disallowed, already closed the connection
+    ALLOWED,
+    DISALLOWED_INVALID_NAME,
+    DISALLOWED_PREVENT_FIRST_JOIN,
+    DISALLOWED_MAX_ACCOUNTS_REACHED,
+    DISALLOWED_VPN_DETECTED
 
 }

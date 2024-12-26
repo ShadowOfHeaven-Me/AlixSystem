@@ -69,7 +69,10 @@ public final class CaptchaImageGenerator {
         return result;
     }
 
+    public static final Color NO_COLOR = new Color(0, 0, 0, 0);
+
     public static byte matchColor(Color color) {
+        //if (color == NO_COLOR) return 0;
         if (color.getAlpha() < 128) {
             return 0;
         } else {

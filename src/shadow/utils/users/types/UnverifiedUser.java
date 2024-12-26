@@ -3,6 +3,7 @@ package shadow.utils.users.types;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
+import alix.common.data.premium.PremiumData;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -36,6 +37,7 @@ import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
+import shadow.virtualization.LimboServerIntegration;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
@@ -114,7 +116,8 @@ public final class UnverifiedUser implements AlixUser {
         this.isBedrock = bedrockPlayer != null;
 
         this.joinedRegistered = registered;
-        this.hasCompletedCaptcha = this.isBedrock || hasAccount || !requireCaptchaVerification;//is a bedrock player, has an account or captcha is disabled
+        this.hasCompletedCaptcha = this.isBedrock || hasAccount || !requireCaptchaVerification//is a bedrock player, has an account or captcha is disabled
+                || player.getName().equals(LimboServerIntegration.removeCompletedCaptchaName(this.address));//passed the check in the virtual limbo server
         this.captchaInitialized = !hasCompletedCaptcha;//the captcha (will be) initialized if the user is required to complete it
 
         this.loginType = hasAccount ? data.getLoginType() : ConfigParams.defaultLoginType;
@@ -487,6 +490,7 @@ public final class UnverifiedUser implements AlixUser {
         PersistentUserData data = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext);
         //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
+        data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
 

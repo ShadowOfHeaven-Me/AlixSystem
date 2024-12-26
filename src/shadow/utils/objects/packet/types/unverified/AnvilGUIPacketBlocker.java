@@ -55,7 +55,7 @@ public final class AnvilGUIPacketBlocker extends PacketBlocker {
                 }
                 return;
             case CLOSE_WINDOW:
-                event.getPostTasks().add(user::openVerificationGUI);
+                event.getPostTasks().add(this.user::openVerificationGUI);
                 break;
             case KEEP_ALIVE:
             case PONG:
@@ -67,9 +67,9 @@ public final class AnvilGUIPacketBlocker extends PacketBlocker {
     public static String getOldAnvilInput(byte[] data) {
         String input = new String(Arrays.copyOfRange(data, 1, data.length), StandardCharsets.UTF_8);//0th index is the length of the String, equal to data.length - 1
 
-        if (input.startsWith("§")) {
+        if (input.startsWith("§"))
             return input.substring(Math.min(2, input.length()));
-        }
+
         //if(chars.length)
 
         //works (except if the input is the first regex char), but it's unfortunately necessary to do it another way
@@ -90,15 +90,22 @@ public final class AnvilGUIPacketBlocker extends PacketBlocker {
     }
 
     private void updateText(String text) {
-        String invalidityReason = null;
+        String invalidityReason;
+        if (!this.builder.input(text)) return;
 
-        if (user.isRegistered()) this.builder.spoofAllItems();
+        if (this.user.isRegistered()) invalidityReason = null;
+        else invalidityReason = AlixUtils.getPasswordInvalidityReason(this.builder.getInput(), LoginType.ANVIL);
+
+        this.builder.updateValidity(invalidityReason);
+
+        if (this.user.isRegistered()) this.builder.spoofAllItems();
+        else this.builder.spoofValidAccordingly();
+    }
+
+        /*if (user.isRegistered()) this.builder.spoofAllItems();
         else if ((invalidityReason = AlixUtils.getPasswordInvalidityReason(text, LoginType.ANVIL)) != null)
             this.builder.spoofItemsInvalidIndicate();
-        else this.builder.spoofAllItems();
-
-        this.builder.input(text, invalidityReason);
-    }
+        else this.builder.spoofAllItems();*/
 
 /*    private static int getSlot(Object packet) {
         try {

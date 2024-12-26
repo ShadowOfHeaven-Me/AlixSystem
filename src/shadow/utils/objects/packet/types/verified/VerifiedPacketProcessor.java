@@ -351,10 +351,11 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
         //String text = new WrapperPlayClientNameItem(event).getItemName(); //(String) ReflectionUtils.inItemNamePacketTextMethod.invoke(event);
         String invalidityReason = AlixUtils.getPasswordInvalidityReason(text, this.loginType.get());
 
+        if (!this.builder.input(text)) return;
+        this.builder.updateValidity(invalidityReason);
+
         if (invalidityReason != null) this.builder.spoofItemsInvalidIndicate();
         else this.builder.spoofAllItems();
-
-        this.builder.input(text, invalidityReason);
     }
 
     public void enablePasswordSetting(Consumer<String> onValidConfirmation, Runnable returnOriginalGui, Supplier<LoginType> loginType) {

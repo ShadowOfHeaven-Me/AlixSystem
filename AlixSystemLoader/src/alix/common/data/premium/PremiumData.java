@@ -1,6 +1,6 @@
 package alix.common.data.premium;
 
-import nanolimbo.alix.util.UUIDUtil;
+import ua.nanit.limbo.util.UUIDUtil;
 
 import java.util.UUID;
 

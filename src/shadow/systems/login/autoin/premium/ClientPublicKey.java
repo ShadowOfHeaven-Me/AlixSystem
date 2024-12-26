@@ -11,17 +11,17 @@ public final class ClientPublicKey {
     private final PublicKey key;
     private final byte[] signature;
 
-    ClientPublicKey(Instant expire, PublicKey key, byte[] signature) {
+    private ClientPublicKey(Instant expire, PublicKey key, byte[] signature) {
         this.expire = expire;
         this.key = key;
         this.signature = signature;
     }
 
-    public Instant expire() {
+    Instant expire() {
         return expire;
     }
 
-    public byte[] signature() {
+    byte[] signature() {
         return signature;
     }
 
@@ -35,5 +35,15 @@ public final class ClientPublicKey {
 
     SignatureData toSignatureData() {
         return new SignatureData(expire, key, signature);
+    }
+
+    public static ClientPublicKey createKey(SignatureData data) {
+        if (data == null) return null;
+
+        Instant expires = data.getTimestamp();
+        PublicKey key = data.getPublicKey();
+        byte[] signatureData = data.getSignature();
+
+        return new ClientPublicKey(expires, key, signatureData);
     }
 }

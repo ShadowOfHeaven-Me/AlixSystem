@@ -34,6 +34,7 @@ public final class PasswordMatchers {
         }
     }
 
+    //The matcher for imported passwords
     private static final class Matcher1 implements PasswordMatcher {
 
         @Override

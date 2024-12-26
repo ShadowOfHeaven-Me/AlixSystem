@@ -1,6 +1,5 @@
 package alix.common.utils.netty;
 
-import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 
@@ -73,37 +72,31 @@ public final class FastNettyUtils {
 
     //https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/netty/FallbackVarInt21FrameDecoder.java#L69
 
-    public static int readVarInt(final ByteBuf buf) {
-        if (buf.readableBytes() < 4) return readVarIntSmallBuffer(buf);
-
-        return readVarInt3Or4Byte(buf, buf.getIntLE(buf.readerIndex()));
-    }
-
-    private static int readVarIntSmallBuffer(ByteBuf buf) {
+    public static int readVarInt(ByteBuf buf) {
         switch (buf.readableBytes()) {
-            case 3:
-                return readVarInt3Or4Byte(buf, buf.getMediumLE(buf.readerIndex()));
             case 2:
                 return readVarInt2Byte(buf);
             case 1: {
                 byte val = buf.readByte();
                 //check if it has the continuation bit set
-                if ((val & 0x80) != 0) throw new AlixException("VarInt too big for 1 byte");
+                if ((val & 0x80) != 0) throw new AlixException("1 byte VarInt too big");
                 return val;
             }
             case 0:
                 throw new AlixException("VarInt not readable");
+            //case 3:
             default:
-                throw new AlixError("how");
+                return readVarInt3Or4Byte(buf, buf.getMediumLE(buf.readerIndex()));
         }
     }
 
+    //can't really be 4 bytes in minecraft, but whatever
     private static int readVarInt3Or4Byte(final ByteBuf buf, final int wholeOrMore) {
         // Read 3 bytes in little-endian order
         final int atStop = ~wholeOrMore & 0x808080; // Check for stop bits
 
         // If no stop bits are found, throw an exception
-        if (atStop == 0) throw new AlixException("VarInt too big for 3 bytes");
+        if (atStop == 0) throw new AlixException("VarInt larger than 21 bits");
 
         // Find the position of the first stop bit
         final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;
@@ -125,7 +118,7 @@ public final class FastNettyUtils {
         final int atStop = ~wholeOrMore & 0x8080; // Identify stop bits in the two bytes
 
         // If no stop bits are found, the VarInt is too large
-        if (atStop == 0) throw new AlixException("VarInt too big for 2 bytes");
+        if (atStop == 0) throw new AlixException("2 byte VarInt too big");
 
         // Find the first stop bit
         final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;
@@ -136,7 +129,6 @@ public final class FastNettyUtils {
 
         // Compact the 7-bit chunks into a single integer
         preservedBytes = (preservedBytes & 0x007F) | ((preservedBytes & 0x7F00) >> 1);
-
         return preservedBytes;
     }
 

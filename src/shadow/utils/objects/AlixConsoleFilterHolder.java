@@ -16,7 +16,7 @@ public final class AlixConsoleFilterHolder implements Filter {
     public static final boolean
             alixJoinLog = Main.config.getBoolean("custom-join-log"),
             hideFailedJoinAttempts = Main.config.getBoolean("hide-failed-join-attempts");
-            //filterFastLoginDebug = Main.config.getBoolean("filter-fastlogin-debug");
+    //filterFastLoginDebug = Main.config.getBoolean("filter-fastlogin-debug");
     private final ConsoleFilter delegate;
 
     private AlixConsoleFilterHolder() {
@@ -59,6 +59,9 @@ public final class AlixConsoleFilterHolder implements Filter {
                 return Result.NEUTRAL;
             }*/
             if (message.isEmpty()) return Result.NEUTRAL;
+            //just gonna disable the annoying little shi-
+            if (e.getLevel() == Level.WARN && Thread.currentThread() == Main.mainServerThread && message.startsWith("Ignoring unknown attribute"))
+                return Result.DENY;
 
             /*if (filterFastLoginDebug && (e.getLoggerName().equals("FastLogin") || message.startsWith("[FastLogin]"))) {
                 //new Exception().printStackTrace();

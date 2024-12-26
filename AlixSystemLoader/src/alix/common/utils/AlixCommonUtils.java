@@ -109,6 +109,14 @@ public final class AlixCommonUtils {
         return n;
     }
 
+    public static <T> T getRandom(T[] array) {
+        return array[random.nextInt(array.length)];
+    }
+
+    public static <T> T getRandom(T[] array, int len) {
+        return array[random.nextInt(len)];
+    }
+
     public static boolean isPrime(int n) {
         if (n == 2) return true;
         if (n <= 1 || (n & 1) == 0) return false;//n & 1 - same as n % 2, but faster, and works for negatives as well

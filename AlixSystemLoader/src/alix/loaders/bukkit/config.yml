@@ -13,22 +13,17 @@
 
 #Config used when an unregistered player has not joined the server yet, but is trying to
 
-#Prevents one-time connections for unregistered players (which are common in bot attacks)
-prevent-first-time-join: false
-#Used to help determine the starting size of the connecting users list
+#Prevent the very first connection for unregistered users, if Alix determines the traffic to be high
+prevent-first-time-join-during-high-traffic: true
+#Used for the parameter above to help determine the maximum size of the connecting users list
 connection-list-size: 500
 #Defines how long (in seconds) should a connection be stored for until it is forgotten (Used for 'prevent-first-time-join')
 forget-connection-in: 60
-#Defines whether an unregistered player should be required to ping the server before joining (add the server to the server list and refresh it, can stop primitive bot attacks)
-#Setting this to true is currently not recommended, since it doesn't provide much more safety and can be annoying to your players
-ping-before-join: false
-#Used if the parameter above is set to true to define the maximum number of remembered pings - a ping will be forgotten only when this list's size amount of connections will be made
-ping-list-size: 500
 #Defines how much accounts in total should be a player allowed to have (counted by their ip), set it to 0 or less if you want to disable it (usually works as an antibot safety measure when the botter uses a single IP to send the bots)
 max-total-accounts: 1
 #Prevents unregistered players from logging in using a VPN (designed with the main purpose of preventing players bypassing the limit of 'max-total-accounts' by using VPNs, but may also work a bot counter-measurement)
 anti-vpn: true
-#Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
+#Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join-during-high-traffic' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
 antibot-service: true
 #Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
 validate-name: true
@@ -115,12 +110,12 @@ max-auth-app-attempts: 2
 password-hash-type: 3
 #Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure his ip autologin, right after registering
 auto-ip-autologin-ask: true
-#Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server join if account ownership is not proven. If successfully proven, the account will from now on be automatically logged in
+#Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server join if account ownership is not proven. If successfully proven, the user will from now on be automatically logged in/registered only if premium
 #Possible values:
 # never - Allows cracked players to join with premium nicknames
 # unregistered_and_suggested -
 #    Unregistered players with premium nicknames, who suggest they are premium by various means (1.19+ clients),
-#    will be requested to authenticate their account ownership. Remember that this also means that cracked players will be able to join with premium nicknames,
+#    will be requested to authenticate their account ownership. Remember that this also means that cracked players with premium nicknames will be able to register,
 #    essentially disallowing the owners of those premium accounts from ever joining your server.
 # unregistered - Unregistered players with premium nicknames will always be requested to authenticate their account ownership
 # always - Premium nicknames will always be requested to perform premium authentication (WARNING: This technically allows any premium player to steal a cracked user's account by simply changing their name to match theirs)

@@ -43,8 +43,8 @@ public enum PremiumSetting {
             try {
                 return valueOf(config.toUpperCase());
             } catch (IllegalArgumentException e) {
-                Main.logWarning("Invalid config parameter 'require-ownership-of-premium-nickname', got: '" + config + "', for \"never, unregistered, always\" being the only valid options!");
-                return NEVER;
+                Main.logWarning("Invalid config parameter 'require-ownership-of-premium-nickname', got: '" + config + "', for \"never, unregistered_and_suggested, unregistered, always\" being the only valid options!");
+                return UNREGISTERED_AND_SUGGESTED;//config default
             }
         }
     }

@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="PacketEvents-Shaded-2.6.0-all">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../../../packet events remapped/PacketEvents-Shaded-2.6.0-all.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

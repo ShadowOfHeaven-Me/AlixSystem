@@ -7,7 +7,7 @@ import alix.common.utils.config.ConfigProvider;
 import java.net.InetAddress;
 
 
-public final class AntiVPN implements ConnectionFilter {
+public final class AntiVPN {//implements ConnectionFilter {
 
     private static final boolean isEnabled = ConfigProvider.config.getBoolean("anti-vpn");
     public static final AntiVPN INSTANCE = new AntiVPN();
@@ -17,7 +17,6 @@ public final class AntiVPN implements ConnectionFilter {
     private AntiVPN() {
     }
 
-    @Override
     public boolean disallowJoin(InetAddress ip, String strAddress, String name) {
         return this.proxyCheck.isProxy(ip, strAddress);
     }
@@ -35,7 +34,6 @@ public final class AntiVPN implements ConnectionFilter {
             return false;//JavaUtils.isPluginLanguageEnglish ? "Something went wrong. Please try reconnecting."
         }*/
 
-    @Override
     public String getReason() {
         return antiVpnMessage;
     }

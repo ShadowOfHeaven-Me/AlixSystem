@@ -1,5 +1,6 @@
 package shadow.systems.netty;
 
+import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.ConnectionThreadManager;
 import alix.common.connection.filters.AntiVPN;
@@ -20,6 +21,7 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.jetbrains.annotations.NotNull;
 import shadow.Main;
+import shadow.systems.prelogin.PreLoginVerdict;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
@@ -282,8 +284,10 @@ public final class AlixChannelHandler {
         }
     }*/
 
+    public static final String invalidNameMessage = Messages.get("anti-bot-invalid-name-blocked");
+
     private static final ByteBuf
-            invalidNamePacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked")),
+            invalidNamePacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(invalidNameMessage),
             alreadyConnectingPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("already-connecting")),
             preventFirstTimeJoinPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(ConnectionManager.preventFirstTimeJoinMessage),
             maxTotalAccountsPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(GeoIPTracker.maxAccountsReached),
@@ -325,6 +329,23 @@ public final class AlixChannelHandler {
         removeFromTimeOut(channel);
         if (channel.pipeline().context(CHANNEL_MONITOR_NAME) != null) channel.pipeline().remove(CHANNEL_MONITOR_NAME);
 
+        switch (getPreLoginVerdict(channel, name, data, deemedPremium)) {
+            case ALLOWED:
+                break;
+            case DISALLOWED_INVALID_NAME:
+                NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
+                return false;
+            case DISALLOWED_PREVENT_FIRST_JOIN:
+                NettyUtils.closeAfterConstSend(channel, preventFirstTimeJoinPacket);
+                return false;
+            case DISALLOWED_MAX_ACCOUNTS_REACHED:
+                NettyUtils.closeAfterConstSend(channel, maxTotalAccountsPacket);
+                return false;
+            case DISALLOWED_VPN_DETECTED:
+                NettyUtils.closeAfterConstSend(channel, vpnDetectedPacket);
+                return false;
+        }
+
         //BufPreProcessor.remove(channel);
         /*else {//it's impossible for a legit client to send this packet twice - assume it's a hacked one, and immediately firewall the ip
             //FireWallManager.add(((InetSocketAddress) channel.remoteAddress()).getAddress(), REASON);
@@ -336,43 +357,49 @@ public final class AlixChannelHandler {
         //ChannelWrapper
 
         //Main.logError("NAME IN LOGIN START: " + name + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
-        if (validateName && (name.length() > 16 || name.isEmpty() || !NAME_PATTERN.matcher(name).matches())) {
+
+
+        return putConnecting(user, name);
+    }
+
+    public static PreLoginVerdict getPreLoginVerdict(Channel channel, String name, PersistentUserData data, boolean deemedPremium) {
+        if (data == null && validateName && (name.length() > 16 || name.isEmpty() || !NAME_PATTERN.matcher(name).matches())) {
             //FireWallManager.add(user.getAddress().getAddress(), "E1");
-            NettyUtils.closeAfterConstSend(channel, invalidNamePacket);
             //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
             //event.setCancelled(true);
-            return false;
+            return PreLoginVerdict.DISALLOWED_INVALID_NAME;
         }
 
         //String name = Dependencies.getCorrectUsername(channel, name); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + name : name;
         //String name = name;
 
         //AlixScheduler.async(() -> (?)
-        InetAddress address = user.getAddress().getAddress();
+        InetAddress address = ((InetSocketAddress) channel.remoteAddress()).getAddress();
 
         if (AlixUtils.antibotService)
             ConnectionThreadManager.onJoinAttempt(name, address);
 
         if (data == null) {
-            if (!deemedPremium && ConnectionManager.disallowJoin(name)) {//Close the connection before the auth thread is started
-                NettyUtils.closeAfterConstSend(channel, preventFirstTimeJoinPacket);
+            if (!deemedPremium && AntiBotStatistics.INSTANCE.isHighTraffic() && ConnectionManager.disallowJoin(name)) {//Close the connection before the auth thread is started
                 //event.setCancelled(true);
-                return false;
+                return PreLoginVerdict.DISALLOWED_PREVENT_FIRST_JOIN;
             }
 
             if (GeoIPTracker.disallowJoin(address, name)) {
-                NettyUtils.closeAfterConstSend(channel, maxTotalAccountsPacket);
                 //event.setCancelled(true);
-                return false;
+                return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
             }
 
             if (AntiVPN.disallowJoin(address)) {
-                NettyUtils.closeAfterConstSend(channel, vpnDetectedPacket);
                 //event.setCancelled(true);
-                return false;
+                return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
             }
         }
+        return PreLoginVerdict.ALLOWED;
+    }
 
+    public static boolean putConnecting(User user, String name) {
+        Channel channel = (Channel) user.getChannel();
         user.getProfile().setName(name);//set the user's name prematurely, since it's used for identifying the user on removal
         //user.getProfile().setUUID(new WrapperLoginClientLoginStart(event).getPlayerUUID().get());
         User cU = UserManager.putConnecting(name, user);//get the currently already connecting user (or this very user if he doesn't exist, that being mostly the case) close the connection of the one trying to connect in this very method execution

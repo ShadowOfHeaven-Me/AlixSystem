@@ -4,7 +4,7 @@ import alix.common.data.premium.PremiumData;
 import alix.common.utils.i18n.HttpsHandler;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import nanolimbo.alix.util.UUIDUtil;
+import ua.nanit.limbo.util.UUIDUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
