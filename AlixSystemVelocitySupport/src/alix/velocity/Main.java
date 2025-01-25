@@ -1,14 +1,14 @@
 package alix.velocity;
 
+import alix.common.MainClass;
 import alix.loaders.classloader.LoaderBootstrap;
 import alix.loaders.velocity.VelocityAlixMain;
-import alix.velocity.server.AlixServer;
-import alix.velocity.systems.autoin.PremiumAutoIn;
 import alix.velocity.systems.events.Events;
-import alix.velocity.utils.AlixHandler;
+import alix.velocity.utils.AlixChannelInitInterceptor;
 import com.velocitypowered.api.plugin.PluginManager;
 import com.velocitypowered.proxy.VelocityServer;
 
+@MainClass
 public final class Main implements LoaderBootstrap {
 
     public static final VelocityAlixMain instance = VelocityAlixMain.instance;
@@ -29,10 +29,8 @@ public final class Main implements LoaderBootstrap {
     @Override
     public void onEnable() {
         //AlixServer.init();
-        AlixServer.onProxyInit();
-        PremiumAutoIn.checkForInit();
         this.server.getEventManager().register(instance, new Events());
-        AlixHandler.initializeFireWall(this.server);
+        AlixChannelInitInterceptor.initializeInterceptor(this.server);
         //server.getBackendChannelInitializer();
         //VelocityServerConnection
     }

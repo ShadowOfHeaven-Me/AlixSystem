@@ -1,6 +1,7 @@
 package alix.velocity.systems.filters.firewall;
 
 import alix.common.antibot.firewall.FireWallManager;
+import alix.velocity.server.AlixVelocityLimbo;
 import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.network.ServerChannelInitializer;
 import io.netty.channel.Channel;
@@ -19,8 +20,12 @@ public final class AlixChannelFireWall extends ServerChannelInitializer {
 
     @Override
     protected void initChannel(Channel ch) {
-        if (FireWallManager.isBlocked((InetSocketAddress) ch.unsafe().remoteAddress())) ch.unsafe().closeForcibly();
-        else super.initChannel(ch);
+        if (FireWallManager.isBlocked((InetSocketAddress) ch.unsafe().remoteAddress())) {
+            ch.unsafe().closeForcibly();
+            return;
+        }
+        AlixVelocityLimbo.initChannel(ch);
+        super.initChannel(ch);
     }
 
 /*    private static final class ChannelAccessor extends BackendChannelInitializer {

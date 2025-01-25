@@ -1,14 +1,10 @@
 <component name="ArtifactManager">
   <artifact type="jar" name="AlixSystem">
-    <output-path>$PROJECT_DIR$/out/artifacts/AlixSystem</output-path>
-    <root id="archive" name="AlixSystem.jarinjar">
-      <element id="module-output" name="AlixSystem" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/paperlib-1.0.7.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/byte-buddy-agent-1.14.18.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/asm-9.7.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/asm-tree-9.7.jar" path-in-jar="/" />
+    <output-path>$PROJECT_DIR$/../AlixSystemAPI/a-libs</output-path>
+    <root id="archive" name="AlixSystem.jar">
       <element id="extracted-dir" path="$USER_HOME$/Downloads/jfiglet-0.0.2-20140131.163250-1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/../../../PAPER SEX/plugins/xNanoVirtualEngine/NanoVirtualEngine-1.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../AlixSystemAPI/Spigot/build/libs/AlixSpigotAPI-1.0.0.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

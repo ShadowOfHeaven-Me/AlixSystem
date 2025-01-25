@@ -4,18 +4,14 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
-        <option name="externalProjectPath" value="$USER_HOME$/eclipse-workspace/GradleCheckin" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
-            <option value="$USER_HOME$/eclipse-workspace/GradleCheckin" />
-          </set>
-        </option>
-      </GradleProjectSettings>
-      <GradleProjectSettings>
-        <option name="externalProjectPath" value="$USER_HOME$/eclipse-workspace/PaperLibJar" />
-        <option name="modules">
-          <set>
-            <option value="$USER_HOME$/eclipse-workspace/PaperLibJar" />
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/AlixAPI" />
+            <option value="$PROJECT_DIR$/AlixAPI/AlixAPISpigot" />
+            <option value="$PROJECT_DIR$/AlixSystemLoader" />
+            <option value="$PROJECT_DIR$/AlixSystemSpigot" />
           </set>
         </option>
       </GradleProjectSettings>

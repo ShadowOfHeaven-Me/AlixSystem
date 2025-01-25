@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Pcap4J-1.0-SNAPSHOT">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../Pcap4J/build/libs/Pcap4J-1.0-SNAPSHOT.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

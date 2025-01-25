@@ -1,0 +1,11 @@
+name: AlixSystem
+version: 3.6.0
+main: alix.loaders.bukkit.BukkitAlixMain
+author: ShadowOfHeaven
+api-version: 1.13
+softdepend:
+  - SkinsRestorer
+  - FastLogin
+  - LuckPerms
+  - floodgate
+  - Essentials #to ensure it loads first, and has it's commands registered first, so that we can potentially override them

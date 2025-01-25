@@ -2,14 +2,9 @@
   <artifact type="jar" name="AlixSystemLoader">
     <output-path>$PROJECT_DIR$/../../../PAPER SEX/plugins</output-path>
     <root id="archive" name="AlixSystem 3.6.0 (DEV-2).jar">
-      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/alix/loaders/bukkit/plugin.yml" />
-      <element id="module-output" name="AlixSystemLoader" />
+      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemSpigot/src/main/resources/plugin.yml" />
       <element id="artifact" artifact-name="AlixSystem" />
-      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemLoader/src/alix/loaders/bukkit/config.yml" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/zxing-1.1.1.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/core-3.4.0.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/totp-1.0.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/javase-3.4.0.jar" path-in-jar="/" />
+      <element id="file-copy" path="$PROJECT_DIR$/AlixSystemSpigot/src/main/resources/config.yml" />
       <element id="extracted-dir" path="$PROJECT_DIR$/../../../packet events remapped/PacketEvents-Shaded-2.7.1-all.jar" path-in-jar="/" />
     </root>
   </artifact>
