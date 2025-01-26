@@ -1,0 +1,43 @@
+as: alixsystem, alix
+register: -
+login: -
+account: settings
+changepassword: -
+##fly: flying
+##sudo: -
+##rename: itemrename
+##speed: swiftness
+##heal: h
+##feed: f
+##enderchest: ec, invec, echest, enderc
+##invsee: inventory, inv, eq
+##gamemode: gm, gms, gmc, gma, gmsp, gm0, gm1, gm2, gm3
+##list: -
+##nickname: nick, nicknameplayer, name
+##unban: -
+##unbanip: pardonip, unban-ip
+##tempban: -
+##tempbanip: -
+##op: -
+##deop: -
+##home: hometp, tphome
+##sethome: -
+##removehome: homeremove, delhome, deletehome, homedel, homedelete
+##homelist: homes, homel
+##tpa: -
+##tpaccept: tpaaccept, tpacc
+##tpadeny: tpdeny, tpd
+##tpacancel: tpcancel, tpc
+##tpaon: -
+##tpaoff: -
+##mute: -
+##unmute: -
+##warp: -
+##addwarp: warpadd, createwarp, warpcreate, setwarp
+##removewarp: warpremove, usunwarp
+##setspawn: -
+##spawn: -
+##msg: message, tell
+##reply: r
+##chat: chaton, chatoff, czat, czatoff, czaton
+##chatclear: clearchat, cc

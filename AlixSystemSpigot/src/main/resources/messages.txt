@@ -1,0 +1,297 @@
+account-limit-reached: &cYou've reached the maximum amount of accounts! ({0})
+already-connecting: &cAnother login from the same nickname is registered to be already happening!
+already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
+already-logged-in: &cYou're already logged in!
+already-registered: &cYou're already registered!
+anti-bot-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a bot attack. Algorithm ID: {1}
+anti-bot-firewalled: &cYour IP has been firewalled!
+anti-bot-invalid-name-blocked: &cInvalid name! Must be within 1-16 characters long!
+anti-ddos-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a DDoS attack. Algorithm ID: {1}
+anti-vpn: &cDisable your VPN!
+auto-login: &aYour last ip was the same as before, so you've been automatically logged in! You can manage these settings at /account
+auto-login-premium: &aAutomatically logged in
+auto-register-premium: &aAutomatically registered
+ban-reason-absent: You've been banned!
+banned-ip-forever: Banned ip &c{0} &7forever!
+banned-ip-reason-and-time: Banned ip &c{0} &7until &c{1}&7, for {2}&7!
+banned-ip-reason: Banned ip &c{0} for {1} &7forever!
+banned-player-forever: Banned player &c{0} &7forever!
+banned-player-reason-and-time: Banned player &c{0} &7until &c{1}&7, for {2}&7!
+banned-player-reason: Banned player &c{0} for {1} &7forever!
+bedrock-login-above-input: Password
+bedrock-login-input: Enter your password
+bedrock-login-title: Login
+bedrock-register-above-input: Password
+bedrock-register-above-input-repeat: Confirm Password
+bedrock-register-input: Register with password
+bedrock-register-input-repeat: Repeat your password
+bedrock-register-title: Register
+bedrock-remember-me: Remember Me
+captcha-already-completed: &cYou have already completed the captcha test!
+captcha-complete: &aCaptcha test has been completed. You may now register using /register <password>
+captcha-complete-register-password-repeat: &aCaptcha test has been completed. You may now register using /register <password> <password>
+captcha-fail-chat: &cThe captcha test was failed
+captcha-fail-kick: &cYou've failed the captcha test
+captcha-reminder-command: &cComplete the captcha test first!
+captcha-time-passed: &cYou took too long to complete the captcha!
+chat-already-off: &cThe chat is already turned OFF!
+chat-already-on: &cThe chat is already turned ON!
+chat-clear: Chat has been cleared by &c{0}
+chat-is-off: The chat is currently turned off!
+chat-message-delay: Wait for another {0} second(s)!
+chat-set-off: Chat was turned &cOFF &7by {0}
+chat-set-on: Chat was turned &aON &7by {0}
+command-does-not-exist: &cThe given command does not exist!
+command-unreachable: &cThis command is unreachable.
+commands-login-password-arg: password
+commands-register-password-arg: password
+commands-register-password-second-arg: repeat password
+commands-register-passwords-do-not-match: &cPasswords do not match!
+commands-register-passwords-more-than-two: &cYou must repeat the password just once!
+error-player-never-joined: &cERROR: Player {0} has never joined this server before!
+feed-self: You have been fed!
+flying-disabled: Flying has been &aenabled!
+flying-enabled: Flying has been &cdisabled!
+flying-player-disabled: Flying for player {0} has been &cdisabled!
+flying-player-enabled: Flying for player {0} has been &aenabled!
+flying-speed-player: &cFlying Speed &7for {0} has been set to &c{1}
+flying-speed-self: Your &cFlying Speed &7has been set to &c{0}
+format-chat: Format: /chat <on/off>
+format-sudo: Format: /sudo <player> <command> or /sudo <player> chat: <message>
+format-reply: Format: /reply <message>
+format-msg: Format: /msg <player> <message>
+format-spawn: Format: /spawn
+format-setspawn: Format: /setspawn
+format-unmute: Format: /unmute <player>
+format-mute: Format: /mute <player> or /mute <player> <time>
+format-tpa-cancel: Format: /tpacancel
+format-tpa-deny: Format: /tpadeny <player>
+format-tpa-accept: Format: /tpaccept <player>
+format-tpa: Format: /tpa <player>
+format-remove-warp: Format: /removewarp <name>
+format-add-warp: Format: /addwarp <name>
+format-warp: Format: /warp <name>
+format-home-list: Format: /homelist
+format-home: Format: /home or /home <name>
+format-remove-home: Format: /removehome <name>
+format-sethome: Format: /sethome or /sethome <name>
+format-deop-restricted: Format: /deop <player> <password>
+format-deop-unrestricted: Format: /deop <player>
+format-op-restricted: Format: /op <player> <password>
+format-op-unrestricted: Format: /op <player>
+format-tempbanip: Format: /tempbanip <player/ip> or /tempbanip <player/ip> <reason>, or /tempbanip <player/ip> <reason> <time>
+format-tempban: Format: /tempban <player> or /tempban <player> <reason>, or /tempban <player> <reason> <time>
+format-unban: Format: /unban <player>
+format-unbanip: Format: /unbanip <player/ip>
+format-changepassword: Format: /changepassword <new password>
+format-login: Format: /login <password>
+format-register: Format: /register <password>
+format-nicknameplayer: Format: /nicknameplayer <player> <name>
+format-gamemode: Format: /gm <gamemode> or /gm <gamemode> <player>
+format-invsee: Format: /invsee <player>
+format-enderchest: Format: /enderchest or /enderchest <player>
+format-feed: Format: /feed or /feed <player>
+format-heal: Format: /heal or /heal <player>
+format-speed: Format: /speed <number> or /speed <number> <player>, or /speed <number> <player> (walk/fly)
+format-fly: Format: /fly or /fly <player>
+gamemode-adventure-player: Gamemode for player {0} was set to &cadventure.
+gamemode-adventure-self: Your gamemode was set to &cadventure.
+gamemode-creative-player: Gamemode for player {0} was set to &ccreative.
+gamemode-creative-self: Your gamemode was set to &ccreative.
+gamemode-player-set-player: Gamemode for player {0} was set to &c{1}.
+gamemode-set: Your gamemode was set to &c{0}.
+gamemode-spectator-player: Gamemode for player {0} was set to &cspectator.
+gamemode-spectator-self: Your gamemode was set to &cspectator.
+gamemode-survival-player: Gamemode for player {0} was set to &csurvival.
+gamemode-survival-self: Your gamemode was set to &csurvival.
+google-auth-access-confirmation-failed: &cThe given code was invalid! Try again!
+google-auth-access-confirmed: &aYou've confirmed your access to the 2FA app.
+google-auth-gui-title: Auth app Code:
+google-auth-invalid-code: &cInvalid Auth App Code!
+google-auth-invalid-code-chat-message: &cInvalid Auth App Code! Try again!
+google-auth-setting-cancel: &c[Cancel]
+google-auth-setting-cancel-chat: &7You've cancelled the 2FA set-up.
+google-auth-setting-confirm: &a[Confirm successful integration]
+google-auth-setting-explanation: &e&lHow to integrate?
+google-auth-setting-explanation-hover: &7In order to integrate your Google Authenticator -nl &7app with this server's account, you must -nl &71. Open up the Google Authenticator app on your phone -nl &72. Click the plus in bottom right -nl &73. Select 'Scan QR Code' -nl &74. Scan the QR code shown before you right now
+google-auth-tp-failed: &cFailed to teleport.
+gui-account-google-authenticator: &aGoogle Authenticator
+gui-account-passwords: &aPasswords
+gui-account-passwords-gui-not-available: &cThis option is only available for servers that are 1.14+!
+gui-account-login-settings: &aLogin Settings
+gui-google-auth-applied-changes: &aSuccessfully applied changes!
+gui-google-auth-apply-changes: &aApply changes
+gui-google-auth-config-auth-lore: &7You will be required to input -nl &7the 6-digit code shown in your -nl &7Google Authenticator app
+gui-google-auth-config-auth-name: &aGoogle Auth Only
+gui-google-auth-config-auth-and-password-lore: &7You will be required to input both: -nl &7Your normal passwords set in the &aPasswords &7GUI, -nl &7and the 6-digit code shown in your -nl &7Google Authenticator app
+gui-google-auth-config-auth-and-password-name: &aPassword & Google Auth
+gui-google-auth-config-password-lore: &7You will be required to complete -nl &7a normal password verification, -nl &7configurable in the &aPasswords &7GUI
+gui-google-auth-config-password-name: &aPassword Only
+gui-google-auth-save-changes: &aSave Changes
+gui-google-auth-show-qr-code-lore: &7Clicking this will show a QR code you can scan with -nl &7your Google Authenticator app in order to -nl &7link your account on this server with the app. -nl &f&nThe code will only be visible to you.
+gui-google-auth-show-qr-code-name: &aShow QR Code
+gui-google-auth-what-is-this: &7This gui allows you to set up the integration -nl &7between the Google Authenticator app -nl &7and your account on this server
+gui-google-auth-what-is-this-name: &eWhat is this?
+gui-ip-autologin-accept: &aACCEPT
+gui-ip-autologin-what-is-this: &7This gui asks whether you'd -nl &7like to be automatically logged in -nl &7if you join with the same IP, -nl &7 as your previous successful login.
+gui-ip-autologin-lore-accept: &7Accepting is usually safe, since -nl &7each IP is unique as assigned -nl &7by the ISP.
+gui-ip-autologin-lore-reject: &7Rejecting is also valid, since -nl &7even tho negligible, there still -nl &7exists a chance that someone -nl &7tries to join this server -nl &7using your nickname, and -nl &7has the same ip as your -nl &7last successful login -nl &7(for example when using a VPN, -nl &7having their dynamic IP -nl &7be provided by the same ISP or -nl &7when using the same router).
+gui-ip-autologin-reject: &cREJECT
+gui-ip-autologin-question-mark: &eWhat is this?
+gui-login-settings-ip-autologin-off: &cIP AutoLogin: OFF
+gui-login-settings-ip-autologin-on: &aIP AutoLogin: ON
+gui-overall-go-back: &6Go Back
+gui-passwords-applied-changes: &aSuccessfully applied changes!
+gui-passwords-change-main: &aChange Password
+gui-passwords-change-secondary: &aChange Secondary Password
+gui-passwords-changed-main: &8Changed password: {0}
+gui-passwords-changed-secondary: &8Changed secondary password: {0}
+gui-passwords-login-type-anvil: &aLogin Type: Anvil
+gui-passwords-login-type-command: &aLogin Type: Command
+gui-passwords-login-type-pin: &aLogin Type: PIN
+gui-passwords-login-type-secondary-anvil: &aSecondary Login Type: Anvil
+gui-passwords-login-type-secondary-command: &aSecondary Login Type: Command
+gui-passwords-login-type-secondary-disabled: &cDisabled
+gui-passwords-login-type-secondary-pin: &aSecondary Login Type: PIN
+gui-passwords-save-changes: &aSave Changes
+gui-password-try-apply-data-fail-main-not-pin: &cYou need to change your MAIN password to a PIN!
+gui-password-try-apply-data-fail-main-pin: &cYou need to change your MAIN password to a longer one if you wish to switch from a PIN password!
+gui-password-try-apply-data-fail-secondary-password-not-set: &cYou need to set your secondary password if you wish to use double verification!
+gui-password-try-apply-data-fail-secondary-not-pin: &cYou need to change your SECONDARY password to a PIN!
+gui-password-try-apply-data-fail-secondary-pin: &cYou need to change your SECONDARY password to a longer one if you wish to switch from a PIN password!
+gui-pin-type-invalid: &cThe main password is not a PIN, but the login type is set to PIN!
+gui-title-account: Settings
+gui-title-login: Login
+gui-title-login-settings: Login Settings
+gui-title-register: Register
+gui-title-passwords: Passwords
+gui-title-ip-autologin: Login automatically?
+gui-title-google-auth: Google Authenticator
+gui-title-password-changing: Enter at least 5 chars
+gui-title-password-changing-pin: Enter 4 digits
+heal-self: You have been healed!
+home-absent: &cHome was never set!
+home-default-overwrite: &6Your old default home was successfully overwritten, and set to your current location!
+home-named-absent: &cHome of the name {0} was never set!
+home-named-overwrite: &6Your old home named {0} was successfully overwritten, and set to your current location!
+home-set: &6Home was successfully set!
+home-teleport-default: &6Successfully teleported to your home!
+home-teleport-named: &6Successfully teleported to your home named {0}!
+incorrect-captcha: &cIncorrect captcha!
+incorrect-command: &cIncorrect command to sudo!
+incorrect-password: &cIncorrect password!
+invalid-command: &cInvalid command!
+invalid-name: &cInvalid name, please use another one!
+ip-autologin-accept: &aYou will now be always automatically logged in by IP! You can manage these settings at /account
+ip-autologin-forcefully-disabled: &cThis parameter has been forcefully -nl disabled via the server's config, and will -nl currently have no effect whatsoever.
+ip-autologin-reject: &aYou will now always not be automatically logged in by IP! You can manage these settings at /account
+ip-info-absent-ban: &cNo ip information about {0} was found, therefore the ip ban was unsuccessful.
+ip-not-banned: &cERROR: IP {0} is not banned!
+item-absent-during-renaming: &cYou have to hold the item you want to rename!
+item-name-reset: &6Successfully reset last item name.
+list-of-homes: List of existing homes:
+log-player-join-auto-verified: Player {0}[{1}] joined and was automatically verified for: {2}
+log-player-join-captcha-verified: Player {0}[{1}] joined, completed the captcha and registered
+log-player-join-logged-in: Player {0}[{1}] joined and logged in
+log-player-join-registered: Player {0}[{1}] joined and registered
+log-player-quit: Player {0}[{1}] disconnected
+login-reminder-command: &cLog in first!
+login-success: &aYou've successfully logged in!
+login-time-passed: &cYou took too long to log in!
+max-homes-reached: &cMax numbers of homes has already been reached by you! ({0})
+movement-forbidden-captcha: &cMoving around during the captcha verification is forbidden!
+movement-forbidden-captcha-chat: &cDo not move around during captcha verification!
+muted-forever: Muted {0} forever!
+muted-self: &cYou're muted!
+muted-time: &7Muted {0} until {1}
+nickname-change-self: Your nickname has been set to '{0}&7'.
+nickname-player-reset: Last nickname of the player {0} has been reset!
+nickname-player-set: Nickname of player {0} has been set to '{1}&7'.
+nickname-reset: Your last nickname has been reset!
+no-conversation-to-reply-to: &cYou don't have a conversation that you could reply to!
+no-homes-set: No homes were set yet!
+no-longer-online: {0} is no longer online!
+none-players: None players are currently online!
+not-a-number: &c'{0}' is not a number!
+not-logged-in-reminder: &cPlease type /login <password>
+online-player-list: Online Player List ({0} Currently Online)
+packet-limit-reached-verification: &c[AntiBot] You've sent too many total packets!
+password-changed: &aSuccessfully changed your password!
+password-invalid-character-invalid: Invalid character: '{0}'!
+password-invalid-gui: &cINVALID PASSWORD
+password-invalid-too-long: Too long!
+password-invalid-too-short: Too short!
+password-register: &aYour password has been successfully registered!
+password-reset-forcefully: &cYour password has been reset by an admin
+personal-message-receive: &6[&c{0} &6-> &cMe&6]: &7
+personal-message-send: &6[&cMe &6-> &c{0}&6]: &7
+pin-confirm: &aCONFIRM
+pin-gui-title: Enter your PIN
+pin-invalid-length: &cYour pin needs to be four digits long!
+pin-leave: &7LEAVE THE SERVER
+pin-leave-feedback: &7You've clicked the LEAVE button
+pin-register: Registered with PIN:
+pin-register-bottom-line: &b{0}
+pin-remove-last: &eREMOVE LAST
+pin-reset: &cRESET
+ping-before-join: &cYou must first add this server to you server list and refresh it!
+ping-check-failed: &cYou've failed the ping check, try joining later with a better connection!
+player-already-online: This player is already online!
+player-already-op: &cERROR: Player {0} is already an operator.
+player-data-not-found: &cPlayer {0} is not in the AlixSystem's User Library!
+player-feed: Player {0} has been fed!
+player-healed: Player {0} has been healed!
+player-not-banned: &cERROR: Player named {0} is not banned!
+player-not-found: &cNo player called {0} was found!
+player-not-op: &cERROR: Player {0} was not an operator.
+player-was-deopped: &7Player {0} was deopped by {1}.
+player-was-opped: &7Player {0} was opped by {1}.
+prevent-first-time-join: &aWe're analysing your connection. You may now join the server.
+register-reminder-command: &cRegister first!
+register-success: &aSuccessfully registered! You may now rejoin the server!
+register-time-passed: &cYou took too long to register!
+reminder-login-title: Log in with
+reminder-login-subtitle: &e/login <password>
+reminder-register-title: Register with
+reminder-register-subtitle: &e/register <password>
+reminder-register-subtitle-repeat: &e/register <password> <password>
+remove-warp: &6Successfully removed the warp {0}!
+renamed-item: &6Successfully renamed held item.
+server-is-full: &cThe server is full!
+server-still-starting: &cThe server still hasn't started yet!
+spawn-location-set: &6Spawn location was successfully set!
+spawn-teleport: &6Successfully teleported to spawn!
+speed-invalid-arg: &cFourth argument should be either walk or fly, but instead found '{0}'!
+successfully-removed: &6Successfully removed your {0} home.
+successfully-unmuted: Successfully unmuted player {0}.
+sudoed-player-chat: Sudoed player {0} to chat:
+sudoed-player-command: Sudoed player {0} to type the command {1}
+system-unsure-op-password-tip: &cIf you're not sure what the password is, then please check your config.yml file of this plugin or use this command using only console.
+tpa-accept-self: You have accepted the teleportation request from {0}.
+tpa-accept: Your teleportation request has been accepted.
+tpa-deny-self: You have denied the teleportation request from {0}.
+tpa-deny: Your teleportation request has been denied.
+tpa-failed-target-has-tpa-off: &cPlayer {0} has teleportation requests turned off!
+tpa-off: You will now stop receiving teleport requests.
+tpa-on: You're now able to receive teleport requests.
+tpa-request-absent-from-self: &cYou do not have a pending teleportation request.
+tpa-request-absent: &cYou do not have a teleportation request from {0}!
+tpa-request-already-sent: &cYou have already sent a tpa request to {0}! If you want to cancel it, then type /tpacancel
+tpa-request-cancel: Cancelled your teleportation request.
+tpa-request-expired: Your teleportation request to {0} has expired.
+tpa-request-receive: You have received a teleportation request from {0}. If you want to accept/deny it, then type &c/tpaccept {0} &7or &c/tpadeny {0}&7. Otherwise it will automatically expire in &c{1} seconds&7.
+tpa-request-send: You have sent a teleportation request to {0}. If you want to cancel it, then type &c/tpacancel&7. Otherwise it will automatically expire in &c{1} seconds&7.
+unbanned-ip: Unbanned ip &c{0}&7!
+unbanned-player: Unbanned player &c{0}&7!
+uncompleted-captcha-type-reminder: &cType the shown captcha in chat
+uncompleted-recaptcha-reminder: &cClick the
+unregistered-reminder: &cPlease type /register <password>
+unregistered-reminder-password-repeat: &cPlease type /register <password> <password>
+user-delayed-teleportation: &7The teleportation will take place in {0}.
+walking-speed-player: &cWalking Speed &7for {0} has been set to &c{1}
+walking-speed-self: Your &cWalking Speed &7has been set to &c{0}
+warning-player-never-joined: &eWARNING: Player {0} has never joined this server before!
+warp-absent: &cWarp {0} does not exist!
+warp-create: &6Successfully created the warp {0}!
+warp-location-change: &6Successfully changed the location of the warp {0}!
+warp-teleport: &6Successfully teleported to warp {0}!
