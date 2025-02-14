@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.netty.NettyUtils;
+import shadow.utils.netty.unsafe.ByteBufHarvester;
 import shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor;
 
 import java.net.InetAddress;
@@ -25,6 +26,7 @@ public final class VerifiedUser extends AbstractAlixCtxUser {// implements Objec
     private final User retrooperUser;
     private final VerifiedPacketProcessor duplexProcessor;
     private final short maxHomes;
+    private final ByteBufHarvester bufHarvester;
     private final boolean canBypassChatStatus, canSendColoredMessages;
     private long nextPossibleChatTime;
     private boolean canReceiveTeleportRequests;
@@ -41,6 +43,7 @@ public final class VerifiedUser extends AbstractAlixCtxUser {// implements Objec
         //this.data.updateLastSuccessfulLoginTime();
         this.retrooperUser = retrooperUser;
         this.uuid = player.getUniqueId();
+        this.bufHarvester = ByteBufHarvester.harvesterOf(this.getChannel());
         this.duplexProcessor = VerifiedPacketProcessor.getProcessor(this, onFirstPlayPacket);
 
         if (player.isOp()) {
@@ -246,6 +249,11 @@ public final class VerifiedUser extends AbstractAlixCtxUser {// implements Objec
     @Override
     public boolean isVerified() {
         return true;
+    }
+
+    @Override
+    public ByteBufHarvester bufHarvester() {
+        return this.bufHarvester;
     }
 
 /*    @Override

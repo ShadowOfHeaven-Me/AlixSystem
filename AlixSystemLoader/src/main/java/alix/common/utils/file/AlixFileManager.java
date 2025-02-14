@@ -4,6 +4,7 @@ package alix.common.utils.file;
 import alix.common.AlixCommonMain;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
+import lombok.SneakyThrows;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -129,15 +130,17 @@ public abstract class AlixFileManager {
         return writeJarCompiledFileIntoDest(getPluginFile(s, type), s);
     }
 
+    @SneakyThrows
     public static File writeJarCompiledFileIntoDest(File copyInto, String s) {
         Class<?> clazz = AlixCommonMain.MAIN_CLASS_INSTANCE.getClass();
+        copyInto.createNewFile();
 
         boolean written = writeJarCompiledFileIntoDest(copyInto, clazz.getResourceAsStream(s)) != null;
         if (!written)
             written = writeJarCompiledFileIntoDest(copyInto, clazz.getClassLoader().getResourceAsStream(s)) != null;
 
         if (!written)
-            throw new AlixException("how");
+            throw new AlixException("Resource");
 
         return copyInto;
     }

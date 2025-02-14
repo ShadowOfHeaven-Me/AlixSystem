@@ -322,14 +322,14 @@ public final class AlixChannelHandler {
     //https://github.com/onebeastchris/GeyserPackSync/blob/master/common%2Fsrc%2Fmain%2Fjava%2Fnet%2Fonebeastchris%2Fgeyserpacksync%2Fcommon%2Futils%2FFloodgateUtil.java#L12-L15
 
     //returns true on allowed, false on disallowed login and closed connection
-    public static boolean onLoginStart(User user, String name, PersistentUserData data, boolean deemedPremium) {
+    public static boolean onLoginStart(User user, String packetUsername, String serverUsername, PersistentUserData data, boolean deemedPremium) {
         //User user = event.getUser();
         Channel channel = (Channel) user.getChannel();
 
         removeFromTimeOut(channel);
         if (channel.pipeline().context(CHANNEL_MONITOR_NAME) != null) channel.pipeline().remove(CHANNEL_MONITOR_NAME);
 
-        switch (getPreLoginVerdict(channel, name, name, data, deemedPremium)) {
+        switch (getPreLoginVerdict(channel, packetUsername, serverUsername, data, deemedPremium)) {
             case ALLOWED:
                 break;
             case DISALLOWED_INVALID_NAME:
@@ -353,13 +353,13 @@ public final class AlixChannelHandler {
             return;
         }*/
 
-        //String name = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
+        //String serverUsername = LoginInStartGetter.getName((ByteBuf) event.getByteBuf());
         //ChannelWrapper
 
-        //Main.logError("NAME IN LOGIN START: " + name + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
+        //Main.logError("NAME IN LOGIN START: " + serverUsername + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
 
 
-        return putConnecting(user, name);
+        return putConnecting(user, serverUsername);
     }
 
     public static PreLoginVerdict getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data, boolean deemedPremium) {
@@ -399,6 +399,8 @@ public final class AlixChannelHandler {
     }
 
     public static boolean putConnecting(User user, String name) {
+        //Main.debug("putConnecting: '" + name + "'");
+
         Channel channel = (Channel) user.getChannel();
         user.getProfile().setName(name);//set the user's name prematurely, since it's used for identifying the user on removal
         //user.getProfile().setUUID(new WrapperLoginClientLoginStart(event).getPlayerUUID().get());

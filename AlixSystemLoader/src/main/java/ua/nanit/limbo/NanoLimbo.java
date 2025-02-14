@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo;
 
+import alix.common.utils.other.annotation.DebugOnly;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.server.LimboServer;
@@ -26,12 +27,19 @@ public final class NanoLimbo {
 
     //https://github.com/Nan1t/NanoLimbo
 
+    @DebugOnly
     public static final boolean
+            debugPackets = true,
             allowFreeMovement = false,
             performChecks = true,
             logPos = false,
             removeTimeout = true,
-            centerSpawn = false;
+            centerSpawn = false,
+            printCaptchaFailed = false,
+            verifyTheDud = false;
+
+    public static LimboServer LIMBO;
+    public static LimboIntegration INTEGRATION;
 
     public static LimboServer load(LimboIntegration integration) {
         try {

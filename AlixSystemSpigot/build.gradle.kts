@@ -7,20 +7,19 @@ plugins {//java-library
 }
 
 group = "AlixSystemSpigot"
-version = "3.6.0"
+version = "3.6.1"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-/*tasks.create<Copy>("spigot0") {
-    from(tasks.shadowJar)
-    destinationDir = file("C:\\Users\\Kubia\\Desktop\\PAPER SEX\\plugins")
-    buildDir = destinationDir;
-}*/
+tasks.build {
+    actions.clear()
+    dependsOn(tasks.shadowJar)
+}
 
 tasks.shadowJar {
-    destinationDirectory = file("C:\\Users\\Kubia\\Desktop\\PAPER SEX\\plugins")
+    destinationDirectory = file(project.findProperty("build-dir") as String)
     archiveBaseName.set("AlixSystem")
     archiveClassifier.set("")//w pizde z z tym "-all" suffixem
     relocate("io.github.retrooper.packetevents", "alix.libs.io.github.retrooper.packetevents")

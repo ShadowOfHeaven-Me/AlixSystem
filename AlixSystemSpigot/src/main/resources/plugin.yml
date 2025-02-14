@@ -1,5 +1,5 @@
 name: AlixSystem
-version: 3.6.0
+version: 3.6.1
 main: alix.loaders.bukkit.BukkitAlixMain
 author: ShadowOfHeaven
 api-version: 1.13

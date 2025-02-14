@@ -10,7 +10,7 @@ import java.util.List;
 
 abstract class AbstractLimboCommand implements LimboCommand {
 
-    private static final boolean supportAllChars = false;
+    private static final boolean supportAllChars = true;
 
     private final ByteBuf encoded;
     private final PacketSnapshot snapshot;
@@ -21,7 +21,7 @@ abstract class AbstractLimboCommand implements LimboCommand {
     }
 
     @Override
-    public ByteBuf getEncoded() {
+    public ByteBuf getEncodedNoId() {
         return this.encoded;
     }
 

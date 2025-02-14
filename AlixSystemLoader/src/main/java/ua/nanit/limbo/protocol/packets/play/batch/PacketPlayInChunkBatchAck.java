@@ -13,6 +13,6 @@ public final class PacketPlayInChunkBatchAck extends InRetrooperPacket<WrapperPl
 
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
-        conn.getCaptchaState().handle(this);
+        conn.getVerifyState().handle(this);
     }
 }

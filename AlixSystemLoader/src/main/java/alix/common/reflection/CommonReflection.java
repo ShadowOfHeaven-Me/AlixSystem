@@ -9,8 +9,6 @@ import java.util.Arrays;
 
 public final class CommonReflection {
 
-
-
     public static Method getMethod(Class<?> clazz, String name, Class<?>... params) {
         try {
             Method method = clazz.getMethod(name, params);
@@ -61,6 +59,16 @@ public final class CommonReflection {
             return field.get(obj);
         } catch (Exception e) {
             throw new RuntimeException(e);//AlixException
+        }
+    }
+
+    public static Field getDeclaredFieldAccessible(Class<?> clazz, String name) {
+        try {
+            var field = clazz.getDeclaredField(name);
+            field.setAccessible(true);
+            return field;
+        } catch (NoSuchFieldException e) {
+            throw new AlixException(e);
         }
     }
 

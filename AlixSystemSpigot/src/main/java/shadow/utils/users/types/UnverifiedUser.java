@@ -90,7 +90,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.strAddress = tempUser.getLoginInfo().getTextIP();
         this.address = tempUser.getLoginInfo().getIP();
         this.retrooperUser = tempUser.retrooperUser();
-        this.bufHarvester = tempUser.getBufHarvester();
+        this.bufHarvester = tempUser.bufHarvester();
 
         //potion effect saving
         this.potionEffectHandler = PotionEffectHandler.newHandlerFor(this);
@@ -538,5 +538,10 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     @Override
     public boolean isVerified() {
         return false;
+    }
+
+    @Override
+    public ByteBufHarvester bufHarvester() {
+        return this.bufHarvester;
     }
 }

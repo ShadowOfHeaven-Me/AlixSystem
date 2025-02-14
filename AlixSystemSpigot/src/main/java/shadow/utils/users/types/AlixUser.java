@@ -10,6 +10,7 @@ import net.kyori.adventure.text.Component;
 import shadow.Main;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.netty.NettyUtils;
+import shadow.utils.netty.unsafe.ByteBufHarvester;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.objects.packet.PacketProcessor;
 
@@ -29,6 +30,8 @@ public interface AlixUser extends AbstractSpigotUser {
     Channel getChannel();
 
     ChannelHandlerContext silentContext();
+
+    ByteBufHarvester bufHarvester();
 
     //does not account for TemporaryUser
     default boolean isAssignable(AlixUser user) {
@@ -116,7 +119,7 @@ public interface AlixUser extends AbstractSpigotUser {
         this.getChannel().flush();
     }
 
-    default void writeAllConstAndThenFlushSilently(ByteBuf[] bufs) {
+    default void writeConstAndFlushSilently(ByteBuf[] bufs) {
         for (ByteBuf buf : bufs) this.writeConstSilently(buf);
         this.flush();
     }

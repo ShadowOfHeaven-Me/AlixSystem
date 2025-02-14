@@ -63,6 +63,14 @@ final class CaptchaStateImpl {
     private boolean isAwaitingTransaction, hasReceivedTransaction;
 
     void sendInitial0() {
+        this.write(PacketSnapshots.PLAYER_ABILITIES_FALL);
+        if (this.version().moreOrEqual(Version.V1_20_5)) {
+            this.write(Cookies.COOKIE_STORE_EMPTY);
+            this.write(Cookies.COOKIE_REQ_EMPTY);
+            this.write(Cookies.COOKIE_REQ_NULL);
+            this.cookieResponse |= IS_AWAITING_COOKIE_RESPONSE;
+        }
+
         if (this.version().moreOrEqual(Version.V1_17)) {
             this.write(PacketPings.INITIAL_PING);
             this.isAwaitingTransaction = true;
@@ -76,11 +84,45 @@ final class CaptchaStateImpl {
             this.write(ChunkBatches.BATCH_END);
             this.isAwaitingBatchAck = true;
         }
+
         this.writeAndFlush(KeepAlives.SECONDARY_KEEP_ALIVE);
 
         this.keepAliveSentTime = System.currentTimeMillis();
         this.lastKeepAliveSentTime = this.keepAliveSentTime;
         this.scheduleKickTask();
+    }
+
+    private static final byte
+            IS_AWAITING_COOKIE_RESPONSE = 1,
+            COOKIE_EMPTY_RESPONSE_RECEIVED = 1 << 1,
+            COOKIE_NULL_RESPONSE_RECEIVED = 1 << 2,
+            BOTH_RESPONSES_RECEIVED = COOKIE_EMPTY_RESPONSE_RECEIVED | COOKIE_NULL_RESPONSE_RECEIVED;
+    private byte cookieResponse;
+
+    private boolean isAwaitingCookieResponse() {
+        return (this.cookieResponse & IS_AWAITING_COOKIE_RESPONSE) != 0;
+    }
+
+    private boolean hasReceivedBothCookieResponses() {
+        return (this.cookieResponse & BOTH_RESPONSES_RECEIVED) == BOTH_RESPONSES_RECEIVED;
+    }
+
+    void handle(WrapperPlayClientCookieResponse packet) {
+        String key = packet.getKey().toString();
+        byte[] payload = packet.getPayload();
+
+        if (key.equals(Cookies.KEY_EMPTY)) {
+            this.failIf((this.cookieResponse & COOKIE_NULL_RESPONSE_RECEIVED) != 0);
+            this.failIf(payload == null || payload.length != 0);
+            this.cookieResponse |= COOKIE_EMPTY_RESPONSE_RECEIVED;
+            return;
+        }
+
+        if (key.equals(Cookies.KEY_NULL)) {
+            this.failIf((this.cookieResponse & COOKIE_EMPTY_RESPONSE_RECEIVED) == 0);
+            this.failIf(payload != null);
+            this.cookieResponse |= COOKIE_NULL_RESPONSE_RECEIVED;
+        }
     }
 
     private boolean isAwaitingBatchAck, hasReceivedBatchAck;
@@ -125,6 +167,9 @@ final class CaptchaStateImpl {
     private void handleTransaction0(int id) {
         this.failIf(id != 1);
         this.failIf(this.keepAlivesReceived != 2);
+
+        this.failIf(this.isAwaitingCookieResponse() && !this.hasReceivedBothCookieResponses());
+
         this.hasReceivedTransaction = true;
         /*int blockY = 60;//AlixMathUtils.roundUp(predictedNextY);
         Vector3i pos = new Vector3i(0, blockY, 0);*/
@@ -143,8 +188,9 @@ final class CaptchaStateImpl {
     }
 
     private void scheduleDisconnectTask(long delay, TimeUnit unit) {
-        if (!NanoLimbo.performChecks)
-            this.disconnectTask = this.connection.getChannel().eventLoop().schedule(() -> this.disconnect(TIMED_OUT), delay, unit);
+        if (NanoLimbo.performChecks) return;
+
+        this.disconnectTask = this.connection.getChannel().eventLoop().schedule(() -> this.disconnect(TIMED_OUT), delay, unit);
     }
 
     long sent;

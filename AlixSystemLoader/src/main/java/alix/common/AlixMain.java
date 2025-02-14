@@ -10,7 +10,9 @@ public interface AlixMain {
     Path getDataFolderPath();
 
     default File getDataFolder() {
-        return new File(this.getDataFolderPath().toUri());
+        File dataFolder = new File(this.getDataFolderPath().toUri());
+        if (!dataFolder.exists()) dataFolder.mkdir();
+        return dataFolder;
     }
 
     LoaderBootstrap getBootstrap();

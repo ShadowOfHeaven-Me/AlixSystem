@@ -19,8 +19,8 @@ public final class UnsafeCloseFuture implements ChannelFutureListener {
 
     @OptimizationCandidate
     public static void unsafeClose(Channel channel) {
-        //TODO: see if the upper is plausible
         //channel.unsafe().close(channel.voidPromise());
+        //TODO: see if the upper is plausible
         channel.close();
 
         //not sure how to notify the closeFuture() listeners reliably, so let's just do the one above

@@ -17,7 +17,7 @@ public final class FileUpdater {
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:
-                //messages.txt
+                //messages.yml
                 File messagesFile = updateFile("messages.txt", true);
                 MessagesFileUpdater.updateFormatting(messagesFile);
 
@@ -90,7 +90,7 @@ public final class FileUpdater {
 
     /*
         File messagesFile = Messages.getFile().getFile();
-        update(messagesFile, () -> MessagesFile.createFile("messages.txt"), ':');*/
+        update(messagesFile, () -> MessagesFile.createFile("messages.yml"), ':');*/
 
 /*    String originalName = oldFile.getName();
     String extension = originalName.substring(originalName.lastIndexOf('.'));

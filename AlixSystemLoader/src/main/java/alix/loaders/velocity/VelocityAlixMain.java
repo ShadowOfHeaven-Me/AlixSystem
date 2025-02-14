@@ -4,9 +4,6 @@ import alix.common.AlixMain;
 import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
-import alix.common.utils.file.AlixFileManager;
-import alix.common.utils.file.update.FileUpdater;
-import alix.loaders.classloader.JarInJarClassLoader;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
@@ -14,7 +11,7 @@ import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
-import org.bukkit.configuration.file.YamlConfiguration;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -26,16 +23,17 @@ import java.nio.file.Path;
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
     public static VelocityAlixMain instance;
-    private static final String JAR_NAME = "AlixSystemVelocity.jarinjar";
+    //private static final String JAR_NAME = "AlixSystemVelocity.jarinjar";
     private static final String BOOTSTRAP_CLASS = "alix.velocity.Main";
     private final ProxyServer server;
     private final Logger logger;
     private final LoggerAdapter loggerAdapter;
     private final Path dataDirectory;
-    private final JarInJarClassLoader loader;
+    //private final JarInJarClassLoader loader;
     private final LoaderBootstrap bootstrap;
-    private final YamlConfiguration config;
+    //private final YamlConfiguration config;
 
+    @SneakyThrows
     @Inject
     public VelocityAlixMain(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         instance = this;
@@ -43,17 +41,22 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         this.logger = logger;
         this.loggerAdapter = LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
-        File f = AlixFileManager.createPluginFile("vconfig.yml", AlixFileManager.FileType.CONFIG);
-        this.config = YamlConfiguration.loadConfiguration(f);
+        new File(dataDirectory.toAbsolutePath().toString()).mkdir();
+
+        //File f = AlixFileManager.createPluginFile("config.yml", AlixFileManager.FileType.CONFIG);
+        //this.config = YamlConfiguration.loadConfiguration(f);
 
         //CommonAlixMain.loggerManager = this;
 
-        this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
-        this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, VelocityAlixMain.class, this);
-        this.loader.close();
+        //this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
+        //this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, VelocityAlixMain.class, this);
+        this.bootstrap = (LoaderBootstrap) Class.forName(BOOTSTRAP_CLASS)
+                .getConstructor(VelocityAlixMain.class, Logger.class, Path.class)
+                .newInstance(this, logger, dataDirectory);
+        //this.loader.close();
         //CommonAlixMain.bootstrap = this.plugin;
 
-        FileUpdater.updateFiles();
+        //FileUpdater.updateFiles();
         this.bootstrap.onLoad();
     }
 
@@ -100,14 +103,14 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
         @Override
         public String messagesFileName() {
-            return null;//NONE YET
+            return "messages.yml";
         }
 
         private ParamImpl() {
         }
     }
 
-    public YamlConfiguration getConfig() {
+    /*public YamlConfiguration getConfig() {
         return config;
-    }
+    }*/
 }

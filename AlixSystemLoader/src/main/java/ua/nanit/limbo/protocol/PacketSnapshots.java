@@ -45,21 +45,21 @@ public final class PacketSnapshots {
     static final AlixQueue<PacketSnapshot> snapshots = new ConcurrentAlixDeque<>();
     public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketOutSetCompression());
     public static final int PLAYER_ENTITY_ID = 0;
-    public static PacketSnapshot PACKET_LOGIN_SUCCESS;
-    public static PacketSnapshot PACKET_JOIN_GAME;
-    public static PacketSnapshot PACKET_SPAWN_POSITION;
-    public static PacketSnapshot PACKET_CONFIG_PLUGIN_MESSAGE;
-    public static PacketSnapshot PACKET_PLAY_PLUGIN_MESSAGE;
-    public static PacketSnapshot PLAYER_ABILITIES_FALL;
-    public static PacketSnapshot PLAYER_ABILITIES_FLY;
-    public static PacketSnapshot PACKET_PLAYER_INFO;
-    //public static PacketSnapshot PACKET_DECLARE_COMMANDS;
-    public static PacketSnapshot PACKET_JOIN_MESSAGE;
-    public static PacketSnapshot PACKET_BOSS_BAR;
-    public static PacketSnapshot PACKET_HEADER_AND_FOOTER;
+    public static final PacketSnapshot PACKET_LOGIN_SUCCESS;
+    public static final PacketSnapshot PACKET_JOIN_GAME;
+    public static final PacketSnapshot PACKET_SPAWN_POSITION;
+    public static final PacketSnapshot PACKET_CONFIG_PLUGIN_MESSAGE;
+    public static final PacketSnapshot PACKET_PLAY_PLUGIN_MESSAGE;
+    public static final PacketSnapshot PLAYER_ABILITIES_FALL;
+    public static final PacketSnapshot PLAYER_ABILITIES_FLY;
+    public static final PacketSnapshot PACKET_PLAYER_INFO;
+    //public static final PacketSnapshot PACKET_DECLARE_COMMANDS;
+    public static final PacketSnapshot PACKET_JOIN_MESSAGE;
+    public static final PacketSnapshot PACKET_BOSS_BAR;
+    public static final PacketSnapshot PACKET_HEADER_AND_FOOTER;
 
-    public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY;
-    public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID;
+    public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY;
+    public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID;
 
     public static final int TELEPORT_ID = 1;
     public static final int TELEPORT_VALID_ID = 2;
@@ -71,32 +71,32 @@ public final class PacketSnapshots {
     public static final double VALID_XZ = NanoLimbo.centerSpawn ? 0.5 : 0.875;
 
     // For 1.19 we need to spawn player outside the world to avoid stuck in terrain loading
-    public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK;
-    public static PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_VALID;
+    public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK;
+    public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_VALID;
 
-    public static PacketSnapshot PACKET_TITLE_TITLE;
-    public static PacketSnapshot PACKET_TITLE_SUBTITLE;
-    public static PacketSnapshot PACKET_TITLE_TIMES;
+    public static final PacketSnapshot PACKET_TITLE_TITLE;
+    public static final PacketSnapshot PACKET_TITLE_SUBTITLE;
+    public static final PacketSnapshot PACKET_TITLE_TIMES;
 
-    public static PacketSnapshot PACKET_TITLE_LEGACY_TITLE;
-    public static PacketSnapshot PACKET_TITLE_LEGACY_SUBTITLE;
-    public static PacketSnapshot PACKET_TITLE_LEGACY_TIMES;
+    public static final PacketSnapshot PACKET_TITLE_LEGACY_TITLE;
+    public static final PacketSnapshot PACKET_TITLE_LEGACY_SUBTITLE;
+    public static final PacketSnapshot PACKET_TITLE_LEGACY_TIMES;
 
-    public static PacketSnapshot PACKET_REGISTRY_DATA;
+    public static final PacketSnapshot PACKET_REGISTRY_DATA;
 
-    public static PacketSnapshot PACKET_KNOWN_PACKS;
-    public static PacketSnapshot PACKET_UPDATE_TAGS;
+    public static final PacketSnapshot PACKET_KNOWN_PACKS;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS;
     public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_20_5;
     public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21;
     public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_2;
     public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_4;
 
-    public static PacketSnapshot PACKET_FINISH_CONFIGURATION;
+    public static final PacketSnapshot PACKET_FINISH_CONFIGURATION;
 
     public static final PacketSnapshot MIDDLE_CHUNK = PacketSnapshot.of(new PacketEmptyChunkData());
     //public static final PacketSnapshot UNLOAD_CHUNK = PacketSnapshot.of(new PacketUnloadChunk());
     public static final List<PacketSnapshot> PACKETS_EMPTY_CHUNKS = new ArrayList<>();
-    public static PacketSnapshot PACKET_START_WAITING_CHUNKS;
+    public static final PacketSnapshot PACKET_START_WAITING_CHUNKS;
 
     private PacketSnapshots() {
     }
@@ -106,7 +106,11 @@ public final class PacketSnapshots {
         snapshots.clear();
     }
 
-    public static void initPackets(LimboServer server) {
+    public static void init() {
+    }
+
+    static {
+        var server = NanoLimbo.LIMBO;
         /*final String username = server.getConfig().getPingData().getVersion();
         final UUID uuid = UuidUtil.getOfflineModeUuid(username);
 
@@ -130,6 +134,7 @@ public final class PacketSnapshots {
         joinGame.setDebug(false);
         joinGame.setWorldName(worldName);
         joinGame.setWorldNames(worldName);
+        joinGame.setLimitedCrafting(false);
         joinGame.setSecureProfile(true);
         joinGame.setDimensionRegistry(server.getDimensionRegistry());
         PACKET_JOIN_GAME = PacketSnapshot.of(joinGame);
@@ -153,9 +158,10 @@ public final class PacketSnapshots {
         info.setGameMode(server.getConfig().getGameMode());
         info.setUuid(UUID.randomUUID());
 
+        float validYaw = 0;
         PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername("Sex").setUUID(new UUID(0, 0)));
         PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
-        PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0, 0, TELEPORT_VALID_ID));
+        PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0f, 0, TELEPORT_VALID_ID));
         PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
         PACKET_PLAYER_POS_AND_LOOK_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0f, 0, TELEPORT_VALID_ID));
         PACKET_SPAWN_POSITION = PacketSnapshot.of(packetSpawnPosition);
@@ -168,6 +174,8 @@ public final class PacketSnapshots {
             header.setHeader(NbtMessageUtil.create(server.getConfig().getPlayerListHeader()));
             header.setFooter(NbtMessageUtil.create(server.getConfig().getPlayerListFooter()));
             PACKET_HEADER_AND_FOOTER = PacketSnapshot.of(header);
+        } else {
+            PACKET_HEADER_AND_FOOTER = null;
         }
 
         if (server.getConfig().isUseBrandName()) {
@@ -176,11 +184,13 @@ public final class PacketSnapshots {
             pluginMessage.setMessage(server.getConfig().getBrandName());
             PACKET_CONFIG_PLUGIN_MESSAGE = PacketSnapshot.of(pluginMessage);
 
-
             PacketPlayPluginMessage pluginMessagePlay = new PacketPlayPluginMessage();
             pluginMessagePlay.setChannel(LimboConstants.BRAND_CHANNEL);
             pluginMessagePlay.setMessage(server.getConfig().getBrandName());
             PACKET_PLAY_PLUGIN_MESSAGE = PacketSnapshot.of(pluginMessagePlay);
+        } else {
+            PACKET_CONFIG_PLUGIN_MESSAGE = null;
+            PACKET_PLAY_PLUGIN_MESSAGE = null;
         }
 
         if (server.getConfig().isUseJoinMessage()) {
@@ -188,12 +198,17 @@ public final class PacketSnapshots {
             joinMessage.setMessage(NbtMessageUtil.create(server.getConfig().getJoinMessage()));
             joinMessage.setPosition(PacketChatMessage.PositionLegacy.SYSTEM_MESSAGE);
             PACKET_JOIN_MESSAGE = PacketSnapshot.of(joinMessage);
+        } else {
+            PACKET_JOIN_MESSAGE = null;
         }
 
+        //noinspection IfStatementWithIdenticalBranches
         if (server.getConfig().isUseBossBar()) {
             /*PacketBossBar bossBar = new PacketBossBar();
             bossBar.setBossBar(server.getConfig().getBossBar());
             bossBar.setUuid(UUID.randomUUID());*/
+            PACKET_BOSS_BAR = null;
+        } else {
             PACKET_BOSS_BAR = null;
         }
 
@@ -230,6 +245,14 @@ public final class PacketSnapshots {
             PACKET_TITLE_LEGACY_TITLE = PacketSnapshot.of(legacyTitle);
             PACKET_TITLE_LEGACY_SUBTITLE = PacketSnapshot.of(legacySubtitle);
             PACKET_TITLE_LEGACY_TIMES = PacketSnapshot.of(legacyTimes);
+        } else {
+            PACKET_TITLE_TITLE = null;
+            PACKET_TITLE_SUBTITLE = null;
+            PACKET_TITLE_TIMES = null;
+
+            PACKET_TITLE_LEGACY_TITLE = null;
+            PACKET_TITLE_LEGACY_SUBTITLE = null;
+            PACKET_TITLE_LEGACY_TIMES = null;
         }
 
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();

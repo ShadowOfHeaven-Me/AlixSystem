@@ -12,9 +12,18 @@
             <option value="$PROJECT_DIR$/AlixAPI/AlixAPISpigot" />
             <option value="$PROJECT_DIR$/AlixSystemLoader" />
             <option value="$PROJECT_DIR$/AlixSystemSpigot" />
+            <option value="$PROJECT_DIR$/AlixSystemVelocitySupport" />
+            <option value="$PROJECT_DIR$/../Velocity" />
           </set>
         </option>
       </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/../Velocity/api" />
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/../Velocity/proxy" />
+      </GradleProjectSettings>
     </option>
+    <option name="offlineMode" value="true" />
   </component>
 </project>

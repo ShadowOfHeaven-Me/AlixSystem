@@ -1,3 +1,4 @@
+/*
 package shadow.utils.netty.packets;
 
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -26,4 +27,4 @@ final class DynamicAlixPackets implements AlixPacket {
         for (ByteBuf buf : this.buffers) user.silentContext().write(buf);
         user.silentContext().flush();
     }
-}
+}*/

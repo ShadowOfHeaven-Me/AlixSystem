@@ -12,7 +12,7 @@ import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.misc.methods.MethodProvider;
-import shadow.utils.misc.packet.constructors.AlixInventoryType;
+import alix.common.packets.inventory.AlixInventoryType;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.virtual.CachingVirtualInventory;
@@ -106,7 +106,7 @@ public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
     }
 
     private void removeLast() {
-        if (this.digits.length() == 0) {
+        if (this.digits.isEmpty()) {
             //this.gui.setSpoofWithCached(true);
             return;
         }
@@ -118,7 +118,7 @@ public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
     }
 
     private void resetInput() {
-        if (this.digits.length() == 0) {
+        if (this.digits.isEmpty()) {
             //this.gui.setSpoofWithCached(true);
             return;
         }

@@ -18,6 +18,7 @@
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$" />
+    <file type="web" url="file://$PROJECT_DIR$/../Velocity" />
     <file type="web" url="file://$USER_HOME$/eclipse-workspace/GradleCheckin" />
   </component>
   <component name="MavenProjectsManager">

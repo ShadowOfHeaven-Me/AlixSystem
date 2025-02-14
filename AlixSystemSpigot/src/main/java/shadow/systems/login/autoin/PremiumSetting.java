@@ -2,10 +2,11 @@ package shadow.systems.login.autoin;
 
 import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumStatus;
+import alix.common.login.premium.PremiumUtils;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import shadow.Main;
-import shadow.systems.login.autoin.premium.ClientPublicKey;
+import alix.common.login.premium.ClientPublicKey;
 
 import java.util.UUID;
 

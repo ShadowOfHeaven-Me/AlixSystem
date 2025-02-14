@@ -2,6 +2,9 @@ package ua.nanit.limbo.util.map;
 
 import ua.nanit.limbo.protocol.registry.Version;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -20,6 +23,13 @@ abstract class AbstractVersionMap<T> {
     abstract void setElement(Object[] data, int i, T val);
 
     abstract T getElement(Object[] data, int i);
+
+    public Collection<T> valuesSnapshot() {
+        List<T> list = new ArrayList<>(this.data.length);
+        for (int i = 0; i < this.data.length; i++)
+            list.add(this.getElement(this.data, i));
+        return list;
+    }
 
     public final void forEach(Consumer<T> consumer) {
         for (int i = 0; i < this.data.length; i++) {

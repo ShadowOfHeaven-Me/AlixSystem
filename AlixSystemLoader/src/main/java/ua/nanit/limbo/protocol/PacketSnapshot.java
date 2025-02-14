@@ -28,6 +28,7 @@ import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.util.map.VersionMap;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -116,6 +117,10 @@ public final class PacketSnapshot implements PacketOut {
             }
         }
         return encodings;
+    }
+
+    public Collection<ByteBuf> buffers() {
+        return this.encodings.valuesSnapshot();
     }
 
     /*public void encode() {

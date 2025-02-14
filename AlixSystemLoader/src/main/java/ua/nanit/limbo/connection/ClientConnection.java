@@ -19,10 +19,12 @@ package ua.nanit.limbo.connection;
 
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixException;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import ua.nanit.limbo.connection.captcha.CaptchaState;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.captcha.blocks.CaptchaBlocks;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
@@ -43,25 +45,26 @@ import ua.nanit.limbo.server.Log;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-public abstract class ClientConnection {
+public class ClientConnection {
 
     private static final PacketSnapshot REJOIN = PacketSnapshot.of(new PacketPlayOutDisconnect().setReason("§7Passed CAPTCHA successfully\n§aYou may now join the server"));
     private final LimboServer server;
     private final Channel channel;
     private final GameProfile gameProfile;
 
-
     //Alix - optimize channel handlers
     private final PacketDuplexHandler duplexHandler;
     private final VarIntFrameDecoder frameDecoder;
 
-    //Captcha
-    private final CaptchaState captchaState;
+    //Login/Captcha
+    private final VerifyState verifyState;
 
     //Transfer
     private PacketHandshake handshakePacket;
@@ -71,18 +74,19 @@ public abstract class ClientConnection {
     private Version clientVersion;
     private InetSocketAddress address;
 
-    public ClientConnection(Channel channel, LimboServer server, PacketDuplexHandler duplexHandler, VarIntFrameDecoder frameDecoder) {
+    public ClientConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
         this.server = server;
         this.channel = channel;
-        this.duplexHandler = duplexHandler;
-        this.frameDecoder = frameDecoder;
+        this.duplexHandler = new PacketDuplexHandler(channel, this.server, this);
+        this.frameDecoder = new VarIntFrameDecoder();
         this.address = (InetSocketAddress) channel.unsafe().remoteAddress();
         this.gameProfile = new GameProfile();
-        this.captchaState = new CaptchaState(this);
+        this.verifyState = state.apply(this);
     }
 
     public void verify() {
         Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress() + "] passed the verification");
+        if (!NanoLimbo.verifyTheDud) return;
 
         //UiiaiuiiiaiCat.cat(this);
 
@@ -98,6 +102,7 @@ public abstract class ClientConnection {
         } else this.sendPacketAndClose(REJOIN);
     }
 
+    //todo: verify this
     //extra info can be sent from bedrock/forge players in the host name
     private static String extractHost(String host) {
         for (int i = 0; i < host.length(); i++) {
@@ -114,6 +119,10 @@ public abstract class ClientConnection {
         this.joinedWithPort = port;
     }*/
 
+    public void removeLimboHandlers() {
+        this.server.getClientChannelInitializer().uninjectHandlers(this);
+    }
+
     //removes the limbo handlers, sends the original packets to the server and allows a normal join
     public void uninject() {
         this.uninject0(this::resendCollected);
@@ -125,6 +134,10 @@ public abstract class ClientConnection {
 
     private void uninject0(Runnable resendAction) {
         this.server.getClientChannelInitializer().uninject(this, resendAction);
+    }
+
+    public PacketHandshake getHandshakePacket() {
+        return handshakePacket;
     }
 
     private void resendCollected() {
@@ -173,9 +186,17 @@ public abstract class ClientConnection {
         return duplexHandler;
     }
 
-    public UUID getUuid() {
-        return gameProfile.getUuid();
+    private UUID nameDerivedUUID;
+
+    public UUID getNamedDerivedUUID() {
+        if (this.nameDerivedUUID == null)
+            this.nameDerivedUUID = UUID.nameUUIDFromBytes(("OfflinePlayer:" + this.getUsername()).getBytes(StandardCharsets.UTF_8));
+        return this.nameDerivedUUID;
     }
+
+    /*public UUID getUuid() {
+        return gameProfile.getUuid();
+    }*/
 
     public String getUsername() {
         return gameProfile.getUsername();
@@ -189,12 +210,20 @@ public abstract class ClientConnection {
         return clientVersion;
     }
 
+    public ServerVersion getRetrooperVersion() {
+        return clientVersion.getRetrooperVersion();
+    }
+
+    public ClientVersion getRetrooperClientVersion() {
+        return this.getRetrooperVersion().toClientVersion();
+    }
+
     public GameProfile getGameProfile() {
         return gameProfile;
     }
 
-    public CaptchaState getCaptchaState() {
-        return captchaState;
+    public VerifyState getVerifyState() {
+        return verifyState;
     }
 
     /*    @Override
@@ -223,14 +252,19 @@ public abstract class ClientConnection {
         }
     }*/
 
+    public boolean hasConfigPhase() {
+        return clientVersion.moreOrEqual(Version.V1_20_2);
+    }
+
+    @OptimizationCandidate
     public void fireLoginSuccess() {
         /*if (server.getConfig().getInfoForwarding().isModern() && velocityLoginMessageId == -1) {
             disconnectLogin("You need to connect with Velocity");
             return;
         }*/
 
+        //todo: see if we can optimize this
         writeAndFlushPacket(PacketSnapshots.PACKET_LOGIN_SUCCESS);
-
         server.getConnections().addConnection(this);
 
         // Preparing for configuration mode
@@ -247,7 +281,6 @@ public abstract class ClientConnection {
 
         Runnable sendPlayPackets = () -> {
             writePacket(PacketSnapshots.PACKET_JOIN_GAME);
-            writePacket(PacketSnapshots.PLAYER_ABILITIES_FALL);
 
             if (clientVersion.less(Version.V1_9)) {
                 //the first packet here is unnecessary, but we do it to keep consistent across versions in bot checks
@@ -304,7 +337,7 @@ public abstract class ClientConnection {
 
             }*/
 
-            this.captchaState.sendInitial();
+            this.verifyState.sendInitial();
 
             //sendKeepAlive();
         };

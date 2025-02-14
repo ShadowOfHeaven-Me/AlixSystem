@@ -8,6 +8,8 @@ import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.dependencies.floodgate.FloodgateAccess;
 
+import java.util.UUID;
+
 public final class Dependencies {
 
     public static final boolean //isPacketEventsPresent,
@@ -52,6 +54,17 @@ public final class Dependencies {
     public static String getCorrectUsername(Channel channel, @NotNull String forNull) {
         if (!isFloodgatePresent) return forNull;
         return FloodgateAccess.getCorrectUsername(channel, forNull);
+    }
+
+    @Nullable
+    public static UUID getLinkedJavaUUID(@NotNull Channel channel) {
+        if (!isFloodgatePresent) return null;
+        return FloodgateAccess.getLinkedJavaUUID(channel);
+    }
+
+    public static boolean isLinked(@NotNull Channel channel) {
+        if (!isFloodgatePresent) return false;
+        return FloodgateAccess.isLinked(channel);
     }
 
     public static boolean isBedrock(@NotNull Channel channel) {

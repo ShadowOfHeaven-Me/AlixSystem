@@ -3,7 +3,6 @@ package shadow.systems.login.autoin.premium;
 //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/FloodgateHelper.java
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
 import shadow.systems.dependencies.Dependencies;
 import shadow.utils.misc.methods.MethodProvider;
@@ -29,8 +28,9 @@ final class FloodgateHelper {
         //packet.setUsername(username);
 
         // remove real Floodgate data handler
-        ChannelPipeline pipeline = channel.pipeline();
-        if (pipeline.context("floodgate_data_handler") != null) pipeline.remove("floodgate_data_handler");
+
+        //ChannelPipeline pipeline = channel.pipeline();
+        //if (pipeline.context("floodgate_data_handler") != null) pipeline.remove("floodgate_data_handler");
 
         /*ChannelHandler floodgateHandler = channel.pipeline().get("floodgate_data_handler");
         channel.pipeline().remove(floodgateHandler);*/

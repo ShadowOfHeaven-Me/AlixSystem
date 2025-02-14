@@ -45,6 +45,7 @@ public final class GoogleAuth {
             for (int x = -1; x <= 1; x++) {
                 for (int y = -2; y <= 2; y++) {
                     for (int z = -1; z <= 1; z++) {
+                        //QR_CODE_TP_LOC.asModifiableCopy().add(x, y, z).getBlock().getBoundingBox()
                         QR_CODE_TP_LOC.asModifiableCopy().add(x, y, z).getBlock().setType(Material.AIR);
                     }
                 }
@@ -100,10 +101,8 @@ public final class GoogleAuth {
                 channel.eventLoop().execute(() -> {
                     user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
                     user.writeConstSilently(PLAYER_ABILITIES_PACKET);
-                    for (ByteBuf buf : buffers) {
-                        user.writeSilently(buf);
-                        //if (i % 3 == 0) user.flush();
-                    }
+                    for (ByteBuf buf : buffers) user.writeSilently(buf);
+
                     user.writeConstSilently(AuthReminder.MESSAGE);
                     //user.flush();
                     MethodProvider.closeInventoryAsyncSilently(user.silentContext());//serves as a flush

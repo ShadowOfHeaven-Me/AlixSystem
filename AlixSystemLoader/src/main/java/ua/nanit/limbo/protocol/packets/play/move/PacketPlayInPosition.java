@@ -14,6 +14,6 @@ public final class PacketPlayInPosition extends InRetrooperPacket<WrapperPlayCli
 
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
-        conn.getCaptchaState().handle(this);
+        conn.getVerifyState().handle(this);
     }
 }

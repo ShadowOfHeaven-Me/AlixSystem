@@ -16,7 +16,7 @@ public class ExtractedMessages extends AlixFileManager {
     private final List<String> messages, syntaxes;
 
     public ExtractedMessages(MessagesFile file) {
-        super("extracted-messages.txt", FileType.CONFIG, false);
+        super("extracted-messages.yml", FileType.CONFIG, false);
         this.messages = new ArrayList<>();
         this.syntaxes = new ArrayList<>();
         this.syntaxes.addAll(file.getMap().keySet());
@@ -45,7 +45,7 @@ public class ExtractedMessages extends AlixFileManager {
     }
 
     public static ExtractedMessages findFile() {
-        File f = AlixFileManager.getPluginFile("extracted-messages.txt", FileType.CONFIG);
+        File f = AlixFileManager.getPluginFile("extracted-messages.yml", FileType.CONFIG);
         if (f.exists()) return new ExtractedMessages(Messages.getFileInstance());
         else return null;
     }

@@ -24,12 +24,14 @@ import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
 
+import static com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake.ConnectionIntention;
+
 public final class PacketHandshake implements PacketIn {
 
     private Version version;
     private String host;
     private int port;
-    private int nextState;
+    private int intention;
 
     public Version getVersion() {
         return version;
@@ -43,12 +45,24 @@ public final class PacketHandshake implements PacketIn {
         return port;
     }
 
-    public int getNextStateValue() {
-        return this.nextState;
+    public State getNextState() {
+        return State.getHandshakeStateId(intention);
     }
 
-    public State getNextState() {
-        return State.getHandshakeStateId(nextState);
+    public boolean isTransfer() {
+       return this.getIntention() == ConnectionIntention.TRANSFER;
+    }
+
+    public void setLoginIntention() {
+        this.setIntention(ConnectionIntention.LOGIN);
+    }
+
+    public ConnectionIntention getIntention() {
+        return ConnectionIntention.fromId(this.intention);
+    }
+
+    public void setIntention(ConnectionIntention intention) {
+        this.intention = intention.getId();
     }
 
     @Override
@@ -63,7 +77,7 @@ public final class PacketHandshake implements PacketIn {
         this.version = Version.of(msg.readVarInt());
         this.host = msg.readString();
         this.port = msg.readUnsignedShort();
-        this.nextState = msg.readVarInt();
+        this.intention = msg.readVarInt();
         //if (this.nextState == null) Log.error("Zjebany state");
 
         //Log.error("Wszysko: " + version + " host: " + host + " port: " + port + " nextState: " + nextState);
@@ -74,7 +88,7 @@ public final class PacketHandshake implements PacketIn {
         msg.writeVarInt(this.version.getProtocolNumber());
         msg.writeString(this.host);
         msg.writeShort(this.port);
-        msg.writeVarInt(this.nextState);
+        msg.writeVarInt(this.intention);
     }
 
     @Override

@@ -42,9 +42,13 @@ import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockSectionUpda
 import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockUpdate;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketEmptyChunkData;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketUnloadChunk;
+import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
+import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieRequest;
+import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieStore;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutEntityMetadata;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutSpawnEntity;
+import ua.nanit.limbo.protocol.packets.play.inventory.*;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInConfigKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketOutConfigKeepAlive;
@@ -56,9 +60,9 @@ import ua.nanit.limbo.protocol.packets.play.move.PacketPlayInPositionAndRotation
 import ua.nanit.limbo.protocol.packets.play.move.PacketPlayInRotation;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayInPong;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayOutPing;
-import ua.nanit.limbo.protocol.packets.play.slot.PacketPlayInHeldSlot;
-import ua.nanit.limbo.protocol.packets.play.slot.PacketPlayOutHeldSlot;
-import ua.nanit.limbo.protocol.packets.play.slot.PacketPlayOutSetSlot;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayOutHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.sound.PacketPlayOutSound;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayOutTransaction;
@@ -191,6 +195,9 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInHeldSlot::new, PacketType.Play.Client.HELD_ITEM_CHANGE);
             serverBound.registerRetrooper(PacketPlayInAnimation::new, PacketType.Play.Client.ANIMATION);
             serverBound.registerRetrooper(PacketPlayInChunkBatchAck::new, PacketType.Play.Client.CHUNK_BATCH_ACK);
+            serverBound.registerRetrooper(PacketPlayInCookieResponse::new, PacketType.Play.Client.COOKIE_RESPONSE);
+            serverBound.registerRetrooper(PacketPlayInInventoryClose::new, PacketType.Play.Client.CLOSE_WINDOW);
+            serverBound.registerRetrooper(PacketPlayInClickSlot::new, PacketType.Play.Client.CLICK_WINDOW);
 
             serverBound.register(PacketInPlayKeepAlive::new,
                     map(0x00, V1_7_6, V1_8),
@@ -220,13 +227,19 @@ public enum State {
             clientBound.registerRetrooper(PacketPlayOutBlockUpdate::new, PacketType.Play.Server.BLOCK_CHANGE);
             clientBound.registerRetrooper(PacketPlayOutEntityMetadata::new, PacketType.Play.Server.ENTITY_METADATA);
             clientBound.registerRetrooper(PacketPlayOutSpawnEntity::new, PacketType.Play.Server.SPAWN_ENTITY);
+            clientBound.registerRetrooper(PacketPlayOutInventoryOpen::new, PacketType.Play.Server.OPEN_WINDOW);
+            clientBound.registerRetrooper(PacketPlayOutInventoryItems::new, PacketType.Play.Server.WINDOW_ITEMS);
             clientBound.registerRetrooper(PacketPlayOutMap::new, PacketType.Play.Server.MAP_DATA);
             clientBound.registerRetrooper(PacketPlayOutSetSlot::new, PacketType.Play.Server.SET_SLOT);
+            clientBound.registerRetrooper(PacketPlayOutSound::new, PacketType.Play.Server.SOUND_EFFECT);
             clientBound.registerRetrooper(PacketPlayOutHeldSlot::new, PacketType.Play.Server.HELD_ITEM_CHANGE);
             clientBound.registerRetrooper(PacketPlayOutAnimation::new, PacketType.Play.Server.ENTITY_ANIMATION);
             clientBound.registerRetrooper(PacketPlayOutChunkBatchStart::new, PacketType.Play.Server.CHUNK_BATCH_BEGIN);
             clientBound.registerRetrooper(PacketPlayOutChunkBatchEnd::new, PacketType.Play.Server.CHUNK_BATCH_END);
             clientBound.registerRetrooper(PacketPlayOutTransfer::new, PacketType.Play.Server.TRANSFER);
+            clientBound.registerRetrooper(PacketPlayOutCookieStore::new, PacketType.Play.Server.STORE_COOKIE);
+
+            clientBound.registerRetrooper(PacketPlayOutCookieRequest::new, PacketType.Play.Server.COOKIE_REQUEST);
             /*clientBound.register(PacketDeclareCommands::new,
                     map(0x11, V1_13, V1_14_4),
                     map(0x12, V1_15, V1_15_2),

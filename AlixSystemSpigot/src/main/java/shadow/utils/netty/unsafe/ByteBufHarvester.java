@@ -27,4 +27,9 @@ public final class ByteBufHarvester extends FirstOutboundHandler {
         channel.pipeline().addFirst(name, harvester);
         return harvester;
     }
+
+    public static ByteBufHarvester harvesterOf(Channel channel) {
+        ChannelHandlerContext ctx = channel.pipeline().context(name);
+        return ctx != null ? (ByteBufHarvester) ctx.handler() : ByteBufHarvester.newHarvesterFor(channel);
+    }
 }

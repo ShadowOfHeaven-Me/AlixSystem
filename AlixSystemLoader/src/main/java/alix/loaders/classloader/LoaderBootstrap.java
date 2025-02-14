@@ -7,4 +7,5 @@ public interface LoaderBootstrap extends AbstractLoaderBootstrap {
     void onEnable();
 
     void onDisable();
+
 }

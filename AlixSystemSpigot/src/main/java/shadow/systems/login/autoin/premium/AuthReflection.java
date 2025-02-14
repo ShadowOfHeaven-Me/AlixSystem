@@ -5,6 +5,7 @@ import com.github.retrooper.packetevents.util.reflection.Reflection;
 import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
 import io.netty.channel.Channel;
 import lombok.SneakyThrows;
+import shadow.Main;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.ReflectionUtils;
 
@@ -13,7 +14,9 @@ import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.Key;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static io.github.retrooper.packetevents.util.SpigotReflectionUtil.NETWORK_MANAGER_CLASS;
 
@@ -21,31 +24,76 @@ final class AuthReflection {
 
     private static final Class<?> ENCRYPTION_CLASS;
     private static final Field CHANNEL_FIELD;
-    private static final List<Object> managers = SpigotReflectionUtil.getNetworkManagers();
+    private static final List<Object> managers;
+
+    private static final Field SPOOFED_UUID_FIELD;
+
     static final Method encryptMethod, cipherMethod;
 
     static {
+        managers = SpigotReflectionUtil.getNetworkManagers();
         ENCRYPTION_CLASS = ReflectionUtils.nms2("util.MinecraftEncryption", "util.Crypt");
 
-        Method encryptMethod0 = null;
+        Method encryptMethod0;
         Method cipherMethod0 = null;
+        Class<?> networkManagerClass = NETWORK_MANAGER_CLASS;
+        //SpigotReflectionUtil.getNetworkManagers().get(0).getClass();
+
+        // Try to get the old (pre MC 1.16.4) encryption method
+        encryptMethod0 = getMethodFirstByNameLaterByParams(networkManagerClass, "setupEncryption", SecretKey.class);
+
+        //1.21.4
+        if (encryptMethod0 == null)
+            encryptMethod0 = getMethodFirstByNameLaterByParams(networkManagerClass, "setEncryptionKey", SecretKey.class);
+
         if (encryptMethod0 == null) {
-            Class<?> networkManagerClass = SpigotReflectionUtil.getNetworkManagers().get(0).getClass();
+            // Get the new encryption method
+            encryptMethod0 = getMethodFirstByNameLaterByParams(networkManagerClass, "setEncryptionKey", Cipher.class, Cipher.class);
 
-            // Try to get the old (pre MC 1.16.4) encryption method
-            encryptMethod0 = Reflection.getMethod(networkManagerClass, "setupEncryption", SecretKey.class);
-
-            if (encryptMethod0 == null) {
-                // Get the new encryption method
-                encryptMethod0 = Reflection.getMethod(networkManagerClass, "setEncryptionKey", Cipher.class, Cipher.class);
-
-                // Get the needed Cipher helper method (used to generate ciphers from login key)
-                cipherMethod0 = Reflection.getMethod(ENCRYPTION_CLASS, "a", int.class, Key.class);
-            }
+            // Get the needed Cipher helper method (used to generate ciphers from login key)
+            cipherMethod0 = getMethodFirstByNameLaterByParams(ENCRYPTION_CLASS, "a", int.class, Key.class);
         }
+
+        if (encryptMethod0 == null)
+            Main.logError("Could not find the encryption method! Send this to shadow: " + ReflectionUtils.methodsToString(networkManagerClass));
+
         encryptMethod = encryptMethod0;
         cipherMethod = cipherMethod0;
         CHANNEL_FIELD = getChannelFieldInNetworkManagerClazz();
+
+        SPOOFED_UUID_FIELD = getFieldByNameOrType(networkManagerClass, "spoofedUUID", UUID.class);
+
+        if (SPOOFED_UUID_FIELD == null)
+            Main.logError("Could not find the spoofedUUID field! Send this to shadow: " + AlixUtils.getFields(null, networkManagerClass));
+    }
+
+    private static Field getFieldByNameOrType(Class<?> clazz, String name, Class<?> type) {
+        Field f = Reflection.getField(clazz, name);
+        if (f != null) return f;
+
+        return Reflection.getField(clazz, type, 0);
+    }
+
+    private static Method getMethodFirstByNameLaterByParams(Class<?> clazz, String name, Class<?>... params) {
+        Method method = Reflection.getMethod(clazz, name, params);
+        if (method != null) return method;
+
+        for (Method m : clazz.getDeclaredMethods()) {
+            m.setAccessible(true);
+            if (Arrays.equals(m.getParameterTypes(), params))
+                return m;
+        }
+        for (Method m : clazz.getMethods()) {
+            m.setAccessible(true);
+            if (Arrays.equals(m.getParameterTypes(), params))
+                return m;
+        }
+        return null;
+    }
+
+    @SneakyThrows
+    static void setUUID(Object networkManager, UUID uuid) {
+        SPOOFED_UUID_FIELD.set(networkManager, uuid);
     }
 
     static Object findNetworkManager(Channel channel) {

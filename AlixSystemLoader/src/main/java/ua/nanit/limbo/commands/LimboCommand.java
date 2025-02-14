@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface LimboCommand {
 
-    ByteBuf getEncoded();
+    ByteBuf getEncodedNoId();
 
     PacketSnapshot getPacketSnapshot();
 

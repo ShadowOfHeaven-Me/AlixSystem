@@ -33,10 +33,6 @@ public final class TemporaryUser implements AlixUser {
         return loginInfo;
     }
 
-    public ByteBufHarvester getBufHarvester() {
-        return bufHarvester;
-    }
-
     @Override
     public PacketProcessor getPacketProcessor() {
         return this.unverifiedProcessor != null ? this.unverifiedProcessor : EmptyProcessor.INSTANCE;
@@ -62,5 +58,10 @@ public final class TemporaryUser implements AlixUser {
     public ChannelHandlerContext silentContext() {
         return null;
         //throw new AlixException("silentContext() should not be invoked on a TemporaryUser");
+    }
+
+    @Override
+    public ByteBufHarvester bufHarvester() {
+        return this.bufHarvester;
     }
 }

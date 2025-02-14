@@ -45,7 +45,7 @@ public final class Messages {
     private static String get0(String s) {
         String m = file.getMap().get(s);
         if (m == null)
-            AlixCommonMain.logWarning("Message '" + s + "' was not found in the messages.txt file! Report this immediately!");
+            AlixCommonMain.logWarning("Message '" + s + "' was not found in the messages.yml file! Report this immediately!");
         return m != null ? m : "&c<Message not found>!";
     }
 

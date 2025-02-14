@@ -5,10 +5,8 @@ import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
-import com.github.retrooper.packetevents.protocol.chat.Node;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.util.TimeStampMode;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
@@ -17,8 +15,6 @@ import shadow.systems.login.autoin.premium.PremiumAuthenticator;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
-
-import java.util.List;
 
 public final class PacketEventsManager {
 
@@ -35,7 +31,6 @@ public final class PacketEventsManager {
                 .debugMode()
                 .usePlatformLogger();
         EntityLib.init(platform, settings);*/
-
 
         PacketEvents.getAPI().getEventManager().registerListeners(new GeneralListener());//, new LoginInStartListener());
         PacketEvents.getAPI().init();
@@ -91,7 +86,7 @@ public final class PacketEventsManager {
                 return;
             }
 
-            if (event.getClass() == PacketLoginReceiveEvent.class) {
+            if (!onlineMode && event.getClass() == PacketLoginReceiveEvent.class) {
                 PacketLoginReceiveEvent e = (PacketLoginReceiveEvent) event;
                 switch (e.getPacketType()) {
                     case LOGIN_START:
@@ -311,7 +306,7 @@ public final class PacketEventsManager {
     private PacketEventsManager() {
     }
 
-    public static void debugCommands(WrapperPlayServerDeclareCommands commands) {
+    /*public static void debugCommands(WrapperPlayServerDeclareCommands commands) {
         List<Node> list = commands.getNodes();
         for (Node n : list) {
             StringBuilder sb = new StringBuilder(list.indexOf(n) + " " + n.getName() + " ");
@@ -352,7 +347,7 @@ public final class PacketEventsManager {
 
             Main.logInfo(sb.toString());
         }
-    }
+    }*/
 /*    public static void initializeFireWall() {
         boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
         PacketEvents.getAPI().getEventManager().registerListener(fastRaw ? new FastRawFireWall() : new NormalFireWall());

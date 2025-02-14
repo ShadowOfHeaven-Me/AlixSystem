@@ -225,6 +225,13 @@ public final class ReflectionUtils {
         }
     }*/
 
+    public static String methodsToString(Class<?> clazz) {
+        StringBuilder sb = new StringBuilder();
+        for (Method method : clazz.getDeclaredMethods()) {
+            sb.append(method).append('\n');
+        }
+        return sb.substring(0, Math.max(0, sb.length() - 1));
+    }
 
     public static boolean invokeIfPresent(Method method, Object obj, Object... args) {
         if (method == null) return false;

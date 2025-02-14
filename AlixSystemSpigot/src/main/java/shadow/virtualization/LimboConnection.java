@@ -2,18 +2,20 @@ package shadow.virtualization;
 
 import io.netty.channel.Channel;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
-import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
+import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.server.LimboServer;
+
+import java.util.function.Function;
 
 public final class LimboConnection extends ClientConnection {
 
+    public LimboConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
+        super(channel, server, state);
+    }
+
     //private VerificationReason verificationReason;
 
-    public LimboConnection(Channel channel, LimboServer server, PacketDuplexHandler duplexHandler, VarIntFrameDecoder frameDecoder) {
-        super(channel, server, duplexHandler, frameDecoder);
-        //this.verificationReason = VerificationReason.CAPTCHA;
-    }
+
 
     /*public VerificationReason getVerificationReason() {
         return verificationReason;

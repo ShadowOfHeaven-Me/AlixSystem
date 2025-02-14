@@ -3,21 +3,24 @@ package ua.nanit.limbo.connection.captcha;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayInAnimation;
 import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayInChunkBatchAck;
+import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.move.FlyingPacket;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayInPong;
-import ua.nanit.limbo.protocol.packets.play.slot.PacketPlayInHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
 
 import static ua.nanit.limbo.connection.captcha.CaptchaState.CaptchaPacketType.*;
 
-public final class CaptchaState {
+public final class CaptchaState implements VerifyState {
 
     private static final PacketSnapshot CAPTCHA_FAILED = PacketPlayOutDisconnect.error("Captcha Failed");
     private final CaptchaStateImpl impl;
@@ -34,15 +37,16 @@ public final class CaptchaState {
         KEEP_ALIVE,
         ANIMATION,
         HELD_SLOT,
-        FLYING
+        FLYING,
+        COOKIE_RESPONSE
     }
 
     private <T extends PacketWrapper<T>> void handle0(T packet, CaptchaPacketType type) {
         try {
             this.invokeHandle0(packet, type);
-        } catch (CaptchaFailedException ignored) {
-            //ignored.printStackTrace();
+        } catch (CaptchaFailedException ex) {
             this.impl.disconnect(CAPTCHA_FAILED);
+            if (NanoLimbo.printCaptchaFailed) ex.printStackTrace();
         }
     }
 
@@ -72,44 +76,61 @@ public final class CaptchaState {
             case FLYING:
                 this.impl.handle((WrapperPlayClientPlayerFlying) packet);
                 return;
+            case COOKIE_RESPONSE:
+                this.impl.handle((WrapperPlayClientCookieResponse) packet);
+                return;
             default:
                 throw new AlixError();
         }
     }
 
+    @Override
     public void sendInitial() {
         this.impl.sendInitial0();
     }
 
+    @Override
     public void handle(PacketPlayInChunkBatchAck packet) {
         this.handle0(packet.wrapper(), BATCH_ACK);
     }
 
+    @Override
     public void handle(PacketPlayInTeleportConfirm packet) {
         this.handle0(packet.wrapper(), TP_CONFIRM);
     }
 
+    @Override
     public void handle(PacketPlayInPong packet) {
         this.handle0(packet.wrapper(), PONG);
     }
 
+    @Override
     public void handle(PacketPlayInTransaction packet) {
         this.handle0(packet.wrapper(), WINDOW_CONFIRM);
     }
 
+    @Override
     public void handle(PacketInPlayKeepAlive packet) {
         this.handle0(packet.wrapper(), KEEP_ALIVE);
     }
 
+    @Override
     public void handle(PacketPlayInAnimation packet) {
         this.handle0(packet.wrapper(), ANIMATION);
     }
 
+    @Override
     public void handle(PacketPlayInHeldSlot packet) {
         this.handle0(packet.wrapper(), HELD_SLOT);
     }
 
+    @Override
     public void handle(FlyingPacket packet) {
         this.handle0(packet.wrapper(), FLYING);
+    }
+
+    @Override
+    public void handle(PacketPlayInCookieResponse packet) {
+        this.handle0(packet.wrapper(), COOKIE_RESPONSE);
     }
 }

@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * <p>
  * For example translating color codes from & to §
  * is normally done with ChatColor.translateAlternateColorCodes,
- * while in Alix it's done with AlixFormatter.translateColors.
+ * while in Alix it's done with {@link alix.common.utils.formatter.AlixFormatter#translateColors}.
  * <p>
  * Another example is the String.split method, which was replaced
  * with a more primitive implementation of AlixUtils.split.

@@ -110,6 +110,7 @@ public final class PacketHandler {
 
         //set the "proper" username here
         conn.getGameProfile().setUsername(packet.getUsername());
+        //AlixCommonMain.logError("result: " + result + " recode " + recode);
 
         //Log.error("handleLogin0 - RESULT " + result);
         conn.getChannel().eventLoop().execute(() -> {

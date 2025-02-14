@@ -3,17 +3,19 @@ package shadow.systems.login.autoin.premium;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
+import alix.common.login.premium.*;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCache;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.util.crypto.SaltSignature;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
@@ -24,7 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.autoin.PremiumSetting;
-import shadow.systems.login.autoin.PremiumUtils;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
@@ -34,13 +35,12 @@ import shadow.virtualization.LimboServerIntegration;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.util.Optional;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +52,7 @@ import static shadow.systems.login.autoin.premium.AuthReflection.encryptMethod;
 public final class PremiumAuthenticator {
 
     //todo: add support
-    private final boolean isReverseProxyEnabled = true;
+    //private final boolean isReverseProxyEnabled = true;
 
     private static final ByteBuf
             illegalEncryptionState = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cIllegal encryption state"),
@@ -66,32 +66,50 @@ public final class PremiumAuthenticator {
 
     //with caffeine
     @OptimizationCandidate
-    private final Cache<String, EncryptionData> encryptionDataCache = AlixCache.newBuilder()
-            .expireAfterWrite(2, TimeUnit.MINUTES)
-            .build();
+    private final Map<User, EncryptionData> encryptionDataCache;
 
-    private final SecureRandom random = new SecureRandom();
-    private final KeyPair keyPair = EncryptionUtil.generateKeyPair();
+    {
+        Cache<User, EncryptionData> cache = AlixCache.newBuilder()
+                .expireAfterWrite(30, TimeUnit.SECONDS).weakKeys()
+                .build();
+        this.encryptionDataCache = cache.asMap();
+    }
 
-    //TODO: Add an option, if just determining the premium status, to set it as non_premium instead of disconnecting
+
+    private final KeyPair keyPair = PremiumVerifier.keyPair;
+    private final boolean
+            assumeNonPremiumOnFailedAuth = Main.config.getBoolean("assume-non-premium-if-auth-failed"),
+            assignPremiumUUID = Main.config.getBoolean("premium-uuid");
+
+    private void onInvalidAuth(User user, ClientPublicKey publicKey, ByteBuf disconnectReason) {
+        String name = user.getName();
+        PersistentUserData data = UserFileManager.get(name);
+        boolean registered = PersistentUserData.isRegistered(data);
+
+        if (!registered && assumeNonPremiumOnFailedAuth) {
+            Main.logInfo("Assuming the premium-nicknamed user " + name + " is non-premium!");
+
+            if (data != null) data.setPremiumData(PremiumData.NON_PREMIUM);
+            else PremiumDataCache.add(name, PremiumData.NON_PREMIUM);
+
+            receiveFakeStartPacket(name, publicKey, user.getChannel(), user.getUUID());
+            return;
+        }
+        this.disconnectWith(user, disconnectReason);
+    }
+
     private void onEncryptionResponse(User user, WrapperLoginClientEncryptionResponse packet) {
         byte[] sharedSecret = packet.getEncryptedSharedSecret();
 
-        EncryptionData data = encryptionDataCache.getIfPresent(user.getAddress().toString());
+        EncryptionData data = this.encryptionDataCache.remove(user);
 
         if (data == null) {
+            //we weren't expecting this packet
             this.disconnectWith(user, illegalEncryptionState);
             return;
         }
 
-        byte[] expectedToken = data.token().clone();
-
-        if (!verifyNonce(packet, data.publicKey(), expectedToken)) {
-            this.disconnectWith(user, invalidNonce);
-            return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
-        }
-
-        //Verify session
+        byte[] expectedToken = data.token();
         PrivateKey privateKey = keyPair.getPrivate();
 
         SecretKey loginKey;
@@ -99,47 +117,68 @@ public final class PremiumAuthenticator {
         try {
             loginKey = EncryptionUtil.decryptSharedKey(privateKey, sharedSecret);
         } catch (Exception securityEx) {
+            //we cannot enable encryption without this one
             this.disconnectWith(user, cannotDecryptSharedSecret);
             return;
         }
 
-        if (!enableEncryption(loginKey, user, (Channel) user.getChannel()))
+        //enable encryption once we know that the player is expecting the connection to be encrypted
+        Object networkManager = AuthReflection.findNetworkManager((Channel) user.getChannel());
+
+        if (!enableEncryption(loginKey, user, networkManager))
             return;
 
+        if (!verifyNonce(packet, data.publicKey(), expectedToken)) {
+            this.onInvalidAuth(user, data.publicKey(), invalidNonce);
+            return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
+        }
+
+        //Verify session
+
         String serverId = EncryptionUtil.getServerIdHashString("", loginKey, keyPair.getPublic());
-        String username = data.username();
+        String packetUsername = data.packetUsername();
+        String serverUsername = data.serverUsername();
         InetSocketAddress address = user.getAddress();
 
         try {
             //make sure to remove the name char prefix
-            if (hasJoined(PremiumUtils.getNonPrefixedName(username), serverId, address.getAddress())) {
-                //Main.logError("IZZA PREMIUMMMMM");
-                VerifiedCache.verify(username, user);
-                receiveFakeStartPacket(username, data.publicKey(), user.getChannel(), data.uuid());
+            if (hasJoined(PremiumUtils.getNonPrefixedName(packetUsername), serverId, address.getAddress())) {
+
+                if (this.assignPremiumUUID)
+                    this.setPremiumUUID(networkManager, data.premiumUUID());
+
+                VerifiedCache.verify(serverUsername, user);
+                receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.premiumUUID());
             } else {
-                this.disconnectWith(user, invalidSession);
+                this.onInvalidAuth(user, data.publicKey(), invalidSession);
             }
         } catch (IOException e) {
             if (e instanceof SocketTimeoutException) {
-                Main.logWarning("Session verification timed out (5 seconds) for " + username);
+                Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
             }
-            this.disconnectWith(user, cannotVerifySession);
+            //todo: see if this correct
+            this.onInvalidAuth(user, data.publicKey(), cannotVerifySession);
         }
     }
 
     private void onLoginStart(User user, WrapperLoginClientLoginStart packet) {
-
         //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " " + packet.getPlayerUUID().get().version());
 
-        InetAddress address = user.getAddress().getAddress();
-        String sessionKey = user.getAddress().toString();
-        String name = packet.getUsername();
-        UUID uuid = packet.getPlayerUUID().orElse(null);
-        //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " VARIANT " + uuid.variant() + " ");
         Channel channel = (Channel) user.getChannel();
+        InetAddress address = user.getAddress().getAddress();
+        //String sessionKey = user.getAddress().toString();
+        String packetUsername = packet.getUsername();
+        //Main.logInfo("PACKET USERNAME: " + packetUsername);
+        String bedrockName = Dependencies.getCorrectUsername(channel, packetUsername);
+        UUID uuid = packet.getPlayerUUID().orElse(null);
+        //Main.debug("packetUsername: '" + packetUsername + "' bedrockName: '" + bedrockName + "'");
+
+        user.getProfile().setName(bedrockName);
+        user.getProfile().setUUID(uuid);
+        //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " VARIANT " + uuid.variant() + " ");
         ClientVersion version = user.getClientVersion();
 
-        encryptionDataCache.invalidate(sessionKey);
+        //encryptionDataCache.remove(sessionKey);
 
         if (Dependencies.isFloodgatePresent) {
             // don't continue execution if the player was kicked by Floodgate
@@ -149,7 +188,7 @@ public final class PremiumAuthenticator {
         ClientPublicKey clientKey = ClientPublicKey.createKey(packet.getSignatureData().orElse(null));
 
         //Alix - start
-        PersistentUserData data = UserFileManager.get(name);
+        PersistentUserData data = UserFileManager.get(bedrockName);
 
         /*boolean justCreatedPremiumData = false;
 
@@ -162,30 +201,31 @@ public final class PremiumAuthenticator {
         boolean performPremiumCheck;// = data != null ? performPremiumCheck(data) : performPremiumCheckNullData(name);
 
         if (data != null) {
-            performPremiumCheck = performPremiumCheck(data, uuid, clientKey, version);
+            performPremiumCheck = performPremiumCheck(data, packetUsername, uuid, clientKey, version);
             newPremiumData = data.getPremiumData();
         } else {
-            newPremiumData = performPremiumCheckNullData(name, uuid, clientKey, version);
+            newPremiumData = performPremiumCheckNullData(packetUsername, uuid, clientKey, version);
             performPremiumCheck = newPremiumData.getStatus().isPremium();
         }
 
         //Main.logError("IS PREMIUM: " + performPremiumCheck + " DATA: " + newPremiumData.getStatus() + " suggestsStatus: " + PremiumUtils.suggestsStatus(uuid, clientKey, version));
 
-        if (LimboServerIntegration.hasCompletedCaptcha(address, name)) {
+        if (LimboServerIntegration.hasCompletedCaptcha(address, packetUsername)) {
             //Main.logError("passed name: " + passedCaptchaNameCache + " current name: " + name);
             /*if (!name.equals(passedCaptchaNameCache)) {
                 this.disconnectWith(user, cachedNameDoesNotMatch);
                 return;
             }*/
             //Since AlixChannelHandler.onLoginStart will not be invoked, add the connecting user manually
-            if (!AlixChannelHandler.putConnecting(user, name)) return;
+            if (!AlixChannelHandler.putConnecting(user, bedrockName)) return;
 
-        } else if (!AlixChannelHandler.onLoginStart(user, name, data, performPremiumCheck)) return;
+        } else if (!AlixChannelHandler.onLoginStart(user, packetUsername, bedrockName, data, performPremiumCheck))
+            return;
         //Alix - end
 
         if (Dependencies.isBedrock(channel)) {
             //Floodgate player, do not handle, only retransmit the packet. The UUID will be set by Floodgate
-            receiveFakeStartPacket(name, clientKey, channel, uuid);
+            receiveFakeStartPacket(packetUsername, clientKey, channel, uuid);
             return;
         }
         //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/listener/AuthenticListeners.java#L29
@@ -195,10 +235,10 @@ public final class PremiumAuthenticator {
                 //should never happen
                 if (newPremiumData.premiumUUID() == null) throw new AlixError("Null uuid during encryption send");
 
-                byte[] token = EncryptionUtil.generateVerifyToken(random);
+                byte[] token = EncryptionUtil.generateVerifyToken();
 
                 WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token);
-                encryptionDataCache.put(sessionKey, new EncryptionData(name, token, clientKey, newPremiumData.premiumUUID()));
+                this.encryptionDataCache.put(user, new EncryptionData(packetUsername, bedrockName, token, clientKey, newPremiumData.premiumUUID()));
 
                 ByteBuf dynamicWrapper = NettyUtils.dynamic(newPacket);
                 ChannelHandlerContext silentCtx = NettyUtils.getSilentContext(channel);
@@ -236,12 +276,12 @@ public final class PremiumAuthenticator {
                 //Main.debug("SENDING DONE.");
             } catch (Exception e) {
                 this.disconnectWith(user, internalErrorEncryption);
-                Main.logError("Failed to send encryption begin packet for player " + name + "! Kicking player.");
+                Main.logError("Failed to send encryption begin packet for player " + packetUsername + "! Kicking player.");
                 e.printStackTrace();
             }
         } else {
             // The original event has been cancelled, so we need to send a fake start packet.
-            receiveFakeStartPacket(name, clientKey, channel, uuid);
+            receiveFakeStartPacket(packetUsername, clientKey, channel, uuid);
         }
     }
 
@@ -251,7 +291,7 @@ public final class PremiumAuthenticator {
         return PremiumUtils.getOrRequestAndCacheData(null, name);
     }
 
-    private boolean performPremiumCheck(PersistentUserData data, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
+    private boolean performPremiumCheck(PersistentUserData data, String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
         switch (data.getPremiumData().getStatus()) {
             case PREMIUM:
                 return true;
@@ -259,7 +299,7 @@ public final class PremiumAuthenticator {
                 return false;
             case UNKNOWN:
                 if (!PremiumSetting.requirePremium(data, uuid, clientPublicKey, version)) return false;
-                PremiumData newData = PremiumUtils.getOrRequestData(data, data.getName());
+                PremiumData newData = PremiumUtils.getOrRequestData(data, name);
 
                 //if (newData.getStatus().isUnknown()) return false;//fallback
 
@@ -330,29 +370,14 @@ public final class PremiumAuthenticator {
     }
 
     public boolean hasJoined(String username, String serverHash, InetAddress hostIp) throws IOException {
-        String url;
-        if (isReverseProxyEnabled || hostIp instanceof Inet6Address) {
-            url = String.format("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s", username, serverHash);
-        } else {
-            String encodedIP = URLEncoder.encode(hostIp.getHostAddress(), StandardCharsets.UTF_8);
-            url = String.format("https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s&ip=%s", username, serverHash, encodedIP);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(5000);
-        conn.connect();
-        int responseCode = conn.getResponseCode();
-        conn.disconnect();
-        return responseCode != 204;
+        return PremiumVerifier.hasJoined(username, serverHash, hostIp);
     }
 
     /**
      * @author games647 and FastLogin contributors
      */
-    private boolean enableEncryption(SecretKey loginKey, User user, Channel channel) throws IllegalArgumentException {
+    private boolean enableEncryption(SecretKey loginKey, User user, Object networkManager) throws IllegalArgumentException {
         try {
-            Object networkManager = AuthReflection.findNetworkManager(channel);
 
             // If cipherMethod is null - use old encryption (pre MC 1.16.4), otherwise use the new cipher one
             if (cipherMethod == null) {
@@ -375,41 +400,17 @@ public final class PremiumAuthenticator {
         return true;
     }
 
+    private void setPremiumUUID(Object networkManager, UUID premiumUUID) {
+        if (premiumUUID == null) throw new AlixException("premiumUUID is null! Report this immediately!");
+        AuthReflection.setUUID(networkManager, premiumUUID);
+    }
+
     private void disconnectWith(User user, ByteBuf constDisconnectBuf) {
         NettyUtils.closeAfterConstSend((Channel) user.getChannel(), constDisconnectBuf);
     }
 
-/*    @OptimizationCandidate
-    private void kickPlayer(String reason, User user) {
-        MethodProvider.kickAsyncLoginDynamic((Channel) user.getChannel(), reason);
-    }*/
-
-    /**
-     * @author games647 and FastLogin contributors
-     */
     private boolean verifyNonce(WrapperLoginClientEncryptionResponse packet,
                                 ClientPublicKey clientPublicKey, byte[] expectedToken) {
-        try {
-            if (getServerVersion().isNewerThanOrEquals(ServerVersion.V_1_19)
-                    && !getServerVersion().isNewerThanOrEquals(ServerVersion.V_1_19_3)) {
-                if (clientPublicKey == null) {
-                    return EncryptionUtil.verifyNonce(expectedToken, keyPair.getPrivate(), packet.getEncryptedVerifyToken().orElseThrow());
-                } else {
-                    PublicKey publicKey = clientPublicKey.key();
-                    Optional<SaltSignature> optSignature = packet.getSaltSignature();
-                    if (optSignature.isEmpty()) {
-                        return false;
-                    }
-                    SaltSignature signature = optSignature.get();
-
-                    return EncryptionUtil.verifySignedNonce(expectedToken, publicKey, signature.getSalt(), signature.getSignature());
-                }
-            } else {
-                byte[] nonce = packet.getEncryptedVerifyToken().orElseThrow();
-                return EncryptionUtil.verifyNonce(expectedToken, keyPair.getPrivate(), nonce);
-            }
-        } catch (Exception signatureEx) {
-            return false;
-        }
+        return PremiumVerifier.verifyNonce(packet, clientPublicKey, expectedToken, this.getServerVersion());
     }
 }

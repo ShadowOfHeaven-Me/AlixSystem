@@ -17,8 +17,10 @@
 
 package ua.nanit.limbo.server;
 
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.configuration.LimboConfig;
 import ua.nanit.limbo.connection.ClientChannelInitializer;
+import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.PacketHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -29,7 +31,7 @@ import java.io.IOException;
 
 public final class LimboServer {
 
-    private final LimboIntegration integration;
+    private final LimboIntegration<ClientConnection> integration;
     private final ClientChannelInitializer clientChannelInitializer;
     private final LimboConfig config;
     private final PacketHandler packetHandler;
@@ -38,20 +40,23 @@ public final class LimboServer {
     private final DimensionRegistry dimensionRegistry;
     //private final ScheduledFuture<?> keepAliveTask;
 
-    public LimboServer(LimboIntegration integration) throws IOException {
+    public LimboServer(LimboIntegration<ClientConnection> integration) throws IOException {
+        NanoLimbo.INTEGRATION = integration;
+        NanoLimbo.LIMBO = this;
+
         Log.info("Starting virtual server...");
         this.integration = integration;
-        config = new LimboConfig();
+        this.config = new LimboConfig();
 
         //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
 
-        packetHandler = new PacketHandler(this);
         //this.commandHandler = integration.createCommandHandler();
-        dimensionRegistry = new DimensionRegistry(this);
-        dimensionRegistry.load("minecraft:" + config.getDimensionType().toLowerCase());
-        connections = new Connections();
+        this.dimensionRegistry = new DimensionRegistry(this);
+        this.dimensionRegistry.load("minecraft:" + config.getDimensionType().toLowerCase());
+        this.connections = new Connections();
 
-        PacketSnapshots.initPackets(this);
+        PacketSnapshots.init();
+        this.packetHandler = new PacketHandler(this);
 
         //keepAliveTask = null;//serverChannel.eventLoop().parent().scheduleAtFixedRate(this::broadcastKeepAlive, 0L, 5L, TimeUnit.SECONDS);
 
@@ -62,7 +67,7 @@ public final class LimboServer {
         Log.info("Server started.");
     }
 
-    public LimboIntegration getIntegration() {
+    public LimboIntegration<ClientConnection> getIntegration() {
         return integration;
     }
 

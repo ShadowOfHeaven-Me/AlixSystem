@@ -15,15 +15,15 @@ import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Nullable;
 import shadow.systems.login.autoin.PremiumSetting;
-import shadow.systems.login.autoin.PremiumUtils;
-import shadow.systems.login.autoin.premium.ClientPublicKey;
+import alix.common.login.premium.PremiumUtils;
+import alix.common.login.premium.ClientPublicKey;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.systems.netty.AlixInterceptor;
 import shadow.virtualization.commands.LimboCommandHandler;
 import ua.nanit.limbo.commands.CommandHandler;
-import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
-import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
+import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.integration.PreLoginResult;
 import ua.nanit.limbo.protocol.PacketSnapshot;
@@ -37,6 +37,9 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+import static shadow.virtualization.LimboServerIntegration.Packets.*;
 
 //https://wiki.vg/Protocol_FAQ
 
@@ -70,7 +73,7 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
 
     @Nullable
     public static boolean hasCompletedCaptcha(InetAddress address, String name) {
-       return address.equals(completedCaptchaCache.get(name));
+        return address.equals(completedCaptchaCache.get(name));
     }
 
     /*@Nullable
@@ -83,9 +86,10 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
         AlixInterceptor.invokeSilentChannelRead(channel);
     }
 
+
     @Override
-    public LimboConnection newConnection(Channel channel, LimboServer server, PacketDuplexHandler duplexHandler, VarIntFrameDecoder frameDecoder) {
-        return new LimboConnection(channel, server, duplexHandler, frameDecoder);
+    public LimboConnection newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
+        return new LimboConnection(channel, server, state);
     }
 
     @Override
@@ -101,12 +105,14 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
     public void onHandshake(LimboConnection connection, PacketHandshake handshake) {
     }
 
-    private static final PacketSnapshot
-            //alreadyConnectingPacket = PacketPlayOutDisconnect.snapshot(Messages.get("already-connecting")),
-            invalidNamePacket = PacketLoginDisconnect.snapshot(AlixChannelHandler.invalidNameMessage),
-            preventFirstTimeJoinPacket = PacketLoginDisconnect.snapshot(ConnectionManager.preventFirstTimeJoinMessage),
-            maxTotalAccountsPacket = PacketLoginDisconnect.snapshot(GeoIPTracker.maxAccountsReached),
-            vpnDetectedPacket = PacketLoginDisconnect.snapshot(AntiVPN.antiVpnMessage);
+    static final class Packets {
+        static final PacketSnapshot
+                //alreadyConnectingPacket = PacketPlayOutDisconnect.snapshot(Messages.get("already-connecting")),
+                invalidNamePacket = PacketLoginDisconnect.snapshot(AlixChannelHandler.invalidNameMessage),
+                preventFirstTimeJoinPacket = PacketLoginDisconnect.snapshot(ConnectionManager.preventFirstTimeJoinMessage),
+                maxTotalAccountsPacket = PacketLoginDisconnect.snapshot(GeoIPTracker.maxAccountsReached),
+                vpnDetectedPacket = PacketLoginDisconnect.snapshot(AntiVPN.antiVpnMessage);
+    }
 
     /*private void join(LimboConnection connection, PacketLoginStart packet, boolean[] recode) {
         String name = packet.getUsername();
@@ -154,10 +160,14 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
         UUID uuid = packet.getUUID();
 
         String prefixedName = name;
+        Boolean hasCompletedCaptcha = null;
 
         boolean isPremium;
         if (Bukkit.getServer().getOnlineMode()) isPremium = true;
         else {
+
+            //Premium handling
+
             ClientVersion version = connection.getClientVersion().getRetrooperVersion().toClientVersion();
             ClientPublicKey publicKey = ClientPublicKey.createKey(packet.getSignatureData());
             PremiumStatus suggestsStatus = PremiumUtils.suggestsStatus(uuid, publicKey, version);
@@ -201,7 +211,6 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
                 //the exact same thing could happen to the original owner of the <name> account
             }
 
-
             boolean enabled = false;
             if (enabled && shouldReEncodeName) {
                 recode[0] = true;
@@ -215,6 +224,13 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
                 if (name.length() >= 16)
                     PremiumNameManager.mapOverflow(prefixedName, name);
                 name = prefixedName;
+            }
+
+            //Intention hide
+            boolean isTransfer = connection.getHandshakePacket().isTransfer();
+            if (isTransfer && (hasCompletedCaptcha = hasCompletedCaptcha(channel, name))) {
+                connection.getHandshakePacket().setLoginIntention();
+                recode[0] = true;
             }
         }
 
@@ -237,7 +253,12 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
                 throw new AlixError();
         }
 
-        return data != null || isPremium || hasCompletedCaptcha(channel, name) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
+        //Main.logInfo("REMAPPED: " + name + " pr: " + prefixedName);
+
+        //todo: see if isPremium should stay here:
+        //during premium -> non_premium switch the player hasn't passed the captcha,
+        // but was let into the server without completing it - he must be shown the visual captcha now
+        return data != null || isPremium || (hasCompletedCaptcha == Boolean.TRUE || hasCompletedCaptcha(channel, name)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
     }
 
     //@Override

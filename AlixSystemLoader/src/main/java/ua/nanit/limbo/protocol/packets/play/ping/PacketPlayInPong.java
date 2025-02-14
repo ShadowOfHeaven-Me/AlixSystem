@@ -13,6 +13,6 @@ public final class PacketPlayInPong extends InRetrooperPacket<WrapperPlayClientP
 
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
-        conn.getCaptchaState().handle(this);
+        conn.getVerifyState().handle(this);
     }
 }

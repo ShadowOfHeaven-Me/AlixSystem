@@ -45,6 +45,8 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
 
     //must be an IdentityHashMap, cuz the ByteBuf#hashCode changes depending on its readerIndex
     private final Set<ByteBuf> resend = Collections.newSetFromMap(new IdentityHashMap<>(2));
+    //private final BufSet12 resend = new BufSet12();
+
     //private final VarIntByteDecoder reader = new VarIntByteDecoder();
 
     public void stopResendCollection() {
@@ -64,12 +66,53 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
     }*/
 
     public void resendCollected(Channel channel) {
-        this.forEachCollected(buf ->
-                channel.pipeline().fireChannelRead(buf.readerIndex(0)));
+        /*this.forEachCollected(buf ->
+                channel.pipeline().fireChannelRead(buf.readerIndex(0)));*/
+        //readerIndex is already set by BufSet12
+        this.forEachCollected(buf -> channel.pipeline().fireChannelRead(buf.readerIndex(0)));
     }
 
     private void forEachCollected(Consumer<ByteBuf> consumer) {
         this.resend.forEach(consumer);
+    }
+
+    private static final class BufSet12 {
+
+        //Inspired by java's ImmutableCollections.List12 from List.of(e1, e2)
+
+        private ByteBuf buf1;
+        private ByteBuf buf2;
+
+        //HAProxyDecoder could've changed the reader index
+
+        //private int rIdx1;
+        //private int rIdx2;
+
+        private BufSet12() {
+        }
+
+        private void add(ByteBuf buf) {
+            if (this.buf1 == null) {
+                this.buf1 = buf;
+                //this.rIdx1 = buf.readerIndex();
+                return;
+            }
+            if (this.buf1 == buf) return;
+            this.buf2 = buf;
+            //this.rIdx2 = buf.readerIndex();
+        }
+
+        private void forEach(Consumer<ByteBuf> consumer) {
+            if (this.buf1 == null) return;
+
+            //this.buf1.readerIndex(this.rIdx1);
+            consumer.accept(this.buf1);
+
+            if (this.buf2 == null) return;
+
+            //this.buf2.readerIndex(this.rIdx2);
+            consumer.accept(this.buf2);
+        }
     }
 
     @Override

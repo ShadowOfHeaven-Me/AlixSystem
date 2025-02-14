@@ -13,6 +13,6 @@ public final class PacketPlayInAnimation extends InRetrooperPacket<WrapperPlayCl
 
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
-        conn.getCaptchaState().handle(this);
+        conn.getVerifyState().handle(this);
     }
 }

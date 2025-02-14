@@ -122,7 +122,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             }
                             PersistentUserData data = UserFileManager.get(offlinePlayer.getName());
                             if (data == null) {
-                                sendMessage(sender, "&cPlayer " + arg2 + " is not in the AlixSystems's User DataBase!");
+                                sendMessage(sender, "&cPlayer " + arg2 + " is not in AlixSystem's User DataBase!");
                                 return;
                             }
                             boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();

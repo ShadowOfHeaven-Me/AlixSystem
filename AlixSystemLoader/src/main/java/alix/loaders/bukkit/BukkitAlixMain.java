@@ -4,6 +4,7 @@ import alix.common.AlixMain;
 import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
+import alix.common.logger.plugin.BukkitAlixLogger;
 import alix.common.utils.file.update.FileUpdater;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
@@ -35,7 +36,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
         AlixError.init();
         instance = this;
         //CommonAlixMain.loggerManager = this;
-        this.logger = AlixLoggerProvider.createServerAdequateLogger();
+        this.logger = new BukkitAlixLogger();
         this.loggerAdapter = LoggerAdapter.createAdapter(this.logger);
         //this.logger.info("LOADER BUKKIT ALIX.Main: " + BukkitAlixMain.class.getClassLoader());
 

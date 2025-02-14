@@ -79,7 +79,7 @@ public final class BungeeAlixMain extends Plugin implements AlixLoggerProvider, 
 
         @Override
         public String messagesFileName() {
-            return "alix/loaders/bungee/messages.yml";
+            return "messages.txt";
         }
 
         private ParamImpl() {

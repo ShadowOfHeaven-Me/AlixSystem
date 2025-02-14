@@ -1,3 +1,4 @@
+/*
 package shadow.utils.netty.packets;
 
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -22,4 +23,4 @@ final class ConstantAlixPackets implements AlixPacket {
         for (ByteBuf buf : this.buffers) user.writeConstSilently(buf);
         user.flush();
     }
-}
+}*/

@@ -13,6 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
 import org.bukkit.Bukkit;
+import shadow.Main;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
@@ -30,7 +31,7 @@ public final class AlixInterceptor {
 
     private static final String name = "alix-interceptor";//, name2 = "AlixInjector";
     private static final LimboServer limbo;
-    private static final boolean enableLimbo = !Bukkit.getServer().getOnlineMode();
+    private static final boolean enableLimbo = !Bukkit.getServer().getOnlineMode() && Main.config.getBoolean("virtual-limbo-server");
     private static final Interceptor interceptor;
     private static final ChannelHandlerContext silentServerCtx;
     public static final FireWallType fireWallType;
@@ -172,6 +173,7 @@ public final class AlixInterceptor {
 
                 limbo.getClientChannelInitializer().initChannel(channel);
                 super.channelRead(ctx, msg);
+                //Main.logError("PIPELINE: " + pipeline.names());
 
                 if (NanoLimbo.removeTimeout && pipeline.context("timeout") != null)
                     pipeline.replace("timeout", "--timeout", DummyHandler.HANDLER);

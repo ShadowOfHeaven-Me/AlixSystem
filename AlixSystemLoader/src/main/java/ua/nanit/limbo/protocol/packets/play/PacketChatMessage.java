@@ -74,4 +74,8 @@ public final class PacketChatMessage implements PacketOut {
 
     }
 
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
+    }
 }

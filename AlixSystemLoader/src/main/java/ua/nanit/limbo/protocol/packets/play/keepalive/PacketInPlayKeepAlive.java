@@ -34,6 +34,6 @@ public class PacketInPlayKeepAlive extends InRetrooperPacket<WrapperPlayClientKe
 
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
-        conn.getCaptchaState().handle(this);
+        conn.getVerifyState().handle(this);
     }
 }

@@ -15,6 +15,6 @@ public final class PacketPlayInPositionAndRotation extends InRetrooperPacket<Wra
 
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
-        conn.getCaptchaState().handle(this);
+        conn.getVerifyState().handle(this);
     }
 }

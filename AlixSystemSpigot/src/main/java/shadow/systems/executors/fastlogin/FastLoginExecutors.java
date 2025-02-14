@@ -9,7 +9,7 @@ import shadow.Main;
 import shadow.systems.login.autoin.PremiumAutoIn;
 import shadow.systems.login.autoin.PremiumSetting;
 
-import static shadow.systems.login.autoin.PremiumUtils.isNamePremium;
+import static alix.common.login.premium.PremiumUtils.isNamePremium;
 
 public final class FastLoginExecutors implements Listener {
 

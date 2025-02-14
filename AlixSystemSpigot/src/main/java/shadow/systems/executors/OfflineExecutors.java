@@ -8,11 +8,14 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
+import alix.common.data.security.password.Password;
+import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.file.managers.IpsCacheFileManager;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import com.github.retrooper.packetevents.protocol.player.User;
+import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,7 +24,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import shadow.Main;
-import shadow.systems.login.autoin.PremiumUtils;
+import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.SpawnFileManager;
@@ -50,6 +53,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         String name = e.getName();
         String ip = e.getAddress().getHostAddress();
 
+        //Main.debug("onLogin: '" + name + "'");
         User user = UserManager.removeConnecting(name);//name
 
         //Main.logError("NAME IN EVENT: " + name);
@@ -88,11 +92,23 @@ public final class OfflineExecutors extends UniversalExecutors {
 
         PersistentUserData data = UserFileManager.get(name);
 
+        boolean isLinked = Dependencies.isLinked((Channel) user.getChannel());
+
         //Main.logInfo("PREMIUM " + PremiumAutoIn.getPremiumPlayers().contains(name) + " DATA EXISTS " + (data != null));
 
         if (data != null) {//the account exists
+            if (isLinked) {
+                LoginVerdictManager.addOnline(user, ip, data, false, e);
+                return;
+            }
+
             if (data.getPremiumData().getStatus().isPremium()) LoginVerdictManager.addOnline(user, ip, data, false, e);
             else LoginVerdictManager.addOffline(user, ip, data, e);
+            return;
+        }
+
+        if (isLinked) {
+            LoginVerdictManager.addOnline(user, ip, PersistentUserData.createDefault(name, e.getAddress(), Password.createRandom()), true, e);
             return;
         }
 

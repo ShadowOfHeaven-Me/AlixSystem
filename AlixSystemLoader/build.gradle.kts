@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("java-library")
-    id ("com.gradleup.shadow") version "8.3.2"
+    id("com.gradleup.shadow") version "8.3.2"
 }
 
 group = "AlixSystemLoader"
@@ -9,6 +9,8 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
     mavenLocal()
+    maven("https://jitpack.io/")
+
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://oss.sonatype.org/content/repositories/central")
@@ -25,7 +27,7 @@ repositories {
     //maven("https://oss.sonatype.org/content/repositories/snapshots")
 
 }
-tasks.register("prepareKotlinBuildScriptModel"){}
+tasks.register("prepareKotlinBuildScriptModel") {}
 dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -66,6 +68,7 @@ dependencies {
 
     compileOnlyApi("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")
+    compileOnly("io.netty:netty-all:4.1.24.Final")
     // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
     //compileOnly("com.velocitypowered:velocity-native:3.1.0") HOW IS THIS NOT FOUND
 }

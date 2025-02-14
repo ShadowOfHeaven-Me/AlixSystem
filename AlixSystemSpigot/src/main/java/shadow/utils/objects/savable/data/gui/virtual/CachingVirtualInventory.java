@@ -1,5 +1,7 @@
 package shadow.utils.objects.savable.data.gui.virtual;
 
+import alix.common.packets.inventory.AlixInventoryType;
+import alix.common.packets.inventory.InventoryWrapper;
 import alix.common.utils.AlixCommonUtils;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -8,7 +10,6 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOp
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
-import shadow.utils.misc.packet.constructors.AlixInventoryType;
 import shadow.utils.misc.packet.constructors.OutWindowItemsPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 
@@ -65,16 +66,6 @@ public final class CachingVirtualInventory extends VirtualInventory {
     }
 
     public static WrapperPlayServerOpenWindow invOpenWrapper(AlixInventoryType type, Component title) {
-        WrapperPlayServerOpenWindow wrapper;
-
-        //window id = 1
-        if (version.isNewerThanOrEquals(ServerVersion.V_1_14))
-            wrapper = new WrapperPlayServerOpenWindow(VirtualInventory.CONST_WINDOW_ID, type.getId(), title);
-        else {
-            String oldType = type == AlixInventoryType.ANVIL ? "minecraft:anvil" : "minecraft:container";
-            wrapper = new WrapperPlayServerOpenWindow(VirtualInventory.CONST_WINDOW_ID, oldType, title, type.size(), -1);
-        }
-
-        return wrapper;
+        return InventoryWrapper.createInvOpen(type, title, version.toClientVersion());
     }
 }

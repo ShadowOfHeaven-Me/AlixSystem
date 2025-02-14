@@ -66,8 +66,7 @@ public final class PersistentUserData {
     }
 
     public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip, PremiumData premiumData) {
-        //By creating a password we ensure the account cannot be stolen in case
-        //the server suddenly ever switches to offline mode
+        //By creating a password we ensure the account cannot be stolen
         PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
         data.setLoginType(LoginType.COMMAND);
         data.setPremiumData(premiumData);

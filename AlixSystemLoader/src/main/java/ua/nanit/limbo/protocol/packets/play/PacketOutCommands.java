@@ -26,6 +26,6 @@ public final class PacketOutCommands implements PacketOut {
 
     @Override
     public void encode(ByteMessage msg, Version version) {
-        msg.writeBytes(this.command.getEncoded());
+        msg.writeBytes(this.command.getEncodedNoId(), 0, this.command.getEncodedNoId().readableBytes());
     }
 }

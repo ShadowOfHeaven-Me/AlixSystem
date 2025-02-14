@@ -1,11 +1,10 @@
 package shadow.utils.netty.unsafe;
 
+import alix.common.utils.netty.BufTransformer;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.util.function.Function;
 
 public final class UnsafeNettyUtils {
 
@@ -17,30 +16,34 @@ public final class UnsafeNettyUtils {
         atomicRemoveFromHandlerList = ReflectionUtils.getMethodByName(DefaultChannelPipeline.class, "atomicRemoveFromHandlerList");
     }*/
 
-/*    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")//IntelliJ got a bit confused here
-    private static ChannelHandlerContext addFirst0(ChannelPipeline pipeline, String name, ChannelHandler handler) {
-        synchronized (pipeline) {
-            try {
-                ChannelHandlerContext ctx = (ChannelHandlerContext) newContext.invoke(pipeline, null, name, handler);
-                addFirst0.invoke(pipeline, ctx);
-                return ctx;
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
+    /*    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")//IntelliJ got a bit confused here
+        private static ChannelHandlerContext addFirst0(ChannelPipeline pipeline, String name, ChannelHandler handler) {
+            synchronized (pipeline) {
+                try {
+                    ChannelHandlerContext ctx = (ChannelHandlerContext) newContext.invoke(pipeline, null, name, handler);
+                    addFirst0.invoke(pipeline, ctx);
+                    return ctx;
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
+
+        private static void removeFirst0(ChannelHandlerContext ctx) {
+            synchronized (ctx.pipeline()) {
+                try {
+                    atomicRemoveFromHandlerList.invoke(ctx.pipeline(), ctx);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }*/
+
+    public static void sendAndSetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, BufTransformer outputTransformer, ByteBuf[] buffers) {
+        sendAndSetRaw(silentContext, harvester, outputTransformer, buffers, buffers);
     }
 
-    private static void removeFirst0(ChannelHandlerContext ctx) {
-        synchronized (ctx.pipeline()) {
-            try {
-                atomicRemoveFromHandlerList.invoke(ctx.pipeline(), ctx);
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }*/
-
-    public static void sendAndSetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, Function<ByteBuf, ByteBuf> outputTransformer, ByteBuf[] buffers) {
+    public static void sendAndSetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, BufTransformer outputTransformer, ByteBuf[] buffers, ByteBuf[] out) {
         Channel channel = silentContext.channel();
         if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in an eventLoop");
 
@@ -48,8 +51,9 @@ public final class UnsafeNettyUtils {
 
         for (int i = 0; i < buffers.length; i++) {
             silentContext.write(buffers[i]);
-            if (harvester.harvested == null) throw new AlixException("setRaw - no output from harvester! - " + silentContext.pipeline().names());
-            buffers[i] = outputTransformer.apply(harvester.harvested);
+            if (harvester.harvested == null)
+                throw new AlixException("setRaw - no output from harvester! - " + silentContext.pipeline().names());
+            out[i] = outputTransformer.apply(harvester.harvested);
             harvester.harvested = null;
         }
 
@@ -58,7 +62,7 @@ public final class UnsafeNettyUtils {
         //channel.unsafe().outboundBuffer().addMessage(byteBuf0, byteBuf0.readableBytes(), channel.voidPromise());
     }
 
-    public static ByteBuf sendAndGetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, Function<ByteBuf, ByteBuf> outputTransformer, ByteBuf buffer) {
+    public static ByteBuf sendAndGetRaw(ChannelHandlerContext silentContext, ByteBufHarvester harvester, BufTransformer outputTransformer, ByteBuf buffer) {
         Channel channel = silentContext.channel();
         if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in an eventLoop");
 

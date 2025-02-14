@@ -11,7 +11,7 @@ public final class VerifiedCache {
     private static final Map<String, User> verifiedNamesTempCache;
 
     static {
-        Cache<String, User> cache = AlixCache.newBuilder().maximumSize(100).build();
+        Cache<String, User> cache = AlixCache.newBuilder().maximumSize(100).weakValues().build();
         verifiedNamesTempCache = cache.asMap();
     }
 

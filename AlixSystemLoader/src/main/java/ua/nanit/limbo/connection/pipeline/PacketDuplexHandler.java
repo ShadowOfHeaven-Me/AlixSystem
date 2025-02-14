@@ -4,10 +4,13 @@ import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import io.netty.util.ReferenceCountUtil;
 import lombok.SneakyThrows;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
+import ua.nanit.limbo.connection.pipeline.flush.FlushBatcher;
 import ua.nanit.limbo.protocol.*;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -23,15 +26,17 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     //private final FastCodecList codecList;
     private final Channel channel;
     private final LimboServer server;
+    private final ClientConnection connection;
+    private final FlushBatcher flushBatcher;
     private CompressionHandler compression;
     private State.PacketRegistry encoderMappings, decoderMappings;
     private Version version;
-    private ClientConnection connection;
 
-    public PacketDuplexHandler(Channel channel, LimboServer server) {
+    public PacketDuplexHandler(Channel channel, LimboServer server, ClientConnection connection) {
         this.channel = channel;
         this.server = server;
-        //this.codecList = FastCodecList.createNew();
+        this.connection = connection;
+        this.flushBatcher = FlushBatcher.implFor(channel);
         updateVersion(Version.getMin());
         updateState(State.HANDSHAKING);
     }
@@ -51,12 +56,18 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         if (packet == null) return;
 
         //Log.error("LIMBO IN: " + packet);
-        packet.handle(this.connection, this.server);
+        this.flushBatcher.readBegin();
+        try {
+            packet.handle(this.connection, this.server);
+        } finally {
+            this.flushBatcher.readComplete();
+        }
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         Log.error("[BLOCKED] SERVER TRIED SENDING: " + msg);
+        ReferenceCountUtil.release(msg);
         /*super.write(ctx, msg, promise);
         //Log.error("[BLOCKED] SERVER TRIED SENDING: " + msg);
         Packet packet = (Packet) msg;
@@ -95,13 +106,17 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     //Compression - start
 
     public void tryEnableCompression() {
-        //compression didn't exist before 1.8
-        if (COMPRESSION_ENABLED && this.version.moreOrEqual(Version.V1_8)) this.enableCompression();
+        this.tryEnableCompression(true);
     }
 
-    private void enableCompression() {
+    public void tryEnableCompression(boolean sendPacket) {
+        //compression didn't exist before 1.8
+        if (COMPRESSION_ENABLED && this.version.moreOrEqual(Version.V1_8)) this.enableCompression(sendPacket);
+    }
+
+    private void enableCompression(boolean sendPacket) {
         //both of these need to be invoked on the eventLoop
-        this.writeAndFlush(PacketSnapshots.SET_COMPRESSION);
+        if (sendPacket) this.writeAndFlush(PacketSnapshots.SET_COMPRESSION);
         this.compression = CompressionHandler.getHandler(this.channel);
     }
 
@@ -126,9 +141,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     public void flush() {
-        //this.assertEventLoop();
-        if (!this.channel.isActive()) return;
-        this.channel.unsafe().flush();
+        this.flushBatcher.flush();
     }
 
     public void writeAndFlush(PacketOut packet) {
@@ -160,7 +173,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     @AlixIntrinsified(method = "ChannelOutboundInvoker::write")
     public ChannelPromise write(PacketOut packet, ChannelPromise promise) {
         if (!this.channel.isActive()) return promise;
-        //Log.error("LIMBO OUT: " + packet);
+        if (NanoLimbo.debugPackets) Log.error("LIMBO OUT: " + packet);
         this.assertEventLoop();
 
         ByteBuf buf;
@@ -176,6 +189,15 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         return promise;
     }
 
+    public static ChannelPromise write0(Channel channel, PacketSnapshot packet, Version version, ChannelPromise promise) {
+        ByteBuf buf = packet.getEncoded(version);
+        ChannelOutboundBuffer outboundBuffer = channel.unsafe().outboundBuffer();
+
+        if (outboundBuffer != null) outboundBuffer.addMessage(buf, buf.readableBytes(), promise);
+        else buf.release();
+        return promise;
+    }
+
     public void updateVersion(Version version) {
         this.version = version;
     }
@@ -187,10 +209,6 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     public void updateEncoderState(State state) {
         this.encoderMappings = state.clientBound.getRegistry(version);
-    }
-
-    public void setClientConnection(ClientConnection connection) {
-        this.connection = connection;
     }
 
     public CompressionHandler compressionHandler() {

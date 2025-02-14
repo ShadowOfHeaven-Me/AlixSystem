@@ -3,7 +3,7 @@ package shadow.utils.objects.savable.data.gui.virtual;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import io.netty.channel.ChannelHandlerContext;
 import net.kyori.adventure.text.Component;
-import shadow.utils.misc.packet.constructors.AlixInventoryType;
+import alix.common.packets.inventory.AlixInventoryType;
 
 public final class EmptyVirtualInventory extends VirtualInventory {
 

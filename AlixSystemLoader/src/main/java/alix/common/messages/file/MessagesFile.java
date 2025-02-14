@@ -22,8 +22,10 @@ public final class MessagesFile extends AlixFileManager {
         //String r = line.replaceAll("\"", "");//no need, as it isn't a Yaml file anymore
         try {
             String[] a = line.split(": ", 2);
+
             String message = AlixFormatter.translateColors(a[1]); //outdated explanation - AlixFormatter instead of AlixUtils because of class initialization issues
             map.put(a[0], removeFrontSpace(message));
+
         } catch (Exception e) {
             throw new RuntimeException("An error was caught whilst initializing messages on line: " + line, e);
         }
@@ -50,7 +52,7 @@ public final class MessagesFile extends AlixFileManager {
 /*        String lang = JavaUtils.pluginLanguage.getShortcut();
         File f2 = FileManager.getPluginFile("messages_" + lang + ".txt");
         if (f2.exists()) return f2;*/
-        //Main.debug("Unable to find this plugin's messages.txt file. Generating a new one.");
+        //Main.debug("Unable to find this plugin's messages.yml file. Generating a new one.");
         return AlixFileManager.createPluginFile(name, FileType.CONFIG);
     }
 }

@@ -112,6 +112,7 @@ public final class AlixFormatter {
 
     @AlixIntrinsified(method = "ChatColor.translateAlternateColorCodes")
     public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
+        if (text == null) return null;
         char[] c = text.toCharArray();
         int lM1 = c.length - 1;
         for (int i = 0; i < lM1; i++)

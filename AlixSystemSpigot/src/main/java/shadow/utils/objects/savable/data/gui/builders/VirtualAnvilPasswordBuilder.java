@@ -6,7 +6,7 @@ import shadow.systems.commands.CommandManager;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.buffered.AnvilPacketSuppliers;
-import shadow.utils.misc.packet.constructors.AlixInventoryType;
+import alix.common.packets.inventory.AlixInventoryType;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.bases.AnvilBuilderBase;

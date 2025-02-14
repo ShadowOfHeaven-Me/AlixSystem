@@ -1,7 +1,7 @@
 package ua.nanit.limbo.connection.captcha.held;
 
 import ua.nanit.limbo.protocol.PacketSnapshot;
-import ua.nanit.limbo.protocol.packets.play.slot.PacketPlayOutHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayOutHeldSlot;
 
 public final class HeldItemSlots {
 

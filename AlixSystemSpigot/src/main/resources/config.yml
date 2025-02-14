@@ -35,6 +35,8 @@ validate-name: true
 
 #Config used when the player is completing the captcha verification (before he's given the ability to register his account)
 
+#Defines whether any manual captcha should be replaced with automatic bot checks done on an extremely optimized limbo 'server' (not actually a server, it just pretends to be one). Only takes effect if 'captcha' is set to true.
+virtual-limbo-server: true
 #Defines whether an unregistered player should be required to complete a captcha before registering (works as a safety measure against bot attacks, offline mode only)
 captcha: true
 #Defines the visual representation type of the captcha that will be shown to the tested player. Available:
@@ -49,7 +51,7 @@ captcha-visual-type: smooth
 #text - The captcha is a five letter text (referring to the default captcha length of 5)
 captcha-type: text
 #Defines the range (in ASCII) of possible symbols in the text captcha (will not work for non-literal chars & ranges greater than the total of 32767)
-#Any arguments after ";e=" symbolize singular characters excluded from the ranges. 'M' & 'W' are always excluded, as they're too big.
+#Any arguments after ";e=" symbolize singular characters excluded from the ranges. 'M' & 'W' are always excluded, as they're too wide.
 captcha-text-chars-range: a-z, A-Z, 1-9 ;e= I, l, O
 #Defines the font used for character rendering in a drawable captcha
 captcha-font: Arial
@@ -78,6 +80,8 @@ max-captcha-time: 45
 # title - A title paired with a subtitle will be used
 # action_bar - An action bar message will be used
 verification-reminder-type: title
+#Defines whether premium players should be given their equivalent mojang-assigned uuid (their data will persist between name changes)
+premium-uuid: false
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)
 verification-blindness: false
 #Defines whether the registering user should have to repeat the password he's trying to set whilst registering
@@ -124,11 +128,15 @@ require-ownership-of-premium-nickname: unregistered_and_suggested
 #Defines whether clients using a version before 1.19 and a premium nicknames should be assumed to be premium
 # When true:
 # Premium pre-1.19 clients will be automatically logged in/registered, but cracked clients within that version range
-# won't be able to join with nicknames of premium players (If cracked clients wish to join on pre-1.19, the best solution would be to change their nickname to "-<name>", removing the last character if it's over 16 characters long
+# might not be able to join with nicknames of premium players (depends on if the client disconnects by itself, the premium status will be assumed by the parameter below this one)
 # When false:
 # Premium pre-1.19 clients will need to manually log in/register, but cracked clients within that version range will be
-# able to join with nicknames of premium players
+# able to join with nicknames of premium players without the risk of disconnecting
 require-premium-when-no-suggestion: true
+#Defines whether, if the joining user is unregistered and joining with a nickname of a premium player,
+# and the client does not disconnect by itself, but fails at authorization, he should be assumed to be a non-premium
+# player of that nickname (will disallow the actual owner of the premium account from joining)
+assume-non-premium-if-auth-failed: true
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
 #An example would be
@@ -194,9 +202,9 @@ use-this-syntax: false
 #Config used for the overall set-up
 
 #(Deprecated)
-#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.txt file)
+#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.yml file)
 language: en
-#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
+#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.yml file)
 custom-join-log: true
 #Defines which fallback location should be used if for some unknown reason, the player is destined to respawn in the verification world
 # true - The last saved location will be used or the Alix spawn (defined by /setspawn) if it's absent as well

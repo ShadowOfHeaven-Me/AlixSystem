@@ -5,8 +5,10 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/AlixAPI/AlixSystem.AlixAPI.main.iml" filepath="$PROJECT_DIR$/.idea/modules/AlixAPI/AlixSystem.AlixAPI.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/AlixSystemLoader/AlixSystem.AlixSystemLoader.main.iml" filepath="$PROJECT_DIR$/.idea/modules/AlixSystemLoader/AlixSystem.AlixSystemLoader.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/AlixSystemSpigot/AlixSystem.AlixSystemSpigot.main.iml" filepath="$PROJECT_DIR$/.idea/modules/AlixSystemSpigot/AlixSystem.AlixSystemSpigot.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/AlixSystemVelocitySupport/AlixSystem.AlixSystemVelocitySupport.main.iml" filepath="$PROJECT_DIR$/.idea/modules/AlixSystemVelocitySupport/AlixSystem.AlixSystemVelocitySupport.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/AlixSystemVelocitySupport/AlixSystem.AlixSystemVelocitySupport.test.iml" filepath="$PROJECT_DIR$/.idea/modules/AlixSystemVelocitySupport/AlixSystem.AlixSystemVelocitySupport.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-2038586088/AlixSystem.Velocity.main.iml" filepath="$PROJECT_DIR$/.idea/modules/-2038586088/AlixSystem.Velocity.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/AlixSystemBungeeSupport/AlixSystemBungeeSupport.iml" filepath="$PROJECT_DIR$/AlixSystemBungeeSupport/AlixSystemBungeeSupport.iml" />
-      <module fileurl="file://$PROJECT_DIR$/AlixSystemVelocitySupport/AlixSystemVelocitySupport.iml" filepath="$PROJECT_DIR$/AlixSystemVelocitySupport/AlixSystemVelocitySupport.iml" />
     </modules>
   </component>
 </project>

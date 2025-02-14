@@ -17,18 +17,24 @@
 
 package ua.nanit.limbo.connection;
 
+import alix.common.data.file.UserFileManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import ua.nanit.limbo.connection.captcha.CaptchaState;
+import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.handlers.DummyHandler;
+import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
+
+import java.util.function.Consumer;
 
 public final class ClientChannelInitializer {
 
-    private static final String
+    public static final String
             duplexHandlerName = "--duplex_handler",
             frameDecoderName = "--frame_decoder";
     private final LimboServer server;
@@ -39,21 +45,50 @@ public final class ClientChannelInitializer {
         //this.channelInitImpl = new ChannelInitImpl(silentServerContext);
     }
 
-    public void initChannel(Channel channel) {
+    public void initAfterLoginSuccess(Channel channel, Version clientVersion, String name, Consumer<ClientConnection> authAction) {
         ChannelPipeline pipeline = channel.pipeline();
 
-        PacketDuplexHandler duplexHandler = new PacketDuplexHandler(channel, this.server);
-        VarIntFrameDecoder frameDecoder = new VarIntFrameDecoder();
-        //PacketDecoder decoder = new PacketDecoder();
-        //PacketEncoder encoder = new PacketEncoder();
+        ClientConnection connection = this.server.getIntegration().newConnection(channel, server, LoginState::new);
 
-        ClientConnection connection = this.server.getIntegration().newConnection(channel, server, duplexHandler, frameDecoder);
-        duplexHandler.setClientConnection(connection);
+        connection.updateVersion(clientVersion);
+        connection.getGameProfile().setUsername(name);
+        connection.getVerifyState().setData(UserFileManager.get(name), authAction);
+
+        PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
+        VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
 
         pipeline.addFirst(duplexHandlerName, duplexHandler);
         pipeline.addFirst(frameDecoderName, frameDecoder);
 
+        Runnable r = () -> {
+            frameDecoder.stopResendCollection();
+            duplexHandler.tryEnableCompression(false);
 
+            //todo: add HAProxyMessageDecoder support
+
+            //AlixCommonMain.logError("sex: " + pipeline.names());
+
+            if (connection.hasConfigPhase()) connection.onLoginAcknowledgedReceived();
+            else connection.spawnPlayer();
+        };
+
+        var eventLoop = channel.eventLoop();
+        if (!eventLoop.inEventLoop()) eventLoop.execute(r);
+        else r.run();
+    }
+
+    public void initChannel(Channel channel) {
+        ChannelPipeline pipeline = channel.pipeline();
+
+        ClientConnection connection = this.server.getIntegration().newConnection(channel, server, CaptchaState::new);
+        PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
+        VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
+
+        pipeline.addFirst(duplexHandlerName, duplexHandler);
+        pipeline.addFirst(frameDecoderName, frameDecoder);
+
+        //PacketDecoder decoder = new PacketDecoder();
+        //PacketEncoder encoder = new PacketEncoder();
         //this.channelInitImpl.initialChannelRegister(channel);
 
         //pipeline.addLast("timeout", new ReadTimeoutHandler(server.getConfig().getReadTimeout(), TimeUnit.MILLISECONDS));
@@ -71,6 +106,12 @@ public final class ClientChannelInitializer {
         //pipeline.addLast("decoder", decoder);
         //pipeline.addLast("encoder", encoder);
         //pipeline.addLast("handler", connection);
+    }
+    public void uninjectHandlers(ClientConnection connection) {
+        Channel channel = connection.getChannel();
+        ChannelPipeline pipeline = channel.pipeline();
+        pipeline.remove(duplexHandlerName);
+        pipeline.remove(frameDecoderName);
     }
 
     public void uninject(ClientConnection connection, Runnable resendAction) {
@@ -91,8 +132,7 @@ public final class ClientChannelInitializer {
         if (replacedFCH)
             pipeline.replace("FlushConsolidationHandler#0", "--FlushConsolidationHandler#0", DummyHandler.HANDLER);
 
-        pipeline.remove(duplexHandlerName);
-        pipeline.remove(frameDecoderName);
+        this.uninjectHandlers(connection);
 
         //Log.error("IN EVENT LOOP " + connection.getChannel().eventLoop().inEventLoop());
 

@@ -284,10 +284,14 @@ public final class AlixUtils {
     }
 
     public static String getFields(Object o) {
+        return getFields(o, o.getClass());
+    }
+
+    public static String getFields(Object o, Class<?> clazz) {
         StringBuilder sb = new StringBuilder();
-        Class<?> c = o.getClass();
         do {
-            for (Field f : c.getDeclaredFields()) {
+            if (clazz == null) break;
+            for (Field f : clazz.getDeclaredFields()) {
                 if (Modifier.isStatic(f.getModifiers())) continue;
                 f.setAccessible(true);
                 try {
@@ -297,7 +301,7 @@ public final class AlixUtils {
                     throw new RuntimeException(e);
                 }
             }
-        } while ((c = c.getSuperclass()) != Object.class);
+        } while ((clazz = clazz.getSuperclass()) != Object.class);
         return sb.toString();
     }
 
@@ -1302,7 +1306,7 @@ public final class AlixUtils {
     }
 
     public static <T> void debug(T[] message) {
-        debug(message, T::toString, '\n');
+        debug(message, T::toString);
     }
 
     public static void debugFields(Object obj) {
