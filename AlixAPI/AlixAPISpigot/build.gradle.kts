@@ -1,10 +1,16 @@
 plugins {
     id("java")
     id("com.gradleup.shadow") version "8.3.2"
+    `maven-publish`
 }
 
 group = "AlixSystem"
 version = "1.0.0"
+
+tasks.build {
+    actions.clear()
+    dependsOn(tasks.shadowJar)
+}
 
 tasks.shadowJar {
     archiveClassifier.set("")
@@ -17,6 +23,17 @@ repositories {
     //packetevents
     maven("https://repo.codemc.io/repository/maven-releases/")
     maven("https://repo.codemc.io/repository/maven-snapshots/")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            from(components["java"])
+            groupId = "com.github.ShadowOfHeaven-Me"
+            artifactId = "AlixSystem"
+            version = project.version as String
+        }
+    }
 }
 
 dependencies {

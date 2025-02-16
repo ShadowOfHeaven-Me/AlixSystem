@@ -3,7 +3,7 @@ package shadow.utils.misc.packets;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.channel.Channel;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.packets.play.PacketChatMessage;
+import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 
@@ -37,6 +37,6 @@ public final class CachingGroupPacket {
     }
 
     public static CachingGroupPacket ofChatMessage(String message) {
-        return new CachingGroupPacket(PacketChatMessage.withMessage(message), State.PLAY);
+        return new CachingGroupPacket(PacketPlayOutMessage.withMessage(message), State.PLAY);
     }
 }

@@ -80,18 +80,7 @@ public final class PasswordGui {
     public static final int[] EMPTY_DIGIT_SLOTS = new int[]{13, 14, 15, 16};
     public static final int FIRST_EMPTY_DIGIT_SLOT = EMPTY_DIGIT_SLOTS[0];
     public static final int[] PIN_DIGIT_SLOTS = new int[]{28, 0, 1, 2, 9, 10, 11, 18, 19, 20};
-    //public static final Map<Integer, Byte>
-    public static final int //slots, an array in the future maybe? - Yes.
-/*          DIGIT_0 = 28,
-            DIGIT_1 = 0,
-            DIGIT_2 = 1,
-            DIGIT_3 = 2,
-            DIGIT_4 = 9,
-            DIGIT_5 = 10,
-            DIGIT_6 = 11,
-            DIGIT_7 = 18,
-            DIGIT_8 = 19,
-            DIGIT_9 = 20,*/
+    public static final int
             ACTION_PIN_CONFIRM = 22,
             ACTION_LAST_REMOVE = 23,
             ACTION_RESET = 24,

@@ -304,7 +304,7 @@ public enum State {
                     map(0x40, V1_20_5, V1_21),
                     map(0x42, V1_21_2, V1_21_4)
             );
-            clientBound.register(PacketChatMessage::new,
+            clientBound.register(PacketPlayOutMessage::new,
                     map(0x02, V1_7_6, V1_8),
                     map(0x0F, V1_9, V1_12_2),
                     map(0x0E, V1_13, V1_14_4),

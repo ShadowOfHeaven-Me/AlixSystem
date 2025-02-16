@@ -44,10 +44,7 @@ import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -70,16 +67,16 @@ public class ClientConnection {
     private PacketHandshake handshakePacket;
 
     //NanoLimbo
+    private final InetSocketAddress address;
     private State state;
     private Version clientVersion;
-    private InetSocketAddress address;
 
     public ClientConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
         this.server = server;
         this.channel = channel;
         this.duplexHandler = new PacketDuplexHandler(channel, this.server, this);
         this.frameDecoder = new VarIntFrameDecoder();
-        this.address = (InetSocketAddress) channel.unsafe().remoteAddress();
+        this.address = (InetSocketAddress) channel.remoteAddress();
         this.gameProfile = new GameProfile();
         this.verifyState = state.apply(this);
     }
@@ -186,13 +183,13 @@ public class ClientConnection {
         return duplexHandler;
     }
 
-    private UUID nameDerivedUUID;
+    /*private UUID nameDerivedUUID;
 
     public UUID getNamedDerivedUUID() {
         if (this.nameDerivedUUID == null)
             this.nameDerivedUUID = UUID.nameUUIDFromBytes(("OfflinePlayer:" + this.getUsername()).getBytes(StandardCharsets.UTF_8));
         return this.nameDerivedUUID;
-    }
+    }*/
 
     /*public UUID getUuid() {
         return gameProfile.getUuid();
@@ -202,7 +199,7 @@ public class ClientConnection {
         return gameProfile.getUsername();
     }
 
-    public SocketAddress getAddress() {
+    public InetSocketAddress getAddress() {
         return address;
     }
 

@@ -1,11 +1,15 @@
 package ua.nanit.limbo.connection.pipeline.flush;
 
 import io.netty.channel.Channel;
+import io.netty.util.concurrent.ScheduledFuture;
+
+import java.util.concurrent.TimeUnit;
 
 final class FlushBatcherImpl implements FlushBatcher {
 
     private final Channel channel;
     private boolean pendingFlush, isInRead;
+    private ScheduledFuture<?> flushTask;
 
     FlushBatcherImpl(Channel channel) {
         this.channel = channel;
@@ -13,6 +17,12 @@ final class FlushBatcherImpl implements FlushBatcher {
 
     private void flush0() {
         FlushBatcher.flush0(this.channel);
+        this.flushTask = null;
+    }
+
+    private void tryFlush() {
+        if (this.flushTask != null) return;
+        this.flushTask = this.channel.eventLoop().schedule(this::flush0, 10, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -25,13 +35,13 @@ final class FlushBatcherImpl implements FlushBatcher {
         this.isInRead = false;
         if (!this.pendingFlush) return;
 
-        this.flush0();
+        this.tryFlush();
         this.pendingFlush = false;
     }
 
     @Override
     public void flush() {
         if (this.isInRead) this.pendingFlush = true;
-        else this.flush0();
+        else this.tryFlush();
     }
 }

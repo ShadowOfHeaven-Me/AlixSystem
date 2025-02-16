@@ -49,10 +49,10 @@ public class LimboAuthBuilder implements LimboGUI {
         return new String(a);
     }
 
-
+    public static final ItemStack BACKGROUND_ITEM = of(ItemTypes.GRAY_STAINED_GLASS_PANE, "§f");
+    public static final ItemStack BARRIER = of(ItemTypes.BARRIER, "§f");
     private static final VirtualItem[] ITEMS;
     private static final PacketSnapshot invItems, invItemsNoLeave;
-
 
     private static final int LEAVE_BUTTON_INDEX = 33;
     private final String hexSecretKey;
@@ -60,11 +60,17 @@ public class LimboAuthBuilder implements LimboGUI {
     private final Consumer<Boolean> onConfirm;
     private final boolean includeLeaveButton;
 
-    private static final PacketSnapshot pinLeaveFeedbackKickPacket = PacketPlayOutDisconnect.snapshot("§7Left.");
+    public static final ItemStack[] DIGITS;
+    public static final PacketSnapshot pinLeaveFeedbackKickPacket = PacketPlayOutDisconnect.snapshot("§7Left.");
 
     static {
+        DIGITS = new ItemStack[10];
+        for (byte i = 0; i < 10; i++) {
+            DIGITS[i] = itemOfDigit(i);
+        }
+
         ITEMS = new VirtualItem[36];
-        VirtualItem BACKGROUND = new VirtualItem(ItemTypes.GRAY_STAINED_GLASS_PANE);
+        VirtualItem BACKGROUND = new VirtualItem(BACKGROUND_ITEM);
         Arrays.fill(ITEMS, BACKGROUND);
 
         for (byte digit = 0; digit <= 9; digit++) {
@@ -88,7 +94,7 @@ public class LimboAuthBuilder implements LimboGUI {
         invItemsNoLeave = new PacketPlayOutInventoryItems(newListOfItems(false)).toSnapshot();
     }
 
-    private static VirtualItem ofDigit(byte digit) {
+    private static ItemStack itemOfDigit(byte digit) {
         String encoding = SkullTextures.encodeSkullProperty(digit, SkullTextureType.WOODEN_SKULL);
 
         ItemStack item = ItemStack.builder().type(ItemTypes.PLAYER_HEAD)
@@ -96,7 +102,18 @@ public class LimboAuthBuilder implements LimboGUI {
                         Arrays.asList(new ItemProfile.Property("textures", encoding, null))))
                 .component(ComponentTypes.CUSTOM_NAME, Component.text("§e" + digit))
                 .build();
-        return new VirtualItem(item, builder -> builder.appendDigit(digit));
+
+        return item;
+    }
+
+    public static ItemStack of(ItemType type, String name) {
+        return ItemStack.builder().type(type)
+                .component(ComponentTypes.CUSTOM_NAME, Component.text(name))
+                .build();
+    }
+
+    private static VirtualItem ofDigit(byte digit) {
+        return new VirtualItem(DIGITS[digit], builder -> builder.appendDigit(digit));
     }
 
     private void onConfirm() {
@@ -150,7 +167,7 @@ public class LimboAuthBuilder implements LimboGUI {
         String title = START_TEXT + this.digits + EMPTY_SLOTS_TEXTS[index];
         var invOpen = InventoryWrapper.createInvOpen(AlixInventoryType.GENERIC_9X4, Component.text(title), this.connection.getClientVersion().getRetrooperVersion().toClientVersion());
 
-        this.duplexHandler.writeAndFlush(new PacketPlayOutInventoryOpen(invOpen));
+        this.duplexHandler.writeAndFlush(new PacketPlayOutInventoryOpen(invOpen, AlixInventoryType.GENERIC_9X4));
     }
 
     private static int slotOfDigit(byte digit) {
@@ -192,6 +209,10 @@ public class LimboAuthBuilder implements LimboGUI {
         return items;
     }
 
+    private static final PacketSnapshot openInvPacket =
+            PacketPlayOutInventoryOpen.snapshot(
+                    AlixInventoryType.GENERIC_9X4,
+                    START_TEXT + "______");
     private final ClientConnection connection;
     private final PacketDuplexHandler duplexHandler;
     private final PacketSnapshot allItems;
@@ -207,14 +228,7 @@ public class LimboAuthBuilder implements LimboGUI {
 
     @Override
     public void show() {
-        var openInv = new PacketPlayOutInventoryOpen(
-                InventoryWrapper.createInvOpen(
-                        AlixInventoryType.GENERIC_9X4,
-                        Component.text(START_TEXT + "______"),
-                        this.connection.getRetrooperClientVersion())
-        );
-
-        this.duplexHandler.write(openInv);
+        this.duplexHandler.write(openInvPacket);
         this.spoofAllItems();
     }
 

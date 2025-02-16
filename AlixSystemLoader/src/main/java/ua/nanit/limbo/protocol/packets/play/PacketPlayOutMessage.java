@@ -20,27 +20,32 @@ package ua.nanit.limbo.protocol.packets.play;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.NbtMessage;
 import ua.nanit.limbo.protocol.PacketOut;
+import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.util.NbtMessageUtil;
 
 import java.util.UUID;
 
-public final class PacketChatMessage implements PacketOut {
+public final class PacketPlayOutMessage implements PacketOut {
 
     private static final UUID sender = new UUID(53, 35);
     private PositionLegacy position;
     private NbtMessage message;
 
-    public static PacketChatMessage withMessage(String message) {
-        return new PacketChatMessage().setMessage(NbtMessageUtil.fromLiteral(message)).setPosition(PositionLegacy.SYSTEM_MESSAGE);
+    public static PacketSnapshot snapshot(String message) {
+        return withMessage(message).toSnapshot();
     }
 
-    public PacketChatMessage setMessage(NbtMessage message) {
+    public static PacketPlayOutMessage withMessage(String message) {
+        return new PacketPlayOutMessage().setMessage(NbtMessageUtil.fromLiteral(message)).setPosition(PositionLegacy.SYSTEM_MESSAGE);
+    }
+
+    public PacketPlayOutMessage setMessage(NbtMessage message) {
         this.message = message;
         return this;
     }
 
-    public PacketChatMessage setPosition(PositionLegacy position) {
+    public PacketPlayOutMessage setPosition(PositionLegacy position) {
         this.position = position;
         return this;
     }

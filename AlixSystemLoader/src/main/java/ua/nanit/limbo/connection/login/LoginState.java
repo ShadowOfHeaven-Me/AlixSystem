@@ -1,18 +1,17 @@
 package ua.nanit.limbo.connection.login;
 
 import alix.common.data.PersistentUserData;
-import alix.common.utils.other.keys.secret.MapSecretKey;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.commands.LimboCommand;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.connection.captcha.KeepAlives;
-import ua.nanit.limbo.connection.login.gui.LimboAuthBuilder;
 import ua.nanit.limbo.connection.login.gui.LimboGUI;
+import ua.nanit.limbo.connection.login.gui.LimboPinBuilder;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.PacketSnapshots;
-import ua.nanit.limbo.protocol.packets.play.PacketChatMessage;
+import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
 import ua.nanit.limbo.protocol.packets.play.PacketPlayerPositionAndLook;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInClickSlot;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInInventoryClose;
@@ -35,8 +34,11 @@ public final class LoginState implements VerifyState {
         this.connection = connection;
         this.duplexHandler = connection.getDuplexHandler();
     }
+    public void tryLogIn() {
+        this.logIn();
+    }
 
-    private void logIn() {
+    public void logIn() {
         if (this.authAction == null) throw new AlixException("authAction is null! Report this immediately!");
 
         this.connection.removeLimboHandlers();
@@ -46,12 +48,14 @@ public final class LoginState implements VerifyState {
     @Override
     public void setData(PersistentUserData data, Consumer<ClientConnection> authAction) {
         this.authAction = authAction;
-        this.gui = new LimboAuthBuilder(this.connection, MapSecretKey.fromName(this.connection.getUsername()), correct -> {
+        this.gui = new LimboPinBuilder(this.connection, data, this);
+
+        /*this.gui = new LimboAuthBuilder(this.connection, MapSecretKey.fromName(this.connection.getUsername()), correct -> {
             if (correct) {
                 this.logIn();
                 return;
             }
-        }, true);
+        }, true);*/
     }
 
     //private static final float INITIAL_YAW = 8.59e+8f;
@@ -65,6 +69,7 @@ public final class LoginState implements VerifyState {
 
         if (this.gui != null) this.gui.show();
         else this.duplexHandler.flush();
+
         Log.error("LOGIN SENT");
     }
 
@@ -99,7 +104,7 @@ public final class LoginState implements VerifyState {
 
             var msg = "Yaw: " + yaw + " deltaYaw: " + deltaYaw;
             Log.error(msg);
-            this.writeAndFlush(PacketChatMessage.withMessage("§c" + msg));
+            this.writeAndFlush(PacketPlayOutMessage.withMessage("§c" + msg));
 
             this.lastYaw = yaw;
         }

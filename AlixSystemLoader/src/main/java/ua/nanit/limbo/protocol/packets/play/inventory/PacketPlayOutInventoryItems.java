@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
+import java.util.Arrays;
 import java.util.List;
 
 public final class PacketPlayOutInventoryItems extends OutRetrooperPacket<WrapperPlayServerWindowItems> {
@@ -14,6 +15,10 @@ public final class PacketPlayOutInventoryItems extends OutRetrooperPacket<Wrappe
 
     public PacketPlayOutInventoryItems(WrapperPlayServerWindowItems wrapper) {
         super(wrapper);
+    }
+
+    public PacketPlayOutInventoryItems(ItemStack[] items) {
+        this(Arrays.asList(items));
     }
 
     public PacketPlayOutInventoryItems(List<ItemStack> itemStacks) {

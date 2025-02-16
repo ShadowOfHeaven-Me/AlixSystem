@@ -194,9 +194,9 @@ public final class PacketSnapshots {
         }
 
         if (server.getConfig().isUseJoinMessage()) {
-            PacketChatMessage joinMessage = new PacketChatMessage();
+            PacketPlayOutMessage joinMessage = new PacketPlayOutMessage();
             joinMessage.setMessage(NbtMessageUtil.create(server.getConfig().getJoinMessage()));
-            joinMessage.setPosition(PacketChatMessage.PositionLegacy.SYSTEM_MESSAGE);
+            joinMessage.setPosition(PacketPlayOutMessage.PositionLegacy.SYSTEM_MESSAGE);
             PACKET_JOIN_MESSAGE = PacketSnapshot.of(joinMessage);
         } else {
             PACKET_JOIN_MESSAGE = null;

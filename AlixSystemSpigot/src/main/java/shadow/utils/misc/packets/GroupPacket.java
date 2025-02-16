@@ -4,7 +4,7 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.packets.play.PacketChatMessage;
+import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 
@@ -42,6 +42,6 @@ public final class GroupPacket {
     }
 
     public static GroupPacket ofChatMessage(String message) {
-        return new GroupPacket(PacketChatMessage.withMessage(message), State.PLAY);
+        return new GroupPacket(PacketPlayOutMessage.withMessage(message), State.PLAY);
     }
 }

@@ -439,7 +439,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     }
 
     private void logIn0() {
-        this.writeAndFlushConstSilently(loginSuccessMessagePacket);//invoked here, since the this::initDoubleVer can prevent this method from being invoked
+        this.writeConstSilently(loginSuccessMessagePacket);//invoked here, since the this::initDoubleVer can prevent this method from being invoked
         //this.data.updateLastSuccessfulLoginTime();
         VerifiedUser verifiedUser = UserManager.addVerifiedUser(player, data, this.getIPAddress(), retrooperUser, this.silentContext());//invoked before onSuccessfulVerification to remove UnverifiedUser from UserManager, to indicate that he's verified
         AlixEventInvoker.callOnAuth(AuthReason.MANUAL_LOGIN, verifiedUser, AlixEvent.ThreadSource.ASYNC);
