@@ -13,7 +13,6 @@
             <option value="$PROJECT_DIR$/AlixSystemLoader" />
             <option value="$PROJECT_DIR$/AlixSystemSpigot" />
             <option value="$PROJECT_DIR$/AlixSystemVelocitySupport" />
-            <option value="$PROJECT_DIR$/../Velocity" />
           </set>
         </option>
       </GradleProjectSettings>

@@ -18,7 +18,7 @@ public interface AlixCommonUser {
     }
 
     /**
-     * @return Whether this user is verified (aka. will not and currently isn't undergoing login/captcha)
+     * @return Whether this user is verified (aka. will not be and currently isn't undergoing login/captcha)
      **/
     boolean isVerified();
 }

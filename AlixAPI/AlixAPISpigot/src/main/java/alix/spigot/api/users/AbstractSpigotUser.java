@@ -15,7 +15,7 @@ public interface AbstractSpigotUser extends AlixCommonUser {
 
     @NotNull
     default String getName() {
-        return retrooperUser().getName();
+        return this.retrooperUser().getName();
     }
 
     /**

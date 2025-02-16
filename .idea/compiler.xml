@@ -116,6 +116,9 @@
       <module name="AlixSystem.src" target="17" />
       <module name="AlixSystem.src.main" target="17" />
       <module name="AlixSystem.src.test" target="17" />
+      <module name="AlixSystem.Velocity" target="17" />
+      <module name="AlixSystem.Velocity.main" target="17" />
+      <module name="AlixSystem.Velocity.test" target="17" />
       <module name="AlixSystemLoader" target="17" />
       <module name="AlixSystemLoader.AlixSystemSpigot.main" target="17" />
       <module name="AlixSystemLoader.AlixSystemSpigot.test" target="17" />
