@@ -131,8 +131,6 @@ public final class Main implements LoaderBootstrap {
         MethodProvider.init();
         IpAutoLoginGUI.init();
         AlixCommandManager.init();
-        //AlixScheduler.async(UserVirtualization::init);
-        //MappingHolder.CHAT_TYPE_119.type();
         Dependencies.initAdditional();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread

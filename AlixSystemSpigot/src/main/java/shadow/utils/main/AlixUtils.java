@@ -1,11 +1,9 @@
 package shadow.utils.main;
 
 import alix.common.data.LoginType;
-import alix.common.data.security.password.Password;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
-import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.i18n.HttpsHandler;
 import alix.common.utils.multiengine.ban.BukkitBanList;
@@ -68,11 +66,6 @@ public final class AlixUtils {
             requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
             anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService,
             requirePasswordRepeatInRegister;//renderFancyCaptchaDigits
-
-    private static final String
-            tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
-            tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
-            invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character-invalid");
 
     static {
         FileConfiguration config = Main.config;
@@ -375,13 +368,8 @@ public final class AlixUtils {
         return data != null ? data.getPasswordType() == PasswordType.PIN : fancyPasswordGui || defaultPasswordType == PasswordType.PIN;
     }*/
 
-    private static final String pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
-
     public static String getPasswordInvalidityReason(String password, LoginType type) {
-        if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin
-            return AlixUtils.isPIN(password) ? null : pinTypeInvalid;
-
-        return AlixUtils.getInvalidityReason(password, false);
+        return AlixCommonUtils.getPasswordInvalidityReason(password, type);
     }
 
     public static String formatMillis(long millis) {
@@ -594,31 +582,8 @@ public final class AlixUtils {
         }
     }
 
-    public static boolean isPIN(String password) {
-        if (password.length() != 4) return false;
-        char[] c = password.toCharArray();
-        for (char d : c)
-            if (d < 48 || d > 57) return false;
-        return true;
-    }
-
     public static String getInvalidityReason(String text, boolean canBeShort) {
-        int l = text.length();
-        if (l > Password.MAX_PASSWORD_LEN) return tooLongMessage;
-        if (!canBeShort && l < 5) return tooShortMessage;
-        char[] b = text.toCharArray();
-        for (char c : b) {
-            switch (c) {
-                case '*':
-                case ':':
-                case ';':
-                    return AlixFormatter.format(invalidCharacterMessage, c);
-                default:
-                    if (c < 35 || c > AlixFileManager.HIGHEST_CHAR || c > 90 && !Character.isLetter(c))
-                        return AlixFormatter.format(invalidCharacterMessage, c);
-            }
-        }
-        return null; //The given text is valid
+        return AlixCommonUtils.getInvalidityReason(text, canBeShort);
     }
 
 /*    public static boolean isPasswordInvalid(String text) {

@@ -46,7 +46,7 @@ public final class AnvilPacketSuppliers {
             if (len > gatheredLen) {
                 int charsAppended = len - gatheredLen;
                 char appended = input.charAt(len - 1);
-                if (appended == '*') return false;
+                if (appended == '*') return false;//breaks when the client inputs '*', but prevents a nasty back-and-forth packet updating fight
 
                 //single char append
                 if (charsAppended == 1) {

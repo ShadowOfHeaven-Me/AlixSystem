@@ -1,4 +1,4 @@
-package shadow.systems.login;
+package alix.common.login;
 
 import alix.common.data.security.password.Password;
 

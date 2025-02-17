@@ -12,6 +12,6 @@ import java.lang.annotation.Target;
  **/
 
 @Retention(RetentionPolicy.SOURCE)
-@Target({ElementType.FIELD, ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.LOCAL_VARIABLE, ElementType.FIELD, ElementType.TYPE, ElementType.METHOD})
 public @interface OptimizationCandidate {
 }

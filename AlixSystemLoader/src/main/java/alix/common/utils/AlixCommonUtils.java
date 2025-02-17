@@ -2,7 +2,11 @@ package alix.common.utils;
 
 import alix.common.AlixCommonMain;
 import alix.common.data.LoginType;
+import alix.common.data.security.password.Password;
+import alix.common.messages.Messages;
 import alix.common.utils.collections.RandomCharIterator;
+import alix.common.utils.file.AlixFileManager;
+import alix.common.utils.formatter.AlixFormatter;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -22,6 +26,11 @@ public final class AlixCommonUtils {
     //public static final Predicate FALSE_PREDICATE = e -> false;
     public static final Random random = new Random();
     public static final boolean isGraphicEnvironmentHeadless;
+    private static final String
+            tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
+            tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
+            invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character-invalid"),
+            pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
 
     static {
         boolean isGraphicEnvironmentHeadless0;
@@ -32,6 +41,40 @@ public final class AlixCommonUtils {
             isGraphicEnvironmentHeadless0 = true;
         }
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
+    }
+
+    public static String getPasswordInvalidityReason(String password, LoginType type) {
+        if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin
+            return isPIN(password) ? null : pinTypeInvalid;
+
+        return getInvalidityReason(password, false);
+    }
+
+    public static boolean isPIN(String password) {
+        if (password.length() != 4) return false;
+        char[] c = password.toCharArray();
+        for (char d : c)
+            if (d < 48 || d > 57) return false;
+        return true;
+    }
+
+    public static String getInvalidityReason(String text, boolean canBeShort) {
+        int l = text.length();
+        if (l > Password.MAX_PASSWORD_LEN) return tooLongMessage;
+        if (!canBeShort && l < 5) return tooShortMessage;
+        char[] b = text.toCharArray();
+        for (char c : b) {
+            switch (c) {
+                case '*':
+                case ':':
+                case ';':
+                    return AlixFormatter.format(invalidCharacterMessage, c);
+                default:
+                    if (c < 35 || c > AlixFileManager.HIGHEST_CHAR || c > 90 && !Character.isLetter(c))
+                        return AlixFormatter.format(invalidCharacterMessage, c);
+            }
+        }
+        return null; //The given text is valid
     }
 
     public static boolean isValidClass(String clazzPath) {
@@ -83,14 +126,14 @@ public final class AlixCommonUtils {
     public static Integer[] toObject(int... a) {
         int l = a.length;
         Integer[] b = new Integer[l];
-        for(int c = 0; c < l; c++) b[c] = a[c];
+        for (int c = 0; c < l; c++) b[c] = a[c];
         return b;
     }
 
     public static int[] toPrimitive(Integer... a) {
         int l = a.length;
         int[] b = new int[l];
-        for(int c = 0; c < l; c++) b[c] = a[c];
+        for (int c = 0; c < l; c++) b[c] = a[c];
         return b;
     }
 

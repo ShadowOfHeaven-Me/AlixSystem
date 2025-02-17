@@ -8,4 +8,7 @@ public interface LimboGUI {
 
     void show();
 
+    default boolean isAnvil() {
+        return this instanceof LimboAnvilBuilder;
+    }
 }

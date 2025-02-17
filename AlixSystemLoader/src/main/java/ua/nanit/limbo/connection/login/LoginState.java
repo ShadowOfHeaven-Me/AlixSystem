@@ -1,6 +1,7 @@
 package ua.nanit.limbo.connection.login;
 
 import alix.common.data.PersistentUserData;
+import alix.common.data.security.password.Password;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.commands.LimboCommand;
 import ua.nanit.limbo.connection.ClientConnection;
@@ -29,11 +30,21 @@ public final class LoginState implements VerifyState {
     private final PacketDuplexHandler duplexHandler;
     private LimboGUI gui;
     private Consumer<ClientConnection> authAction;
+    private PersistentUserData data;
 
     public LoginState(ClientConnection connection) {
         this.connection = connection;
         this.duplexHandler = connection.getDuplexHandler();
     }
+
+    public void register(String password) {
+        if (data != null) data.setPassword(password);
+        else PersistentUserData.createDefault(this.connection.getUsername(),
+                this.connection.getAddress().getAddress(), Password.fromUnhashed(password));
+
+        this.logIn();
+    }
+
     public void tryLogIn() {
         this.logIn();
     }
@@ -45,8 +56,13 @@ public final class LoginState implements VerifyState {
         this.authAction.accept(this.connection);
     }
 
+    public boolean isPasswordCorrect(String password) {
+        return false;
+    }
+
     @Override
     public void setData(PersistentUserData data, Consumer<ClientConnection> authAction) {
+        this.data = data;
         this.authAction = authAction;
         this.gui = new LimboPinBuilder(this.connection, data, this);
 

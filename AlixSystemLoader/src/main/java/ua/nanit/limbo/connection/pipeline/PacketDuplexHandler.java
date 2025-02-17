@@ -28,6 +28,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private final LimboServer server;
     private final ClientConnection connection;
     private final FlushBatcher flushBatcher;
+    private final ChannelPromise voidPromise;
     private CompressionHandler compression;
     private State.PacketRegistry encoderMappings, decoderMappings;
     private Version version;
@@ -37,6 +38,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         this.server = server;
         this.connection = connection;
         this.flushBatcher = FlushBatcher.implFor(channel);
+        this.voidPromise = channel.voidPromise();
         updateVersion(Version.getMin());
         updateState(State.HANDSHAKING);
     }
@@ -145,7 +147,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     public void writeAndFlush(PacketOut packet) {
-        this.writeAndFlush(packet, this.channel.voidPromise());
+        this.writeAndFlush(packet, this.voidPromise);
     }
 
     public ChannelPromise writeAndFlush(PacketOut packet, ChannelPromise promise) {
@@ -155,7 +157,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     public void write(PacketOut packet) {
-        this.write(packet, this.channel.voidPromise());
+        this.write(packet, this.voidPromise);
     }
 
     //actually does the encoding

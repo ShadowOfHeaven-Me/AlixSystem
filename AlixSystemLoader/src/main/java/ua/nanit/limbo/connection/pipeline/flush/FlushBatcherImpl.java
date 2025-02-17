@@ -1,11 +1,14 @@
 package ua.nanit.limbo.connection.pipeline.flush;
 
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.ScheduledFuture;
 
 import java.util.concurrent.TimeUnit;
 
 final class FlushBatcherImpl implements FlushBatcher {
+
+    //Strongly inspired by FlushConsolidationHandler
 
     private final Channel channel;
     private boolean pendingFlush, isInRead;
@@ -39,8 +42,15 @@ final class FlushBatcherImpl implements FlushBatcher {
         this.pendingFlush = false;
     }
 
+    private void assertEventLoop() {
+        if (!this.channel.eventLoop().inEventLoop())
+            throw new AlixException("Not in eventLoop!");
+    }
+
     @Override
     public void flush() {
+        this.assertEventLoop();
+
         if (this.isInRead) this.pendingFlush = true;
         else this.tryFlush();
     }

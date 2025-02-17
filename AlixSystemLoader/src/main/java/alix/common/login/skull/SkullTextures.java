@@ -2,6 +2,8 @@ package alix.common.login.skull;
 
 public final class SkullTextures {
 
+    public static final String GO_BACK = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOThiNWU5ZDVhZmFjMTgzZjFmNTcwYzFiNmVmNTE1NmMxMjFjMWVmYmQ4NTUyN2Q4ZDc5ZDBhZGVlYjY3MjQ4NSJ9fX0=";
+
     public static String encodeSkullProperty(byte digit, SkullTextureType skullType) {
         switch (skullType) {
             case WOODEN_SKULL:

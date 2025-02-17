@@ -7,6 +7,7 @@ import alix.common.login.skull.SkullTextures;
 import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.packets.inventory.InventoryWrapper;
+import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.keys.secret.MapSecretKey;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
@@ -97,18 +98,20 @@ public class LimboAuthBuilder implements LimboGUI {
     private static ItemStack itemOfDigit(byte digit) {
         String encoding = SkullTextures.encodeSkullProperty(digit, SkullTextureType.WOODEN_SKULL);
 
-        ItemStack item = ItemStack.builder().type(ItemTypes.PLAYER_HEAD)
-                .component(ComponentTypes.PROFILE, new ItemProfile("sex", UUID.randomUUID(),
-                        Arrays.asList(new ItemProfile.Property("textures", encoding, null))))
-                .component(ComponentTypes.CUSTOM_NAME, Component.text("§e" + digit))
-                .build();
+        return ofSkull("§e" + digit, encoding);
+    }
 
-        return item;
+    public static ItemStack ofSkull(String name, String url) {
+        return ItemStack.builder().type(ItemTypes.PLAYER_HEAD)
+                .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name)))
+                .component(ComponentTypes.PROFILE, new ItemProfile("sex", UUID.randomUUID(),
+                        Arrays.asList(new ItemProfile.Property("textures", url, null))))
+                .build();
     }
 
     public static ItemStack of(ItemType type, String name) {
         return ItemStack.builder().type(type)
-                .component(ComponentTypes.CUSTOM_NAME, Component.text(name))
+                .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name)))
                 .build();
     }
 

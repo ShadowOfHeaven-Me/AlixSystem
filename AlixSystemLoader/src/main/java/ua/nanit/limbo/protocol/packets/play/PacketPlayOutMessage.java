@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.protocol.packets.play;
 
+import alix.common.utils.formatter.AlixFormatter;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.NbtMessage;
 import ua.nanit.limbo.protocol.PacketOut;
@@ -37,7 +38,7 @@ public final class PacketPlayOutMessage implements PacketOut {
     }
 
     public static PacketPlayOutMessage withMessage(String message) {
-        return new PacketPlayOutMessage().setMessage(NbtMessageUtil.fromLiteral(message)).setPosition(PositionLegacy.SYSTEM_MESSAGE);
+        return new PacketPlayOutMessage().setMessage(NbtMessageUtil.fromLiteral(AlixFormatter.translateColors(message))).setPosition(PositionLegacy.SYSTEM_MESSAGE);
     }
 
     public PacketPlayOutMessage setMessage(NbtMessage message) {

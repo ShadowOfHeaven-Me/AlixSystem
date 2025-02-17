@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
-import shadow.systems.login.LoginVerification;
+import alix.common.login.LoginVerification;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.systems.login.reminder.message.VerificationMessage;

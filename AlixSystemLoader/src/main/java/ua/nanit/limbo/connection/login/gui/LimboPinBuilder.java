@@ -1,8 +1,6 @@
 package ua.nanit.limbo.connection.login.gui;
 
 import alix.common.data.PersistentUserData;
-import alix.common.data.security.password.Password;
-import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -25,18 +23,18 @@ import static ua.nanit.limbo.connection.login.gui.LimboAuthBuilder.*;
 
 public final class LimboPinBuilder implements LimboGUI {
 
-    private static final PacketSnapshot incorrectPasswordKickPacket
-            = PacketPlayOutDisconnect.snapshot("Incorrect password");
+    public static final PacketSnapshot incorrectPasswordKickPacket
+            = PacketPlayOutDisconnect.snapshot("&cIncorrect password");
 
     private static final PacketSnapshot
-            incorrectPasswordMessagePacket = PacketPlayOutMessage.snapshot("Incorrect password"),
-            pinInvalidLengthMessagePacket = PacketPlayOutMessage.snapshot("Pin invalid len");
+            incorrectPasswordMessagePacket = PacketPlayOutMessage.snapshot("&cIncorrect password"),
+            pinInvalidLengthMessagePacket = PacketPlayOutMessage.snapshot("&cPin invalid length");
 
     private static final int[] PIN_DIGIT_SLOTS = new int[]{28, 0, 1, 2, 9, 10, 11, 18, 19, 20};
-    private static final int maxLoginAttempts = 2;
+    public static final int maxLoginAttempts = 2;
     private static final boolean pinAutoConfirm = true;
-    private static final String pinRegister = Messages.get("pin-register");
-    private static final AlixMessage pinRegisterBottomLine = Messages.getAsObject("pin-register-bottom-line");
+    //private static final String pinRegister = Messages.get("pin-register");
+    //private static final AlixMessage pinRegisterBottomLine = Messages.getAsObject("pin-register-bottom-line");
     private static final int[] EMPTY_DIGIT_SLOTS = new int[]{13, 14, 15, 16};
     private static final int FIRST_EMPTY_DIGIT_SLOT = EMPTY_DIGIT_SLOTS[0];
     public static final ItemStack
@@ -153,7 +151,7 @@ public final class LimboPinBuilder implements LimboGUI {
         String pin = this.getPasswordBuilt();
 
         if (PersistentUserData.isRegistered(data)) {
-            if (data.getPassword().isEqualTo(pin)) {
+            if (this.loginState.isPasswordCorrect(pin)) {
                 this.duplexHandler.writeAndFlush(PLAYER_LEVELUP);
                 this.loginState.tryLogIn();
                 return;
@@ -168,12 +166,7 @@ public final class LimboPinBuilder implements LimboGUI {
             return;
         }
         this.duplexHandler.writeAndFlush(PLAYER_LEVELUP);
-
-        if (data != null) this.data.setPassword(pin);
-        else
-            PersistentUserData.createDefault(this.connection.getUsername(), this.connection.getAddress().getAddress(), Password.fromUnhashed(pin));
-        this.loginState.logIn();
-
+        this.loginState.register(pin);
         //this.connection.getPlayer().sendTitle(pinRegister, pinRegisterBottomLine.format(pin), 0, 100, 50);
     }
 
