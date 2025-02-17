@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("com.gradleup.shadow") version "8.3.2"
+    `maven-publish`
 }
 
 group = "AlixSystem"
@@ -13,6 +14,16 @@ tasks.build {
 
 tasks.shadowJar {
     archiveClassifier.set("")
+}
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            groupId = "com.github.ShadowOfHeaven-Me"
+            artifactId = "AlixSystem"
+            version = "3.6.1"
+        }
+    }
 }
 repositories {
     mavenCentral()

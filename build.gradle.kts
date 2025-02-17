@@ -14,9 +14,9 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             from(components["java"])
-            /*groupId = "com.github.ShadowOfHeaven-Me"
+            groupId = "com.github.ShadowOfHeaven-Me"
             artifactId = "AlixSystem"
-            version = project.version as String*/
+            version = "3.6.1"
         }
     }
 }
