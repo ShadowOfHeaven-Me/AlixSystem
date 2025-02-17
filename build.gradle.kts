@@ -12,11 +12,11 @@ repositories {
 
 publishing {
     publications {
-        create<MavenPublication>("release") {
+        create<MavenPublication>("maven") {
             from(components["java"])
-            groupId = "com.github.ShadowOfHeaven-Me"
+            /*groupId = "com.github.ShadowOfHeaven-Me"
             artifactId = "AlixSystem"
-            version = project.version as String
+            version = project.version as String*/
         }
     }
 }

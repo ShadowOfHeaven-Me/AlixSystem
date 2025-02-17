@@ -1,5 +1,4 @@
 jdk:
-  - openjdk11
-build:
-  gradle:
-    project: ":AlixAPI:AlixAPISpigot"
+  - 11
+gradle:
+  module: "AlixAPI:AlixAPISpigot"

@@ -6,7 +6,7 @@ include("AlixSystemSpigot")
 include("AlixSystemLoader")
 include("AlixSystemVelocitySupport")
 include("AlixAPI")
-include(":AlixAPI:AlixAPISpigot")
+include("AlixAPI:AlixAPISpigot")
 findProject(":AlixAPI:AlixAPISpigot")?.name = "AlixAPISpigot"
 //include(":Velocity")
 //project(":Velocity").projectDir = file("C:\\Users\\Kubia\\Desktop\\client\\eclipse\\Velocity")
