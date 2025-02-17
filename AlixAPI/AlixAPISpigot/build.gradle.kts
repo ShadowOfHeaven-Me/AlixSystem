@@ -1,7 +1,6 @@
 plugins {
     id("java")
     id("com.gradleup.shadow") version "8.3.2"
-    `maven-publish`
 }
 
 group = "AlixSystem"

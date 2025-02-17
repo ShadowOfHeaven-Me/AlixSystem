@@ -1,8 +1,6 @@
 plugins {//java-library
     id("java")
     id("java-library")
-    `maven-publish`
-    signing
     id("com.gradleup.shadow") version "8.3.2"
 }
 
