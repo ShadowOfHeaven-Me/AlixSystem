@@ -1,0 +1,89 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.github.ShadowOfHeaven-Me",
+    "module": "AlixSystem",
+    "version": "3.6.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.12"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "AlixSystem-3.6.1.jar",
+          "url": "AlixSystem-3.6.1.jar",
+          "size": 45465,
+          "sha512": "f154415aae66898b7872a4610cfac809113ef209bf60d5ab027db461d6b1dc6eccb6c04c0fe2b572560a216ef744c8c5def8ab4c1f42d55d4defd651645761c7",
+          "sha256": "b36c178b4819a5745462bdcc66cfcd998e8bf735b74f5f9ece6789505116193c",
+          "sha1": "b70b31f75c2a50072a6af562e14b4a56778ebd63",
+          "md5": "4eba3175cd6716a21d271ea7e6d4ac67"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "AlixAPI",
+          "module": "AlixAPI",
+          "version": {
+            "requires": "1.0.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "AlixSystem-3.6.1.jar",
+          "url": "AlixSystem-3.6.1.jar",
+          "size": 45465,
+          "sha512": "f154415aae66898b7872a4610cfac809113ef209bf60d5ab027db461d6b1dc6eccb6c04c0fe2b572560a216ef744c8c5def8ab4c1f42d55d4defd651645761c7",
+          "sha256": "b36c178b4819a5745462bdcc66cfcd998e8bf735b74f5f9ece6789505116193c",
+          "sha1": "b70b31f75c2a50072a6af562e14b4a56778ebd63",
+          "md5": "4eba3175cd6716a21d271ea7e6d4ac67"
+        }
+      ]
+    },
+    {
+      "name": "shadowRuntimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "shadowed",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "AlixSystem-3.6.1.jar",
+          "url": "AlixSystem-3.6.1.jar",
+          "size": 45465,
+          "sha512": "f154415aae66898b7872a4610cfac809113ef209bf60d5ab027db461d6b1dc6eccb6c04c0fe2b572560a216ef744c8c5def8ab4c1f42d55d4defd651645761c7",
+          "sha256": "b36c178b4819a5745462bdcc66cfcd998e8bf735b74f5f9ece6789505116193c",
+          "sha1": "b70b31f75c2a50072a6af562e14b4a56778ebd63",
+          "md5": "4eba3175cd6716a21d271ea7e6d4ac67"
+        }
+      ]
+    }
+  ]
+}
