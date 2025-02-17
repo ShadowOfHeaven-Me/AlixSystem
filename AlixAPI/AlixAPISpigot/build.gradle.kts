@@ -25,17 +25,6 @@ repositories {
     maven("https://repo.codemc.io/repository/maven-snapshots/")
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("release") {
-            from(components["java"])
-            groupId = "com.github.ShadowOfHeaven-Me"
-            artifactId = "AlixSystem"
-            version = project.version as String
-        }
-    }
-}
-
 dependencies {
     implementation(project(":AlixAPI"))
 

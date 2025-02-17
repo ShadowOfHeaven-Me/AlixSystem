@@ -2,7 +2,7 @@ package alix.spigot.api.events.listener;
 
 import alix.api.event.EventListenerAbstract;
 import alix.api.event.types.UserAuthenticateEvent;
-import alix.spigot.api.events.SpigotUserAuthEvent;
+import alix.spigot.api.events.auth.SpigotUserAuthEvent;
 
 public abstract class SpigotEventListener implements EventListenerAbstract {
 

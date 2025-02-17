@@ -1,4 +1,4 @@
-package alix.spigot.api.events;
+package alix.spigot.api.events.auth;
 
 public enum AuthReason {
 

@@ -10,7 +10,7 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.config.ConfigParams;
-import alix.spigot.api.events.AuthReason;
+import alix.spigot.api.events.auth.AuthReason;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.entity.Player;

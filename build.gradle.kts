@@ -1,15 +1,24 @@
 plugins {
     id("java")
     `maven-publish`
-    signing
-    id ("com.gradleup.shadow") version "8.3.2"
 }
 
 group = "AlixSystem"
-version = "1.0.0"
+version = "3.6.1"
 
 repositories {
     mavenCentral()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            from(components["java"])
+            groupId = "com.github.ShadowOfHeaven-Me"
+            artifactId = "AlixSystem"
+            version = project.version as String
+        }
+    }
 }
 
 dependencies {

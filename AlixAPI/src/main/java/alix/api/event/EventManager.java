@@ -2,6 +2,7 @@ package alix.api.event;
 
 import alix.api.AlixAPI;
 import alix.api.event.types.UserAuthenticateEvent;
+import alix.api.event.types.UserPostLoginEvent;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.BiConsumer;
 
 public final class EventManager {
 
@@ -120,12 +122,17 @@ public final class EventManager {
         }
     }
 
-    private void onAuth(UserAuthenticateEvent event) {
-        for (EventListener listener : this.listeners) listener.onAuth(event);
+    private <T extends AlixEvent> void callEvent(T event, BiConsumer<EventListener, T> consumer) {
+        for (EventListener listener : this.listeners) consumer.accept(listener, event);
     }
 
     @ApiStatus.Internal
     public static void callOnAuth(UserAuthenticateEvent event) {
-        AlixAPI.getAPI().getEventManager().onAuth(event);
+        AlixAPI.getAPI().getEventManager().callEvent(event, EventListener::onAuth);
+    }
+
+    @ApiStatus.Internal
+    public static void callOnPostLogin(UserPostLoginEvent event) {
+        AlixAPI.getAPI().getEventManager().callEvent(event, EventListener::onPostLogin);
     }
 }

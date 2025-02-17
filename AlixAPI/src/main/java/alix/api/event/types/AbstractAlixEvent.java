@@ -31,7 +31,4 @@ abstract class AbstractAlixEvent implements AlixEvent {
     public ThreadSource getThreadSource() {
         return source;
     }
-
-    public abstract void callEvent();
-
 }

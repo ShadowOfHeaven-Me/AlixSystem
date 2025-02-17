@@ -3,8 +3,8 @@ package shadow.utils.main.api;
 import alix.api.event.AlixEvent;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
-import alix.spigot.api.events.AuthReason;
-import alix.spigot.api.events.SpigotUserAuthEvent;
+import alix.spigot.api.events.auth.AuthReason;
+import alix.spigot.api.events.auth.SpigotUserAuthEvent;
 import alix.spigot.api.users.AlixSpigotUser;
 
 import java.util.concurrent.ExecutorService;

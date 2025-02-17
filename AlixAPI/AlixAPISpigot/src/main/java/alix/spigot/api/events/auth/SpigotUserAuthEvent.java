@@ -1,7 +1,9 @@
-package alix.spigot.api.events;
+package alix.spigot.api.events.auth;
 
+import alix.api.event.EventManager;
 import alix.api.event.types.UserAuthenticateEvent;
 import alix.spigot.api.users.AlixSpigotUser;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.concurrent.ExecutorService;
 
@@ -23,7 +25,8 @@ public class SpigotUserAuthEvent extends UserAuthenticateEvent {
         return authReason;
     }
 
+    @ApiStatus.Internal
     public static void callEvent(AuthReason authReason, AlixSpigotUser user, ExecutorService executor, ThreadSource source) {
-        new SpigotUserAuthEvent(authReason, user, executor, source).callEvent();
+        EventManager.callOnAuth(new SpigotUserAuthEvent(authReason, user, executor, source));
     }
 }
