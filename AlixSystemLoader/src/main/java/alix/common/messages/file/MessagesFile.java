@@ -5,8 +5,8 @@ import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class MessagesFile extends AlixFileManager {
 
@@ -14,14 +14,16 @@ public final class MessagesFile extends AlixFileManager {
 
     public MessagesFile() {
         super(findFile());
-        this.map = new HashMap<>();
+        this.map = new ConcurrentHashMap<>();
     }
 
     @Override
     protected void loadLine(String line) {
         //String r = line.replaceAll("\"", "");//no need, as it isn't a Yaml file anymore
         try {
-            String[] a = line.split(": ", 2);
+            char separator = AlixCommonMain.MAIN_CLASS_INSTANCE.getEngineParams().messagesSeparator();
+            String[] a = line.split(separator + " ", 2);
+            if (a.length == 1) a = line.split(separator + "", 2);
 
             String message = AlixFormatter.translateColors(a[1]); //outdated explanation - AlixFormatter instead of AlixUtils because of class initialization issues
             map.put(a[0], removeFrontSpace(message));
@@ -52,7 +54,7 @@ public final class MessagesFile extends AlixFileManager {
 /*        String lang = JavaUtils.pluginLanguage.getShortcut();
         File f2 = FileManager.getPluginFile("messages_" + lang + ".txt");
         if (f2.exists()) return f2;*/
-        //Main.debug("Unable to find this plugin's messages.yml file. Generating a new one.");
+        //Main.debug("Unable to find this plugin's messages.properties file. Generating a new one.");
         return AlixFileManager.createPluginFile(name, FileType.CONFIG);
     }
 }

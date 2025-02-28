@@ -246,6 +246,17 @@ player-not-found: &cNo player called {0} was found!
 player-not-op: &cERROR: Player {0} was not an operator.
 player-was-deopped: &7Player {0} was deopped by {1}.
 player-was-opped: &7Player {0} was opped by {1}.
+premium-command-already-premium: &cYou're already a premium player!
+premium-command-non-premium: &cYou cannot be a premium player!
+premium-command-unknown: &eSomething went wrong! Could not get your premium status!
+premium-command-premium: &aSuccessfully updated your status to premium!
+premium-disconnect-cannot-decrypt-secret: &cCannot decrypt shared secret
+premium-disconnect-cannot-verify-session: &cCannot verify session
+premium-disconnect-cannot-enable-encryption: &cInternal error - couldn't enable encryption
+premium-disconnect-illegal-encryption-state: &cIllegal encryption state
+premium-disconnect-internal-error: &cInternal error (Encryption)
+premium-disconnect-invalid-nonce: &cInvalid nonce
+premium-disconnect-invalid-session: &cInvalid session
 prevent-first-time-join: &aWe're analysing your connection. You may now join the server.
 register-reminder-command: &cRegister first!
 register-success: &aSuccessfully registered! You may now rejoin the server!

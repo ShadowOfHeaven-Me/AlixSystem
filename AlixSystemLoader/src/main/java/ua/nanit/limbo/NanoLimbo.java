@@ -27,16 +27,27 @@ public final class NanoLimbo {
 
     //https://github.com/Nan1t/NanoLimbo
 
+    private static final boolean debugMode = of(false);
+
+    private static boolean of(boolean val) {
+        return val;
+    }
+
+    public static final boolean debugCipher = of(false);
     @DebugOnly
-    public static final boolean
-            debugPackets = true,
-            allowFreeMovement = false,
-            performChecks = true,
-            logPos = false,
-            removeTimeout = true,
-            centerSpawn = false,
-            printCaptchaFailed = false,
-            verifyTheDud = false;
+    public static final boolean debugPackets = of(true);
+    public static final boolean debugSnapshots = of(false);
+    @DebugOnly
+    public static final boolean allowFreeMovement = of(true);
+    @DebugOnly
+    public static final boolean performChecks = of(false);
+    //@DebugOnly
+    public static final boolean logPos = of(false);
+    public static final boolean removeTimeout = of(true);
+    public static final boolean centerSpawn = of(false);
+    @DebugOnly
+    public static final boolean printCaptchaFailed = of(true);
+    public static final boolean verifyTheDud = of(true);
 
     public static LimboServer LIMBO;
     public static LimboIntegration INTEGRATION;

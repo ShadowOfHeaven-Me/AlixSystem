@@ -2,8 +2,15 @@ package alix.common.utils;
 
 import alix.common.AlixCommonMain;
 import alix.common.AlixMain;
+import alix.common.antibot.algorithms.connection.AntiBotStatistics;
+import alix.common.connection.ConnectionThreadManager;
+import alix.common.connection.filters.AntiVPN;
+import alix.common.connection.filters.ConnectionManager;
+import alix.common.connection.filters.GeoIPTracker;
+import alix.common.data.PersistentUserData;
 import alix.common.environment.ServerEnvironment;
 import alix.common.logger.AlixLoggerProvider;
+import alix.common.login.prelogin.PreLoginVerdict;
 import alix.common.scheduler.impl.InterfaceAlixScheduler;
 import alix.common.scheduler.impl.bukkit.BukkitAlixScheduler;
 import alix.common.scheduler.impl.bukkit.PaperAlixScheduler;
@@ -18,12 +25,57 @@ import alix.common.utils.multiengine.server.BukkitServer;
 import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.velocity.VelocityAlixMain;
 
+import java.net.InetAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 import static alix.common.reflection.CommonReflection.invoke;
+import static alix.common.utils.AlixCommonHandler.DoNotThrow.*;
+import static alix.common.utils.config.ConfigProvider.config;
 
 public final class AlixCommonHandler {
+
+    static final class DoNotThrow {
+        static final boolean antibotService = config.getBoolean("antibot-service");
+        static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]*");
+        static final boolean validateName = config.getBoolean("validate-name");
+    }
+
+    public static PreLoginVerdict getPreLoginVerdict(InetAddress address, String nameSent, String nameRefactored, PersistentUserData data, boolean deemedPremium) {
+        if (data == null && validateName && (nameSent.length() > 16 || nameSent.isEmpty() || !NAME_PATTERN.matcher(nameSent).matches())) {
+            //FireWallManager.add(user.getAddress().getAddress(), "E1");
+            //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
+            //event.setCancelled(true);
+            return PreLoginVerdict.DISALLOWED_INVALID_NAME;
+        }
+
+        //String name = Dependencies.getCorrectUsername(channel, name); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + name : name;
+        //String name = name;
+
+        //AlixScheduler.async(() -> (?)
+
+        if (antibotService)
+            ConnectionThreadManager.onJoinAttempt(nameRefactored, address);
+
+        if (data == null) {
+            if (!deemedPremium && AntiBotStatistics.INSTANCE.isHighTraffic() && ConnectionManager.disallowJoin(nameRefactored)) {//Close the connection before the auth thread is started
+                //event.setCancelled(true);
+                return PreLoginVerdict.DISALLOWED_PREVENT_FIRST_JOIN;
+            }
+
+            if (GeoIPTracker.disallowJoin(address, nameRefactored)) {
+                //event.setCancelled(true);
+                return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
+            }
+
+            if (AntiVPN.disallowJoin(address)) {
+                //event.setCancelled(true);
+                return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
+            }
+        }
+        return PreLoginVerdict.ALLOWED;
+    }
 
     public static InterfaceAlixScheduler createSchedulerImpl() {
         switch (ServerEnvironment.getEnvironment()) {
@@ -47,6 +99,7 @@ public final class AlixCommonHandler {
         }
     }
 
+    @SuppressWarnings("JavaReflectionMemberAccess")
     public static ExecutorService createExecutorForBlockingTasks() {
         try {
             ExecutorService executor = invoke(Executors.class.getMethod("newVirtualThreadPerTaskExecutor"), null);

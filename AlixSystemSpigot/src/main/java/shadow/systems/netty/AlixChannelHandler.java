@@ -1,18 +1,20 @@
 package shadow.systems.netty;
 
-import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
-import alix.common.connection.ConnectionThreadManager;
 import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.PersistentUserData;
+import alix.common.login.prelogin.PreLoginVerdict;
 import alix.common.messages.Messages;
+import alix.common.utils.AlixCommonHandler;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
+import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -20,19 +22,16 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.jetbrains.annotations.NotNull;
-import shadow.Main;
-import shadow.systems.prelogin.PreLoginVerdict;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.UserManager;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import static io.netty.channel.ChannelHandler.Sharable;
 
@@ -310,13 +309,28 @@ public final class AlixChannelHandler {
         channel.attr(JOINED_WITH_IP).set(wrapper.getServerAddress());
     }
 
+    private static final AttributeKey<UUID> SENT_LOGIN_UUID = AttributeKey.valueOf("alix-sent-login-uuid");
+
+    public static void assignLoginUUID(PacketLoginReceiveEvent e) {
+        ByteBuf buf = (ByteBuf) e.getByteBuf();
+        int rIdx = buf.readerIndex();
+
+        var wrapper = new WrapperLoginClientLoginStart(e);
+        var channel = (Channel) e.getChannel();
+        var uuidOpt = wrapper.getPlayerUUID();
+        uuidOpt.ifPresent(uuid -> channel.attr(SENT_LOGIN_UUID).set(uuid));
+
+        buf.readerIndex(rIdx);
+    }
+
+    public static UUID getLoginAssignedUUID(Channel channel) {
+        return channel.hasAttr(SENT_LOGIN_UUID) ? channel.attr(SENT_LOGIN_UUID).get() : null;
+    }
+
     @NotNull
     public static String getJoinedWithIP(Channel channel) {
         return channel.attr(JOINED_WITH_IP).get();
     }
-
-    private static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]*");
-    private static final boolean validateName = Main.config.getBoolean("validate-name");
 
     //Thanks onechris ;]
     //https://github.com/onebeastchris/GeyserPackSync/blob/master/common%2Fsrc%2Fmain%2Fjava%2Fnet%2Fonebeastchris%2Fgeyserpacksync%2Fcommon%2Futils%2FFloodgateUtil.java#L12-L15
@@ -358,44 +372,11 @@ public final class AlixChannelHandler {
 
         //Main.logError("NAME IN LOGIN START: " + serverUsername + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
 
-
         return putConnecting(user, serverUsername);
     }
 
     public static PreLoginVerdict getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data, boolean deemedPremium) {
-        if (data == null && validateName && (nameSent.length() > 16 || nameSent.isEmpty() || !NAME_PATTERN.matcher(nameSent).matches())) {
-            //FireWallManager.add(user.getAddress().getAddress(), "E1");
-            //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
-            //event.setCancelled(true);
-            return PreLoginVerdict.DISALLOWED_INVALID_NAME;
-        }
-
-        //String name = Dependencies.getCorrectUsername(channel, name); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + name : name;
-        //String name = name;
-
-        //AlixScheduler.async(() -> (?)
-        InetAddress address = ((InetSocketAddress) channel.remoteAddress()).getAddress();
-
-        if (AlixUtils.antibotService)
-            ConnectionThreadManager.onJoinAttempt(nameRefactored, address);
-
-        if (data == null) {
-            if (!deemedPremium && AntiBotStatistics.INSTANCE.isHighTraffic() && ConnectionManager.disallowJoin(nameRefactored)) {//Close the connection before the auth thread is started
-                //event.setCancelled(true);
-                return PreLoginVerdict.DISALLOWED_PREVENT_FIRST_JOIN;
-            }
-
-            if (GeoIPTracker.disallowJoin(address, nameRefactored)) {
-                //event.setCancelled(true);
-                return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
-            }
-
-            if (AntiVPN.disallowJoin(address)) {
-                //event.setCancelled(true);
-                return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
-            }
-        }
-        return PreLoginVerdict.ALLOWED;
+        return AlixCommonHandler.getPreLoginVerdict(((InetSocketAddress) channel.remoteAddress()).getAddress(), nameSent, nameRefactored, data, deemedPremium);
     }
 
     public static boolean putConnecting(User user, String name) {

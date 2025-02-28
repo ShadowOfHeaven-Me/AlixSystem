@@ -1,6 +1,10 @@
 package ua.nanit.limbo.integration;
 
+import alix.common.utils.AlixCache;
+import alix.common.utils.floodgate.GeyserUtil;
+import com.google.common.cache.Cache;
 import io.netty.channel.Channel;
+import org.jetbrains.annotations.Nullable;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
@@ -8,10 +12,20 @@ import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.server.LimboServer;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public interface LimboIntegration<T extends ClientConnection> {
+public abstract class LimboIntegration<T extends ClientConnection> {
 
+    protected static final Map<String, InetAddress> completedCaptchaCache;
+    //private static final Map<InetAddress, String> ;
+
+    static {
+        Cache<String, InetAddress> cache = AlixCache.newBuilder().expireAfterWrite(20, TimeUnit.SECONDS).maximumSize(300).build();
+        completedCaptchaCache = cache.asMap();
+    }
     //Netty integration
     //void invokeSilentServerChannelRead(Channel channel);
 
@@ -19,22 +33,49 @@ public interface LimboIntegration<T extends ClientConnection> {
         return (T) new ClientConnection(channel, server);
     }*/
 
-    T newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state);
 
-    //Captcha
-    boolean hasCompletedCaptcha(String name, Channel channel);
+    public final void setHasCompletedCaptcha(InetAddress address, String name) {
+        completedCaptchaCache.put(name, address);
+    }
 
-    void completeCaptcha(T conn);
+    /*public static boolean hasCompletedCaptcha(InetAddress address) {
+        return completedCaptchaCache.get(address) != null;
+    }
 
-    void setHasCompletedCaptcha(InetAddress address, String name);
+    public static boolean hasCompletedCaptcha(Channel channel) {
+        return getCompletedCaptchaName(channel) != null;
+    }*/
+//Captcha
+    @Nullable
+    public static boolean hasCompletedCaptcha(Channel channel, String name) {
+        return hasCompletedCaptcha(((InetSocketAddress) channel.remoteAddress()).getAddress(), name);
+    }
+
+    @Nullable
+    public static boolean hasCompletedCaptcha(InetAddress address, String name) {
+        return address.equals(completedCaptchaCache.get(name));
+    }
+
+    public abstract T newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state);
+
 
     //Packets
-    void onHandshake(T connection, PacketHandshake handshake);
+    public abstract void onHandshake(T connection, PacketHandshake handshake);
 
-    PreLoginResult onLoginStart(T connection, PacketLoginStart loginStart, boolean[] recode);
+    public abstract PreLoginResult onLoginStart(T connection, PacketLoginStart loginStart, boolean[] recode);
 
-    default int getCompressionThreshold() {
+    public abstract GeyserUtil geyserUtil();
+
+    public int getCompressionThreshold() {
         return 128;
+    }
+
+    //floodgate with compression disabled is present
+    public boolean isFloodgateNoCompressionPresent() {
+        return false;
+    }
+
+    public void fireCustomPayloadEvent(T connection, String channel, byte[] data) {
     }
 
     //Commands

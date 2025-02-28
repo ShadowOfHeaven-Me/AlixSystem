@@ -90,6 +90,7 @@ public final class PacketEventsManager {
                 PacketLoginReceiveEvent e = (PacketLoginReceiveEvent) event;
                 switch (e.getPacketType()) {
                     case LOGIN_START:
+                        AlixChannelHandler.assignLoginUUID(e);
                     case ENCRYPTION_RESPONSE:
                         this.premiumAuthenticator.onPacketReceive(e);
                 }

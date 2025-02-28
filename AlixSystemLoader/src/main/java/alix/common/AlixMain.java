@@ -23,5 +23,8 @@ public interface AlixMain {
 
         String messagesFileName();
 
+        default char messagesSeparator() {
+            return ':';
+        }
     }
 }

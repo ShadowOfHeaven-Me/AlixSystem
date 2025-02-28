@@ -92,6 +92,27 @@ final class CaptchaStateImpl {
         this.scheduleKickTask();
     }
 
+    //private long lastTickEnd, lastExplosion;
+    //private int explosionStrength = 1000;
+
+    //1.21.3+
+    void handle(WrapperPlayClientClientTickEnd packet) {
+        /*long now = System.currentTimeMillis();
+        long diff = now - this.lastTickEnd;
+        this.lastTickEnd = now;
+
+        if (now - lastExplosion > 1000) {
+            var wrapper = new WrapperPlayServerExplosion(new Vector3d(0, 67, 0), new Vector3d(explosionStrength, explosionStrength, explosionStrength), new Particle<>(ParticleTypes.ANGRY_VILLAGER), Sounds.ENTITY_PLAYER_BURP);
+            this.writeAndFlush(new PacketPlayOutExplosion(wrapper));
+
+            this.connection.getChannel().eventLoop().schedule(() -> this.writeAndFlush(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_VALID), 50, TimeUnit.MILLISECONDS);
+            this.lastExplosion = now;
+            //Log.warning("explosionStrength=" + explosionStrength);
+            //this.explosionStrength *= 3;
+        }
+        if (diff > 51) Log.error("CLIENT TICK: " + diff);*/
+    }
+
     private static final byte
             IS_AWAITING_COOKIE_RESPONSE = 1,
             COOKIE_EMPTY_RESPONSE_RECEIVED = 1 << 1,
@@ -188,7 +209,7 @@ final class CaptchaStateImpl {
     }
 
     private void scheduleDisconnectTask(long delay, TimeUnit unit) {
-        if (NanoLimbo.performChecks) return;
+        if (!NanoLimbo.performChecks) return;
 
         this.disconnectTask = this.connection.getChannel().eventLoop().schedule(() -> this.disconnect(TIMED_OUT), delay, unit);
     }
@@ -307,6 +328,11 @@ final class CaptchaStateImpl {
     private double deltaY, lastDeltaY, expectedYCollision;
     private boolean isFalling, isCheckingCollision, checkedCollision;
 
+    private void startFalling() {
+        this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
+        this.isFalling = true;
+    }
+
     void handle(WrapperPlayClientPlayerFlying flying) {
         Location loc = flying.getLocation();
 
@@ -328,17 +354,17 @@ final class CaptchaStateImpl {
         }
 
         this.failIf(flying.isOnGround() && !this.checkedCollision && (!this.isCheckingCollision || this.y != this.expectedYCollision));
-        ////Log.error("checkedCollision " + checkedCollision + " isCheckingCollision " + isCheckingCollision + " y " + y + " expectedYCollision " + expectedYCollision);
-
+        Log.error("checkedCollision " + checkedCollision + " isCheckingCollision " + isCheckingCollision + " y " + y + " expectedYCollision " + expectedYCollision);
 
         //the player does not have the ability to move on X, Z
         //and is spawned on X = Z = VALID_XZ
         this.failIf(!this.checkedCollision && (this.x != PacketSnapshots.VALID_XZ || this.z != PacketSnapshots.VALID_XZ));
 
         this.failIf(!flying.hasPositionChanged() && this.isFalling/*|| flying.hasPositionChanged() && !this.isFalling*/);
+        int startFallingTick = version().moreOrEqual(Version.V1_9) ? 3 : 2;
 
         //we received 4 or more (this packet included)
-        if (this.movementsReceived >= 3 && !flying.isOnGround()) {
+        if (this.movementsReceived >= startFallingTick && !flying.isOnGround()) {
             double predictedDeltaY = (this.lastDeltaY - 0.08) * 0.98;
             double diff = this.deltaY - predictedDeltaY;
             ////Log.error("DELTA Y: %s PREDICTED: %s DIFF: %s", deltaY, predictedDeltaY, diff);
@@ -384,7 +410,7 @@ final class CaptchaStateImpl {
             long now = System.currentTimeMillis();
             long lastKeepAliveSent = now - lastKeepAliveSentTime;
 
-            if (lastKeepAliveSent >= 12000) {
+            if (lastKeepAliveSent >= 16000) {
                 this.writeAndFlush(KeepAlives.KEEP_ALIVE_PREVENT_TIMEOUT);
                 this.lastKeepAliveSentTime = now;
             }
@@ -394,18 +420,24 @@ final class CaptchaStateImpl {
         this.movementsReceived++;
         switch (this.movementsReceived) {
             case 1: {
-                this.failIf(this.tpConfirmsReceived != 1);
-                ////Log.error("Y: " + this.y + " TELEPORT_Y: " + TELEPORT_Y + " EQUAL: " + (TELEPORT_Y == this.y));
-                this.failIf((int) this.y != TELEPORT_Y);
                 this.failIf(!flying.hasRotationChanged());
+                if (version().moreOrEqual(Version.V1_9)) {
+                    this.failIf(this.tpConfirmsReceived != 1);
+                    this.failIf((int) this.y != TELEPORT_Y);
+                } else {
+                    this.failIf((int) this.y != TELEPORT_VALID_Y);
+                    this.failIf(this.keepAlivesReceived != 2);
+                }
                 return;
             }
             case 2: {
-                this.failIf(this.tpConfirmsReceived != 2);
-                ////Log.error("Y: " + this.y + " TELEPORT_Y: " + TELEPORT_Y + " EQUAL: " + (TELEPORT_VALID_Y == this.y));
-                this.failIf((int) this.y != TELEPORT_VALID_Y);
-                this.failIf(this.keepAlivesReceived != 2);
-                this.failIf(!flying.hasRotationChanged());
+                if (version().moreOrEqual(Version.V1_9)) {
+                    this.failIf(this.tpConfirmsReceived != 2);
+                    ////Log.error("Y: " + this.y + " TELEPORT_Y: " + TELEPORT_Y + " EQUAL: " + (TELEPORT_VALID_Y == this.y));
+                    this.failIf((int) this.y != TELEPORT_VALID_Y);
+                    this.failIf(this.keepAlivesReceived != 2);
+                    this.failIf(!flying.hasRotationChanged());
+                } else this.startFalling();
                 //this.duplexHandler.writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_VALID);
 
                 //long d = System.currentTimeMillis() - sent;
@@ -416,9 +448,8 @@ final class CaptchaStateImpl {
             }
             case 3: {
                 //same as the second movement, the client will start falling only after sending this packet
-                this.failIf((int) this.y != TELEPORT_VALID_Y);
-                this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
-                this.isFalling = true;
+                if (version().moreOrEqual(Version.V1_9)) this.failIf((int) this.y != TELEPORT_VALID_Y);
+                this.startFalling();
                 return;
             }
             case 10: {
@@ -456,7 +487,7 @@ final class CaptchaStateImpl {
         //Thread.currentThread().getStackTrace();
         //Log.error("FAILED THE-");
         //new Exception().printStackTrace();
-        if (!NanoLimbo.performChecks) throw CaptchaFailedException.FAILED;
+        if (NanoLimbo.performChecks) throw CaptchaFailedException.FAILED;
     }
 
     void disconnect(PacketOut disconnectPacket) {

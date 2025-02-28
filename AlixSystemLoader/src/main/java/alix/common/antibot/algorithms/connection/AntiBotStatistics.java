@@ -1,10 +1,12 @@
 package alix.common.antibot.algorithms.connection;
 
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -15,6 +17,8 @@ public final class AntiBotStatistics {
     private AntiBotStatistics() {
         for (int i = 0; i < SAMPLE_SIZE; i++)
             this.cps.offerLast(0);
+
+        AlixScheduler.repeatAsync(this::reset, 1L, TimeUnit.SECONDS);
     }
 
     public final int startingBlocked = this.getTotalBlocked();

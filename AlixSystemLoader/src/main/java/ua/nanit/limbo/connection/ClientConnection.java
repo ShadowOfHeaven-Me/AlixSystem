@@ -25,7 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import ua.nanit.limbo.NanoLimbo;
-import ua.nanit.limbo.connection.captcha.blocks.CaptchaBlocks;
+import ua.nanit.limbo.connection.captcha.blocks.BlockPackets;
+import ua.nanit.limbo.connection.pipeline.PacketDecoder;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
@@ -42,6 +43,7 @@ import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
+import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -82,7 +84,7 @@ public class ClientConnection {
     }
 
     public void verify() {
-        Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress() + "] passed the verification");
+        Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress() + "] passed the antibot verification");
         if (!NanoLimbo.verifyTheDud) return;
 
         //UiiaiuiiiaiCat.cat(this);
@@ -116,8 +118,8 @@ public class ClientConnection {
         this.joinedWithPort = port;
     }*/
 
-    public void removeLimboHandlers() {
-        this.server.getClientChannelInitializer().uninjectHandlers(this);
+    public void uninjectConnection() {
+        this.server.getClientChannelInitializer().uninjectHandlersAndConnection(this);
     }
 
     //removes the limbo handlers, sends the original packets to the server and allows a normal join
@@ -212,7 +214,7 @@ public class ClientConnection {
     }
 
     public ClientVersion getRetrooperClientVersion() {
-        return this.getRetrooperVersion().toClientVersion();
+        return this.clientVersion.getClientVersion();
     }
 
     public GameProfile getGameProfile() {
@@ -280,9 +282,8 @@ public class ClientConnection {
             writePacket(PacketSnapshots.PACKET_JOIN_GAME);
 
             if (clientVersion.less(Version.V1_9)) {
-                //the first packet here is unnecessary, but we do it to keep consistent across versions in bot checks
+                //writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_LEGACY);
                 writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_LEGACY);
-                writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID);
             } else {
                 //first packet is necessary to spawn the player
                 writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK);
@@ -309,8 +310,8 @@ public class ClientConnection {
             if (PacketSnapshots.PACKET_JOIN_MESSAGE != null)
                 writePacket(PacketSnapshots.PACKET_JOIN_MESSAGE);
 
-            if (PacketSnapshots.PACKET_TITLE_TITLE != null && clientVersion.moreOrEqual(Version.V1_8))
-                writeTitle();
+            /*if (PacketSnapshots.LOGIN_TITLE_TITLE != null && clientVersion.moreOrEqual(Version.V1_8))
+                writeTitle();*/
 
             if (PacketSnapshots.PACKET_HEADER_AND_FOOTER != null && clientVersion.moreOrEqual(Version.V1_8))
                 writePacket(PacketSnapshots.PACKET_HEADER_AND_FOOTER);
@@ -325,7 +326,8 @@ public class ClientConnection {
             else
                 */
 
-            writePacket(CaptchaBlocks.DECOY);//sent before the chunk - should be ignored by the client
+            writePacket(BlockPackets.DECOY);//sent before the chunk - should be ignored by the client
+            //if (clientVersion.moreOrEqual(Version.V1_9))
             writePacket(PacketSnapshots.MIDDLE_CHUNK);
             //if (clientVersion.moreOrEqual(Version.V1_9)) writePacket(new PacketUnloadChunk());
             //writePacket(new PacketPlayOutBlockUpdate().setPosition(new Vector3i(0, 62, 0)).setType(StateTypes.DIRT));
@@ -386,16 +388,8 @@ public class ClientConnection {
         }
     }*/
 
-    public void writeTitle() {
-        if (clientVersion.moreOrEqual(Version.V1_17)) {
-            writePacket(PacketSnapshots.PACKET_TITLE_TITLE);
-            writePacket(PacketSnapshots.PACKET_TITLE_SUBTITLE);
-            writePacket(PacketSnapshots.PACKET_TITLE_TIMES);
-        } else {
-            writePacket(PacketSnapshots.PACKET_TITLE_LEGACY_TITLE);
-            writePacket(PacketSnapshots.PACKET_TITLE_LEGACY_SUBTITLE);
-            writePacket(PacketSnapshots.PACKET_TITLE_LEGACY_TIMES);
-        }
+    public void writeTitle(TitlePacketSnapshot title) {
+        title.write(this);
     }
 
     public void sendKeepAlive() {

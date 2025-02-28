@@ -18,11 +18,14 @@
 package ua.nanit.limbo.configuration;
 
 
+import alix.common.messages.Messages;
 import ua.nanit.limbo.server.data.InfoForwarding;
 import ua.nanit.limbo.server.data.PingData;
 import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.util.Colors;
 import ua.nanit.limbo.util.NbtMessageUtil;
+
+import static ua.nanit.limbo.connection.login.LoginState.requirePasswordRepeatInRegister;
 
 public final class LimboConfig {
 
@@ -34,7 +37,7 @@ public final class LimboConfig {
 
     private final String brandName;
     private final String joinMessage;
-    private final Title title;
+    private final Title loginTitle, registerTitle;
 
     private final String playerListHeader;
     private final String playerListFooter;
@@ -55,12 +58,11 @@ public final class LimboConfig {
 
         brandName = "AlixVirtualLimbo";
         joinMessage = Colors.of("{\"text\": \"&eWelcome to the Limbo!\"}");
-        title = new Title();
-        title.setTitle(NbtMessageUtil.create(Colors.of("{\"text\": \"&9&lHehehe!\"}")));
-        title.setSubtitle(NbtMessageUtil.create(Colors.of("{\"text\": \"&9&lWelcome!\"}")));
-        title.setFadeIn(0);
-        title.setStay(100);
-        title.setFadeOut(0);
+
+        int registerStayTicks = 999999999;
+        int loginStayTicks = 999999999;
+        registerTitle = new Title().setTitle(NbtMessageUtil.fromLiteral(Messages.get("reminder-register-title"))).setSubtitle(NbtMessageUtil.fromLiteral(requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle"))).setStay(registerStayTicks);
+        loginTitle = new Title().setTitle(NbtMessageUtil.fromLiteral(Messages.get("reminder-login-title"))).setSubtitle(NbtMessageUtil.fromLiteral(Messages.get("reminder-login-subtitle"))).setStay(loginStayTicks);
 
         playerListHeader = Colors.of("none");
         playerListFooter = Colors.of("none");
@@ -111,7 +113,7 @@ public final class LimboConfig {
     }
 
     public boolean isUseTitle() {
-        return false;
+        return true;
     }
 
     public boolean isUsePlayerList() {
@@ -130,8 +132,12 @@ public final class LimboConfig {
         return joinMessage;
     }
 
-    public Title getTitle() {
-        return title;
+    public Title getLoginTitle() {
+        return loginTitle;
+    }
+
+    public Title getRegisterTitle() {
+        return registerTitle;
     }
 
     public String getPlayerListUsername() {

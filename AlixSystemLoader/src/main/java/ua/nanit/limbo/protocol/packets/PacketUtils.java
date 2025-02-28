@@ -2,17 +2,33 @@ package ua.nanit.limbo.protocol.packets;
 
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
 import ua.nanit.limbo.protocol.Packet;
+import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 
 public final class PacketUtils {
 
+    public static void write(Channel channel, Version version, PacketSnapshot packet) {
+        PacketDuplexHandler.write0(channel, packet, version, channel.voidPromise());
+    }
+
+    public static void writeAndFlush(Channel channel, Version version, PacketSnapshot packet) {
+        write(channel, version, packet);
+        channel.flush();
+    }
+
+    public static void closeWith(Channel channel, Version version, PacketSnapshot packet) {
+        PacketDuplexHandler.write0(channel, packet, version, channel.newPromise()).addListener(ChannelFutureListener.CLOSE);
+    }
+
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, CompressionHandler handler, boolean pooled) {
-        return encode0(packet, clientbound, version, (p, v, s) -> handler, pooled);
+        return encode0(packet, clientbound, version, CompressionSupplier.supply(handler), pooled);
     }
 
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, boolean pooled) {
@@ -32,12 +48,5 @@ public final class PacketUtils {
         }
 
         throw new AlixException("Could not encode packet! Packet: " + packet.getClass().getSimpleName() + " clientbound: " + clientbound + " version: " + version + "!");
-    }
-
-
-    private interface CompressionSupplier {
-
-        CompressionHandler getHandlerFor(Packet packet, Version version, State state);
-
     }
 }

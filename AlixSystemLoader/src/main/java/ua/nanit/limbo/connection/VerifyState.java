@@ -1,8 +1,10 @@
 package ua.nanit.limbo.connection;
 
 import alix.common.data.PersistentUserData;
+import alix.common.utils.floodgate.GeyserUtil;
 import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayInAnimation;
 import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayInChunkBatchAck;
+import ua.nanit.limbo.protocol.packets.play.config.PacketPlayInReconfigureAck;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
 import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInClickSlot;
@@ -10,7 +12,9 @@ import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInInventoryClose
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.move.FlyingPacket;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayInPong;
+import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
+import ua.nanit.limbo.protocol.packets.play.tick.PacketPlayInTickEnd;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
 
 import java.util.function.Consumer;
@@ -19,7 +23,13 @@ public interface VerifyState {
 
     void sendInitial();
 
-    default void setData(PersistentUserData data, Consumer<ClientConnection> authAction) {
+    default void setData(PersistentUserData data, Consumer<ClientConnection> authAction, GeyserUtil geyserUti) {
+    }
+
+    default void handle(PacketPlayInReconfigureAck packet) {
+    }
+
+    default void handle(PacketPlayInItemRename packet) {
     }
 
     default void handle(PacketPlayInClickSlot packet) {
@@ -53,5 +63,8 @@ public interface VerifyState {
     }
 
     default void handle(PacketPlayInCookieResponse packet) {
+    }
+
+    default void handle(PacketPlayInTickEnd packet) {
     }
 }

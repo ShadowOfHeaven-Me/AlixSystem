@@ -214,7 +214,7 @@ public final class Hashing {
 
         hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3(), SHA256_MIGRATE, SHA512_MIGRATE};
 
-        int i = ConfigProvider.config.getInt("password-hash-type");
+        int i = ConfigProvider.config.getInt("password-hash-type", 3);
         byte b = (byte) i;
         byte highestId = hashingAlgorithms[hashingAlgorithms.length - 1].hashId();//Or hashingAlgorithms.length - 1
 

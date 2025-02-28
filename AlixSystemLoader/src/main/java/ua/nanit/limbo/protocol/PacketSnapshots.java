@@ -17,8 +17,6 @@
 
 package ua.nanit.limbo.protocol;
 
-import alix.common.utils.collections.queue.AlixQueue;
-import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import net.kyori.adventure.nbt.BinaryTag;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.ListBinaryTag;
@@ -32,18 +30,23 @@ import ua.nanit.limbo.protocol.packets.login.PacketLoginSuccess;
 import ua.nanit.limbo.protocol.packets.login.PacketOutSetCompression;
 import ua.nanit.limbo.protocol.packets.play.*;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketEmptyChunkData;
+import ua.nanit.limbo.protocol.packets.play.config.PacketPlayOutReconfigure;
+import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayOutPluginMessage;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.data.Title;
+import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 import ua.nanit.limbo.util.NbtMessageUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static ua.nanit.limbo.protocol.PacketSnapshot.snapshots;
+
 public final class PacketSnapshots {
 
-    static final AlixQueue<PacketSnapshot> snapshots = new ConcurrentAlixDeque<>();
     public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketOutSetCompression());
+    public static final PacketOut RECONFIGURE = PacketSnapshot.of(new PacketPlayOutReconfigure());
     public static final int PLAYER_ENTITY_ID = 0;
     public static final PacketSnapshot PACKET_LOGIN_SUCCESS;
     public static final PacketSnapshot PACKET_JOIN_GAME;
@@ -58,8 +61,8 @@ public final class PacketSnapshots {
     public static final PacketSnapshot PACKET_BOSS_BAR;
     public static final PacketSnapshot PACKET_HEADER_AND_FOOTER;
 
+    //public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY;
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY;
-    public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID;
 
     public static final int TELEPORT_ID = 1;
     public static final int TELEPORT_VALID_ID = 2;
@@ -74,13 +77,7 @@ public final class PacketSnapshots {
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK;
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_VALID;
 
-    public static final PacketSnapshot PACKET_TITLE_TITLE;
-    public static final PacketSnapshot PACKET_TITLE_SUBTITLE;
-    public static final PacketSnapshot PACKET_TITLE_TIMES;
-
-    public static final PacketSnapshot PACKET_TITLE_LEGACY_TITLE;
-    public static final PacketSnapshot PACKET_TITLE_LEGACY_SUBTITLE;
-    public static final PacketSnapshot PACKET_TITLE_LEGACY_TIMES;
+    public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, EMPTY;
 
     public static final PacketSnapshot PACKET_REGISTRY_DATA;
 
@@ -158,10 +155,10 @@ public final class PacketSnapshots {
         info.setGameMode(server.getConfig().getGameMode());
         info.setUuid(UUID.randomUUID());
 
-        float validYaw = 0;
+        //float validYaw = 0;
         PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername("Sex").setUUID(new UUID(0, 0)));
-        PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
-        PACKET_PLAYER_POS_AND_LOOK_LEGACY_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0f, 0, TELEPORT_VALID_ID));
+        //PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
+        PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0.1f, 0, TELEPORT_VALID_ID));
         PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
         PACKET_PLAYER_POS_AND_LOOK_VALID = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0f, 0, TELEPORT_VALID_ID));
         PACKET_SPAWN_POSITION = PacketSnapshot.of(packetSpawnPosition);
@@ -184,7 +181,7 @@ public final class PacketSnapshots {
             pluginMessage.setMessage(server.getConfig().getBrandName());
             PACKET_CONFIG_PLUGIN_MESSAGE = PacketSnapshot.of(pluginMessage);
 
-            PacketPlayPluginMessage pluginMessagePlay = new PacketPlayPluginMessage();
+            PacketPlayOutPluginMessage pluginMessagePlay = new PacketPlayOutPluginMessage();
             pluginMessagePlay.setChannel(LimboConstants.BRAND_CHANNEL);
             pluginMessagePlay.setMessage(server.getConfig().getBrandName());
             PACKET_PLAY_PLUGIN_MESSAGE = PacketSnapshot.of(pluginMessagePlay);
@@ -212,48 +209,9 @@ public final class PacketSnapshots {
             PACKET_BOSS_BAR = null;
         }
 
-        if (server.getConfig().isUseTitle()) {
-            Title title = server.getConfig().getTitle();
-
-            PacketTitleSetTitle packetTitle = new PacketTitleSetTitle();
-            PacketTitleSetSubTitle packetSubtitle = new PacketTitleSetSubTitle();
-            PacketTitleTimes packetTimes = new PacketTitleTimes();
-
-            PacketTitleLegacy legacyTitle = new PacketTitleLegacy();
-            PacketTitleLegacy legacySubtitle = new PacketTitleLegacy();
-            PacketTitleLegacy legacyTimes = new PacketTitleLegacy();
-
-            packetTitle.setTitle(title.getTitle());
-            packetSubtitle.setSubtitle(title.getSubtitle());
-            packetTimes.setFadeIn(title.getFadeIn());
-            packetTimes.setStay(title.getStay());
-            packetTimes.setFadeOut(title.getFadeOut());
-
-            legacyTitle.setTitle(title);
-            legacyTitle.setAction(PacketTitleLegacy.Action.SET_TITLE);
-
-            legacySubtitle.setTitle(title);
-            legacySubtitle.setAction(PacketTitleLegacy.Action.SET_SUBTITLE);
-
-            legacyTimes.setTitle(title);
-            legacyTimes.setAction(PacketTitleLegacy.Action.SET_TIMES_AND_DISPLAY);
-
-            PACKET_TITLE_TITLE = PacketSnapshot.of(packetTitle);
-            PACKET_TITLE_SUBTITLE = PacketSnapshot.of(packetSubtitle);
-            PACKET_TITLE_TIMES = PacketSnapshot.of(packetTimes);
-
-            PACKET_TITLE_LEGACY_TITLE = PacketSnapshot.of(legacyTitle);
-            PACKET_TITLE_LEGACY_SUBTITLE = PacketSnapshot.of(legacySubtitle);
-            PACKET_TITLE_LEGACY_TIMES = PacketSnapshot.of(legacyTimes);
-        } else {
-            PACKET_TITLE_TITLE = null;
-            PACKET_TITLE_SUBTITLE = null;
-            PACKET_TITLE_TIMES = null;
-
-            PACKET_TITLE_LEGACY_TITLE = null;
-            PACKET_TITLE_LEGACY_SUBTITLE = null;
-            PACKET_TITLE_LEGACY_TIMES = null;
-        }
+        LOGIN_TITLE = new TitlePacketSnapshot(server.getConfig().getLoginTitle());
+        REGISTER_TITLE = new TitlePacketSnapshot(server.getConfig().getRegisterTitle());
+        EMPTY = new TitlePacketSnapshot(new Title().setTitle(NbtMessageUtil.fromLiteral("")).setSubtitle(NbtMessageUtil.fromLiteral("")).setStay(999999999));
 
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();
         PACKET_KNOWN_PACKS = PacketSnapshot.of(packetKnownPacks);

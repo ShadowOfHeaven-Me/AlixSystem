@@ -11,6 +11,7 @@ import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.keys.secret.MapSecretKey;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
+import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemLore;
 import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemProfile;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public class LimboAuthBuilder implements LimboGUI {
+public final class LimboAuthBuilder implements LimboGUI {
 
     private static final String START_TEXT;
     private static final String[] EMPTY_SLOTS_TEXTS;
@@ -62,7 +63,7 @@ public class LimboAuthBuilder implements LimboGUI {
     private final boolean includeLeaveButton;
 
     public static final ItemStack[] DIGITS;
-    public static final PacketSnapshot pinLeaveFeedbackKickPacket = PacketPlayOutDisconnect.snapshot("§7Left.");
+    public static final PacketSnapshot leaveFeedbackKickPacket = PacketPlayOutDisconnect.snapshot("§7Left.");
 
     static {
         DIGITS = new ItemStack[10];
@@ -88,7 +89,7 @@ public class LimboAuthBuilder implements LimboGUI {
         ITEMS[24] = new VirtualItem(ItemTypes.RED_WOOL, LimboAuthBuilder::resetInput);
 
         ITEMS[LEAVE_BUTTON_INDEX] = new VirtualItem(ItemTypes.BLACK_WOOL, builder -> {
-            builder.connection.sendPacketAndClose(pinLeaveFeedbackKickPacket);
+            builder.connection.sendPacketAndClose(leaveFeedbackKickPacket);
         });
 
         invItems = new PacketPlayOutInventoryItems(newListOfItems(true)).toSnapshot();
@@ -102,17 +103,34 @@ public class LimboAuthBuilder implements LimboGUI {
     }
 
     public static ItemStack ofSkull(String name, String url) {
-        return ItemStack.builder().type(ItemTypes.PLAYER_HEAD)
-                .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name)))
+        return builderOf(ItemTypes.PLAYER_HEAD, name)
                 .component(ComponentTypes.PROFILE, new ItemProfile("sex", UUID.randomUUID(),
                         Arrays.asList(new ItemProfile.Property("textures", url, null))))
                 .build();
     }
 
     public static ItemStack of(ItemType type, String name) {
+        return builderOf(type, name).build();
+    }
+
+    public static ItemStack of(ItemType type, String name, String... lore) {
+        return builderOf(type, name, lore).build();
+    }
+
+    public static ItemLore getItemLore(String... lore) {
+        return new ItemLore(Arrays.stream(lore).map(Component::text).map(t -> (Component) t).toList());
+    }
+
+    public static ItemStack.Builder builderOf(ItemType type, String name, String... lore) {
         return ItemStack.builder().type(type)
                 .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name)))
-                .build();
+                .component(ComponentTypes.LORE, getItemLore(lore));
+    }
+
+
+    public static ItemStack.Builder builderOf(ItemType type, String name) {
+        return ItemStack.builder().type(type)
+                .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name)));
     }
 
     private static VirtualItem ofDigit(byte digit) {

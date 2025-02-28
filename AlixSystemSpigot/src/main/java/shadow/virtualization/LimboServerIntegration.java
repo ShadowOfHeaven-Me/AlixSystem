@@ -7,21 +7,17 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumStatus;
 import alix.common.data.premium.name.PremiumNameManager;
-import alix.common.utils.AlixCache;
+import alix.common.login.premium.ClientPublicKey;
+import alix.common.login.premium.PremiumUtils;
+import alix.common.utils.floodgate.GeyserUtil;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import com.google.common.cache.Cache;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
-import org.jetbrains.annotations.Nullable;
-import shadow.systems.login.autoin.PremiumSetting;
-import alix.common.login.premium.PremiumUtils;
-import alix.common.login.premium.ClientPublicKey;
-import shadow.systems.login.captcha.Captcha;
+import shadow.systems.dependencies.Dependencies;
+import alix.common.login.premium.PremiumSetting;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.systems.netty.AlixInterceptor;
-import shadow.virtualization.commands.LimboCommandHandler;
-import ua.nanit.limbo.commands.CommandHandler;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -32,49 +28,14 @@ import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.server.LimboServer;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static shadow.virtualization.LimboServerIntegration.Packets.*;
 
 //https://wiki.vg/Protocol_FAQ
 
-public final class LimboServerIntegration implements LimboIntegration<LimboConnection> {
-
-    private static final Map<String, InetAddress> completedCaptchaCache;
-    //private static final Map<InetAddress, String> ;
-
-    static {
-        Cache<String, InetAddress> cache = AlixCache.newBuilder().expireAfterWrite(20, TimeUnit.SECONDS).build();
-        completedCaptchaCache = cache.asMap();
-    }
-
-    @Override
-    public void setHasCompletedCaptcha(InetAddress address, String name) {
-        completedCaptchaCache.put(name, address);
-    }
-
-    /*public static boolean hasCompletedCaptcha(InetAddress address) {
-        return completedCaptchaCache.get(address) != null;
-    }
-
-    public static boolean hasCompletedCaptcha(Channel channel) {
-        return getCompletedCaptchaName(channel) != null;
-    }*/
-
-    @Nullable
-    public static boolean hasCompletedCaptcha(Channel channel, String name) {
-        return hasCompletedCaptcha(((InetSocketAddress) channel.remoteAddress()).getAddress(), name);
-    }
-
-    @Nullable
-    public static boolean hasCompletedCaptcha(InetAddress address, String name) {
-        return address.equals(completedCaptchaCache.get(name));
-    }
+public final class LimboServerIntegration extends LimboIntegration<LimboConnection> {
 
     /*@Nullable
     public static String removeCompletedCaptchaName(InetAddress address) {
@@ -92,14 +53,10 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
         return new LimboConnection(channel, server, state);
     }
 
-    @Override
+    /*@Override
     public boolean hasCompletedCaptcha(String name, Channel channel) {
         return Captcha.hasCompletedCaptcha(name, channel);// || ((InetSocketAddress) channel.remoteAddress()).getAddress().equals(this.completedCaptchaCache.getIfPresent(name));
-    }
-
-    @Override
-    public void completeCaptcha(LimboConnection conn) {
-    }
+    }*/
 
     @Override
     public void onHandshake(LimboConnection connection, PacketHandshake handshake) {
@@ -261,10 +218,15 @@ public final class LimboServerIntegration implements LimboIntegration<LimboConne
         return data != null || isPremium || (hasCompletedCaptcha == Boolean.TRUE || hasCompletedCaptcha(channel, name)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
     }
 
-    //@Override
-    public CommandHandler<LimboConnection> createCommandHandler() {
-        return new LimboCommandHandler();
+    @Override
+    public GeyserUtil geyserUtil() {
+        return Dependencies.util;
     }
+
+    //@Override
+    /*public CommandHandler<LimboConnection> createCommandHandler() {
+        return new LimboCommandHandler();
+    }*/
 
     //@Override
     public String getServerIP() {

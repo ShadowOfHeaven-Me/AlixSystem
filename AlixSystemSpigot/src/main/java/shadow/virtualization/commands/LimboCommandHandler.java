@@ -1,7 +1,8 @@
+/*
 package shadow.virtualization.commands;
 
 import alix.common.messages.Messages;
-import shadow.systems.commands.alix.AlixCommandInfo;
+import alix.common.commands.file.AlixCommandInfo;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.utils.main.AlixUtils;
 import shadow.virtualization.LimboConnection;
@@ -50,10 +51,13 @@ public final class LimboCommandHandler implements CommandHandler<LimboConnection
 
     }
 
-    /*@Override
+    */
+/*@Override
     public Function<LimboConnection, LimboCommand> getCommandToSend() {
         return conn -> {
-            *//*switch (conn.getVerificationReason()) {
+            *//*
+*/
+/*switch (conn.getVerificationReason()) {
                 case LOGIN:
                     return this.loginCommand;
                 case CAPTCHA:
@@ -62,6 +66,9 @@ public final class LimboCommandHandler implements CommandHandler<LimboConnection
                 default:
                     throw new AlixError("Invalid: " + conn.getVerificationReason());
             }*//*
+*/
+/*
         };
-    }*/
-}
+    }*//*
+
+}*/

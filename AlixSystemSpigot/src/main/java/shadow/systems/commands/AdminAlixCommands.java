@@ -6,6 +6,7 @@ import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
 import alix.common.data.file.UserFileManager;
+import alix.common.data.premium.PremiumData;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -81,6 +82,19 @@ public final class AdminAlixCommands implements CommandExecutor {
                         sendMessage(sender, "Fully removed the data of the account " + arg2 + "!");
                     }
                     break;
+                    case "rs":
+                    case "resetstatus": {
+                        PersistentUserData data = UserFileManager.get(arg2);
+
+                        if (data == null) {
+                            sendMessage(sender, playerDataNotFound.format(arg2));
+                            return false;
+                        }
+                        data.setPremiumData(PremiumData.UNKNOWN);
+
+                        sendMessage(sender, "The premium status of the player " + arg2 + " has been set to UNKNOWN.");
+                        break;
+                    }
                     case "rp":
                     case "resetpassword": {
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -132,6 +146,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             //sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
                             sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
                             sendMessage(sender, "Login Type: &c" + data.getLoginType());
+                            sendMessage(sender, "Premium Status: &c" + data.getPremiumData().getStatus().readableName());
                             if (dVer)
                                 sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
 
@@ -145,7 +160,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                                     authApp = "&aEnabled - Just Auth App";
                                     break;
                                 case PASSWORD_AND_AUTH_APP:
-                                    authApp = "&aEnabled - Auth App and in-game password" + (dVer ? "s" : "");
+                                    authApp = "&aEnabled - Auth App and " + (dVer ? "two " : "") + "in-game password" + (dVer ? "s" : "");
                                     break;
                                 default:
                                     throw new AlixError("Invalid - " + data.getLoginParams().getAuthSettings());
@@ -280,6 +295,8 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                    sendMessage(sender, "&c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium");
+
                     sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.");
                     if (isOperatorCommandRestricted) {
                         sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +

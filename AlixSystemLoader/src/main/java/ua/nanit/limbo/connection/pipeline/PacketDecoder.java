@@ -43,6 +43,13 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
 
         //ByteMessage msg = new ByteMessage(buf);
         int packetId = FastNettyUtils.readVarInt(buf); //msg.readVarInt();
+
+        //Log.info("PACKET ID=" + packetId + " 0x" + Integer.toHexString(packetId).toUpperCase());
+
+        /*if (packetId == 0x14) {
+            Log.warning("PACKET=" + mappings.getPacket(packetId));
+        }*/
+
         Packet packet = mappings.getPacket(packetId);
         if (packet == null) return null;
 
@@ -54,6 +61,7 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
         //the Packet#handle method is unused - do not decode or call handle() on the packet instance
         //average time on my pc for this call: 0.002ms
         if (HandleMask.isSkippable(packet.getClass())) return null;
+
         //Log.error("PACKET ID: " + packetId + " PACKET: " + packet);
 
         ByteMessage msg = new ByteMessage(buf);
@@ -63,9 +71,9 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
             packet.decode(msg, version);
         } catch (Exception e) {
             if (Log.isDebug()) {
-                Log.warning("Cannot decode packet 0x%s", e, Integer.toHexString(packetId));
+                Log.warning("Cannot decode %s, per %s packet 0x%s", packet.getClass().getSimpleName(), e, Integer.toHexString(packetId));
             } else {
-                Log.warning("Cannot decode packet 0x%s: %s", Integer.toHexString(packetId), e.getMessage());
+                Log.warning("Cannot decode %s packet 0x%s: %s", packet.getClass().getSimpleName(), Integer.toHexString(packetId), e.getMessage());
             }
             return null;
         }

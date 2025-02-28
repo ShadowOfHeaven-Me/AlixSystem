@@ -106,6 +106,7 @@ public final class PacketHandler {
         //Log.error("handleLogin0");
         boolean[] recodeA = new boolean[1];
         PreLoginResult result = this.server.getIntegration().onLoginStart(conn, packet, recodeA);
+        //Log.error("RESULT-" + result);
         boolean recode = recodeA[0];
 
         //set the "proper" username here

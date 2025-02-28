@@ -9,7 +9,7 @@ import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryOpen
 
 public enum AnvilBuilderGoal {
     REGISTER,
-    REGISTER_PIN,
+    //REGISTER_PIN,
     LOGIN,
     CHANGE_PASSWORD,
     CHANGE_PIN;
@@ -20,10 +20,13 @@ public enum AnvilBuilderGoal {
             anvilInvOpenPasswordChange = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, "Change password"),
             anvilInvOpenPinChange = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, "Change PIN");
 
+    private static final LoginType defaultLoginType = LoginType.ANVIL;
+
     public LoginType getLoginType() {
         switch (this) {
             case REGISTER:
-            case REGISTER_PIN:
+                return defaultLoginType;
+            //case REGISTER_PIN:
             case CHANGE_PIN:
                 return LoginType.PIN;
             case LOGIN:
@@ -36,6 +39,17 @@ public enum AnvilBuilderGoal {
 
     public String getInvalidityReason(String input) {
         return AlixCommonUtils.getPasswordInvalidityReason(input, this.getLoginType());
+    }
+
+    public boolean indicateInvalid() {
+        switch (this) {
+            case REGISTER, CHANGE_PASSWORD, CHANGE_PIN:
+                return true;
+            case LOGIN:
+                return false;
+            default:
+                throw new AlixError("Da fuq");
+        }
     }
 
     public boolean isUserVerified() {
@@ -51,7 +65,7 @@ public enum AnvilBuilderGoal {
     public PacketSnapshot getInvOpen() {
         switch (this) {
             case REGISTER:
-            case REGISTER_PIN:
+                //case REGISTER_PIN:
                 return anvilInvOpenRegister;
             case LOGIN:
                 return anvilInvOpenLogin;

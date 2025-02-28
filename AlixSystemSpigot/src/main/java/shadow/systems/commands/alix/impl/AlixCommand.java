@@ -5,7 +5,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.jetbrains.annotations.NotNull;
-import shadow.systems.commands.alix.AlixCommandInfo;
+import alix.common.commands.file.AlixCommandInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -6,6 +6,7 @@ import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
 import alix.common.login.premium.*;
+import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCache;
 import alix.common.utils.other.annotation.OptimizationCandidate;
@@ -25,12 +26,12 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
-import shadow.systems.login.autoin.PremiumSetting;
+import alix.common.login.premium.PremiumSetting;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
-import shadow.virtualization.LimboServerIntegration;
+import ua.nanit.limbo.integration.LimboIntegration;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -55,14 +56,14 @@ public final class PremiumAuthenticator {
     //private final boolean isReverseProxyEnabled = true;
 
     private static final ByteBuf
-            illegalEncryptionState = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cIllegal encryption state"),
-            invalidNonce = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cInvalid nonce"),
-            cannotDecryptSharedSecret = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCannot decrypt shared secret"),
-            invalidSession = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cInvalid session"),
-            cannotVerifySession = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCannot verify session"),
-            internalErrorEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cInternal error (Encryption)"),
-            couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCouldn't enable encryption"),
-            cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
+            illegalEncryptionState = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-illegal-encryption-state")),
+            invalidNonce = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-invalid-nonce")),
+            cannotDecryptSharedSecret = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-decrypt-secret")),
+            invalidSession = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-invalid-session")),
+            cannotVerifySession = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-verify-session")),
+            internalErrorEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-internal-error")),
+            couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-enable-encryption"));
+            //cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
 
     //with caffeine
     @OptimizationCandidate
@@ -201,16 +202,16 @@ public final class PremiumAuthenticator {
         boolean performPremiumCheck;// = data != null ? performPremiumCheck(data) : performPremiumCheckNullData(name);
 
         if (data != null) {
-            performPremiumCheck = performPremiumCheck(data, packetUsername, uuid, clientKey, version);
+            performPremiumCheck = PremiumSetting.performPremiumCheck(data, packetUsername, uuid, clientKey, version);
             newPremiumData = data.getPremiumData();
         } else {
-            newPremiumData = performPremiumCheckNullData(packetUsername, uuid, clientKey, version);
+            newPremiumData = PremiumSetting.performPremiumCheckNullData(packetUsername, uuid, clientKey, version);
             performPremiumCheck = newPremiumData.getStatus().isPremium();
         }
 
         //Main.logError("IS PREMIUM: " + performPremiumCheck + " DATA: " + newPremiumData.getStatus() + " suggestsStatus: " + PremiumUtils.suggestsStatus(uuid, clientKey, version));
 
-        if (LimboServerIntegration.hasCompletedCaptcha(address, packetUsername)) {
+        if (LimboIntegration.hasCompletedCaptcha(address, packetUsername)) {
             //Main.logError("passed name: " + passedCaptchaNameCache + " current name: " + name);
             /*if (!name.equals(passedCaptchaNameCache)) {
                 this.disconnectWith(user, cachedNameDoesNotMatch);
@@ -282,31 +283,6 @@ public final class PremiumAuthenticator {
         } else {
             // The original event has been cancelled, so we need to send a fake start packet.
             receiveFakeStartPacket(packetUsername, clientKey, channel, uuid);
-        }
-    }
-
-    private PremiumData performPremiumCheckNullData(String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
-        if (!PremiumSetting.requirePremium(false, uuid, clientPublicKey, version)) return PremiumData.UNKNOWN;
-
-        return PremiumUtils.getOrRequestAndCacheData(null, name);
-    }
-
-    private boolean performPremiumCheck(PersistentUserData data, String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
-        switch (data.getPremiumData().getStatus()) {
-            case PREMIUM:
-                return true;
-            case NON_PREMIUM:
-                return false;
-            case UNKNOWN:
-                if (!PremiumSetting.requirePremium(data, uuid, clientPublicKey, version)) return false;
-                PremiumData newData = PremiumUtils.getOrRequestData(data, name);
-
-                //if (newData.getStatus().isUnknown()) return false;//fallback
-
-                data.setPremiumData(newData);
-                return newData.getStatus().isPremium();
-            default:
-                throw new AlixError("Invalid: " + data.getPremiumData().getStatus());
         }
     }
 

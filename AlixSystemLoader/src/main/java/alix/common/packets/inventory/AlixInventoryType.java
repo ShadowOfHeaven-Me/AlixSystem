@@ -18,7 +18,7 @@ public enum AlixInventoryType {
     GENERIC_9X6(5),
     GENERIC_3X3(6),
     CRAFTER_3X3(7),//added in 1.20.3
-    ANVIL(ver -> ver.isOlderThan(V_1_20_3) ? 8 : 7);
+    ANVIL(ver -> ver.isNewerThan(V_1_20_3) ? 8 : 7);
 
     private final Function<ClientVersion, Integer> func;
 

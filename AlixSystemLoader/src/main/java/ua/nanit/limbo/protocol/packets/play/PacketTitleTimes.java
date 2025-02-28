@@ -27,16 +27,19 @@ public class PacketTitleTimes implements PacketOut {
     private int stay;
     private int fadeOut;
 
-    public void setFadeIn(int fadeIn) {
+    public PacketTitleTimes setFadeIn(int fadeIn) {
         this.fadeIn = fadeIn;
+        return this;
     }
 
-    public void setStay(int stay) {
+    public PacketTitleTimes setStay(int stay) {
         this.stay = stay;
+        return this;
     }
 
-    public void setFadeOut(int fadeOut) {
+    public PacketTitleTimes setFadeOut(int fadeOut) {
         this.fadeOut = fadeOut;
+        return this;
     }
 
     @Override

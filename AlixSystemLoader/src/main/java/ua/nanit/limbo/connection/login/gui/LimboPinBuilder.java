@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection.login.gui;
 
+import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
@@ -67,8 +68,6 @@ public final class LimboPinBuilder implements LimboGUI {
     private boolean spoofWithSnapshot;
     //private final PacketSnapshot cachedItems;
 
-    private int loginAttempts;
-
     public LimboPinBuilder(ClientConnection connection, PersistentUserData data, LoginState loginState) {
         this.connection = connection;
         this.duplexHandler = connection.getDuplexHandler();
@@ -128,11 +127,15 @@ public final class LimboPinBuilder implements LimboGUI {
             boolean login = append(digit);
 
             if (login && pinAutoConfirm) {//logging in
-                this.onPINConfirmation();
+                boolean spoofItems = this.onPINConfirmation();
+                if (!spoofItems) return;
             } else if (pin.length() != 4)
                 this.duplexHandler.writeAndFlush(NOTE_BLOCK_HARP);//adding a pin digit
 
-        } else if (performAction(slot)) this.onPINConfirmation();
+        } else if (performAction(slot)) {
+            boolean spoofItems = this.onPINConfirmation();
+            if (!spoofItems) return;
+        }
         this.spoofAllItems();
     }
 
@@ -147,26 +150,24 @@ public final class LimboPinBuilder implements LimboGUI {
         this.spoofAllItems();
     }
 
-    private void onPINConfirmation() {
+    private boolean onPINConfirmation() {
         String pin = this.getPasswordBuilt();
 
         if (PersistentUserData.isRegistered(data)) {
             if (this.loginState.isPasswordCorrect(pin)) {
                 this.duplexHandler.writeAndFlush(PLAYER_LEVELUP);
                 this.loginState.tryLogIn();
-                return;
+                return false;
             }
 
-            if (++loginAttempts == maxLoginAttempts)
-                this.connection.sendPacketAndClose(incorrectPasswordKickPacket);
-            else {//beautiful syntax
+            if (this.loginState.onIncorrectPassword()) {
                 this.resetPin0();
-                this.duplexHandler.writeAndFlush(incorrectPasswordMessagePacket);
+                return true;
             }
-            return;
+            return false;
         }
         this.duplexHandler.writeAndFlush(PLAYER_LEVELUP);
-        this.loginState.register(pin);
+        return this.loginState.registerIfValid(pin, LoginType.PIN) == null;
         //this.connection.getPlayer().sendTitle(pinRegister, pinRegisterBottomLine.format(pin), 0, 100, 50);
     }
 
@@ -177,7 +178,7 @@ public final class LimboPinBuilder implements LimboGUI {
                 this.setItem(i, BARRIER);
             this.duplexHandler.writeAndFlush(ITEM_BREAK);
         }
-        spoofWithSnapshot = true;
+        this.spoofWithSnapshot = true;
     }
 
     private boolean performAction(int slot) {
@@ -203,7 +204,7 @@ public final class LimboPinBuilder implements LimboGUI {
         }
 
         if (slot == ACTION_LEAVE) {
-            this.connection.sendPacketAndClose(pinLeaveFeedbackKickPacket);
+            this.connection.sendPacketAndClose(leaveFeedbackKickPacket);
             return false;
         }
 

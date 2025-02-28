@@ -18,6 +18,7 @@
 package ua.nanit.limbo.connection;
 
 import alix.common.data.file.UserFileManager;
+import alix.common.utils.floodgate.GeyserUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.flush.FlushConsolidationHandler;
@@ -27,6 +28,7 @@ import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.handlers.DummyHandler;
+import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
 
@@ -45,20 +47,25 @@ public final class ClientChannelInitializer {
         //this.channelInitImpl = new ChannelInitImpl(silentServerContext);
     }
 
-    public void initAfterLoginSuccess(Channel channel, Version clientVersion, String name, Consumer<ClientConnection> authAction) {
+    public void initAfterLoginSuccess(Channel channel, Version clientVersion, String name, Consumer<ClientConnection> authAction, GeyserUtil geyserUtil) {
         ChannelPipeline pipeline = channel.pipeline();
 
         ClientConnection connection = this.server.getIntegration().newConnection(channel, server, LoginState::new);
 
         connection.updateVersion(clientVersion);
+        connection.updateState(connection.hasConfigPhase() ? State.CONFIGURATION : State.PLAY);
         connection.getGameProfile().setUsername(name);
-        connection.getVerifyState().setData(UserFileManager.get(name), authAction);
+        connection.getVerifyState().setData(UserFileManager.get(name), authAction, geyserUtil);
 
         PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
         VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
 
+        frameDecoder.stopResendCollection();
+
         pipeline.addFirst(duplexHandlerName, duplexHandler);
         pipeline.addFirst(frameDecoderName, frameDecoder);
+
+        this.server.getConnections().addConnection(connection);
 
         Runnable r = () -> {
             frameDecoder.stopResendCollection();
@@ -107,11 +114,14 @@ public final class ClientChannelInitializer {
         //pipeline.addLast("encoder", encoder);
         //pipeline.addLast("handler", connection);
     }
-    public void uninjectHandlers(ClientConnection connection) {
+
+    public void uninjectHandlersAndConnection(ClientConnection connection) {
         Channel channel = connection.getChannel();
         ChannelPipeline pipeline = channel.pipeline();
         pipeline.remove(duplexHandlerName);
         pipeline.remove(frameDecoderName);
+
+        this.server.getConnections().removeConnection0(connection);
     }
 
     public void uninject(ClientConnection connection, Runnable resendAction) {
@@ -126,13 +136,14 @@ public final class ClientChannelInitializer {
 
         //NoTimeoutHandler timeOutHandler = (NoTimeoutHandler) pipeline.context("timeout").handler();
 
-        if (pipeline.context("--timeout") != null) pipeline.replace("--timeout", "timeout", new ReadTimeoutHandler(30));
+        if (pipeline.context("--timeout") != null)
+            pipeline.replace("--timeout", "timeout", new ReadTimeoutHandler(30));
         //not sure why, but FlushConsolidationHandler causes some packets to not be sent at all by the main server, after I do this limbo voodoo magic
         boolean replacedFCH = pipeline.context("FlushConsolidationHandler#0") != null;
         if (replacedFCH)
             pipeline.replace("FlushConsolidationHandler#0", "--FlushConsolidationHandler#0", DummyHandler.HANDLER);
 
-        this.uninjectHandlers(connection);
+        this.uninjectHandlersAndConnection(connection);
 
         //Log.error("IN EVENT LOOP " + connection.getChannel().eventLoop().inEventLoop());
 

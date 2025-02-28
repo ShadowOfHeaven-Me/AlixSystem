@@ -63,6 +63,9 @@ public final class AlixConsoleFilterHolder implements Filter {
             if (e.getLevel() == Level.WARN && Thread.currentThread() == Main.mainServerThread && message.startsWith("Ignoring unknown attribute"))
                 return Result.DENY;
 
+            if (e.getLevel() == Level.WARN && message.startsWith("An exception 'java.lang.NullPointerException: Cannot invoke \"io.netty.channel.Channel.isOpen()\" because \"this.channel\" is null'"))
+                return Result.DENY;
+
             /*if (filterFastLoginDebug && (e.getLoggerName().equals("FastLogin") || message.startsWith("[FastLogin]"))) {
                 //new Exception().printStackTrace();
                 return Result.DENY;

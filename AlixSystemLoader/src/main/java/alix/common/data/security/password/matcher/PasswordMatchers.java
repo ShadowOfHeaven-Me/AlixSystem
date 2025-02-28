@@ -1,8 +1,8 @@
 package alix.common.data.security.password.matcher;
 
+import alix.common.data.security.password.Password;
 import alix.common.data.security.password.hashing.Hashing;
 import alix.common.data.security.password.hashing.HashingAlgorithm;
-import alix.common.data.security.password.Password;
 
 public final class PasswordMatchers {
 
@@ -24,6 +24,7 @@ public final class PasswordMatchers {
             String salt = password.getSalt();
 
             String hashedInput = Hashing.hashSaltFirst(algorithm, unhashedInput, salt);
+            //AlixCommonMain.logError("hashedInput='" + hashedInput + "' hashedPassword='" + hashedPassword + "'");
 
             return hashedPassword.equals(hashedInput);
         }

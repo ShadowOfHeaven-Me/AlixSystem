@@ -2,6 +2,7 @@ package shadow.systems.commands.tab;
 
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
+import alix.common.utils.other.annotation.OptimizationCandidate;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -15,6 +16,8 @@ public final class CommandTabCompleterAS implements TabCompleter {
 
     private final List<String> cmds = this.getASCommands();
 
+    //with async complete
+    @OptimizationCandidate
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
         switch (args.length) {
@@ -25,6 +28,8 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         /*List<String> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
                         for (Player p : Bukkit.getOnlinePlayers()) list.add(p.getName());
                         return list;*/
+                    case "rs":
+                    case "resetstatus":
                     case "frd":
                     case "fullyremovedata":
                     case "rp":
@@ -40,6 +45,8 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         /*List<String> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
                         for (Player p : Bukkit.getOnlinePlayers()) list.add(p.getName());
                         return list;*/
+                    case "rs":
+                    case "resetstatus":
                     case "frd":
                     case "fullyremovedata":
                     case "rp":
@@ -59,7 +66,7 @@ public final class CommandTabCompleterAS implements TabCompleter {
     }
 
     private List<String> getASCommands() {
-        List<String> list = Arrays.asList(
+        List<String> list = Arrays.asList("resetstatus","rs",
                 "user", "abstats", "rp", "resetpassword", "valueof", "constants", "frd", "fullyremovedata",
                 "info", "calculate", "average", "randommath", "help", "helpmath", "bypasslimit", "bypasslimit-remove", "bl", "bl-r");// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
         list = new ArrayList<>(list);

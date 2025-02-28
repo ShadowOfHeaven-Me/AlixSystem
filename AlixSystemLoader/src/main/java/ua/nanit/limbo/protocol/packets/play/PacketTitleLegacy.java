@@ -35,16 +35,18 @@ public class PacketTitleLegacy implements PacketOut {
         this.times = new PacketTitleTimes();
     }
 
-    public void setAction(Action action) {
+    public PacketTitleLegacy setAction(Action action) {
         this.action = action;
+        return this;
     }
 
-    public void setTitle(Title title) {
+    public PacketTitleLegacy setTitle(Title title) {
         this.title.setTitle(title.getTitle());
         this.subtitle.setSubtitle(title.getSubtitle());
         this.times.setFadeIn(title.getFadeIn());
         this.times.setStay(title.getStay());
         this.times.setFadeOut(title.getFadeOut());
+        return this;
     }
 
     @Override

@@ -63,6 +63,11 @@ public final class PremiumUtils {
         return uuid.version() == 4 ? PremiumStatus.PREMIUM : PremiumStatus.NON_PREMIUM;
     }
 
+    public static PremiumData getPremiumData(String username) {
+        var data = PremiumDataCache.getOrUnknown(username);
+
+        return data.getStatus().isKnown() ? data : requestPremiumData(username);
+    }
     public static PremiumData requestPremiumData(String name) {
         return premiumCheck.fetchPremiumData(name);
     }

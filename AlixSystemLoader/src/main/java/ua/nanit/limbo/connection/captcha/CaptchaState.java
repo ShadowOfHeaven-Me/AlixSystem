@@ -11,11 +11,13 @@ import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayInAnimation;
 import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayInChunkBatchAck;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.move.FlyingPacket;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayInPong;
-import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
+import ua.nanit.limbo.protocol.packets.play.tick.PacketPlayInTickEnd;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
 
 import static ua.nanit.limbo.connection.captcha.CaptchaState.CaptchaPacketType.*;
@@ -38,16 +40,21 @@ public final class CaptchaState implements VerifyState {
         ANIMATION,
         HELD_SLOT,
         FLYING,
-        COOKIE_RESPONSE
+        COOKIE_RESPONSE,
+        TICK_END
     }
 
     private <T extends PacketWrapper<T>> void handle0(T packet, CaptchaPacketType type) {
         try {
             this.invokeHandle0(packet, type);
         } catch (CaptchaFailedException ex) {
-            this.impl.disconnect(CAPTCHA_FAILED);
+            this.disconnect();
             if (NanoLimbo.printCaptchaFailed) ex.printStackTrace();
         }
+    }
+
+    private void disconnect() {
+        this.impl.disconnect(CAPTCHA_FAILED);
     }
 
     private <T extends PacketWrapper<T>> void invokeHandle0(T packet, CaptchaPacketType type) {
@@ -79,6 +86,9 @@ public final class CaptchaState implements VerifyState {
             case COOKIE_RESPONSE:
                 this.impl.handle((WrapperPlayClientCookieResponse) packet);
                 return;
+            case TICK_END:
+                this.impl.handle((WrapperPlayClientClientTickEnd) packet);
+                return;
             default:
                 throw new AlixError();
         }
@@ -87,6 +97,16 @@ public final class CaptchaState implements VerifyState {
     @Override
     public void sendInitial() {
         this.impl.sendInitial0();
+    }
+
+    @Override
+    public void handle(PacketPlayInItemRename packet) {
+        this.disconnect();
+    }
+
+    @Override
+    public void handle(PacketPlayInTickEnd packet) {
+        this.handle0(PacketPlayInTickEnd.WRAPPER, TICK_END);
     }
 
     @Override

@@ -20,6 +20,6 @@ public final class SoundPackets {
             NOTE_BLOCK_HARP = create(Sounds.BLOCK_NOTE_BLOCK_HARP);
 
     private static PacketSnapshot create(Sound sound) {
-        return new PacketPlayOutSound(new WrapperPlayServerSoundEffect(sound, SoundCategory.MASTER, POS, 100f, 1f, 0L)).toSnapshot();
+        return new PacketPlayOutSound(new WrapperPlayServerSoundEffect(sound, SoundCategory.MASTER, POS, 10000000000f, 1f, 0L)).toSnapshot();
     }
 }

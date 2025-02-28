@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.server;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelId;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
@@ -39,6 +40,10 @@ public final class Connections {
         return connections.values();
     }*/
 
+    public ClientConnection get(Channel channel) {
+        return this.connections.get(channel.id());
+    }
+
     public int getCount() {
         return this.connectionsCount.get(); //connections.size();
     }
@@ -54,12 +59,12 @@ public final class Connections {
         this.connectionsCount.incrementAndGet();
 
         connection.getChannel().closeFuture().addListener(future -> {
-            this.removeConnection(connection);
+            this.removeConnection0(connection);
         });
         //Log.info("Player %s connected (%s) [%s]", connection.getUsername(), connection.getAddress(), connection.getClientVersion());
     }
 
-    private void removeConnection(ClientConnection connection) {
+    public void removeConnection0(ClientConnection connection) {
         this.connections.remove(connection.getChannel().id());
         this.connectionsCount.decrementAndGet();
         //Log.info("Player %s disconnected", connection.getUsername());

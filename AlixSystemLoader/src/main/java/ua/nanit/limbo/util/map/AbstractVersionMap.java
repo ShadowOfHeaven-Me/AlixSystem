@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-abstract class AbstractVersionMap<T> {
+public abstract class AbstractVersionMap<T> {
 
     private static final int LENGTH = Version.values().length;
     private final Object[] data;

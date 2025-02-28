@@ -5,7 +5,7 @@ plugins {//java-library
 }
 
 group = "AlixSystemSpigot"
-version = "3.6.1"
+version = "3.6.3 (DEV-1)"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -42,8 +42,6 @@ repositories {
     //packetevents
     maven("https://repo.codemc.io/repository/maven-releases/")
     maven("https://repo.codemc.io/repository/maven-snapshots/")
-    //geyser/floodgate
-    maven("https://repo.opencollab.dev/main/")
     //paper
     maven("https://repo.papermc.io/repository/maven-public/")
 }
@@ -54,9 +52,6 @@ dependencies {
     implementation(project(":AlixAPI:AlixAPISpigot"))
 
     implementation("com.github.retrooper:packetevents-spigot:2.7.1-SNAPSHOT")
-
-    compileOnly("org.geysermc.geyser:api:2.4.2-SNAPSHOT")
-    compileOnly("org.geysermc.floodgate:api:2.2.3-SNAPSHOT")
 
     compileOnly("net.kyori:adventure-api:4.18.0")
 

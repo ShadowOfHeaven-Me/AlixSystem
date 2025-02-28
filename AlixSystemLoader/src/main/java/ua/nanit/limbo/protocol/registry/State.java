@@ -28,8 +28,8 @@ import ua.nanit.limbo.protocol.HandleMask;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.PacketIn;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.configuration.*;
+import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.*;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.play.*;
@@ -42,12 +42,17 @@ import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockSectionUpda
 import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockUpdate;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketEmptyChunkData;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketUnloadChunk;
+import ua.nanit.limbo.protocol.packets.play.config.PacketPlayInReconfigureAck;
+import ua.nanit.limbo.protocol.packets.play.config.PacketPlayOutReconfigure;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieRequest;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieStore;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutEntityMetadata;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutSpawnEntity;
+import ua.nanit.limbo.protocol.packets.play.explosion.PacketPlayOutExplosion;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.held.PacketPlayOutHeldSlot;
 import ua.nanit.limbo.protocol.packets.play.inventory.*;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInConfigKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
@@ -58,12 +63,14 @@ import ua.nanit.limbo.protocol.packets.play.move.PacketPlayInFlying;
 import ua.nanit.limbo.protocol.packets.play.move.PacketPlayInPosition;
 import ua.nanit.limbo.protocol.packets.play.move.PacketPlayInPositionAndRotation;
 import ua.nanit.limbo.protocol.packets.play.move.PacketPlayInRotation;
+import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayInPluginMessage;
+import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayOutPluginMessage;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayInPong;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayOutPing;
-import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
-import ua.nanit.limbo.protocol.packets.play.held.PacketPlayOutHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.packets.play.sound.PacketPlayOutSound;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
+import ua.nanit.limbo.protocol.packets.play.tick.PacketPlayInTickEnd;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayOutTransaction;
 import ua.nanit.limbo.protocol.packets.play.transfer.PacketPlayOutTransfer;
@@ -73,7 +80,6 @@ import ua.nanit.limbo.protocol.packets.status.PacketStatusRequest;
 import ua.nanit.limbo.util.map.VersionMap;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static ua.nanit.limbo.protocol.registry.Version.*;
@@ -190,6 +196,8 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInRotation::new, PacketType.Play.Client.PLAYER_ROTATION);
 
             serverBound.registerRetrooper(PacketPlayInPong::new, PacketType.Play.Client.PONG);
+            serverBound.registerRetrooper(PacketPlayInTickEnd::new, PacketType.Play.Client.CLIENT_TICK_END);
+            serverBound.registerRetrooper(PacketPlayInPluginMessage::new, PacketType.Play.Client.PLUGIN_MESSAGE);
             serverBound.registerRetrooper(PacketPlayInTeleportConfirm::new, PacketType.Play.Client.TELEPORT_CONFIRM);
             serverBound.registerRetrooper(PacketPlayInTransaction::new, PacketType.Play.Client.WINDOW_CONFIRMATION);
             serverBound.registerRetrooper(PacketPlayInHeldSlot::new, PacketType.Play.Client.HELD_ITEM_CHANGE);
@@ -198,6 +206,8 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInCookieResponse::new, PacketType.Play.Client.COOKIE_RESPONSE);
             serverBound.registerRetrooper(PacketPlayInInventoryClose::new, PacketType.Play.Client.CLOSE_WINDOW);
             serverBound.registerRetrooper(PacketPlayInClickSlot::new, PacketType.Play.Client.CLICK_WINDOW);
+            serverBound.registerRetrooper(PacketPlayInItemRename::new, PacketType.Play.Client.NAME_ITEM);
+            serverBound.registerRetrooper(PacketPlayInReconfigureAck::new, PacketType.Play.Client.CONFIGURATION_ACK);
 
             serverBound.register(PacketInPlayKeepAlive::new,
                     map(0x00, V1_7_6, V1_8),
@@ -218,16 +228,19 @@ public enum State {
                     map(0x1A, V1_21_2, V1_21_4)
             );
             clientBound.registerRetrooper(PacketPlayOutTransaction::new, PacketType.Play.Server.WINDOW_CONFIRMATION);
-            clientBound.registerRetrooper(PacketPlayPluginMessage::new, PacketType.Play.Server.PLUGIN_MESSAGE);
+            clientBound.registerRetrooper(PacketPlayOutPluginMessage::new, PacketType.Play.Server.PLUGIN_MESSAGE);
             clientBound.registerRetrooper(PacketPlayOutPing::new, PacketType.Play.Server.PING);
+            clientBound.registerRetrooper(PacketPlayOutExplosion::new, PacketType.Play.Server.EXPLOSION);
             clientBound.registerRetrooper(PacketOutCommands::new, PacketType.Play.Server.DECLARE_COMMANDS);
             clientBound.registerRetrooper(PacketPlayOutKeepAlive::new, PacketType.Play.Server.KEEP_ALIVE);
             clientBound.registerRetrooper(PacketPlayOutDisconnect::new, PacketType.Play.Server.DISCONNECT);
+            clientBound.registerRetrooper(PacketPlayOutReconfigure::new, PacketType.Play.Server.CONFIGURATION_START);
             clientBound.registerRetrooper(PacketPlayOutBlockSectionUpdate::new, PacketType.Play.Server.MULTI_BLOCK_CHANGE);
             clientBound.registerRetrooper(PacketPlayOutBlockUpdate::new, PacketType.Play.Server.BLOCK_CHANGE);
             clientBound.registerRetrooper(PacketPlayOutEntityMetadata::new, PacketType.Play.Server.ENTITY_METADATA);
             clientBound.registerRetrooper(PacketPlayOutSpawnEntity::new, PacketType.Play.Server.SPAWN_ENTITY);
             clientBound.registerRetrooper(PacketPlayOutInventoryOpen::new, PacketType.Play.Server.OPEN_WINDOW);
+            clientBound.registerRetrooper(PacketPlayOutInventoryClose::new, PacketType.Play.Server.CLOSE_WINDOW);
             clientBound.registerRetrooper(PacketPlayOutInventoryItems::new, PacketType.Play.Server.WINDOW_ITEMS);
             clientBound.registerRetrooper(PacketPlayOutMap::new, PacketType.Play.Server.MAP_DATA);
             clientBound.registerRetrooper(PacketPlayOutSetSlot::new, PacketType.Play.Server.SET_SLOT);
@@ -436,10 +449,15 @@ public enum State {
         }
     }*/
 
-    public final ProtocolMappings<PacketIn> serverBound = new ProtocolMappings<>();
-    public final ProtocolMappings<PacketOut> clientBound = new ProtocolMappings<>();
+    public final ProtocolMappings<PacketIn> serverBound = new ProtocolMappings<>(this);
+    public final ProtocolMappings<PacketOut> clientBound = new ProtocolMappings<>(this);
 
     State() {
+    }
+
+    public static State getState(PacketOut packet) {
+        //Log.error("getState: " + packet + " STATE: " + ProtocolMappings.clazzToState.get(packet));
+        return ProtocolMappings.clazzToState.get(packet.getClass());
     }
 
     //Will not fully work, but may stay for now
@@ -477,29 +495,37 @@ public enum State {
 
     public static final class ProtocolMappings<T extends Packet> {
 
-        private static final Set<Class<? extends Packet>> nuhUh = ConcurrentHashMap.newKeySet();
+        private static final Map<Class<? extends Packet>, State> clazzToState = new IdentityHashMap<>();
         //No need to use ConcurrentVersionMap here
         private final VersionMap<PacketRegistry> registry = new VersionMap<>();
+        private final State state;
+
+        private ProtocolMappings(State state) {
+            this.state = state;
+        }
+
         //private final Map<Version, PacketRegistry> registry = new EnumMap<>(Version.class);
 
         public PacketRegistry getRegistry(Version version) {
             return registry.getOrDefault(version, registry.get(getMin()));
         }
 
-        private static void ensureNoDuplicate(Class<? extends Packet> clazz) {
-            if (!nuhUh.add(clazz)) throw new AlixException("Packet clazz duplicate! - " + clazz.getSimpleName());
+        private static void registerAndEnsureNoDuplicate(Class<? extends Packet> clazz, State state) {
+            //Log.error("CLAZZ: " + clazz + " STATE: " + state);
+            if (clazzToState.put(clazz, state) != null)
+                throw new AlixException("Packet clazz duplicate! - " + clazz.getSimpleName());
         }
 
-        private static void register0(Supplier<? extends Packet> packet) {
+        private static void register0(Supplier<? extends Packet> packet, State state) {
             Class<? extends Packet> clazz = packet.get().getClass();
-            ensureNoDuplicate(clazz);
+            registerAndEnsureNoDuplicate(clazz, state);
 
             if (PacketIn.class.isAssignableFrom(clazz)) HandleMask.register(clazz);
         }
 
         //Gotta love packetevents ;]
         private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
-            register0(packet);
+            register0(packet, this.state);
             for (Version ver : Version.values()) {
                 if (!ver.isSupported()) continue;
 
@@ -512,7 +538,7 @@ public enum State {
         }
 
         private void register(Supplier<T> packet, Mapping... mappings) {
-            register0(packet);
+            register0(packet, this.state);
             for (Mapping mapping : mappings) {
                 for (Version ver : getRange(mapping)) {
                     PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);

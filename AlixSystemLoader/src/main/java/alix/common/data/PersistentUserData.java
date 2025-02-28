@@ -7,6 +7,7 @@ import alix.common.data.loc.AlixLocationList;
 import alix.common.data.loc.provider.LocationListProvider;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
+import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.file.SaveUtils;
 import org.jetbrains.annotations.NotNull;
 

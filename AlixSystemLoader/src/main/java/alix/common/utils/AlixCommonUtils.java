@@ -22,15 +22,19 @@ public final class AlixCommonUtils {
 
     public static final char[] generationChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-+=".toCharArray();
     private static final RandomCharIterator RANDOM_CHAR_ITERATOR = new RandomCharIterator(generationChars);
-    public static final Consumer EMPTY_CONSUMER = e -> {};
+    public static final Consumer EMPTY_CONSUMER = e -> {
+    };
     //public static final Predicate FALSE_PREDICATE = e -> false;
     public static final Random random = new Random();
     public static final boolean isGraphicEnvironmentHeadless;
-    private static final String
-            tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
-            tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
-            invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character-invalid"),
-            pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
+
+    private static final class DoNotThrow {
+        private static final String
+                tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
+                tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
+                invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character-invalid"),
+                pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
+    }
 
     static {
         boolean isGraphicEnvironmentHeadless0;
@@ -43,9 +47,18 @@ public final class AlixCommonUtils {
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
     }
 
+    public static String getNumbersOnly(String a) {
+        char[] chars = a.toCharArray();
+        StringBuilder numbersOnly = new StringBuilder();
+        for (char d : chars)
+            if (d >= 48 && d <= 57) numbersOnly.append(d);
+
+        return numbersOnly.toString();
+    }
+
     public static String getPasswordInvalidityReason(String password, LoginType type) {
         if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin
-            return isPIN(password) ? null : pinTypeInvalid;
+            return isPIN(password) ? null : DoNotThrow.pinTypeInvalid;
 
         return getInvalidityReason(password, false);
     }
@@ -60,18 +73,18 @@ public final class AlixCommonUtils {
 
     public static String getInvalidityReason(String text, boolean canBeShort) {
         int l = text.length();
-        if (l > Password.MAX_PASSWORD_LEN) return tooLongMessage;
-        if (!canBeShort && l < 5) return tooShortMessage;
+        if (l > Password.MAX_PASSWORD_LEN) return DoNotThrow.tooLongMessage;
+        if (!canBeShort && l < 5) return DoNotThrow.tooShortMessage;
         char[] b = text.toCharArray();
         for (char c : b) {
             switch (c) {
                 case '*':
                 case ':':
                 case ';':
-                    return AlixFormatter.format(invalidCharacterMessage, c);
+                    return AlixFormatter.format(DoNotThrow.invalidCharacterMessage, c);
                 default:
                     if (c < 35 || c > AlixFileManager.HIGHEST_CHAR || c > 90 && !Character.isLetter(c))
-                        return AlixFormatter.format(invalidCharacterMessage, c);
+                        return AlixFormatter.format(DoNotThrow.invalidCharacterMessage, c);
             }
         }
         return null; //The given text is valid

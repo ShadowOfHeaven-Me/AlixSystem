@@ -1,6 +1,8 @@
 package alix.common.packets.command;
 
 import alix.common.utils.netty.WrapperTransformer;
+import alix.common.utils.netty.WrapperUtils;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.chat.Node;
 import com.github.retrooper.packetevents.protocol.chat.Parsers;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDeclareCommands;
@@ -12,7 +14,7 @@ import java.util.List;
 
 public final class CommandsWrapperConstructor {
 
-    public static ByteBuf constructOneArg(List<String> commands, String argName, boolean supportAllChars, WrapperTransformer transformer) {
+    public static ByteBuf constructOneArg(List<String> commands, String argName, boolean supportAllChars, WrapperTransformer transformer, ServerVersion version) {
         List<Node> list = new ArrayList<>();
         List<Integer> indices = new ArrayList<>();
 
@@ -30,12 +32,14 @@ public final class CommandsWrapperConstructor {
             list.add(newNode0(NodeType.LITERAL, alias, Collections.singletonList(1), null, null, NodeFlag.IS_EXECUTABLE));
         }
 
+        var wrapper = new WrapperPlayServerDeclareCommands(list, 0);
+        WrapperUtils.setVersion(wrapper, version);
         //PacketEventsManager.debugCommands(new WrapperPlayServerDeclareCommands(list, 0));
 
-        return transformer.apply(new WrapperPlayServerDeclareCommands(list, 0));
+        return transformer.apply(wrapper);
     }
 
-    public static ByteBuf constructTwoArg(List<String> commands, String arg1Name, String arg2Name, boolean supportAllChars, WrapperTransformer transformer) {
+    public static ByteBuf constructTwoArg(List<String> commands, String arg1Name, String arg2Name, boolean supportAllChars, WrapperTransformer transformer, ServerVersion version) {
         List<Node> list = new ArrayList<>();
         List<Integer> indices = new ArrayList<>(commands.size());
 
@@ -59,9 +63,11 @@ public final class CommandsWrapperConstructor {
             list.add(newNode0(NodeType.LITERAL, alias, Collections.singletonList(1), null, null, NodeFlag.IS_EXECUTABLE));
         }
 
+        var wrapper = new WrapperPlayServerDeclareCommands(list, 0);
+        WrapperUtils.setVersion(wrapper, version);
         //PacketEventsManager.debugCommands(new WrapperPlayServerDeclareCommands(list, 0));
 
-        return transformer.apply(new WrapperPlayServerDeclareCommands(list, 0));
+        return transformer.apply(wrapper);
     }
 
     private static Node newNode0(NodeType nodeType, String name, List<Integer> children, Parsers.Parser parser, List<Object> properties, NodeFlag... flags) {

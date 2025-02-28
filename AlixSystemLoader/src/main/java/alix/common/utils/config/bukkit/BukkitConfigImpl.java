@@ -14,8 +14,18 @@ public final class BukkitConfigImpl implements ConfigProvider {
     }
 
     @Override
+    public int getInt(String s, int def) {
+        return config.getInt(s, def);
+    }
+
+    @Override
     public boolean getBoolean(String s) {
         return config.getBoolean(s);
+    }
+
+    @Override
+    public boolean getBoolean(String s, boolean def) {
+        return config.getBoolean(s, def);
     }
 
     @Override

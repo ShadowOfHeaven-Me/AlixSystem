@@ -32,8 +32,8 @@ import java.util.UUID;
 
 public final class EncryptionUtil {
 
-    static final int VERIFY_TOKEN_LENGTH = 4;
-    static final String KEY_PAIR_ALGORITHM = "RSA";
+    private static final int VERIFY_TOKEN_LENGTH = 4;
+    private static final String KEY_PAIR_ALGORITHM = "RSA";
 
     private static final int RSA_LENGTH = 1024;
 

@@ -101,7 +101,7 @@ public final class Password {
         return new Password(ofHashId(hashId).hash(generationBase), hashId);
     }*/
 
-    private static final Password SHARED_EMPTY = new Password(null, (byte) 0, "", null);
+    private static final Password SHARED_EMPTY = new Password(null, (byte) 0, "", ALIX_FORMAT);
     private static final HashingAlgorithm CONFIG_HASH = Hashing.getConfigHashingAlgorithm();
 
 /*    public static void write(Password password, ByteArrayDataOutput output) {
@@ -135,6 +135,9 @@ public final class Password {
     }
 
     public static Password fromUnhashed(String unhashedPassword) {
+        if (!CONFIG_HASH.isHashing())
+            return new Password(unhashedPassword, CONFIG_HASH, "", ALIX_FORMAT);
+
         String salt = Hashing.generateSalt();
         String hashed = Hashing.hashSaltFirst(CONFIG_HASH, unhashedPassword, salt);
         return new Password(hashed, CONFIG_HASH, salt, ALIX_FORMAT);

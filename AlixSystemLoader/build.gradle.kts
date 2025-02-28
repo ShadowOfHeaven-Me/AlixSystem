@@ -23,6 +23,8 @@ repositories {
     maven("https://repo.codemc.io/repository/maven-snapshots/")
     //paper
     maven("https://repo.papermc.io/repository/maven-public/")
+    //geyser/floodgate
+    maven("https://repo.opencollab.dev/main/")
     //bungeecord
     //maven("https://oss.sonatype.org/content/repositories/snapshots")
 
@@ -43,6 +45,10 @@ dependencies {
     api(files("$srcPath\\zxing-1.1.1.jar"))*/
     //can't find the internals
     //compileOnly(files("$srcPath\\velocity-3.4.0-SNAPSHOT-449.jar"))
+
+
+    //compileOnlyApi("org.geysermc.geyser:api:2.4.2-SNAPSHOT")
+    compileOnlyApi("org.geysermc.floodgate:api:2.2.3-SNAPSHOT")
 
     // https://mvnrepository.com/artifact/com.google.zxing/core
     api("com.google.zxing:core:3.4.0")// https://mvnrepository.com/artifact/com.google.zxing/javase
@@ -72,6 +78,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
     //compileOnly("com.velocitypowered:velocity-native:3.1.0") HOW IS THIS NOT FOUND
 }
+
+//java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 tasks.test {
     useJUnitPlatform()
 }

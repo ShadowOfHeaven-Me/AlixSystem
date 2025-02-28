@@ -5,11 +5,13 @@ import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
+import alix.common.login.LoginVerification;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.config.ConfigParams;
+import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.spigot.api.events.auth.AuthReason;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
@@ -19,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.gui.impl.IpAutoLoginGUI;
-import alix.common.login.LoginVerification;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.reminder.VerificationReminder;
 import shadow.systems.login.reminder.message.VerificationMessage;
@@ -38,7 +39,7 @@ import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
-import shadow.virtualization.LimboServerIntegration;
+import ua.nanit.limbo.integration.LimboIntegration;
 
 import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
@@ -117,7 +118,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
 
         this.joinedRegistered = registered;
         this.hasCompletedCaptcha = this.isBedrock || hasAccount || !requireCaptchaVerification//is a bedrock player, has an account or captcha is disabled
-                || LimboServerIntegration.hasCompletedCaptcha(this.address, player.getName());//passed the check in the virtual limbo server
+                || LimboIntegration.hasCompletedCaptcha(this.address, player.getName());//passed the check in the virtual limbo server
         this.captchaInitialized = !hasCompletedCaptcha;//the captcha (will be) initialized if the user is required to complete it
 
         this.loginType = hasAccount ? data.getLoginType() : ConfigParams.defaultLoginType;
@@ -406,6 +407,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
             registerJoinMessage = Messages.getAsObject("log-player-join-registered"),
             loginJoinMessage = Messages.getAsObject("log-player-join-logged-in");
 
+    @OptimizationCandidate
     private void sendJoinMessage() {
         AlixScheduler.async(() -> {
             AlixMessage msg = this.captchaInitialized ? captchaJoinMessage : this.joinedRegistered ? loginJoinMessage : registerJoinMessage;

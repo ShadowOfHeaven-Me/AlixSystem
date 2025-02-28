@@ -27,6 +27,9 @@ public class Title {
     private int stay;
     private int fadeOut;
 
+    public Title() {
+    }
+
     public NbtMessage getTitle() {
         return title;
     }
@@ -47,23 +50,28 @@ public class Title {
         return fadeOut;
     }
 
-    public void setTitle(NbtMessage title) {
+    public Title setTitle(NbtMessage title) {
         this.title = title;
+        return this;
     }
 
-    public void setSubtitle(NbtMessage subtitle) {
+    public Title setSubtitle(NbtMessage subtitle) {
         this.subtitle = subtitle;
+        return this;
     }
 
-    public void setFadeIn(int fadeIn) {
+    public Title setFadeIn(int fadeIn) {
         this.fadeIn = fadeIn;
+        return this;
     }
 
-    public void setStay(int stay) {
+    public Title setStay(int stay) {
         this.stay = stay;
+        return this;
     }
 
-    public void setFadeOut(int fadeOut) {
+    public Title setFadeOut(int fadeOut) {
         this.fadeOut = fadeOut;
+        return this;
     }
 }

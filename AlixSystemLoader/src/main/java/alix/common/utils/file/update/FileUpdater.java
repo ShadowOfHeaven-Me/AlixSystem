@@ -3,6 +3,7 @@ package alix.common.utils.file.update;
 import alix.common.AlixCommonMain;
 import alix.common.environment.ServerEnvironment;
 import alix.common.utils.file.AlixFileManager;
+import alix.loaders.velocity.VelocityAlixMain;
 import lombok.SneakyThrows;
 
 import java.io.File;
@@ -17,20 +18,25 @@ public final class FileUpdater {
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:
-                //messages.yml
-                File messagesFile = updateFile("messages.txt", true);
+                //messages.txt
+                File messagesFile = updateFile("messages.txt", DEFAULT_SPLITERATOR);
                 MessagesFileUpdater.updateFormatting(messagesFile);
 
                 //commands.txt
-                updateFile("commands.txt", true, Validation.VALIDATE_HASHTAG_START);
+                updateFile("commands.txt", DEFAULT_SPLITERATOR, Validation.VALIDATE_HASHTAG_START);
 
                 //config.yml
-                updateFile("config.yml", false, Validation.VALIDATE_TRIMMED_DASH_START);
+                updateFile("config.yml", DEFAULT_SPLITERATOR, Validation.VALIDATE_TRIMMED_DASH_START);
 
                 //updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;
             case VELOCITY:
-                updateFile("config.yml", true, Validation.VALIDATE_TRIMMED_DASH_START);
+                updateFile("config.yml", DEFAULT_SPLITERATOR, Validation.VALIDATE_TRIMMED_DASH_START);
+
+                var params = VelocityAlixMain.instance.getEngineParams();
+
+                //messages.properties
+                updateFile(params.messagesFileName(), params.messagesSeparator());
                 break;
         }
     }
@@ -46,7 +52,7 @@ public final class FileUpdater {
      */
 
     @SneakyThrows
-    private static File updateFile(String name, boolean mainClazzDir, Validation... validate) {
+    private static File updateFile(String name, char spliterator, Validation... validate) {
         String[] splitName = name.split("\\.");
 
         if (splitName.length != 2)
@@ -65,7 +71,7 @@ public final class FileUpdater {
         tempFile.createNewFile();
 
         File newestFile = AlixFileManager.writeJarCompiledFileIntoDest(tempFile, name);//temp file is the exact same thing as the 'newest file'
-        ensureUpdated(file, newestFile, DEFAULT_SPLITERATOR, Arrays.asList(validate));
+        ensureUpdated(file, newestFile, spliterator, Arrays.asList(validate));
 
         tempFile.delete();
         return file;
@@ -90,7 +96,7 @@ public final class FileUpdater {
 
     /*
         File messagesFile = Messages.getFile().getFile();
-        update(messagesFile, () -> MessagesFile.createFile("messages.yml"), ':');*/
+        update(messagesFile, () -> MessagesFile.createFile("messages.properties"), ':');*/
 
 /*    String originalName = oldFile.getName();
     String extension = originalName.substring(originalName.lastIndexOf('.'));

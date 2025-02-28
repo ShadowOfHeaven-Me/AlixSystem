@@ -1,11 +1,12 @@
 package shadow.systems.commands.alix;
 
+import alix.common.commands.file.AlixCommandInfo;
+import alix.common.commands.file.CommandsFileManager;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.keys.str.CharArray;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import shadow.systems.commands.CommandManager;
-import shadow.systems.commands.alix.file.CommandsFile;
 import shadow.systems.commands.alix.verification.VerificationCommand;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.users.types.UnverifiedUser;
@@ -16,7 +17,6 @@ import java.util.Map;
 
 public final class AlixCommandManager {
 
-    private static final CommandsFile commandsFile = new CommandsFile();
     private static final Map<CharArray, VerificationCommand> verificationCommands = new HashMap<>();
 
 /*    public static boolean isPluginCommandPresent(String cmd) {
@@ -24,7 +24,7 @@ public final class AlixCommandManager {
     }*/
 
     public static AlixCommandInfo getCommand(String cmd) {
-        return commandsFile.getAlixCommands().get(cmd);
+        return CommandsFileManager.getCommand(cmd);
     }
 
 /*    public static boolean isLoginCommand(String cmd) {
@@ -114,13 +114,13 @@ public final class AlixCommandManager {
     }
 
     static {
-        commandsFile.loadExceptionless();
+        CommandsFileManager.init();
 
         //VerificationCommand captcha = VerificationCommand.OF_CAPTCHA;
         VerificationCommand register = VerificationCommand.OF_REGISTER;
         VerificationCommand login = VerificationCommand.OF_LOGIN;
 
-        for (String commandAlias : commandsFile.getLoginCommands()) {
+        for (String commandAlias : CommandsFileManager.getLoginCommands()) {
             AlixCommandInfo alix = getCommand(commandAlias);
             if (alix == null)
                 throw new ExceptionInInitializerError("Invalid verification command: '" + commandAlias + "'!");

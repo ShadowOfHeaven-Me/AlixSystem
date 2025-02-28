@@ -14,10 +14,15 @@ public final class AlixFormatter {
     static {
         messagePrefix = translateColors(ConfigProvider.config.getString("prefix"));
         appendPrefix = ConfigProvider.config.getBoolean("append-prefix");
+        //AlixCommonMain.logError("messagePrefix='" + messagePrefix + "' appendPrefix=" + appendPrefix);
     }
 
     public static String appendPrefix(String m) {
         return appendPrefix ? messagePrefix + m : m;
+    }
+
+    public static String colorize(String m) {
+        return appendPrefix(translateColors(m));
     }
 
     /**

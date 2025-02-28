@@ -32,8 +32,7 @@ public final class VerificationBedrockGUI implements AlixBedrockVerificationGui 
     private final FloodgatePlayer player;
     private final CustomForm form;
 
-    //Source code: https://github.com/Null-K/KcLoginGui_En/blob/ma
-    // 3,ster/src/main/java/com/puddingkc/KcLoginGui.java ;]
+    //Source code: https://github.com/Null-K/KcLoginGui_En/blob/master/src/main/java/com/puddingkc/KcLoginGui.java ;]
     public VerificationBedrockGUI(UnverifiedUser user, Object bedrockPlayer) {
         this.user = user;
         this.player = (FloodgatePlayer) bedrockPlayer; //FloodgateApi.getInstance().getPlayer(this.user.getPlayer().getUniqueId());

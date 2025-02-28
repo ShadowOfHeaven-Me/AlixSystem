@@ -73,7 +73,7 @@ max-captcha-time: 45
 #                    LOGIN                     #
 #----------------------------------------------#
 
-#Config used when the player is in the login phase, either trying to login in or register
+#Config used for matters related to logging in/registering
 
 #Defines how the register/login message reminders should be presented
 #Available:
@@ -91,10 +91,11 @@ require-password-repeat-in-register: false
 #Defines whether all characters (so including non-english chars) should be shown as valid during verification command typing, either during login or register.
 #If set to false, only english characters will be seen as valid by the verifying user. Any other character range will be shown in red as invalid. However, when
 # password repeat in /register is enabled, the second password argument will differ in color, making it more distinguishable
+# Set it to false if you only expect english users
 command-support-all-characters: true
-#Defines how long (in the given unit) should an ip autologin session be valid for. Any unit can be used, for example 10m, 72h, 14d, 1 month. This parameter does not account for decimal places. Set to 0 or less disables this logic.
+#Defines how long (in the given unit) should an ip autologin session be valid for. Any unit can be used, for example 10m, 72h, 14d, 1 month. This parameter does not account for decimal places. Setting to 0 or less disables this logic.
 autologin-expiry: 0
-#Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users if you allows vpn connections). This value is used as the default if the given user does not specify it himself.
+#Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users if you allow vpn connections). This value is used as the default if the given user does not specify it himself.
 auto-login: true
 #Defines whether the ip autologin should be forcefully disabled. This option has a higher priority than the user's /account settings
 forcefully-disable-auto-login: false
@@ -112,23 +113,24 @@ max-auth-app-attempts: 2
 # 4 - Uses SHA-256, always saved into a 64 character-long hex
 # 5 - Uses SHA-512, always saved into a 64 character-long hex
 password-hash-type: 3
-#Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure his ip autologin, right after registering
+#Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure their ip autologin preference, right after registering
 auto-ip-autologin-ask: true
-#Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server join if account ownership is not proven. If successfully proven, the user will from now on be automatically logged in/registered only if premium
-#Possible values:
+#Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server
+# join if account ownership is not proven (unless 'assume-non-premium-if-auth-failed' is true). If successfully proven, the user will from now on be automatically logged in/registered if premium
+# Possible values:
 # never - Allows cracked players to join with premium nicknames
 # unregistered_and_suggested -
 #    Unregistered players with premium nicknames, who suggest they are premium by various means (1.19+ clients),
 #    will be requested to authenticate their account ownership. Remember that this also means that cracked players with premium nicknames will also be able to register,
-#    which in return would disallow the owners of those premium accounts from ever joining your server.
+#    which in return might disallow the owners of those premium accounts from ever joining your server.
 # unregistered - Unregistered players with premium nicknames will always be requested to authenticate their account ownership
 #  (unregistered cracked players can't ever join with the nickname of a premium player)
 # always - Premium nicknames will always be requested to perform premium authentication (WARNING: This technically allows any premium player to steal a cracked user's account by simply changing their name to match theirs)
 require-ownership-of-premium-nickname: unregistered_and_suggested
-#Defines whether clients using a version before 1.19 and a premium nicknames should be assumed to be premium
+#Defines whether clients using a version before 1.19, and a premium nickname, should be assumed to be premium
 # When true:
 # Premium pre-1.19 clients will be automatically logged in/registered, but cracked clients within that version range
-# might not be able to join with nicknames of premium players (depends on if the client disconnects by itself, the premium status will be assumed by the parameter below this one)
+# might not be able to join with nicknames of premium players (if the client does not disconnect by itself, the premium status will be assumed by the 'assume-non-premium-if-auth-failed' parameter)
 # When false:
 # Premium pre-1.19 clients will need to manually log in/register, but cracked clients within that version range will be
 # able to join with nicknames of premium players without the risk of disconnecting
@@ -196,15 +198,15 @@ use-this-syntax: false
 
 
 #------------------------------------------------#
-#                   UTILITIES                    #
+#                    GENERAL                     #
 #------------------------------------------------#
 
 #Config used for the overall set-up
 
 #(Deprecated)
-#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.yml file)
+#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.properties file)
 language: en
-#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.yml file)
+#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.properties file)
 custom-join-log: true
 #Defines which fallback location should be used if for some unknown reason, the player is destined to respawn in the verification world
 # true - The last saved location will be used or the Alix spawn (defined by /setspawn) if it's absent as well
@@ -223,11 +225,12 @@ append-prefix: true
 #Defines (in milliseconds) the teleportation delay for user teleports (such as /tpa, /spawn etc.)
 user-teleportation-delay: 5000
 
+
 #------------------------------------------------#
 #                   TECHNICAL                    #
 #------------------------------------------------#
 
-#Config used for the very technical features of this plugin
+#Config used for the very technical features of Alix
 
 #Defines whether during verification all entity packets should be stopped from being sent to the user. If set to false, only packets about other players will be blocked, and all other entities will be shown. Leaving this at 'true' is slightly more optimized.
 filter-all-entity-packets: true

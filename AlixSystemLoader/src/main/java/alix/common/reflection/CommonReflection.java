@@ -89,4 +89,23 @@ public final class CommonReflection {
             throw new RuntimeException(e);
         }
     }
+
+    public static Class<?> forName(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    public static Class<?> forName(String... names) {
+        for (String s : names) {
+            try {
+                return Class.forName(s);
+            } catch (ClassNotFoundException ignored) {
+
+            }
+        }
+        throw new ExceptionInInitializerError("Not found: " + Arrays.toString(names));
+    }
 }

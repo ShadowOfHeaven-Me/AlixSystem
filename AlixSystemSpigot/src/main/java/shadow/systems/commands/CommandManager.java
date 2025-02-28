@@ -3,8 +3,12 @@ package shadow.systems.commands;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
+import alix.common.data.premium.PremiumData;
+import alix.common.data.premium.PremiumDataCache;
+import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
 import alix.common.packets.command.CommandsWrapperConstructor;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import io.netty.buffer.ByteBuf;
@@ -18,12 +22,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import shadow.Main;
-import shadow.systems.commands.alix.AlixCommandInfo;
+import alix.common.commands.file.AlixCommandInfo;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.commands.alix.impl.AlixCommand;
 import shadow.systems.commands.tab.CommandTabCompleterAS;
 import shadow.systems.commands.tab.subtypes.*;
 import shadow.systems.gui.impl.AccountGUI;
+import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.command.managers.ChatManager;
 import shadow.utils.command.managers.PersonalMessageManager;
 import shadow.utils.command.tpa.TpaManager;
@@ -36,10 +41,10 @@ import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
+import shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.UnverifiedUser;
 import shadow.utils.users.types.VerifiedUser;
-import shadow.utils.objects.packet.types.verified.VerifiedPacketProcessor;
 
 import java.util.Collection;
 import java.util.Date;
@@ -362,7 +367,7 @@ public final class CommandManager {
 
     private static void registerDefaultCommands() {
         try {
-            registerCommandForcibly("as", new AdminAlixCommands(), new CommandTabCompleterAS(), "alixsystem.admin");
+            registerCommandForcibly("alixsystem", new AdminAlixCommands(), new CommandTabCompleterAS(), "alixsystem.admin");
             registerCommand("fly", new FlyCommand());
             registerCommand("rename", new ItemRenameCommand());
             registerCommand("speed", new SpeedCommand());
@@ -386,6 +391,7 @@ public final class CommandManager {
 
             registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
             registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
+            registerPermissionlessCommandForcibly("premium", new PremiumCommand());
 
             registerCommand("unban", new UnbanCommand(), new NameBanCommandTabCompleter());
             registerCommand("unbanip", new UnbanIPCommand(), new IPBanCommandTabCompleter());
@@ -1565,14 +1571,70 @@ public final class CommandManager {
         return false;
     }
 
-/*    private static final class RegisterCommand implements CommandExecutor {
+    /*    private static final class RegisterCommand implements CommandExecutor {
+
+            @Override
+            public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+                sender.sendMessage(commandUnreachable);
+                return false;
+            }
+        }*/
+
+    private static final class PremiumCommand implements CommandExecutor {
+
+        private static final ByteBuf
+                alreadyPremiumMessage = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("premium-command-already-premium")),
+                premiumDataMessage = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("premium-command-premium")),
+                nonPremiumDataMessage = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("premium-command-non-premium")),
+                unknownDataMessage = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("premium-command-unknown"));
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-            sender.sendMessage(commandUnreachable);
-            return false;
+            if (isConsoleButPlayerRequired(sender)) return false;
+            Player player = (Player) sender;
+            var user = UserManager.get(player.getUniqueId());
+            var channel = user.getChannel();
+            var uuid = AlixChannelHandler.getLoginAssignedUUID(channel);
+            boolean canBePremium = uuid == null || uuid.version() == 4;
+
+            if (!canBePremium) {
+                user.writeAndFlushSilently(nonPremiumDataMessage);
+                return false;
+            }
+
+            String name = player.getName();
+            var data = UserFileManager.get(name);
+
+            if (data.getPremiumData().getStatus().isPremium()) {
+                user.writeAndFlushSilently(alreadyPremiumMessage);
+                return false;
+            }
+
+            AlixScheduler.asyncBlocking(() -> {
+                PremiumData premiumData = PremiumDataCache.getOrUnknown(name);
+                if (premiumData.getStatus().isUnknown()) {
+                    premiumData = PremiumUtils.requestPremiumData(name);
+                    if (premiumData.getStatus().isKnown()) PremiumDataCache.add(name, premiumData);
+                }
+
+                switch (premiumData.getStatus()) {
+                    case PREMIUM: {
+                        user.writeAndFlushSilently(premiumDataMessage);
+                        data.setPremiumData(premiumData);
+                        return;
+                    }
+                    case NON_PREMIUM: {
+                        user.writeAndFlushSilently(nonPremiumDataMessage);
+                        return;
+                    }
+                    case UNKNOWN: {
+                        user.writeAndFlushSilently(unknownDataMessage);
+                    }
+                }
+            });
+            return true;
         }
-    }*/
+    }
 
     private static final class AccountSettingsCommand implements CommandExecutor {
 

@@ -6,4 +6,7 @@ public interface HashingAlgorithm {
 
     byte hashId();
 
+    default boolean isHashing() {
+        return this.hashId() != 0;
+    }
 }

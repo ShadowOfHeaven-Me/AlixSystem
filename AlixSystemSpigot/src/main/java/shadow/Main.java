@@ -50,12 +50,7 @@ public final class Main implements LoaderBootstrap {
 
     //UPDATE:
 
-    //* Fixed the server not letting the player in after the automatic captcha, when 'accept-transfers=false' in server.properties
-    //* Fixed encryption enable method not being found on paper 1.21.4
-    //* Fixed "(No user)" appearing for bedrock players
-    //+ Linked bedrock players will now also be automatically logged in
-    //+ Cracked players with premium nicknames below 1.19 now have the possibility
-    // to be remapped into the NON_PREMIUM status, instead of being disallowed from joining
+    //*
 
     //Note:
     //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
@@ -112,6 +107,7 @@ public final class Main implements LoaderBootstrap {
         this.metrics = Metrics.createMetrics();
         //logError(FigletFont.convertOneLine("SEX12"));
         kickAll("Reload");
+
         //PacketType.Play.Server.PLUGIN_MESSAGE
     }
 

@@ -13,5 +13,4 @@ public final class CloudflareCaptcha {
             throw new RuntimeException(e);
         }
     }
-
 }

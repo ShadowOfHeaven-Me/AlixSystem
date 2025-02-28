@@ -11,6 +11,7 @@ import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockUpdate;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.server.Log;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -72,6 +73,8 @@ public enum CaptchaBlock {
         Version clientVersion = connection.getClientVersion();
         int maxLen = getLen(clientVersion);
         CaptchaBlock block = AlixCommonUtils.getRandom(CaptchaBlock.values(), maxLen);
+
+        Log.warning("BLOCK: " + block.blockType);
 
         connection.writeAndFlushPacket(block.packetSnapshot);
         return block;

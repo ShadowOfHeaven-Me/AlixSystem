@@ -32,6 +32,9 @@ public final class WrapperUtils {
         wrapper.buffer = buf;
         return wrapper;
     }*/
+    public static void setVersion(PacketWrapper<?> wrapper, ServerVersion version) {
+        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+    }
 
     public static <T extends PacketWrapper> T allocNoBuf(ServerVersion version, Class<T> wrapperClazz) {
         T wrapper = allocEmpty(wrapperClazz);
@@ -49,6 +52,13 @@ public final class WrapperUtils {
     /*public static <T extends PacketWrapper> T allocUnpooled(ServerVersion version, Class<T> wrapperClazz) {
         return alloc(BufUtils.unpooledBuffer(), version, wrapperClazz);
     }*/
+
+    public static <T extends PacketWrapper> void writeWithID(T wrapper, ByteBuf buf, ServerVersion version) {
+        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        wrapper.buffer = buf;
+        wrapper.writeVarInt(wrapper.getNativePacketId());
+        wrapper.write();
+    }
 
     public static <T extends PacketWrapper> void writeNoID(T wrapper, ByteBuf buf, ServerVersion version) {
         UNSAFE.putObject(wrapper, serverVersionOffset, version);

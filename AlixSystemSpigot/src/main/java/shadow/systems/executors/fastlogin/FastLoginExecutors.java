@@ -7,7 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import shadow.Main;
 import shadow.systems.login.autoin.PremiumAutoIn;
-import shadow.systems.login.autoin.PremiumSetting;
+import alix.common.login.premium.PremiumSetting;
 
 import static alix.common.login.premium.PremiumUtils.isNamePremium;
 

@@ -5,15 +5,16 @@ import alix.common.data.LoginType;
 public final class ConfigParams {
 
     public static final int maximumTotalAccounts;
-    public static final boolean isDebugEnabled, isCaptchaMap, playerIPAutoLogin;
+    public static final boolean isDebugEnabled, isCaptchaMap, playerIPAutoLogin, forcefullyDisableAutoLogin;
     public static final LoginType defaultLoginType;
 
     static {
         ConfigProvider config = ConfigProvider.config;
         maximumTotalAccounts = config.getInt("max-total-accounts");
         isDebugEnabled = config.getBoolean("debug");
-        isCaptchaMap = config.getString("captcha-visual-type").equalsIgnoreCase("map");
-        playerIPAutoLogin = config.getBoolean("auto-login");
+        isCaptchaMap = false; //config.getString("captcha-visual-type").equalsIgnoreCase("map");
+        forcefullyDisableAutoLogin = config.getBoolean("forcefully-disable-auto-login");
+        playerIPAutoLogin = config.getBoolean("auto-login") && !forcefullyDisableAutoLogin;
         defaultLoginType = LoginType.from(config.getString("password-type").toUpperCase(), true);
 
         /*String loginType = config.getString("password-type").toLowerCase();

@@ -2,6 +2,8 @@ package shadow.utils.misc;
 
 import alix.common.messages.Messages;
 import alix.common.utils.netty.WrapperTransformer;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import io.netty.buffer.ByteBuf;
 import shadow.Main;
 import shadow.systems.commands.alix.AlixCommandManager;
@@ -19,13 +21,14 @@ public final class CommandsPacketManager {
     private static final boolean supportAllChars = Main.config.getBoolean("command-support-all-characters");
     public static final ByteBuf REGISTER = constructRegister();
     public static final ByteBuf LOGIN = constructLogin();
+    private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
 
     //https://wiki.vg/Command_Data
     private static ByteBuf constructLogin() {
         List<String> aliases = AlixCommandManager.getCommand("login").createAliasesList();
         aliases.add("login");
 
-        return constructOneArg(aliases, Messages.get("commands-login-password-arg"), supportAllChars, WrapperTransformer.CONST);
+        return constructOneArg(aliases, Messages.get("commands-login-password-arg"), supportAllChars, WrapperTransformer.CONST, version);
     }
 
     private static ByteBuf constructRegister() {
@@ -33,9 +36,9 @@ public final class CommandsPacketManager {
         aliases.add("register");
 
         if (AlixUtils.requirePasswordRepeatInRegister)
-            return constructTwoArg(aliases, Messages.get("commands-register-password-arg"), Messages.get("commands-register-password-second-arg"), supportAllChars, NettyUtils::constBuffer);
+            return constructTwoArg(aliases, Messages.get("commands-register-password-arg"), Messages.get("commands-register-password-second-arg"), supportAllChars, NettyUtils::constBuffer, version);
 
-        return constructOneArg(aliases, Messages.get("commands-register-password-arg"), supportAllChars, WrapperTransformer.CONST);
+        return constructOneArg(aliases, Messages.get("commands-register-password-arg"), supportAllChars, WrapperTransformer.CONST, version);
     }
 
     public static void writeAndFlush(UnverifiedUser user) {

@@ -1,8 +1,9 @@
-as: alixsystem, alix
+alixsystem: as, alix
 register: -
 login: -
 account: settings
 changepassword: -
+premium: -
 ##fly: flying
 ##sudo: -
 ##rename: itemrename

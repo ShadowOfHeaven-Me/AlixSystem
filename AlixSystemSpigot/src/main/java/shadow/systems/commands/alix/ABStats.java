@@ -41,26 +41,21 @@ public final class ABStats {
                 if (task != null) return v;
                 if (task == null)
                     AntiBotStatistics.INSTANCE.markViewed(true);
-                task = AlixScheduler.repeatAsync(new Runnable() {
-
-                    private boolean reset;
-
-                    @Override
-                    public void run() {
-                        BaseComponent component = new TextComponent(AntiBotStatistics.INSTANCE.getFormattedStatistics());
-                        for (UUID uuid : map.keySet()) {
-                            VerifiedUser u = UserManager.getNullableVerifiedUser(uuid);
-                            if (u == null) {
-                                manageTask(map.remove(uuid));
-                                continue;
-                            }
-                            sendInfo0(u, component);
+                //private boolean reset;
+                task = AlixScheduler.repeatAsync(() -> {
+                    BaseComponent component = new TextComponent(AntiBotStatistics.INSTANCE.getFormattedStatistics());
+                    for (UUID uuid : map.keySet()) {
+                        VerifiedUser u = UserManager.getNullableVerifiedUser(uuid);
+                        if (u == null) {
+                            manageTask(map.remove(uuid));
+                            continue;
                         }
-
-                        this.reset = !this.reset;
-                        if (reset) AntiBotStatistics.INSTANCE.reset();
+                        sendInfo0(u, component);
                     }
-                }, 500, TimeUnit.MILLISECONDS);
+
+                    //this.reset = !this.reset;
+                    //if (reset) AntiBotStatistics.INSTANCE.reset();
+                }, 250, TimeUnit.MILLISECONDS);
                 break;
         }
         return v;

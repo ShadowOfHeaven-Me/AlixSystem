@@ -106,6 +106,7 @@ public enum Version {
     }
 
     private final ServerVersion retrooperVersion;
+    private final ClientVersion clientVersion;
     private final int protocolNumber;
     private final List<String> displayNames;
     private Version prev;
@@ -113,15 +114,15 @@ public enum Version {
     Version(int protocolNumber, List<String> displayNames) {
         this.protocolNumber = protocolNumber;
         this.displayNames = displayNames;
-        ClientVersion version = ClientVersion.getById(this.protocolNumber);
+        this.clientVersion = ClientVersion.getById(this.protocolNumber);
 
-        if (version == null)
+        if (clientVersion == null)
             throw new AlixException("Unsupported protocol: " + this.protocolNumber + ", cannot be registered.");
 
-        this.retrooperVersion = version.toServerVersion(); //toServerVersion(version);
+        this.retrooperVersion = clientVersion.toServerVersion(); //toServerVersion(version);
 
         if (this.retrooperVersion == null)
-            throw new AlixError("ERROR: protocol: " + this.protocolNumber + " FOR VERSION: " + version + " is NULL, cannot be registered.");
+            throw new AlixError("ERROR: protocol: " + this.protocolNumber + " FOR VERSION: " + clientVersion + " is NULL, cannot be registered.");
     }
 
     //Literally ClientVersion.V_1_9_1(108) is the only one that outputs null with toServerVersion()
@@ -142,6 +143,10 @@ public enum Version {
 
     public ServerVersion getRetrooperVersion() {
         return retrooperVersion;
+    }
+
+    public ClientVersion getClientVersion() {
+        return clientVersion;
     }
 
     public int getProtocolNumber() {

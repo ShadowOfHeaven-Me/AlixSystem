@@ -26,8 +26,9 @@ public class PacketTitleSetSubTitle implements PacketOut {
 
     private NbtMessage subtitle;
 
-    public void setSubtitle(NbtMessage subtitle) {
+    public PacketTitleSetSubTitle setSubtitle(NbtMessage subtitle) {
         this.subtitle = subtitle;
+        return this;
     }
 
     @Override

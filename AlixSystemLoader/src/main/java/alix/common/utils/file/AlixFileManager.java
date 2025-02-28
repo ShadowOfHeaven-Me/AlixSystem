@@ -2,6 +2,7 @@ package alix.common.utils.file;
 
 
 import alix.common.AlixCommonMain;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import lombok.SneakyThrows;
@@ -119,11 +120,21 @@ public abstract class AlixFileManager {
 
     public static void write(File file, Collection<?> lines) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {//new BufferedWriter(new FileWriter(file, CHARSET))
-            for (Object data : lines) {
-                writer.write(data.toString());
-                writer.newLine();
+            for (Object line : lines) {
+                try {
+                    writer.write(line.toString());
+                    writer.newLine();
+                } catch (Exception e) {
+                    AlixCommonMain.logError("Error during file writing!");
+                    AlixCommonUtils.logException(e);
+                }
             }
         }
+    }
+
+    public static File getOrCreatePluginFile(String name, FileType type) {
+        File f = AlixFileManager.getPluginFile(name, type);
+        return f.exists() ? f : AlixFileManager.createPluginFile(name, type);
     }
 
     public static File writeJarCompiledFileIntoDest(String s, FileType type) {
@@ -193,7 +204,7 @@ public abstract class AlixFileManager {
         }
     }
 
-    protected static File getPluginFile(String fileName, FileType type) {
+    public static File getPluginFile(String fileName, FileType type) {
         String path = AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath().toString();
 
         switch (type) {
@@ -270,7 +281,11 @@ public abstract class AlixFileManager {
     }
 
     public void load() throws IOException {
-        readLines(file, this::loadLine, false);
+        this.load(false);
+    }
+
+    public void load(boolean acceptEmpty) throws IOException {
+        readLines(file, this::loadLine, acceptEmpty);
     }
 
     protected void loadSingularValue() {

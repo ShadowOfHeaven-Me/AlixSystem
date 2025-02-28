@@ -27,4 +27,7 @@ public final class UserTokensFileManager {
     static {
         file.loadExceptionless();
     }
+
+    public static void init() {
+    }
 }
