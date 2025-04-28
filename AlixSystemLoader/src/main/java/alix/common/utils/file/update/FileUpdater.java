@@ -15,6 +15,11 @@ public final class FileUpdater {
     private static final char DEFAULT_SPLITERATOR = ':';
 
     public static void updateFiles() {
+        updateFile("database.yml", DEFAULT_SPLITERATOR);
+
+        //config.yml
+        updateFile("config.yml", DEFAULT_SPLITERATOR, Validation.VALIDATE_TRIMMED_DASH_START);
+
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:
@@ -24,9 +29,6 @@ public final class FileUpdater {
 
                 //commands.txt
                 updateFile("commands.txt", DEFAULT_SPLITERATOR, Validation.VALIDATE_HASHTAG_START);
-
-                //config.yml
-                updateFile("config.yml", DEFAULT_SPLITERATOR, Validation.VALIDATE_TRIMMED_DASH_START);
 
                 //updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;

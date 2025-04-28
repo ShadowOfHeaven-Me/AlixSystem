@@ -24,15 +24,15 @@ import ua.nanit.limbo.connection.UnsafeCloseFuture;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 public final class Connections {
 
     private final Map<ChannelId, ClientConnection> connections;
-    private final AtomicInteger connectionsCount;
+    private final LongAdder connectionsCount;
 
     public Connections() {
-        this.connectionsCount = new AtomicInteger();
+        this.connectionsCount = new LongAdder();
         this.connections = new ConcurrentHashMap<>();
     }
 
@@ -45,7 +45,7 @@ public final class Connections {
     }
 
     public int getCount() {
-        return this.connectionsCount.get(); //connections.size();
+        return (int) this.connectionsCount.sum(); //connections.size();
     }
 
     public void disconnectAll() {
@@ -56,7 +56,7 @@ public final class Connections {
 
     public void addConnection(ClientConnection connection) {
         this.connections.put(connection.getChannel().id(), connection);
-        this.connectionsCount.incrementAndGet();
+        this.connectionsCount.increment();
 
         connection.getChannel().closeFuture().addListener(future -> {
             this.removeConnection0(connection);
@@ -65,8 +65,11 @@ public final class Connections {
     }
 
     public void removeConnection0(ClientConnection connection) {
-        this.connections.remove(connection.getChannel().id());
-        this.connectionsCount.decrementAndGet();
+        var removed = this.connections.remove(connection.getChannel().id());
+        if (removed != null) {
+            this.connectionsCount.decrement();
+            connection.getVerifyState().onLimboDisconnect();
+        }
         //Log.info("Player %s disconnected", connection.getUsername());
     }
 }

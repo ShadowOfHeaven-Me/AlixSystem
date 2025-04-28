@@ -1,7 +1,6 @@
 package alix.common.utils.netty;
 
 import alix.common.utils.other.AlixUnsafe;
-import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
@@ -11,7 +10,7 @@ import sun.misc.Unsafe;
 public final class WrapperUtils {
 
     private static final Unsafe UNSAFE = AlixUnsafe.getUnsafe();
-    private static final long serverVersionOffset;
+    /*private static final long serverVersionOffset;
 
     static {
         try {
@@ -19,7 +18,7 @@ public final class WrapperUtils {
         } catch (NoSuchFieldException e) {
             throw new AlixException(e);
         }
-    }
+    }*/
 
     @SneakyThrows
     public static <T extends PacketWrapper> T allocEmpty(Class<T> wrapperClazz) {
@@ -33,18 +32,19 @@ public final class WrapperUtils {
         return wrapper;
     }*/
     public static void setVersion(PacketWrapper<?> wrapper, ServerVersion version) {
-        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        //UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        wrapper.setServerVersion(version);
     }
 
     public static <T extends PacketWrapper> T allocNoBuf(ServerVersion version, Class<T> wrapperClazz) {
         T wrapper = allocEmpty(wrapperClazz);
-        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        setVersion(wrapper, version);
         return wrapper;
     }
 
     public static <T extends PacketWrapper> T alloc(ByteBuf buf, ServerVersion version, Class<T> wrapperClazz) {
         T wrapper = allocEmpty(wrapperClazz);
-        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        setVersion(wrapper, version);
         wrapper.buffer = buf;
         return wrapper;
     }
@@ -54,21 +54,21 @@ public final class WrapperUtils {
     }*/
 
     public static <T extends PacketWrapper> void writeWithID(T wrapper, ByteBuf buf, ServerVersion version) {
-        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        setVersion(wrapper, version);
         wrapper.buffer = buf;
         wrapper.writeVarInt(wrapper.getNativePacketId());
         wrapper.write();
     }
 
     public static <T extends PacketWrapper> void writeNoID(T wrapper, ByteBuf buf, ServerVersion version) {
-        UNSAFE.putObject(wrapper, serverVersionOffset, version);
+        setVersion(wrapper, version);
         wrapper.buffer = buf;
         wrapper.write();
     }
 
     //getPacketType() invoked on the returned object here will be null
     public static <T extends PacketWrapper> void readEmptyWrapperNoID(ByteBuf buf, ServerVersion version, T emptyWrapper) {
-        UNSAFE.putObject(emptyWrapper, serverVersionOffset, version);
+        setVersion(emptyWrapper, version);
         emptyWrapper.buffer = buf;
         emptyWrapper.read();
     }

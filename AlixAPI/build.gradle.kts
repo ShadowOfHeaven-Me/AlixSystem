@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.github.retrooper:packetevents-netty-common:2.7.1-SNAPSHOT")
+    compileOnly("com.github.retrooper:packetevents-netty-common:${project.findProperty("packet-events-version")}")
     compileOnly("io.netty:netty-all:4.1.24.Final")
     compileOnly("net.kyori:adventure-api:4.18.0")
 

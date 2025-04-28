@@ -5,7 +5,6 @@ import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.util.TimeStampMode;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import io.netty.channel.Channel;
@@ -81,16 +80,16 @@ public final class PacketEventsManager {
                 return;
             }
 
-            if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
+            /*if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
                 AlixChannelHandler.onHandshake(event);
                 return;
-            }
+            }*/
 
             if (!onlineMode && event.getClass() == PacketLoginReceiveEvent.class) {
                 PacketLoginReceiveEvent e = (PacketLoginReceiveEvent) event;
                 switch (e.getPacketType()) {
                     case LOGIN_START:
-                        AlixChannelHandler.assignLoginUUID(e);
+                        //AlixChannelHandler.assignLoginUUID(e);
                     case ENCRYPTION_RESPONSE:
                         this.premiumAuthenticator.onPacketReceive(e);
                 }

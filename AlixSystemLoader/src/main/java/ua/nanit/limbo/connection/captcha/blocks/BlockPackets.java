@@ -8,7 +8,7 @@ import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockUpdate;
 
 public final class BlockPackets {
 
-    public static final PacketSnapshot DECOY = of(new Vector3i(0, 62, 0), StateTypes.STONE);
+    public static final PacketSnapshot DECOY = of(new Vector3i(0, 62, 0), StateTypes.GOLD_BLOCK);
 
     private static PacketSnapshot of(Vector3i pos, StateType type) {
         return PacketSnapshot.of(new PacketPlayOutBlockUpdate().setPosition(pos).setType(type));

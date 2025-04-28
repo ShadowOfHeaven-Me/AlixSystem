@@ -2,10 +2,11 @@ package alix.common.utils.config.velocity;
 
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.config.alix.AlixYamlConfig;
+import alix.common.utils.file.AlixFileManager;
 
 public final class VelocityConfigImpl implements ConfigProvider {
 
-    private final AlixYamlConfig config = new AlixYamlConfig();
+    private final AlixYamlConfig config = new AlixYamlConfig(AlixFileManager.getOrCreatePluginFile("config.yml", AlixFileManager.FileType.CONFIG));
 
     @Override
     public int getInt(String s) {

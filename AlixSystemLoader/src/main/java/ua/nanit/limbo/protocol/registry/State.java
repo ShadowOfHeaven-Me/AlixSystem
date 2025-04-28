@@ -40,6 +40,7 @@ import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayOutChunkBatchEnd;
 import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayOutChunkBatchStart;
 import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockSectionUpdate;
 import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockUpdate;
+import ua.nanit.limbo.protocol.packets.play.chat.PacketPlayInChat;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketEmptyChunkData;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketUnloadChunk;
 import ua.nanit.limbo.protocol.packets.play.config.PacketPlayInReconfigureAck;
@@ -74,6 +75,7 @@ import ua.nanit.limbo.protocol.packets.play.tick.PacketPlayInTickEnd;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayOutTransaction;
 import ua.nanit.limbo.protocol.packets.play.transfer.PacketPlayOutTransfer;
+import ua.nanit.limbo.protocol.packets.play.xp.PacketPlayOutExperience;
 import ua.nanit.limbo.protocol.packets.status.PacketInStatusPing;
 import ua.nanit.limbo.protocol.packets.status.PacketOutStatusPing;
 import ua.nanit.limbo.protocol.packets.status.PacketStatusRequest;
@@ -190,6 +192,7 @@ public enum State {
         {
             serverBound.registerRetrooper(PacketInCommand::new, PacketType.Play.Client.CHAT_COMMAND);
             serverBound.registerRetrooper(PacketInCommandUnsigned::new, PacketType.Play.Client.CHAT_COMMAND_UNSIGNED);
+            serverBound.registerRetrooper(PacketPlayInChat::new, PacketType.Play.Client.CHAT_MESSAGE);
             serverBound.registerRetrooper(PacketPlayInFlying::new, PacketType.Play.Client.PLAYER_FLYING);
             serverBound.registerRetrooper(PacketPlayInPosition::new, PacketType.Play.Client.PLAYER_POSITION);
             serverBound.registerRetrooper(PacketPlayInPositionAndRotation::new, PacketType.Play.Client.PLAYER_POSITION_AND_ROTATION);
@@ -250,6 +253,7 @@ public enum State {
             clientBound.registerRetrooper(PacketPlayOutChunkBatchStart::new, PacketType.Play.Server.CHUNK_BATCH_BEGIN);
             clientBound.registerRetrooper(PacketPlayOutChunkBatchEnd::new, PacketType.Play.Server.CHUNK_BATCH_END);
             clientBound.registerRetrooper(PacketPlayOutTransfer::new, PacketType.Play.Server.TRANSFER);
+            clientBound.registerRetrooper(PacketPlayOutExperience::new, PacketType.Play.Server.SET_EXPERIENCE);
             clientBound.registerRetrooper(PacketPlayOutCookieStore::new, PacketType.Play.Server.STORE_COOKIE);
 
             clientBound.registerRetrooper(PacketPlayOutCookieRequest::new, PacketType.Play.Server.COOKIE_REQUEST);
@@ -455,7 +459,7 @@ public enum State {
     State() {
     }
 
-    public static State getState(PacketOut packet) {
+    public static State getState(Packet packet) {
         //Log.error("getState: " + packet + " STATE: " + ProtocolMappings.clazzToState.get(packet));
         return ProtocolMappings.clazzToState.get(packet.getClass());
     }
@@ -520,7 +524,8 @@ public enum State {
             Class<? extends Packet> clazz = packet.get().getClass();
             registerAndEnsureNoDuplicate(clazz, state);
 
-            if (PacketIn.class.isAssignableFrom(clazz)) HandleMask.register(clazz);
+            if (PacketIn.class.isAssignableFrom(clazz))
+                HandleMask.register(clazz);
         }
 
         //Gotta love packetevents ;]

@@ -59,8 +59,10 @@ public final class AlixConsoleFilterHolder implements Filter {
                 return Result.NEUTRAL;
             }*/
             if (message.isEmpty()) return Result.NEUTRAL;
+            var currentThread = Thread.currentThread();
+
             //just gonna disable the annoying little shi-
-            if (e.getLevel() == Level.WARN && Thread.currentThread() == Main.mainServerThread && message.startsWith("Ignoring unknown attribute"))
+            if (e.getLevel() == Level.WARN && currentThread == Main.mainServerThread && message.startsWith("Ignoring unknown attribute"))
                 return Result.DENY;
 
             if (e.getLevel() == Level.WARN && message.startsWith("An exception 'java.lang.NullPointerException: Cannot invoke \"io.netty.channel.Channel.isOpen()\" because \"this.channel\" is null'"))
@@ -76,7 +78,8 @@ public final class AlixConsoleFilterHolder implements Filter {
             if (hideFailedJoinAttempts && (AlixCommonUtils.startsWith(message, "UUID of player",
                     "com.mojang.authlib.GameProfile", "Disconnecting", "handleDisconnection()"))) //|| this.isLostCon0(msgChars = message.toCharArray())))
                 return Result.DENY;
-            if (Thread.currentThread() == Main.mainServerThread) {
+
+            if (currentThread == Main.mainServerThread) {
                 String[] lostCon = message.split(" ", 4);
                 if (lostCon.length >= 3) {
                     //AlixScheduler.async(() -> Main.logError("LOST CON '" + Arrays.toString(lostCon)));
@@ -87,7 +90,7 @@ public final class AlixConsoleFilterHolder implements Filter {
                 }
             }
 
-            if (alixJoinLog && Thread.currentThread() == Main.mainServerThread) {
+            if (alixJoinLog && currentThread == Main.mainServerThread) {
                 char[] msg = message.toCharArray();
                 //AlixScheduler.async(() -> Main.logError("mmmmm '" + new String(msg) + "' - " + Main.mainServerThread.getName()));
                 for (int i = 0; i < msg.length; i++)

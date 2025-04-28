@@ -48,6 +48,7 @@ public abstract class FileManager extends AlixFileManager {
         UserFileManager.fastSave();
         OriginalLocationsManager.fastSave();
         if (AlixUtils.antibotService) FireWallManager.fastSave();
+        IpsCacheFileManager.save();
         UserTokensFileManager.save();
         WarpFileManager.save();
         SpawnFileManager.save();

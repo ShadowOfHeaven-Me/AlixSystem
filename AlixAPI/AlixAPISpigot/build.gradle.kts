@@ -40,7 +40,7 @@ dependencies {
 
     //compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
     compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
-    compileOnly("com.github.retrooper:packetevents-spigot:2.7.1-SNAPSHOT")
+    compileOnly("com.github.retrooper:packetevents-spigot:${project.findProperty("packet-events-version")}")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

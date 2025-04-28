@@ -5,6 +5,7 @@ import alix.common.antibot.IPUtils;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
 import alix.common.utils.file.AlixFileManager;
+import alix.common.utils.other.throwable.AlixException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,7 +72,7 @@ public final class FireWallManager {
             save0();
             //AlixCommonMain.logError("Took " + (System.nanoTime() - t) / Math.pow(10, 6) + "ms too save the firewall file!");
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AlixException(e);
         }
     }
 

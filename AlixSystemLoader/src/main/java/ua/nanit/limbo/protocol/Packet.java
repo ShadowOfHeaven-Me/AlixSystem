@@ -37,6 +37,10 @@ public interface Packet {
         // Ignored by default
     }
 
+    default boolean isSkippable(ClientConnection conn) {
+        return false;
+    }
+
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     @interface Skip {

@@ -18,10 +18,10 @@ import static alix.common.packets.command.CommandsWrapperConstructor.constructTw
 
 public final class CommandsPacketManager {
 
+    private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
     private static final boolean supportAllChars = Main.config.getBoolean("command-support-all-characters");
     public static final ByteBuf REGISTER = constructRegister();
     public static final ByteBuf LOGIN = constructLogin();
-    private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
 
     //https://wiki.vg/Command_Data
     private static ByteBuf constructLogin() {

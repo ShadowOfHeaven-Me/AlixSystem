@@ -3,6 +3,7 @@ package alix.common.data.security.password.hashing;
 import alix.common.data.security.types.Sha256;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.other.throwable.AlixException;
+import at.favre.lib.crypto.bcrypt.BCrypt;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -16,9 +17,10 @@ public final class Hashing {
     public static final byte CONFIG_HASH_ID;
     public static final HashingAlgorithm SHA256_MIGRATE;
     public static final HashingAlgorithm SHA512_MIGRATE;
+    public static final HashingAlgorithm BCRYPT;
     private static final HashingAlgorithm[] hashingAlgorithms;
     private static final HashingAlgorithm configHash;
-    private static final SecureRandom SECURE_RANDOM;
+    public static final SecureRandom SECURE_RANDOM;
 
     public static String hashSaltFirst(HashingAlgorithm algorithm, String unhashedPassword, String salt) {
         return algorithm.hash(salt + unhashedPassword);
@@ -143,18 +145,25 @@ public final class Hashing {
             return 5;
         }
     }
-/*    private static final class Hash4 implements HashingAlgorithm {
+
+    private static final class Hash6 implements HashingAlgorithm {
+
+        public static final BCrypt.Hasher HASHER = BCrypt
+                .with(BCrypt.Version.VERSION_2A);
 
         @Override
         public String hash(String s) {
-            byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+            int cost = 10;
+
+            //https://github.com/kyngs/LibreLogin/blob/5cae5bd01fa37e45ee1d529bfa5c8eb1dcdc5c58/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/BCrypt2ACryptoProvider.java#L16
+            return cost + "$" + HASHER.hashToString(cost, s.toCharArray()) + "";
         }
 
         @Override
         public byte hashId() {
-            return 4;
+            return 6;
         }
-    }*/
+    }
 
     private static MessageDigest getDigest(String algorithm) {
         try {
@@ -211,8 +220,9 @@ public final class Hashing {
     static {
         SHA256_MIGRATE = new Hash4();
         SHA512_MIGRATE = new Hash5();
+        BCRYPT = new Hash6();
 
-        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3(), SHA256_MIGRATE, SHA512_MIGRATE};
+        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3(), SHA256_MIGRATE, SHA512_MIGRATE, BCRYPT};
 
         int i = ConfigProvider.config.getInt("password-hash-type", 3);
         byte b = (byte) i;

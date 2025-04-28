@@ -10,7 +10,7 @@ import alix.common.data.security.password.hashing.Hashing;
 import java.net.InetAddress;
 import java.sql.ResultSet;
 
-public final class NLoginSQLMigrateProvider implements MigrateSQLProvider {
+final class NLoginSQLMigrateProvider implements MigrateProvider {
 
     //Source code: https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/migrate/NLoginSQLMigrateReadProvider.java
 

@@ -59,7 +59,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         //Main.logError("NAME IN EVENT: " + name);
 
         if (user == null) {
-            e.disallow(PlayerPreLoginEvent.Result.KICK_OTHER, "§cSomething went wrong! (No user)");
+            e.disallow(PlayerPreLoginEvent.Result.KICK_OTHER, "§cSomething went wrong! (No user, AlixSystem)");
             return;
         }
         //Main.logError("WWWWWWWWWWWW " + PremiumAutoIn.isPremium(e.getUniqueId()));

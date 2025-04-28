@@ -17,7 +17,7 @@ import static alix.common.utils.AlixCommonUtils.generationChars;
 public final class Password {
 
     public static final int MAX_PASSWORD_LEN = 30;
-    private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars));
+    private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars), Hashing.SECURE_RANDOM);
     private final String hashedPassword;
     private final HashingAlgorithm hashing;
     private final String salt;
@@ -87,7 +87,7 @@ public final class Password {
     }*/
 
     public static Password createRandom() {
-        int length = 8 + AlixCommonUtils.random.nextInt(8);//min char length + 3 + (0-8) because 2^n results in a faster generation
+        int length = 8 + Hashing.SECURE_RANDOM.nextInt(8);//min char length + 3 + (0-8) because 2^n results in a faster generation
 
         return fromUnhashed(new String(RANDOM_CHAR_ITERATOR.next(length)));
     }
@@ -131,12 +131,12 @@ public final class Password {
     }*/
 
     public static Password fromHashedMigrated(String hashedPassword, String salt, HashingAlgorithm algorithm) {
-        return new Password(hashedPassword, algorithm, salt, MIGRATION_FORMAT);
+        return new Password(hashedPassword, algorithm, salt, algorithm.isBCrypt() ? BCRYPT_FORMAT : MIGRATION_FORMAT);
     }
 
     public static Password fromUnhashed(String unhashedPassword) {
         if (!CONFIG_HASH.isHashing())
-            return new Password(unhashedPassword, CONFIG_HASH, "", ALIX_FORMAT);
+            return new Password(unhashedPassword, CONFIG_HASH, "", ALIX_FORMAT);//do not generate salt when hashing is disabled
 
         String salt = Hashing.generateSalt();
         String hashed = Hashing.hashSaltFirst(CONFIG_HASH, unhashedPassword, salt);

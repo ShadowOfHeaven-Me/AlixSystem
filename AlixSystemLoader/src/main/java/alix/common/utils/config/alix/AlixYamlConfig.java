@@ -10,17 +10,20 @@ import java.util.function.Function;
 
 public final class AlixYamlConfig {
 
-    private final AlixYamlConfigImpl impl;
+    private final AlixYamlConfigFile file;
 
-    public AlixYamlConfig() {
-        File file = AlixFileManager.getOrCreatePluginFile("config.yml", AlixFileManager.FileType.CONFIG);
-        this.impl = new AlixYamlConfigImpl(file);
-        this.impl.loadConfig();
+    public AlixYamlConfig(File file) {
+        this.file = new AlixYamlConfigFile(file);
+        this.file.loadConfig();
+    }
+
+    public static AlixYamlConfig getOrCreatePluginFile(String name, AlixFileManager.FileType type) {
+        return new AlixYamlConfig(AlixFileManager.getOrCreatePluginFile(name, type));
     }
 
     @NotNull
     public String get(String path, @NotNull String def) {
-        String val = this.impl.values.get(path);
+        String val = this.file.values.get(path);
         if (val == null)
             AlixCommonMain.logWarning("Config " + path + " param not found");
         return val != null ? val.trim() : def;
@@ -30,8 +33,11 @@ public final class AlixYamlConfig {
         return this.get(path, "");
     }
 
+    public String getString(String path, String def) {
+        return removeQuotations(this.get(path, def));
+    }
     public String getString(String path) {
-        return removeQuotations(this.get(path));
+        return this.getString(path, "");
     }
 
     private static String removeQuotations(String str) {
@@ -68,7 +74,7 @@ public final class AlixYamlConfig {
 
         //todo: make this support '.' decimal places
         parsed = this.parse(AlixCommonUtils.getNumbersOnly(value.split("\\.")[0]), parser);
-        return parsed != null ? parsed : 0;
+        return parsed != null ? parsed : def;
     }
 
     public double getDouble(String path) {
@@ -105,5 +111,9 @@ public final class AlixYamlConfig {
 
     public boolean getBoolean(String path, boolean def) {
         return Boolean.parseBoolean(this.get(path, Boolean.toString(def)));
+    }
+
+    public File getFile() {
+        return file.getFile();
     }
 }

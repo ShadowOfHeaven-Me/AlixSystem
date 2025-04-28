@@ -23,6 +23,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.ByteProcessor;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.server.Log;
 
 import java.util.Collections;
@@ -158,6 +160,10 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         try {
             out.add(in.readRetainedSlice(len));
         } catch (Exception ex) {
+            if (NanoLimbo.suppressInvalidPackets) {
+                UnsafeCloseFuture.unsafeClose(ctx.channel());
+                return;
+            }
             Log.error("len=" + len + " rdx=" + in.readerIndex() + " rby=" + in.readableBytes(), ex);
         }
 

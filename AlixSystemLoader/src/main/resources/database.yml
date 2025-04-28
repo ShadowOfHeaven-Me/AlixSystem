@@ -1,0 +1,20 @@
+#------------------------------------------------#
+#                    GENERAL                     #
+#------------------------------------------------#
+
+# The name of this database (For instance, "alix")
+name:
+# The user of this database (For instance, "root")
+username:
+# Connection parameters
+password:
+host:
+port:
+
+
+#------------------------------------------------#
+#                   TECHNICAL                    #
+#------------------------------------------------#
+
+#The maximum lifetime of a database connection (in milliseconds)
+max-lifetime: 600000

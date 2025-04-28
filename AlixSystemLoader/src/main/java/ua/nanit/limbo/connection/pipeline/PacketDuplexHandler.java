@@ -30,6 +30,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private final FlushBatcher flushBatcher;
     private final ChannelPromise voidPromise;
     public final boolean isGeyser, passPayloads;
+    public boolean disablePacketWriting;
     private CompressionHandler compression;
     private State.PacketRegistry encoderMappings, decoderMappings;
     private Version version;
@@ -56,7 +57,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         //Log.error("VALID BUF - " + buf);
 
         //PacketDecoder
-        Packet packet = PacketDecoder.decode(buf, this.decoderMappings, this.version);
+        Packet packet = PacketDecoder.decode(buf, this.decoderMappings, this.version, this.connection);
         buf.release();
         if (packet == null) return;
 
@@ -75,7 +76,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
             //this.channel.pipeline().context(PacketEvents.DECODER_NAME).fireChannelRead(pluginMessageBuf);
             //getBefore(channel, this.channel.pipeline().context(PacketEvents.DECODER_NAME)).fireChannelRead(pluginMessageBuf);
 
-            Log.error("receivePacketSilently: " + pluginMessage.wrapper().getChannelName() + " NAMES: " + channel.pipeline().names());
+            //Log.error("receivePacketSilently: " + pluginMessage.wrapper().getChannelName() + " NAMES: " + channel.pipeline().names());
         }
 
         this.flushBatcher.readBegin();
@@ -203,6 +204,8 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     @AlixIntrinsified(method = "ChannelOutboundInvoker::write")
     public ChannelPromise write(PacketOut packet, ChannelPromise promise) {
         if (!this.channel.isActive()) return promise;
+        if (disablePacketWriting) return promise.setSuccess();
+
         if (NanoLimbo.debugPackets) {
             Log.error("LIMBO OUT: " + packet);// + " " + channel.pipeline().names());
             /*String str = packet.toString();
@@ -217,7 +220,6 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
         ByteBuf buf;
         if (packet instanceof PacketSnapshot snapshot) {
-
             if (this.disableCompression())
                 buf = snapshot.getEncodedNoCompression(this.version);
             else

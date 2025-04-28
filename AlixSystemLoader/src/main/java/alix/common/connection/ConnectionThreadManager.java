@@ -1,9 +1,9 @@
 package alix.common.connection;
 
+import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
 import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.algorithms.connection.types.JoinCounterAlgorithm;
 import alix.common.antibot.algorithms.connection.types.Name2IPAlgorithm;
-import alix.common.antibot.algorithms.ping.PingRequestAlgorithm;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.config.ConfigProvider;
 
@@ -39,8 +39,9 @@ public final class ConnectionThreadManager {
         for (ConnectionAlgorithm algorithm : runnable.connectionAlgorithms) algorithm.onJoinAttempt(name, address);
     }
 
-    public static void onPingRequest(InetAddress address) {
-        for (PingRequestAlgorithm algorithm : runnable.pingRequestAlgorithms) algorithm.onPingRequest(address);
+    public static void onConnection(InetAddress address) {
+        ConnectRequestAlgoImpl.onConnection(address);
+        //for (ConnectionRequestAlgorithm algorithm : runnable.pingRequestAlgorithms) algorithm.onConnection(address);
     }
 
     //runnable.joins.offerLast(new JoinAttempt(name, address));
@@ -50,7 +51,7 @@ public final class ConnectionThreadManager {
     private static final class ConnectionThreadRunnable implements Runnable {
 
         private final ConnectionAlgorithm[] connectionAlgorithms;
-        private final PingRequestAlgorithm[] pingRequestAlgorithms;
+        //private final ConnectionRequestAlgorithm[] pingRequestAlgorithms;
         //private final AlixDeque<JoinAttempt> joins = new ConcurrentAlixDeque<>();
         //private final ConnectionListManager list = new ConnectionListManager();
 
@@ -58,7 +59,7 @@ public final class ConnectionThreadManager {
         @Override
         public void run() {
             for (ConnectionAlgorithm a : connectionAlgorithms) a.onThreadRepeat();
-            for (PingRequestAlgorithm a : pingRequestAlgorithms) a.onThreadRepeat();
+            //for (ConnectionRequestAlgorithm a : pingRequestAlgorithms) a.onThreadRepeat();
             //if (ConnectionManager.isEnabled) ConnectionManager.tick();
         }
 
@@ -86,9 +87,9 @@ public final class ConnectionThreadManager {
                     new JoinCounterAlgorithm()
                     //new RequestAmountAlgorithm()
             };
-            this.pingRequestAlgorithms = new PingRequestAlgorithm[]{
+            /*this.pingRequestAlgorithms = new ConnectionRequestAlgorithm[]{
                     //new TotalCounterPingAlgorithm()
-            };
+            };*/
         }
     }
 

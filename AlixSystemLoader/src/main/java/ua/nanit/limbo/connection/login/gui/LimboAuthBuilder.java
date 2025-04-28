@@ -16,19 +16,17 @@ import com.github.retrooper.packetevents.protocol.component.builtin.item.ItemPro
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
+import com.github.retrooper.packetevents.protocol.nbt.*;
 import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.login.SoundPackets;
+import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryItems;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryOpen;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 
 public final class LimboAuthBuilder implements LimboGUI {
@@ -103,10 +101,32 @@ public final class LimboAuthBuilder implements LimboGUI {
     }
 
     public static ItemStack ofSkull(String name, String url) {
-        return builderOf(ItemTypes.PLAYER_HEAD, name)
-                .component(ComponentTypes.PROFILE, new ItemProfile("sex", UUID.randomUUID(),
-                        Arrays.asList(new ItemProfile.Property("textures", url, null))))
-                .build();
+        return profile(builderOf(ItemTypes.PLAYER_HEAD, name), url).build();
+    }
+
+    private static ItemStack.Builder profile(ItemStack.Builder builder, String url) {
+        builder.component(ComponentTypes.PROFILE, new ItemProfile("sex", UUID.randomUUID(),
+                Collections.singletonList(new ItemProfile.Property("textures", url, null))));
+
+        NBTCompound nbt = builder.build().getNBT();
+        if (nbt == null) nbt = new NBTCompound();
+
+        NBTCompound skullOwner = new NBTCompound();
+
+        skullOwner.setTag("Id", new NBTIntArray(new int[]{0, 12, 1, 1}));//for below 1.16.2 I think
+        nbt.setTag("SkullOwner", skullOwner);
+
+        NBTCompound properties = new NBTCompound();
+
+        NBTCompound textureEntry = new NBTCompound();
+        textureEntry.setTag("Value", new NBTString(url));
+
+        NBTList textures = new NBTList(NBTType.COMPOUND);
+        textures.addTag(textureEntry);
+        properties.setTag("textures", textures);
+
+        skullOwner.setTag("Properties", properties);
+        return builder;
     }
 
     public static ItemStack of(ItemType type, String name) {
@@ -129,8 +149,22 @@ public final class LimboAuthBuilder implements LimboGUI {
 
 
     public static ItemStack.Builder builderOf(ItemType type, String name) {
-        return ItemStack.builder().type(type)
-                .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name)));
+        return name(ItemStack.builder().type(type), name);
+    }
+
+    private static ItemStack.Builder name(ItemStack.Builder builder, String name) {
+        name = AlixFormatter.translateColors(name);
+
+        builder.component(ComponentTypes.CUSTOM_NAME, Component.text(name));
+
+        NBTCompound display = new NBTCompound();
+        display.setTag("Name", new NBTString("{\"text\":\"" + name + "\"}"));
+
+        NBTCompound nbt = new NBTCompound();
+        nbt.setTag("display", display);
+        builder.nbt(nbt);
+
+        return builder;
     }
 
     private static VirtualItem ofDigit(byte digit) {

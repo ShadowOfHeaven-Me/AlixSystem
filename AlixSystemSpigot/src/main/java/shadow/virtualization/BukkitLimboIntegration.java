@@ -8,6 +8,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumStatus;
 import alix.common.data.premium.name.PremiumNameManager;
 import alix.common.login.premium.ClientPublicKey;
+import alix.common.login.premium.PremiumSetting;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.utils.floodgate.GeyserUtil;
 import alix.common.utils.other.throwable.AlixError;
@@ -15,7 +16,6 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import shadow.systems.dependencies.Dependencies;
-import alix.common.login.premium.PremiumSetting;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.systems.netty.AlixInterceptor;
 import ua.nanit.limbo.connection.ClientConnection;
@@ -31,11 +31,11 @@ import ua.nanit.limbo.server.LimboServer;
 import java.util.UUID;
 import java.util.function.Function;
 
-import static shadow.virtualization.LimboServerIntegration.Packets.*;
+import static shadow.virtualization.BukkitLimboIntegration.Packets.*;
 
 //https://wiki.vg/Protocol_FAQ
 
-public final class LimboServerIntegration extends LimboIntegration<LimboConnection> {
+public final class BukkitLimboIntegration extends LimboIntegration<LimboConnection> {
 
     /*@Nullable
     public static String removeCompletedCaptchaName(InetAddress address) {
@@ -60,6 +60,7 @@ public final class LimboServerIntegration extends LimboIntegration<LimboConnecti
 
     @Override
     public void onHandshake(LimboConnection connection, PacketHandshake handshake) {
+        AlixChannelHandler.onHandshake(connection.getChannel(), handshake);
     }
 
     static final class Packets {
@@ -115,6 +116,7 @@ public final class LimboServerIntegration extends LimboIntegration<LimboConnecti
         Channel channel = connection.getChannel();
         PersistentUserData data = UserFileManager.get(name);
         UUID uuid = packet.getUUID();
+
 
         String prefixedName = name;
         Boolean hasCompletedCaptcha = null;
@@ -209,6 +211,10 @@ public final class LimboServerIntegration extends LimboIntegration<LimboConnecti
             default:
                 throw new AlixError();
         }
+
+        //TODO: DEBUG
+        recode[0] = true;
+        AlixChannelHandler.assignLoginUUID(channel, packet);
 
         //Main.logInfo("REMAPPED: " + name + " pr: " + prefixedName);
 

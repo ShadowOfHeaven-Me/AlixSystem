@@ -10,11 +10,7 @@ import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonHandler;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.event.PacketReceiveEvent;
-import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.protocol.player.User;
-import com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake;
-import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -26,6 +22,8 @@ import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.users.UserManager;
+import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
+import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -302,25 +300,15 @@ public final class AlixChannelHandler {
 
     private static final AttributeKey<String> JOINED_WITH_IP = AttributeKey.valueOf("alix-joined-with-ip");
 
-    public static void onHandshake(PacketReceiveEvent event) {
-        WrapperHandshakingClientHandshake wrapper = new WrapperHandshakingClientHandshake(event);
-        //Main.debug("HANDSHAKE RECEIVED BY BUKKIT SERVER: " + AlixUtils.getFields(wrapper));
-        Channel channel = (Channel) event.getChannel();
-        channel.attr(JOINED_WITH_IP).set(wrapper.getServerAddress());
+    public static void onHandshake(Channel channel, PacketHandshake handshake) {
+        channel.attr(JOINED_WITH_IP).set(handshake.getHost());
     }
 
     private static final AttributeKey<UUID> SENT_LOGIN_UUID = AttributeKey.valueOf("alix-sent-login-uuid");
 
-    public static void assignLoginUUID(PacketLoginReceiveEvent e) {
-        ByteBuf buf = (ByteBuf) e.getByteBuf();
-        int rIdx = buf.readerIndex();
-
-        var wrapper = new WrapperLoginClientLoginStart(e);
-        var channel = (Channel) e.getChannel();
-        var uuidOpt = wrapper.getPlayerUUID();
-        uuidOpt.ifPresent(uuid -> channel.attr(SENT_LOGIN_UUID).set(uuid));
-
-        buf.readerIndex(rIdx);
+    public static void assignLoginUUID(Channel channel, PacketLoginStart loginStart) {
+        var uuid = loginStart.getUUID();
+        if (uuid != null) channel.attr(SENT_LOGIN_UUID).set(uuid);
     }
 
     public static UUID getLoginAssignedUUID(Channel channel) {

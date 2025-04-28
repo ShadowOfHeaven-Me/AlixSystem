@@ -20,6 +20,10 @@ public interface AlixCommonUser {
         return this.getChannel().id();
     }
 
+    default void flush() {
+        this.getChannel().flush();
+    }
+
     default InetAddress getAddress() {
         return ((InetSocketAddress) this.getChannel().remoteAddress()).getAddress();
     }

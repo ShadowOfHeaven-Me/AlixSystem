@@ -8,12 +8,12 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-final class AlixYamlConfigImpl extends AlixFileManager {
+final class AlixYamlConfigFile extends AlixFileManager {
 
     final Map<String, String> values = new HashMap<>();
     private int linesRead;
 
-    AlixYamlConfigImpl(File file) {
+    AlixYamlConfigFile(File file) {
         super(file);
     }
 

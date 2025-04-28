@@ -17,7 +17,6 @@
 
 package ua.nanit.limbo;
 
-import alix.common.utils.other.annotation.DebugOnly;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.server.LimboServer;
@@ -27,27 +26,24 @@ public final class NanoLimbo {
 
     //https://github.com/Nan1t/NanoLimbo
 
-    private static final boolean debugMode = of(false);
+    public static final boolean debugMode = false;
 
-    private static boolean of(boolean val) {
-        return val;
+    private static boolean of(boolean val, boolean def) {
+        return debugMode ? val : def;
     }
 
-    public static final boolean debugCipher = of(false);
-    @DebugOnly
-    public static final boolean debugPackets = of(true);
-    public static final boolean debugSnapshots = of(false);
-    @DebugOnly
-    public static final boolean allowFreeMovement = of(true);
-    @DebugOnly
-    public static final boolean performChecks = of(false);
+    public static final boolean suppressInvalidPackets = of(true, true);
+    public static final boolean debugCipher = of(false, false);
+    public static final boolean debugPackets = of(false, false);
+    public static final boolean debugSnapshots = of(false, false);
+    public static final boolean allowFreeMovement = of(false, false);
+    public static final boolean performChecks = of(true, true);
     //@DebugOnly
-    public static final boolean logPos = of(false);
-    public static final boolean removeTimeout = of(true);
-    public static final boolean centerSpawn = of(false);
-    @DebugOnly
-    public static final boolean printCaptchaFailed = of(true);
-    public static final boolean verifyTheDud = of(true);
+    public static final boolean logPos = of(false, false);
+    public static final boolean removeTimeout = of(true, true);
+    public static final boolean centerSpawn = of(false, false);
+    public static final boolean printCaptchaFailed = of(false, false);
+    public static final boolean verifyTheDud = of(true, true);
 
     public static LimboServer LIMBO;
     public static LimboIntegration INTEGRATION;

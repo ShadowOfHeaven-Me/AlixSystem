@@ -7,7 +7,6 @@ import alix.common.utils.formatter.AlixFormatter;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class AntiBotStatistics {
@@ -23,7 +22,7 @@ public final class AntiBotStatistics {
 
     public final int startingBlocked = this.getTotalBlocked();
 
-    private final AtomicInteger currentCps = new AtomicInteger();
+    private final LongAdder currentCps = new LongAdder();
     //lastCps = new AtomicInteger();
     //private final LongAdder totalConnections = new LongAdder();
 
@@ -57,7 +56,7 @@ public final class AntiBotStatistics {
 
     public void incrementJoins() {
         //if (viewed)
-        this.currentCps.getAndIncrement();
+        this.currentCps.increment();
     }
 
     public boolean isHighTraffic() {
@@ -65,7 +64,7 @@ public final class AntiBotStatistics {
     }
 
     public void reset() {
-        int currentCps = this.currentCps.getAndSet(0);
+        int currentCps = (int) this.currentCps.sumThenReset();
         //this.lastCps.set(cps);
         this.cps.offerLast(currentCps);
         Integer polled = this.cps.pollFirst();

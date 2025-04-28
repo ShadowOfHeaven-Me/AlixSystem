@@ -84,6 +84,9 @@ final class CaptchaStateImpl {
             this.write(ChunkBatches.BATCH_END);
             this.isAwaitingBatchAck = true;
         }
+        CaptchaBlock block = CaptchaBlock.writeRandomBlock(this.connection);
+
+        this.expectedYCollision = BLOCK_Y + block.getHeight(this.version());
 
         this.writeAndFlush(KeepAlives.SECONDARY_KEEP_ALIVE);
 
@@ -199,9 +202,6 @@ final class CaptchaStateImpl {
             CaptchaBlockCheck.sendRandomBlock(this.connection, pos);
             Log.error("SENT BLOCKCCCCCCC (ONCE AGAIN)");
         }, 3, TimeUnit.SECONDS);*/
-        CaptchaBlock block = CaptchaBlock.sendRandomBlock(this.connection);
-
-        this.expectedYCollision = BLOCK_Y + block.getHeight(this.version());
     }
 
     private void cancelTask() {
@@ -251,8 +251,8 @@ final class CaptchaStateImpl {
 
         this.cancelTask();
         long delay = System.currentTimeMillis() - this.keepAliveSentTime;//the delay for both ways in millis
-        //max wait time - network two-way delay + 150 millis for client ticks + 200 millis in back-up
-        long maxWaitTime = Math.min(delay + 350, 4000);
+        //max wait time - network two-way delay + 150 millis for client ticks + 500 millis in back-up
+        long maxWaitTime = Math.min(delay + 150 + 500, 4000);
         this.scheduleDisconnectTask(maxWaitTime, TimeUnit.MILLISECONDS);
         this.sent = System.currentTimeMillis();
         //Log.error("delay: " + delay + " maxWaitTime: " + maxWaitTime);
@@ -354,7 +354,7 @@ final class CaptchaStateImpl {
         }
 
         this.failIf(flying.isOnGround() && !this.checkedCollision && (!this.isCheckingCollision || this.y != this.expectedYCollision));
-        Log.error("checkedCollision " + checkedCollision + " isCheckingCollision " + isCheckingCollision + " y " + y + " expectedYCollision " + expectedYCollision);
+        //Log.error("checkedCollision " + checkedCollision + " isCheckingCollision " + isCheckingCollision + " y " + y + " expectedYCollision " + expectedYCollision);
 
         //the player does not have the ability to move on X, Z
         //and is spawned on X = Z = VALID_XZ

@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static ua.nanit.limbo.connection.login.SoundPackets.*;
+import static ua.nanit.limbo.connection.login.packets.SoundPackets.*;
 import static ua.nanit.limbo.connection.login.gui.LimboAuthBuilder.*;
 
 public final class LimboPinBuilder implements LimboGUI {

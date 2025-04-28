@@ -19,6 +19,9 @@ package ua.nanit.limbo.connection.pipeline;
 
 import alix.common.utils.netty.FastNettyUtils;
 import io.netty.buffer.ByteBuf;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.HandleMask;
 import ua.nanit.limbo.protocol.Packet;
@@ -38,7 +41,7 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
 
     //private static final ThreadLocal
 
-    static Packet decode(ByteBuf buf, State.PacketRegistry mappings, Version version) {
+    static Packet decode(ByteBuf buf, State.PacketRegistry mappings, Version version, ClientConnection connection) {
         if (mappings == null) return null;
 
         //ByteMessage msg = new ByteMessage(buf);
@@ -59,17 +62,22 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
         Log.error("TIME: " + (t2 - t) / Math.pow(10, 6) + "ms");*/
 
         //the Packet#handle method is unused - do not decode or call handle() on the packet instance
-        //average time on my pc for this call: 0.002ms
-        if (HandleMask.isSkippable(packet.getClass())) return null;
+        //average time on my pc for HandleMask.isSkippable call: 0.002ms
+        if (packet.isSkippable(connection) || HandleMask.isSkippable(packet.getClass())) return null;
 
         //Log.error("PACKET ID: " + packetId + " PACKET: " + packet);
 
         ByteMessage msg = new ByteMessage(buf);
         //if (packet != null) {
-        Log.debug("Received packet %s[0x%s] (%d bytes)", packet.toString(), Integer.toHexString(packetId), msg.readableBytes());
+        if (Log.isDebug())
+            Log.debug("Received packet %s[0x%s] (%d bytes)", packet.toString(), Integer.toHexString(packetId), msg.readableBytes());
         try {
             packet.decode(msg, version);
         } catch (Exception e) {
+            if (NanoLimbo.suppressInvalidPackets) {
+                UnsafeCloseFuture.unsafeClose(connection.getChannel());
+                return null;
+            }
             if (Log.isDebug()) {
                 Log.warning("Cannot decode %s, per %s packet 0x%s", packet.getClass().getSimpleName(), e, Integer.toHexString(packetId));
             } else {

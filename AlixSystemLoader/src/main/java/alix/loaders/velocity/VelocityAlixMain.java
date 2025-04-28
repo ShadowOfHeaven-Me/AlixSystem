@@ -4,6 +4,7 @@ import alix.common.AlixMain;
 import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
+import alix.common.logger.velocity.VelocityLoggerAdapter;
 import alix.common.utils.file.update.FileUpdater;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
@@ -40,7 +41,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         instance = this;
         this.server = server;
         this.logger = logger;
-        this.loggerAdapter = LoggerAdapter.createAdapter(logger);
+        this.loggerAdapter = new VelocityLoggerAdapter(server); //LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
         dataDirectory.toFile().mkdir();
         //new File(dataDirectory.toAbsolutePath().toString()).mkdir();
@@ -72,9 +73,9 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         return loggerAdapter;
     }
 
-    public Logger getLogger() {
+    /*public Logger getLogger() {
         return logger;
-    }
+    }*/
 
     public ProxyServer getServer() {
         return server;

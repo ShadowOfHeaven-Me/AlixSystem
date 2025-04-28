@@ -15,8 +15,10 @@ import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
@@ -26,9 +28,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
-import alix.common.login.premium.PremiumSetting;
 import shadow.systems.netty.AlixChannelHandler;
-import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -63,7 +63,7 @@ public final class PremiumAuthenticator {
             cannotVerifySession = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-verify-session")),
             internalErrorEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-internal-error")),
             couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-enable-encryption"));
-            //cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
+    //cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
 
     //with caffeine
     @OptimizationCandidate
@@ -286,19 +286,17 @@ public final class PremiumAuthenticator {
         }
     }
 
-    private void asyncPacketReceive(PacketLoginReceiveEvent event) {
-        User user = event.getUser();
+    private void asyncPacketReceive(User user, PacketWrapper<?> wrapper, PacketType.Login.Client type) {
 
-        if (AlixUtils.isDebugEnabled)
-            Main.logDebug("Packet received " + event.getPacketType() + " from " + user.getName() + " (" + user.getAddress().toString() + ")");
+        //if (AlixUtils.isDebugEnabled) Main.logDebug("Packet received " + wrapper.getPacketType() + " from " + user.getName() + " (" + user.getAddress().toString() + ")");
 
-        switch (event.getPacketType()) {
+        switch (type) {
             case LOGIN_START: {
-                this.onLoginStart(user, new WrapperLoginClientLoginStart(event));
+                this.onLoginStart(user, (WrapperLoginClientLoginStart) wrapper);
                 return;
             }
             case ENCRYPTION_RESPONSE: {
-                this.onEncryptionResponse(user, new WrapperLoginClientEncryptionResponse(event));
+                this.onEncryptionResponse(user, (WrapperLoginClientEncryptionResponse) wrapper);
             }
         }
     }
@@ -310,14 +308,18 @@ public final class PremiumAuthenticator {
 
     public void onPacketReceive(PacketLoginReceiveEvent event) {
         event.setCancelled(true);
-        PacketLoginReceiveEvent copy = event.clone();
+        var type = event.getPacketType();
+        var wrapper = switch (type) {
+            case LOGIN_START -> new WrapperLoginClientLoginStart(event);
+            case ENCRYPTION_RESPONSE -> new WrapperLoginClientEncryptionResponse(event);
+            default -> throw new AlixError();
+        };
 
         this.async(() -> {
-            try {
-                asyncPacketReceive(copy);
-            } finally {
+            asyncPacketReceive(event.getUser(), wrapper, type);
+            /* finally {
                 copy.cleanUp();
-            }
+            }*/
         });
     }
 

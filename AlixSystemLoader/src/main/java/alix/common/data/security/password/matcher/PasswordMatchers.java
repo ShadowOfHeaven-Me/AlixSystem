@@ -3,12 +3,15 @@ package alix.common.data.security.password.matcher;
 import alix.common.data.security.password.Password;
 import alix.common.data.security.password.hashing.Hashing;
 import alix.common.data.security.password.hashing.HashingAlgorithm;
+import alix.common.database.migrate.CryptoUtil;
+import at.favre.lib.crypto.bcrypt.BCrypt;
 
 public final class PasswordMatchers {
 
     private static final PasswordMatcher[] matchers = createMatchers();
     public static final PasswordMatcher ALIX_FORMAT = matchers[0];
     public static final PasswordMatcher MIGRATION_FORMAT = matchers[1];
+    public static final PasswordMatcher BCRYPT_FORMAT = matchers[2];
 
     public static PasswordMatcher matcherOfId(byte id) {
         return matchers[id];
@@ -56,9 +59,28 @@ public final class PasswordMatchers {
         }
     }
 
+    //The matcher for imported BCrypt passwords
+    private static final class Matcher2 implements PasswordMatcher {
+
+        public static final BCrypt.Verifyer VERIFIER = BCrypt
+                .verifyer(BCrypt.Version.VERSION_2A);
+
+        @Override
+        public boolean matches(Password password, String unhashedInput) {
+            var raw = CryptoUtil.rawBcryptFromHashed(password).toCharArray();
+
+            return VERIFIER.verify(unhashedInput.toCharArray(), raw).verified;
+        }
+
+        @Override
+        public byte matcherId() {
+            return 2;
+        }
+    }
+
     private static PasswordMatcher[] createMatchers() {
         return new PasswordMatcher[]{
-                new Matcher0(), new Matcher1()
+                new Matcher0(), new Matcher1(), new Matcher2()
         };
     }
 }

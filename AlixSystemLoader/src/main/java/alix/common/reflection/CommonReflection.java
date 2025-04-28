@@ -1,6 +1,5 @@
 package alix.common.reflection;
 
-import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 
 import java.lang.reflect.Field;
@@ -15,7 +14,7 @@ public final class CommonReflection {
             method.setAccessible(true);
             return method;
         } catch (Exception e) {
-            throw new AlixError(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(params) + ")");
+            throw new AlixException(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(params) + ")");
         }
     }
 

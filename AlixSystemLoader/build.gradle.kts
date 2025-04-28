@@ -31,6 +31,10 @@ repositories {
 }
 tasks.register("prepareKotlinBuildScriptModel") {}
 dependencies {
+    implementation("com.zaxxer:HikariCP:5.0.1")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.0.7")
+    implementation("at.favre.lib:bcrypt:0.10.2")
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
@@ -58,7 +62,7 @@ dependencies {
     // https://mvnrepository.com/artifact/io.github.bivashy/velocity-native
     compileOnly("io.github.bivashy:velocity-native:3.3.0-410636a")
 
-    compileOnly("com.github.retrooper:packetevents-netty-common:2.7.1-SNAPSHOT")
+    compileOnly("com.github.retrooper:packetevents-netty-common:${project.findProperty("packet-events-version")}")
     api(project(":AlixAPI"))
 
     compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
@@ -75,6 +79,8 @@ dependencies {
     compileOnlyApi("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")
     compileOnly("io.netty:netty-all:4.1.24.Final")
+    compileOnly("com.google.code.gson:gson:2.12.1")
+
     // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
     //compileOnly("com.velocitypowered:velocity-native:3.1.0") HOW IS THIS NOT FOUND
 }

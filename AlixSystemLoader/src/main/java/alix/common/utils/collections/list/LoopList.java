@@ -284,21 +284,35 @@ public abstract class LoopList<T> {
         return i != 0 ? i - 1 : maxIndex;
     }
 
-    public static int previousLoopIndex(AtomicInteger i, int maxIndex) {
-        return i.get() != 0 ? i.decrementAndGet() : setAndGet(i, maxIndex);
+    public static int previousLoopIndex(AtomicInteger a, int maxIndex) {
+        int val;
+        int newVal;
+
+        do {
+            val = a.get();
+            newVal = previousLoopIndex(val, maxIndex);
+        } while (!a.compareAndSet(val, newVal));
+
+        return newVal;
+        //return a.get() != 0 ? a.decrementAndGet() : setAndGet(a, maxIndex);
     }
 
     public static int nextLoopIndex(int i, int maxIndex) {
         return i != maxIndex ? i + 1 : 0;
     }
 
-    public static int nextLoopIndex(AtomicInteger i, int maxIndex) {
-        return i.get() != maxIndex ? i.incrementAndGet() : setAndGet(i, 0);
-    }
+    public static int nextLoopIndex(AtomicInteger a, int maxIndex) {
+        int val;
+        int newVal;
 
-    private static int setAndGet(AtomicInteger o, int v) {
-        o.set(v);
-        return v;
+        do {
+            val = a.get();
+            newVal = nextLoopIndex(val, maxIndex);
+        } while (!a.compareAndSet(val, newVal));
+
+        return newVal;
+        //return a.updateAndGet(i -> nextLoopIndex(i, maxIndex));
+        //return a.get() != maxIndex ? a.incrementAndGet() : setAndGet(a, 0);
     }
 
     @SafeVarargs

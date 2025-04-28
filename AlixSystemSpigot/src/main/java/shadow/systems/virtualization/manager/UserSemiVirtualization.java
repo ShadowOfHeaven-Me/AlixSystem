@@ -128,7 +128,7 @@ public final class UserSemiVirtualization {
 
     static <T extends Event> VirtualEventManager.VirtualizedHandlerList replaceHandlers(Class<? extends Event> eventClazz, VirtualEventManager.VirtualEventExecutor<T> executor) {
         try {
-            Field f = eventClazz.getDeclaredField("handlers");
+            Field f = ReflectionUtils.getFieldFromTypeAssignable(eventClazz, HandlerList.class);// eventClazz.getDeclaredField("handlers");
             f.setAccessible(true);
             HandlerList original = (HandlerList) f.get(null);
             VirtualEventManager.VirtualizedHandlerList virtualizedHandlerList = new VirtualEventManager.VirtualizedHandlerList(original, executor);
@@ -141,7 +141,7 @@ public final class UserSemiVirtualization {
 
     static void replaceVirtualHandlerWithOriginal(Class<? extends Event> eventClazz, VirtualEventManager.VirtualizedHandlerList virtualizedHandlerList) {
         try {
-            Field f = eventClazz.getDeclaredField("handlers");
+            Field f = ReflectionUtils.getFieldFromTypeAssignable(eventClazz, HandlerList.class);
             UNSAFE.putObject(UNSAFE.staticFieldBase(f), UNSAFE.staticFieldOffset(f), virtualizedHandlerList.originalHandler);
         } catch (Exception e) {
             throw new AlixException(e);

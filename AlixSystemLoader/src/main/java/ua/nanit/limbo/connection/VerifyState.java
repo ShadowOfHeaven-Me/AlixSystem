@@ -67,4 +67,7 @@ public interface VerifyState {
 
     default void handle(PacketPlayInTickEnd packet) {
     }
+
+    default void onLimboDisconnect() {
+    }
 }

@@ -1,4 +1,4 @@
-package ua.nanit.limbo.connection.login;
+package ua.nanit.limbo.connection.login.packets;
 
 import com.github.retrooper.packetevents.protocol.sound.Sound;
 import com.github.retrooper.packetevents.protocol.sound.SoundCategory;

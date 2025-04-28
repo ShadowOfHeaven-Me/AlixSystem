@@ -31,14 +31,11 @@ import ua.nanit.limbo.protocol.packets.CompressionSupplier;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Log;
-import ua.nanit.limbo.util.map.AbstractVersionMap;
-import ua.nanit.limbo.util.map.ConcurrentVersionMap;
 import ua.nanit.limbo.util.map.VersionMap;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * PacketSnapshot encodes a packet to byte array for each MC version.
@@ -55,8 +52,8 @@ public final class PacketSnapshot implements PacketOut {
     private final VersionMap<ByteBuf> encodings;
 
     //Floodgate no compression support
-    private final AbstractVersionMap<ByteBuf> noCompressionEncodings;
-    private final Map<ByteBuf, Version> noCompressionAlreadyCached;
+    //private final AbstractVersionMap<ByteBuf> noCompressionEncodings;
+    //private final Map<ByteBuf, Version> noCompressionAlreadyCached;
 
     //private final Map<Version, byte[]> versionMessages = new EnumMap<>(Version.class);
     //private final Map<Version, Version> mappings = new EnumMap<>(Version.class);
@@ -66,11 +63,11 @@ public final class PacketSnapshot implements PacketOut {
         this.state = State.getState(packet);
         this.encodings = encode0(packet, state, GlobalCompressionHandler::getCompressionFor);
         //encode(packet, CompressionSupplier.NULL_SUPPLIER)
-        if (CompressionHandler.COMPRESSION_ENABLED)
+        /*if (CompressionHandler.COMPRESSION_ENABLED)
             this.noCompressionEncodings = floodgateNoCompression ? new ConcurrentVersionMap<>() : null;
         else this.noCompressionEncodings = this.encodings;
 
-        this.noCompressionAlreadyCached = floodgateNoCompression ? new ConcurrentHashMap<>(4, 1, 4) : null;
+        this.noCompressionAlreadyCached = floodgateNoCompression ? new ConcurrentHashMap<>(4, 1, 4) : null;*/
         snapshots.offerLast(this);
     }
 
@@ -81,7 +78,8 @@ public final class PacketSnapshot implements PacketOut {
         });
     }
 
-    private ByteBuf ensureNotNull(ByteBuf buf, Version version) {
+    private ByteBuf getEnsureNotNull(Version version) {
+        var buf = this.encodings.get(version);
         if (buf == null)
             throw new AlixException("NULL ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
         return buf;
@@ -89,7 +87,8 @@ public final class PacketSnapshot implements PacketOut {
 
     public ByteBuf getEncoded(Version version) {
         if (NanoLimbo.debugSnapshots) Log.error("PACKET: " + this.packet + " version=" + version);
-        return this.ensureNotNull(this.encodings.get(version), version);
+
+        return this.getEnsureNotNull(version.getEncodingSafe());
     }
 
     private ByteBuf encodePacket(Version version, CompressionHandler handler, boolean pooled) {
@@ -98,13 +97,12 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     public ByteBuf getEncodedNoCompression(Version version) {
-        if (true) return this.encodePacket(version, null, true);
-
-        ByteBuf encoding = this.noCompressionEncodings.computeIfAbsent(version, this::createEncodedNoCompression);
-        return this.ensureNotNull(encoding, version);
+        return CompressionHandler.COMPRESSION_ENABLED ? this.encodePacket(version, null, true) : this.getEncoded(version);
+        //ByteBuf encoding = this.noCompressionEncodings.computeIfAbsent(version, this::createEncodedNoCompression);
+        //return this.ensureNotNull(encoding, version);
     }
 
-    private ByteBuf createEncodedNoCompression(Version version) {
+    /*private ByteBuf createEncodedNoCompression(Version version) {
         State.PacketRegistry mappings = this.state.clientBound.getRegistry(version);
         ByteBuf buf = PacketDuplexHandler.encodeToRaw0(packet, mappings, version, null, false);//todo: consider making this pooled
 
@@ -116,7 +114,7 @@ public final class PacketSnapshot implements PacketOut {
 
         this.noCompressionAlreadyCached.put(buf, version);
         return BufUtils.constBuffer(buf);
-    }
+    }*/
 
 /*    public ByteBuf getOrCreateRaw(State.PacketRegistry encoderMappings, Version version, CompressionHandler handler) throws Exception {
         ByteBuf cache = this.cache.get(version);
@@ -143,7 +141,7 @@ public final class PacketSnapshot implements PacketOut {
         Map<ByteBuf, Version> encoded = new HashMap<>();
 
         for (Version version : Version.values()) {
-            if (version.equals(Version.UNDEFINED)) continue;
+            if (version == Version.UNDEFINED) continue;
 
             State.PacketRegistry mappings = state.clientBound.getRegistry(version);
                 /*if ((mappings == null || !mappings.hasPacket(packet.getClass())) && packet.getClass() == PacketPlayOutTransaction.class) {

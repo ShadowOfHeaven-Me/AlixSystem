@@ -15,9 +15,12 @@ public final class PacketInCommandUnsigned extends InRetrooperPacket<WrapperPlay
     }
 
     @Override
-    public void handle(ClientConnection conn, LimboServer server) {
-        if (!(conn.getVerifyState() instanceof LoginState)) return;
+    public boolean isSkippable(ClientConnection conn) {
+        return !(conn.getVerifyState() instanceof LoginState);
+    }
 
+    @Override
+    public void handle(ClientConnection conn, LimboServer server) {
         String cmd = this.wrapper().getCommand();
         ((LoginState) conn.getVerifyState()).handleCommand(getArgs(cmd));
     }

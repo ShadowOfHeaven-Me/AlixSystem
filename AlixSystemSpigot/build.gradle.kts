@@ -5,7 +5,7 @@ plugins {//java-library
 }
 
 group = "AlixSystemSpigot"
-version = "3.6.3 (DEV-1)"
+version = "3.6.3"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -20,8 +20,9 @@ tasks.shadowJar {
     destinationDirectory = file(project.findProperty("build-dir") as String)
     archiveBaseName.set("AlixSystem")
     archiveClassifier.set("")//w pizde z z tym "-all" suffixem
-    relocate("io.github.retrooper.packetevents", "alix.libs.io.github.retrooper.packetevents")
-    relocate("com.github.retrooper.packetevents", "alix.libs.com.github.retrooper.packetevents")
+    val prefix = "alix.libs"
+    relocate("io.github.retrooper.packetevents", "$prefix.io.github.retrooper.packetevents")
+    relocate("com.github.retrooper.packetevents", "$prefix.com.github.retrooper.packetevents")
     minimize()
 }
 
@@ -51,7 +52,7 @@ dependencies {
     implementation(project(":AlixSystemLoader"))
     implementation(project(":AlixAPI:AlixAPISpigot"))
 
-    implementation("com.github.retrooper:packetevents-spigot:2.7.1-SNAPSHOT")
+    implementation("com.github.retrooper:packetevents-spigot:${project.findProperty("packet-events-version")}")
 
     compileOnly("net.kyori:adventure-api:4.18.0")
 

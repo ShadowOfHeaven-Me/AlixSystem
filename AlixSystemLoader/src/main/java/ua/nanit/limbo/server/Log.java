@@ -18,6 +18,8 @@
 package ua.nanit.limbo.server;
 
 
+import ua.nanit.limbo.NanoLimbo;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,6 +67,6 @@ public final class Log {
     }
 
     public static boolean isDebug() {
-        return true;
+        return NanoLimbo.debugMode;
     }
 }

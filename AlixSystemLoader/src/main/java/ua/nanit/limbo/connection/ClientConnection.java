@@ -26,7 +26,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.captcha.blocks.BlockPackets;
-import ua.nanit.limbo.connection.pipeline.PacketDecoder;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
@@ -326,9 +325,10 @@ public class ClientConnection {
             else
                 */
 
+            //Why do 1.8 clients duplicate this singular block onto the neighbouring, not sent chunks?
             writePacket(BlockPackets.DECOY);//sent before the chunk - should be ignored by the client
-            //if (clientVersion.moreOrEqual(Version.V1_9))
             writePacket(PacketSnapshots.MIDDLE_CHUNK);
+            //if (clientVersion.moreOrEqual(Version.V1_9))
             //if (clientVersion.moreOrEqual(Version.V1_9)) writePacket(new PacketUnloadChunk());
             //writePacket(new PacketPlayOutBlockUpdate().setPosition(new Vector3i(0, 62, 0)).setType(StateTypes.DIRT));
 

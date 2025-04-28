@@ -46,7 +46,7 @@ import static ua.nanit.limbo.protocol.PacketSnapshot.snapshots;
 public final class PacketSnapshots {
 
     public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketOutSetCompression());
-    public static final PacketOut RECONFIGURE = PacketSnapshot.of(new PacketPlayOutReconfigure());
+    public static final PacketSnapshot RECONFIGURE = PacketSnapshot.of(new PacketPlayOutReconfigure());
     public static final int PLAYER_ENTITY_ID = 0;
     public static final PacketSnapshot PACKET_LOGIN_SUCCESS;
     public static final PacketSnapshot PACKET_JOIN_GAME;

@@ -37,16 +37,16 @@ public final class PacketUtils {
 
     private static ByteBuf encode0(Packet packet, boolean clientbound, Version version, CompressionSupplier compressSupplier, boolean pooled) {
         //boolean clientbound = side == PacketSide.CLIENT;
-        for (State state : State.values()) {
-            State.ProtocolMappings<? extends Packet> mappings = clientbound ? state.clientBound : state.serverBound;
+        State state = State.getState(packet);
+        State.ProtocolMappings<? extends Packet> mappings = clientbound ? state.clientBound : state.serverBound;
 
-            State.PacketRegistry registry = mappings.getRegistry(version);
-            if (registry == null || !registry.hasPacket(packet.getClass())) continue;
+        State.PacketRegistry registry = mappings.getRegistry(version);
+        if (registry == null || !registry.hasPacket(packet.getClass()))
+            throw new AlixException("Could not encode packet! Packet: " + packet.getClass().getSimpleName() + " clientbound: " + clientbound + " version: " + version + "!");
 
-            CompressionHandler handler = compressSupplier.getHandlerFor(packet, version, state);
-            return PacketDuplexHandler.encodeToRaw0(packet, registry, version, handler, pooled);
-        }
+        //State.getState()
 
-        throw new AlixException("Could not encode packet! Packet: " + packet.getClass().getSimpleName() + " clientbound: " + clientbound + " version: " + version + "!");
+        CompressionHandler handler = compressSupplier.getHandlerFor(packet, version, state);
+        return PacketDuplexHandler.encodeToRaw0(packet, registry, version, handler, pooled);
     }
 }

@@ -49,6 +49,7 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     //UPDATE:
+    //* Fixed a rare concurrency exception
 
     //*
 
@@ -106,6 +107,7 @@ public final class Main implements LoaderBootstrap {
         config = (YamlConfiguration) plugin.getConfig();
         this.metrics = Metrics.createMetrics();
         //logError(FigletFont.convertOneLine("SEX12"));
+
         kickAll("Reload");
 
         //PacketType.Play.Server.PLUGIN_MESSAGE
@@ -117,6 +119,7 @@ public final class Main implements LoaderBootstrap {
         //AlixBungee.init();
         //ParticleRenderer3d.render();
         PreStartUpExecutors preStartUpExecutors = new PreStartUpExecutors();
+        AlixInterceptor.init();
         pm.registerEvents(preStartUpExecutors, plugin);
         config.options().copyDefaults(true);
         mainServerThread = Thread.currentThread();
@@ -197,7 +200,6 @@ public final class Main implements LoaderBootstrap {
     private void setUp(PreStartUpExecutors preStartUpExecutors) {
         en = AlixUtils.isPluginLanguageEnglish;
         AlixHandler.updateConsoleFilter();
-        AlixInterceptor.init();
         CommandManager.register();
         AlixHandler.initExecutors(pm);
         //AlixHandler.kickAll("Reload");
@@ -239,85 +241,6 @@ public final class Main implements LoaderBootstrap {
         HandlerList.unregisterAll(preStartUpExecutors);
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");
     }
-
-/*    private void checkPlugins() {
-        StringBuilder unnecessaryPlugins = new StringBuilder();
-        String[] unwantedPlugins = {"EssentialsX", "LoginSecurity", "AuthMe", "SimpleCommands"};
-        for (String plugin : unwantedPlugins) {
-            if (pm.isPluginEnabled(plugin)) {
-                unnecessaryPlugins.append(plugin).append(',');
-                //disablePlugin(plugin);
-            }
-        }
-        String toText = unnecessaryPlugins.toString();
-        if (!toText.isEmpty()) {
-            final String substring = toText.substring(0, toText.length() - 2);
-            logConsoleInfo(en ? "AlixSystem has deemed these plugins unnecessary: " + substring :
-                    "AlixSystem uznało te pluginy za zbędne: " + substring);
-        }
-        boolean antiCheat = false;//, antiCrash = false;
-        for (Plugin plugin : pm.getPlugins()) {
-            String name = plugin.getName().toLowerCase();
-            //if (name.contains("chat")) chatPluginFound = true;
-            if (name.contains("anticheat")) antiCheat = true;
-            //if (name.contains("anticrash")) antiCrash = true;
-            switch (name) {
-                case "vulcan":
-                case "spartan":
-                case "kauri":
-                case "grimac":
-                    antiCheat = true;
-                    break;
-                //case "packetlimiter":
-*//*                case "exploitfixer":
-                //case "titanium":
-                    antiCrash = true;
-                    break;*//*
-            }
-        }
-
-        *//*if (!antiCrash)
-            logConsoleWarning(en ? "No AntiCrash enlisted in AlixSystem's library was found. Recommending Titanium (AntiCrash). Download link: https://www.spigotmc.org/resources/titanium-anticrash.102161/"
-                    : "Nie znaleziono żadnego AntyCrasha wpisanego w bibliotekę AlixSystem, rekomenduję Titanium (AntiCrash). Link do pobrania: https://www.spigotmc.org/resources/titanium-anticrash.102161/");
-*//*
-        if (!antiCheat)
-            logConsoleWarning(en ? "No AntiCheat enlisted in AlixSystem's library was found. Recommending either GrimAC or Kauri. " +
-                    "Full lists of anticheats can be found here: https://www.spigotmc.org/wiki/anti-cheat-list-bukkit-and-spigot-1-17-part-1/ " +
-                    "or here https://www.spigotmc.org/wiki/anti-cheat-list-bukkit-and-spigot-1-19-x/" :
-                    "Nie znaleziono żadnego AntyCheatu wpisanego w bibliotekę AlixSystem, rekomenduję GrimAC lub Kauri. " +
-                            "Listy możliwych opcji można znależć tu: https://www.spigotmc.org/wiki/anti-cheat-list-bukkit-and-spigot-1-17-part-1/ " +
-                            "lub tu https://www.spigotmc.org/wiki/anti-cheat-list-bukkit-and-spigot-1-19-x/");
-        //if (!chatPluginFound && !en)
-        //logConsoleInfo("Nie znaleziono pluginu na regulację chatu, rekomenduję G5ChatMod autorstwa kubyg5. Link do pobrania: https://kubag5.pl/G5ChatMod");
-        if (ReflectionUtils.protocolVersion && pm.isPluginEnabled("WorldEdit") && !pm.isPluginEnabled("FastAsyncWorldEdit")) {
-            logConsoleWarning(en ? "Recommending WorldEdit alternative, FAWE (FastAsyncWorldEdit), for better performance. Download link: " +
-                    "https://www.spigotmc.org/resources/fastasyncworldedit.13932/" :
-                    "Rekomenduję zamiennik WorldEdita, FAWE (FastAsyncWorldEdit), dla mniejszego zużycia procesora. Link do pobrania: " +
-                            "https://www.spigotmc.org/resources/fastasyncworldedit.13932/");
-        }
-    }*/
-
-
-    /*    public void disablePlugin(String name) {
-        Plugin plugin = pm.getPlugin(name);
-        pm.disablePlugin(plugin);
-        logConsoleInfo(en ? "Plugin " + name + " was disabled!" : "Plugin " + name + " został wyłączony!");
-    }
-
-    private boolean autoRestart() {
-        boolean access = isAccessible();
-        if (access) {
-            logConsoleWarning(en ? "Plugin loaded in twice without disabling!" : "Plugin załadował się dwukrotnie bez wyłączania!");
-            restart();
-        }
-        return access;
-    }
-
-    public void restart() {
-        logConsoleInfo(en ? "Initiating plugin restart!" : "Rozpoczęto restart pluginu!");
-        onDisable();
-        onEnable();
-    }*/
 
     public void logConsoleInfo(String info) {
         plugin.getAlixLogger().info(info);

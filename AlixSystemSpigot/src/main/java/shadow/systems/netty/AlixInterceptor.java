@@ -19,7 +19,7 @@ import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.netty.unsafe.first.FirstInboundHandler;
 import shadow.utils.objects.AlixConsoleFilterHolder;
-import shadow.virtualization.LimboServerIntegration;
+import shadow.virtualization.BukkitLimboIntegration;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.handlers.DummyHandler;
 import ua.nanit.limbo.server.LimboServer;
@@ -85,7 +85,7 @@ public final class AlixInterceptor {
 
         //https://github.com/Nan1t/NanoLimbo/blob/main/src/main/java/ua/nanit/limbo/server/LimboServer.java
 
-        limbo = enableLimbo && AlixUtils.requireCaptchaVerification ? NanoLimbo.load(new LimboServerIntegration()) : null;
+        limbo = enableLimbo && AlixUtils.requireCaptchaVerification ? NanoLimbo.load(new BukkitLimboIntegration()) : null;
     }
 
     private static void injectIntoServerPipeline(ChannelPipeline serverPipeline) {//, ChannelHandler firewallHandler) {//the server pipeline

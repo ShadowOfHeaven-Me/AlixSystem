@@ -16,12 +16,6 @@
           </set>
         </option>
       </GradleProjectSettings>
-      <GradleProjectSettings>
-        <option name="externalProjectPath" value="$PROJECT_DIR$/../Velocity/api" />
-      </GradleProjectSettings>
-      <GradleProjectSettings>
-        <option name="externalProjectPath" value="$PROJECT_DIR$/../Velocity/proxy" />
-      </GradleProjectSettings>
     </option>
   </component>
 </project>

@@ -9,9 +9,9 @@ public final class PacketPlayInFlying extends InRetrooperPacket<WrapperPlayClien
 
     public PacketPlayInFlying() {
         super(WrapperPlayClientPlayerFlying.class);
-        //I think this is correct?
-        FlyingReadUtils.setPositionChanged(this.wrapper());
-        FlyingReadUtils.setRotationChanged(this.wrapper());
+        //I think this is correct? (Plot twist: is not)
+        //FlyingReadUtils.setPositionChanged(this.wrapper());
+        //FlyingReadUtils.setRotationChanged(this.wrapper());
     }
 
     @Override

@@ -54,9 +54,6 @@ public final class CommandsFile extends AlixFileManager {
     }
 
     private static File findFile() {
-        File f = AlixFileManager.getPluginFile("commands.txt", FileType.CONFIG);
-        if (f.exists()) return f;
-        //Main.logDebug("Unable to find this plugin's commands.txt file. Generating a new one.");
-        return createPluginFile("commands.txt", FileType.CONFIG);
+        return AlixFileManager.getOrCreatePluginFile("commands.txt", FileType.CONFIG);
     }
 }

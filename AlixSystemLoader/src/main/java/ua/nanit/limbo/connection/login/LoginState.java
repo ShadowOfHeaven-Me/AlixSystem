@@ -21,8 +21,10 @@ import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.connection.captcha.KeepAlives;
 import ua.nanit.limbo.connection.captcha.blocks.BlockPackets;
+import ua.nanit.limbo.connection.login.countdown.LimboCountdown;
 import ua.nanit.limbo.connection.login.gui.*;
 import ua.nanit.limbo.connection.login.gui.bedrock.LimboBedrockGUI;
+import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.PacketSnapshot;
@@ -35,7 +37,6 @@ import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryClos
 import ua.nanit.limbo.protocol.packets.play.move.FlyingPacket;
 import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.registry.Version;
-import ua.nanit.limbo.server.Log;
 
 import java.util.function.Consumer;
 
@@ -63,7 +64,8 @@ public final class LoginState implements VerifyState {
 
     private final ClientConnection connection;
     private final PacketDuplexHandler duplexHandler;
-    private LimboGUI gui;
+    private LimboCountdown countdown;
+    public LimboGUI gui;
     private Consumer<ClientConnection> authAction;
     private LoginVerification loginVerification;
     public PersistentUserData data;
@@ -110,6 +112,7 @@ public final class LoginState implements VerifyState {
 
         if (this.connection.hasConfigPhase()) {
             this.duplexHandler.writeAndFlush(PacketSnapshots.RECONFIGURE);
+            this.duplexHandler.disablePacketWriting = true;
             this.isAwaitingReconfigureAck = true;
             return;
         }
@@ -178,6 +181,7 @@ public final class LoginState implements VerifyState {
         if (this.isRegistered && !justAuthApp)
             this.loginVerification = new LoginVerification(this.data.getPassword(), true);
 
+        this.countdown = ConfigParams.hasMaxLoginTime ? new LimboCountdown(this.connection, this.isRegistered) : null;
         //this.gui = new LimboPinBuilder(this.connection, data, this);
 
         /*this.gui = new LimboAuthBuilder(this.connection, MapSecretKey.fromName(this.connection.getUsername()), correct -> {
@@ -186,6 +190,11 @@ public final class LoginState implements VerifyState {
                 return;
             }
         }, true);*/
+    }
+
+    @Override
+    public void onLimboDisconnect() {
+        if (this.countdown != null) this.countdown.cancel();
     }
 
     private LimboGUI newBuilderBedrock(Object bedrockPlayer) {
@@ -232,6 +241,11 @@ public final class LoginState implements VerifyState {
         return true;
     }
 
+    private void writeCommands() {
+        if (this.version().moreOrEqual(Version.V1_13))
+            this.write(this.isRegistered ? LOGIN : REGISTER);
+    }
+
     private boolean initDoubleVer() {
         if (data.getLoginParams().isDoubleVerificationEnabled() && loginVerification.isPhase1()) {
 
@@ -240,7 +254,7 @@ public final class LoginState implements VerifyState {
 
             if (this.gui != null && !isSecondaryGui) {
                 this.write(CLOSE_INV);
-                this.write(this.isRegistered ? LOGIN : REGISTER);
+                this.writeCommands();
                 this.connection.writeTitle(this.isRegistered ? LOGIN_TITLE : REGISTER_TITLE);
             }
 
@@ -273,8 +287,7 @@ public final class LoginState implements VerifyState {
         //this.write(new PacketPlayerPositionAndLook(0.5, 64, 0.5, 0, 0, 2));
 
         if (this.gui == null) {
-            this.write(this.isRegistered ? LOGIN : REGISTER);
-
+            this.writeCommands();
             this.connection.writeTitle(this.isRegistered ? LOGIN_TITLE : REGISTER_TITLE);
         }
 
@@ -282,8 +295,7 @@ public final class LoginState implements VerifyState {
         else this.duplexHandler.flush();
         //this.write(PacketSnapshots.PACKET_PLAY_PLUGIN_MESSAGE);
 
-
-        Log.error("LOGIN SENT: " + this.gui + " NAMES: " + this.connection.getChannel().pipeline().names());
+        //Log.error("LOGIN SENT: " + this.gui + " NAMES: " + this.connection.getChannel().pipeline().names());
     }
 
     public void handleCommand(String[] args) {
@@ -348,7 +360,7 @@ public final class LoginState implements VerifyState {
         if (!this.isAwaitingReconfigureAck) return;
         this.isAwaitingReconfigureAck = false;
 
-        //we gotta wait because pe throws an exception when trying to read this packet (the server assumes config phase
+        //we gotta wait because pe throws an exception when trying to read this packet (the server assumes config phase,
         // while the player sends this packet still in the play phase)
         AlixScheduler.async(this::logIn0);
     }

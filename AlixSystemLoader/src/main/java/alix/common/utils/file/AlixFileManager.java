@@ -26,9 +26,10 @@ public abstract class AlixFileManager {
     private static final File INTERNAL_FOLDER, SECRETS_FOLDER;
 
     static {
-        INTERNAL_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath() + File.separator + "internal");
+        var path = AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath();
+        INTERNAL_FOLDER = new File(path + File.separator + "internal");
         INTERNAL_FOLDER.mkdir();
-        SECRETS_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolderPath().toAbsolutePath() + File.separator + "secrets");
+        SECRETS_FOLDER = new File(path + File.separator + "secrets");
         SECRETS_FOLDER.mkdir();
     }
 
@@ -151,7 +152,7 @@ public abstract class AlixFileManager {
             written = writeJarCompiledFileIntoDest(copyInto, clazz.getClassLoader().getResourceAsStream(s)) != null;
 
         if (!written)
-            throw new AlixException("Resource");
+            throw new AlixError("Resource: " + s);
 
         return copyInto;
     }
