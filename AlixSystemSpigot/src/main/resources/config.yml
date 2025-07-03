@@ -2,7 +2,7 @@
 #             This is the config.yml file for AlixSystem, divided by sections.       #
 #     If you're curious about certain parameters, you can join our discord server    #
 #          at https://discord.gg/bWjmA7s3xV or visit the spigot documentation        #
-#                            of this plugin available at                             #
+#               (although outdated) of this plugin available at                      #
 #    https://www.spigotmc.org/resources/alixsystem.109144/field?field=documentation  #
 #------------------------------------------------------------------------------------#
 
@@ -230,7 +230,7 @@ user-teleportation-delay: 5000
 #                   TECHNICAL                    #
 #------------------------------------------------#
 
-#Config used for the very technical features of Alix
+#Config used for some rather technical aspects of Alix
 
 #Defines whether during verification all entity packets should be stopped from being sent to the user. If set to false, only packets about other players will be blocked, and all other entities will be shown. Leaving this at 'true' is slightly more optimized.
 filter-all-entity-packets: true
@@ -241,3 +241,7 @@ check-server-compatibility: true
 debug: false
 #Defines whether all important data should be asynchronously saved every time a world is saved (if set to false the important data will be saved once the plugin or the server are disabled - This is however not recommended, because things such as server crashes may corrupt the saved data)
 auto-save: true
+#Defines whether faster, but 'unsafe' firewall mechanisms should be used if available
+unsafe-firewall: true
+#Defines whether constant buffer writes should be done in order to achieve maximal performance
+write-const-bufs: true

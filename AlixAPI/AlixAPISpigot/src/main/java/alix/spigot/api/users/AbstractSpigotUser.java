@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNull;
  **/
 public interface AbstractSpigotUser extends AlixCommonUser {
 
+    /** @return The PacketEvents user associated with this user
+     **/
     @NotNull
     User retrooperUser();
 

@@ -211,7 +211,23 @@ final class CaptchaStateImpl {
     private void scheduleDisconnectTask(long delay, TimeUnit unit) {
         if (!NanoLimbo.performChecks) return;
 
-        this.disconnectTask = this.connection.getChannel().eventLoop().schedule(() -> this.disconnect(TIMED_OUT), delay, unit);
+        Runnable task;
+
+        if (NanoLimbo.printCaptchaFailed) {
+            var stackTrace = new Exception().getStackTrace();
+            task = () -> {
+                var ex = new Exception();
+                ex.setStackTrace(stackTrace);
+                ex.printStackTrace();
+                this.disconnectTimedOut0();
+            };
+        } else task = this::disconnectTimedOut0;
+
+        this.disconnectTask = this.connection.getChannel().eventLoop().schedule(task, delay, unit);
+    }
+
+    private void disconnectTimedOut0() {
+        this.disconnect(TIMED_OUT);
     }
 
     long sent;
@@ -342,7 +358,6 @@ final class CaptchaStateImpl {
         }
 
         if (flying.hasPositionChanged()) {
-
             double lastY = this.y;
 
             this.x = loc.getX();
@@ -364,14 +379,16 @@ final class CaptchaStateImpl {
         int startFallingTick = version().moreOrEqual(Version.V1_9) ? 3 : 2;
 
         //we received 4 or more (this packet included)
-        if (this.movementsReceived >= startFallingTick && !flying.isOnGround()) {
+        if (!NanoLimbo.allowFreeMovement && this.movementsReceived >= startFallingTick && !flying.isOnGround()) {
             double predictedDeltaY = (this.lastDeltaY - 0.08) * 0.98;
             double diff = this.deltaY - predictedDeltaY;
-            ////Log.error("DELTA Y: %s PREDICTED: %s DIFF: %s", deltaY, predictedDeltaY, diff);
+
+            if (NanoLimbo.debugMode)
+                Log.error("DELTA Y: %s PREDICTED: %s DIFF: %s", deltaY, predictedDeltaY, diff);
 
             //a fair maximum deviation
             //todo
-            this.failIf(Math.abs(diff) > 1E-5);
+            this.failIf(Math.abs(diff) > 1.0E-5);
         }
 
         if (this.isCheckingCollision) {
@@ -422,6 +439,7 @@ final class CaptchaStateImpl {
             case 1: {
                 this.failIf(!flying.hasRotationChanged());
                 if (version().moreOrEqual(Version.V1_9)) {
+                    //Log.error("tpConfirmsReceived=" + this.tpConfirmsReceived);
                     this.failIf(this.tpConfirmsReceived != 1);
                     this.failIf((int) this.y != TELEPORT_Y);
                 } else {
@@ -448,8 +466,10 @@ final class CaptchaStateImpl {
             }
             case 3: {
                 //same as the second movement, the client will start falling only after sending this packet
-                if (version().moreOrEqual(Version.V1_9)) this.failIf((int) this.y != TELEPORT_VALID_Y);
-                this.startFalling();
+                if (version().moreOrEqual(Version.V1_9)) {
+                    this.failIf((int) this.y != TELEPORT_VALID_Y);
+                    this.startFalling();
+                }//< 1.9 already falling
                 return;
             }
             case 10: {
@@ -487,7 +507,7 @@ final class CaptchaStateImpl {
         //Thread.currentThread().getStackTrace();
         //Log.error("FAILED THE-");
         //new Exception().printStackTrace();
-        if (NanoLimbo.performChecks) throw CaptchaFailedException.FAILED;
+        throw CaptchaFailedException.FAILED;
     }
 
     void disconnect(PacketOut disconnectPacket) {

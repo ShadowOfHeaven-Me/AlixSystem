@@ -15,12 +15,12 @@ final class DatabaseMySQL extends AbstractDatabaseConnector {
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        hikariConfig.setUsername(DatabaseConfig.NAME);
+        hikariConfig.setUsername(DatabaseConfig.USERNAME);
         hikariConfig.setPassword(DatabaseConfig.PASSWORD);
         hikariConfig.setJdbcUrl(JDBC_URL
                 .replace("%host%", DatabaseConfig.HOST)
                 .replace("%port%", String.valueOf(DatabaseConfig.getPort(this.getType())))
-                .replace("%database%", DatabaseConfig.NAME));
+                .replace("%database%", DatabaseConfig.TABLE_NAME));
         hikariConfig.setMaxLifetime(DatabaseConfig.MAX_LIFETIME);
     }
 

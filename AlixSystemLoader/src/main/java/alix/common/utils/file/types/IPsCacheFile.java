@@ -1,6 +1,6 @@
 package alix.common.utils.file.types;
 
-import alix.common.antibot.IPUtils;
+import alix.common.antibot.ip.IPUtils;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.other.throwable.AlixException;
 

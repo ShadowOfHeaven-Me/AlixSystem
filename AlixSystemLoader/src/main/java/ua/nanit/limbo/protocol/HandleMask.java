@@ -5,11 +5,9 @@ import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.Packet.Skip;
 import ua.nanit.limbo.server.LimboServer;
 
-import java.util.IdentityHashMap;
-
 public final class HandleMask {
 
-    private static final IdentityHashMap<Class<? extends Packet>, Boolean> SKIPPABLE = new IdentityHashMap<>(1 << 5);
+    /*private static final Map<Class<? extends Packet>, Boolean> SKIPPABLE = new IdentityHashMap<>(1 << 5);
 
     public static void register(Class<? extends Packet> clazz) {
         boolean skippable = isSkippable0(clazz);
@@ -20,10 +18,10 @@ public final class HandleMask {
     //An idea taken from Netty's @Skip annotation optimization
     public static boolean isSkippable(Class<? extends Packet> clazz) {
         return SKIPPABLE.get(clazz);
-    }
+    }*/
 
     @SneakyThrows
-    private static boolean isSkippable0(Class<? extends Packet> clazz) {
+    public static boolean isSkippable0(Class<? extends Packet> clazz) {
         return clazz.getMethod("handle", ClientConnection.class, LimboServer.class).isAnnotationPresent(Skip.class);
     }
 }

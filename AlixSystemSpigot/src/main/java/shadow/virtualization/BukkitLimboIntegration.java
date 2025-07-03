@@ -197,17 +197,13 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
             case ALLOWED:
                 break;
             case DISALLOWED_INVALID_NAME:
-                connection.sendPacketAndClose(invalidNamePacket);
-                return PreLoginResult.DISCONNECTED;
+                return disconnect(connection, invalidNamePacket);
             case DISALLOWED_MAX_ACCOUNTS_REACHED:
-                connection.sendPacketAndClose(maxTotalAccountsPacket);
-                return PreLoginResult.DISCONNECTED;
+                return disconnect(connection, maxTotalAccountsPacket);
             case DISALLOWED_PREVENT_FIRST_JOIN:
-                connection.sendPacketAndClose(preventFirstTimeJoinPacket);
-                return PreLoginResult.DISCONNECTED;
+                return disconnect(connection, preventFirstTimeJoinPacket);
             case DISALLOWED_VPN_DETECTED:
-                connection.sendPacketAndClose(vpnDetectedPacket);
-                return PreLoginResult.DISCONNECTED;
+                return disconnect(connection, vpnDetectedPacket);
             default:
                 throw new AlixError();
         }
@@ -222,6 +218,11 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
         //during premium -> non_premium switch the player hasn't passed the captcha,
         // but was let into the server without completing it - he must be shown the visual captcha now
         return data != null || isPremium || (hasCompletedCaptcha == Boolean.TRUE || hasCompletedCaptcha(channel, name)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
+    }
+
+    private static PreLoginResult disconnect(LimboConnection connection, PacketSnapshot disconnectPacket) {
+        connection.sendPacketAndClose(disconnectPacket);
+        return PreLoginResult.DISCONNECTED;
     }
 
     @Override

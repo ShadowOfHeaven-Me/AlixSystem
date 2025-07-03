@@ -23,9 +23,9 @@ import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.HandleMask;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.registry.State;
+import ua.nanit.limbo.protocol.registry.State.PacketFactory;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Log;
 
@@ -53,20 +53,13 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
             Log.warning("PACKET=" + mappings.getPacket(packetId));
         }*/
 
-        Packet packet = mappings.getPacket(packetId);
-        if (packet == null) return null;
-
-        /*long t = System.nanoTime();
-        HandleMask.isSkippable(packet.getClass());
-        long t2 = System.nanoTime();
-        Log.error("TIME: " + (t2 - t) / Math.pow(10, 6) + "ms");*/
-
-        //the Packet#handle method is unused - do not decode or call handle() on the packet instance
-        //average time on my pc for HandleMask.isSkippable call: 0.002ms
-        if (packet.isSkippable(connection) || HandleMask.isSkippable(packet.getClass())) return null;
+        PacketFactory factory = mappings.getFactory(packetId);
+        if (factory == null || factory.isPacketSkippable(connection))
+            return null;
 
         //Log.error("PACKET ID: " + packetId + " PACKET: " + packet);
 
+        Packet packet = factory.newPacket();
         ByteMessage msg = new ByteMessage(buf);
         //if (packet != null) {
         if (Log.isDebug())

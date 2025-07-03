@@ -39,12 +39,11 @@ public final class PacketHandler {
     }
 
     public void handle(ClientConnection conn, PacketHandshake packet) {
-        this.server.getIntegration().onHandshake(conn, packet);
-
         conn.updateVersion(packet.getVersion());
         conn.updateState(packet.getNextState());
 
         conn.setHandshakePacket(packet);
+        this.server.getIntegration().onHandshake(conn, packet);
         //conn.setJoinedInfo(packet.getHost(), packet.getPort());
 
         //Log.debug("Pinged from %s [%s]", conn.getAddress(), conn.getClientVersion().toString());

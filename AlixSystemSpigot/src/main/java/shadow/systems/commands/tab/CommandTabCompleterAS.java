@@ -2,6 +2,7 @@ package shadow.systems.commands.tab;
 
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
+import alix.common.database.migrate.MigrateType;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -28,6 +29,9 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         /*List<String> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
                         for (Player p : Bukkit.getOnlinePlayers()) list.add(p.getName());
                         return list;*/
+                    case "migrate": {
+                        return Arrays.stream(MigrateType.values()).map(Enum::name).toList();
+                    }
                     case "rs":
                     case "resetstatus":
                     case "frd":
@@ -45,6 +49,10 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         /*List<String> list = new ArrayList<>(Bukkit.getOnlinePlayers().size());
                         for (Player p : Bukkit.getOnlinePlayers()) list.add(p.getName());
                         return list;*/
+                    case "migrate": {
+                        String arg3 = args[2].toUpperCase();
+                        return Arrays.stream(MigrateType.values()).map(Enum::name).filter(n -> n.startsWith(arg3)).toList();
+                    }
                     case "rs":
                     case "resetstatus":
                     case "frd":

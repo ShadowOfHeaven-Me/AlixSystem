@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id("java")
     id("java-library")
@@ -34,6 +36,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.0.1")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.0.7")
     implementation("at.favre.lib:bcrypt:0.10.2")
+    implementation("net.kyori:adventure-text-minimessage:4.16.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -84,7 +87,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
     //compileOnly("com.velocitypowered:velocity-native:3.1.0") HOW IS THIS NOT FOUND
 }
-
 //java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 tasks.test {
     useJUnitPlatform()

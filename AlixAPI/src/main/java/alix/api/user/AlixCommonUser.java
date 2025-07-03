@@ -14,7 +14,7 @@ public interface AlixCommonUser {
      **/
     Channel getChannel();
 
-    //can be used for mapping, as it's never-changing per active session
+    //can be used for runtime mappings, as it's never-changing per active session
     @NotNull
     default ChannelId id() {
         return this.getChannel().id();

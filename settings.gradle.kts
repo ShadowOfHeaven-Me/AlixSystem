@@ -1,3 +1,12 @@
+
+pluginManagement {
+    repositories {
+        maven {
+            url = uri("https://repo.kyngs.xyz/gradle-plugins")
+        }
+        gradlePluginPortal()
+    }
+}
 rootProject.name = "AlixSystem"
 include("AlixSystemSpigot")
 include("AlixSystemLoader")

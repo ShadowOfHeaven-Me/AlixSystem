@@ -14,12 +14,14 @@ import java.security.SecureRandom;
 public final class Hashing {
 
     //Use com.google.common.hash.Hashing
+    private static final HashingAlgorithm[] hashingAlgorithms;
+    public static final HashingAlgorithm CONFIG_HASH;
     public static final byte CONFIG_HASH_ID;
+
     public static final HashingAlgorithm SHA256_MIGRATE;
     public static final HashingAlgorithm SHA512_MIGRATE;
     public static final HashingAlgorithm BCRYPT;
-    private static final HashingAlgorithm[] hashingAlgorithms;
-    private static final HashingAlgorithm configHash;
+
     public static final SecureRandom SECURE_RANDOM;
 
     public static String hashSaltFirst(HashingAlgorithm algorithm, String unhashedPassword, String salt) {
@@ -30,10 +32,6 @@ public final class Hashing {
         return hashingAlgorithms[hashId];//will throw the error if the index is messed up regardless
         /*if (hashId < hashingAlgoritms.length && hashId >= 0) return hashingAlgoritms[hashId];
         throw new AlixError("Invalid hashId: " + hashId + " with the max being: " + hashingAlgoritms.length);*/
-    }
-
-    public static HashingAlgorithm getConfigHashingAlgorithm() {
-        return configHash;
     }
 
     public static String generateSalt() {
@@ -156,7 +154,7 @@ public final class Hashing {
             int cost = 10;
 
             //https://github.com/kyngs/LibreLogin/blob/5cae5bd01fa37e45ee1d529bfa5c8eb1dcdc5c58/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/BCrypt2ACryptoProvider.java#L16
-            return cost + "$" + HASHER.hashToString(cost, s.toCharArray()) + "";
+            return cost + "$" + HASHER.hashToString(cost, s.toCharArray());
         }
 
         @Override
@@ -224,14 +222,15 @@ public final class Hashing {
 
         hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3(), SHA256_MIGRATE, SHA512_MIGRATE, BCRYPT};
 
-        int i = ConfigProvider.config.getInt("password-hash-type", 3);
+        byte def = 3;
+        int i = ConfigProvider.config.getInt("password-hash-type", def);
         byte b = (byte) i;
         byte highestId = hashingAlgorithms[hashingAlgorithms.length - 1].hashId();//Or hashingAlgorithms.length - 1
 
-        if (b != i || b < 0 || b > highestId) b = 3;//Default
+        if (b != i || b < 0 || b > highestId) b = def;//Default
 
         CONFIG_HASH_ID = b; //Set from the config
-        configHash = ofHashId(CONFIG_HASH_ID);
+        CONFIG_HASH = ofHashId(CONFIG_HASH_ID);
         SECURE_RANDOM = new SecureRandom();
     }
 

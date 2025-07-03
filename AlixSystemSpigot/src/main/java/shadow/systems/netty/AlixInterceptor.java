@@ -43,16 +43,19 @@ public final class AlixInterceptor {
         else if (AlixOSFireWall.isOsFireWallInUse) {
             type = FireWallType.OS_IPSET;
             AlixCommonMain.logInfo("Using the optimized OS IpSet for FireWall Protection.");
+        } else if (!Main.config.getBoolean("unsafe-firewall")) {
+            type = FireWallType.NETTY;
+            AlixCommonMain.logInfo("Using Netty for FireWall Protection (per config).");
         } else {
             try {
                 if (AlixHandler.isEpollTransport) {
-                    AlixConsoleFilterHolder.INSTANCE.startFilteringStdErr();
+                    AlixConsoleFilterHolder.INSTANCE.startFilteringStd();
                     try {
                         type = FireWallType.FAST_UNSAFE_EPOLL;
                         AlixFastUnsafeEpoll.init();
                         AlixCommonMain.logInfo("Using Fast Unsafe Epoll for FireWall Protection. Fast IPv4 look-ups are Enabled.");
                     } finally {
-                        AlixConsoleFilterHolder.INSTANCE.stopFilteringStdErr();
+                        AlixConsoleFilterHolder.INSTANCE.stopFilteringStd();
                     }
                 } else {
                     type = FireWallType.INTERNAL_NIO_INTERCEPTOR;
@@ -151,8 +154,8 @@ public final class AlixInterceptor {
             //AlixUtils.debug(Thread.currentThread().getStackTrace());
             //Main.logError("CTX NAME: " + ctx.name() + " HASH: " + System.identityHashCode(ctx));
             AntiBotStatistics.INSTANCE.incrementJoins();
-            InetAddress address = ((InetSocketAddress) channel.unsafe().remoteAddress()).getAddress();
             if (isNettyFireWall) {
+                InetAddress address = ((InetSocketAddress) channel.unsafe().remoteAddress()).getAddress();
                 //Channel serverChannel = AlixHandler.SERVER_CHANNEL_FUTURE.channel();
                 //Main.logInfo(channel + " " + serverChannel + " " + serverChannel.eventLoop());
                 if (FireWallManager.isBlocked(address)) {

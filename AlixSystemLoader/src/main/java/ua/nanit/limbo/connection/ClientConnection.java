@@ -45,7 +45,6 @@ import ua.nanit.limbo.server.Log;
 import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -357,17 +356,22 @@ public class ClientConnection {
         if (clientVersion.moreOrEqual(Version.V1_20_5)) {
             writePacket(PacketSnapshots.PACKET_KNOWN_PACKS);
 
-            if (clientVersion.moreOrEqual(Version.V1_21_4)) {
+            //this.writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA);
+            if (clientVersion.moreOrEqual(Version.V1_21_5)) {
+                writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_5);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_5);
+            } else if (clientVersion.moreOrEqual(Version.V1_21_4)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_4);
             } else if (clientVersion.moreOrEqual(Version.V1_21_2)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_2);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_2);
             } else if (clientVersion.moreOrEqual(Version.V1_21)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21);
-            } else if (clientVersion.moreOrEqual(Version.V1_20_5)) {
+            } else {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_20_5);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_20_5);
             }
 
-            writePacket(PacketSnapshots.PACKET_UPDATE_TAGS);
         } else {
             writePacket(PacketSnapshots.PACKET_REGISTRY_DATA);
         }
@@ -375,7 +379,7 @@ public class ClientConnection {
         writeAndFlushPacket(PacketSnapshots.PACKET_FINISH_CONFIGURATION);
     }
 
-    public <T extends PacketOut> void writePackets(List<T> packets) {
+    public <T extends PacketOut> void writePackets(Iterable<T> packets) {
         packets.forEach(this::writePacket);
     }
 

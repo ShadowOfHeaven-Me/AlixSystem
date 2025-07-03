@@ -17,4 +17,13 @@ public enum AuthReason {
     public boolean isAutoLogin() {
         return isAutoLogin;
     }
+
+    public boolean isPremium() {
+        switch (this) {
+            case PREMIUM_AUTO_LOGIN, PREMIUM_AUTO_REGISTER:
+                return true;
+            default:
+                return false;
+        }
+    }
 }

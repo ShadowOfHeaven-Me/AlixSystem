@@ -5,7 +5,7 @@ plugins {//java-library
 }
 
 group = "AlixSystemSpigot"
-version = "3.6.3"
+version = "${project.findProperty("alix-spigot-version")}"
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
@@ -21,8 +21,21 @@ tasks.shadowJar {
     archiveBaseName.set("AlixSystem")
     archiveClassifier.set("")//w pizde z z tym "-all" suffixem
     val prefix = "alix.libs"
-    relocate("io.github.retrooper.packetevents", "$prefix.io.github.retrooper.packetevents")
+    var list = listOf(
+        "io.github.retrooper.packetevents",
+        "com.github.retrooper.packetevents",
+        "net.kyori.adventure.api",
+        "net.kyori.adventure.nbt"
+    )
+
+    for (s in list) {
+        relocate(s, "$prefix.$s")
+    }
+
+    /*relocate("io.github.retrooper.packetevents", "$prefix.io.github.retrooper.packetevents")
     relocate("com.github.retrooper.packetevents", "$prefix.com.github.retrooper.packetevents")
+    relocate("net.kyori:adventure-api", "$prefix.net.kyori:adventure-api")
+    relocate("net.kyori:adventure-nbt", "$prefix.net.kyori:adventure-nbt")*/
     minimize()
 }
 
@@ -46,15 +59,19 @@ repositories {
     //paper
     maven("https://repo.papermc.io/repository/maven-public/")
 }
-tasks.register("prepareKotlinBuildScriptModel"){}
+tasks.register("prepareKotlinBuildScriptModel") {}
 dependencies {
     compileOnly("com.google.code.gson:gson:2.9.0")
     implementation(project(":AlixSystemLoader"))
     implementation(project(":AlixAPI:AlixAPISpigot"))
 
-    implementation("com.github.retrooper:packetevents-spigot:${project.findProperty("packet-events-version")}")
+    implementation("com.github.retrooper:packetevents-spigot:${project.findProperty("packet-events-version")}") {
+        //exclude("net.kyori", "adventure-api")
+        //exclude("net.kyori", "adventure-nbt")
+    }
 
-    compileOnly("net.kyori:adventure-api:4.18.0")
+    implementation("net.kyori:adventure-api:4.19.0")
+    implementation("net.kyori:adventure-nbt:4.19.0")
 
     compileOnlyApi("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")

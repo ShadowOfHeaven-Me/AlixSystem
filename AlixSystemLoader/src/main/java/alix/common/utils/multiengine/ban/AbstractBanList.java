@@ -12,7 +12,6 @@ public interface AbstractBanList {
 
     boolean isBanned(String target);
 
-
     AbstractBanList IP = AlixCommonHandler.createBanListImpl(true);
     AbstractBanList NAME = AlixCommonHandler.createBanListImpl(false);
 }

@@ -90,12 +90,13 @@ public enum Version {
     V1_21_5(770, List.of("1.21.5"));
 
     private static final IntObjectMap<Version> VERSION_MAP;
-    private static final Version MAX;
+    private static final Version MIN, MAX;
 
     static {
         Version[] values = values();
 
         VERSION_MAP = new IntObjectHashMap<>();
+        MIN = V1_7_6;
         MAX = values[values.length - 1];
 
         Version last = null;
@@ -120,7 +121,7 @@ public enum Version {
         if (clientVersion == null)
             throw new AlixException("Unsupported protocol: " + this.protocolNumber + ", cannot be registered.");
 
-        this.retrooperVersion = clientVersion.toServerVersion(); //toServerVersion(version);
+        this.retrooperVersion = this.clientVersion.toServerVersion(); //toServerVersion(version);
 
         if (this.retrooperVersion == null)
             throw new AlixError("ERROR: protocol: " + this.protocolNumber + " FOR VERSION: " + clientVersion + " is NULL, cannot be registered.");
@@ -182,6 +183,10 @@ public enum Version {
         return this.protocolNumber >= min.protocolNumber && this.protocolNumber <= max.protocolNumber;
     }
 
+    public boolean inBetween(Version from, Version to) {
+        return this.ordinal() >= from.ordinal() && this.ordinal() <= to.ordinal();
+    }
+
     public boolean isSupported() {
         return this != UNDEFINED;
     }
@@ -190,12 +195,13 @@ public enum Version {
         return this == UNDEFINED;
     }
 
+    //isn't safe btw
     public Version getEncodingSafe() {
         return this.isUndefined() ? getMax() : this;
     }
 
     public static Version getMin() {
-        return V1_7_6;
+        return MIN;
     }
 
     public static Version getMax() {

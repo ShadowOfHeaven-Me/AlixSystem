@@ -22,7 +22,6 @@ public final class ExperiencePackets {
 
             PACKETS[i] = snapshot(new WrapperPlayServerSetExperience(xpBar, lvl, totalExp));
         }
-
     }
 
     private static PacketSnapshot snapshot(WrapperPlayServerSetExperience wrapper) {

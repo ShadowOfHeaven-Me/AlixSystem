@@ -13,6 +13,13 @@ public class PacketUpdateTags implements PacketOut {
 
     private CompoundBinaryTag tags;
 
+    public PacketUpdateTags() {
+    }
+
+    public PacketUpdateTags(CompoundBinaryTag tags) {
+        this.tags = tags;
+    }
+
     public CompoundBinaryTag getTags() {
         return tags;
     }

@@ -1,5 +1,6 @@
 package shadow.systems.login.captcha.types;
 
+import alix.common.utils.AlixCommonUtils;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 
@@ -11,8 +12,12 @@ public enum CaptchaVisualType {
         try {
             return valueOf(type);
         } catch (Exception e) {
-            return SUBTITLE;
+            return SMOOTH;
         }
+    }
+
+    public static CaptchaVisualType fallback() {
+        return AlixCommonUtils.isGraphicEnvironmentHeadless ? SUBTITLE : SMOOTH;
     }
 
     public static boolean shouldSendBlindness() {

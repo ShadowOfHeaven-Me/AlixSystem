@@ -86,6 +86,7 @@ public final class FastNettyUtils {
                 throw new AlixException("VarInt not readable");
             //case 3:
             default:
+                //wwe read a medium, because mc VarInts are up to 3 bytes long
                 return readVarInt3Or4Byte(buf, buf.getMediumLE(buf.readerIndex()));
         }
     }

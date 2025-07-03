@@ -63,13 +63,13 @@ public final class VerifiedVirtualAuthBuilder extends VirtualAuthBuilder {
             accessDeniedMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("google-auth-access-confirmation-failed"));
 
     public static void visualsOnProvenAccess(VerifiedUser user) {
-        user.writeAndFlushConstSilently(accessConfirmedMessagePacket);
+        user.writeConstSilently(accessConfirmedMessagePacket);
 
         send(Sounds.ENTITY_PLAYER_LEVELUP, user, vec3iLoc(user));
     }
 
     public static void visualsOnDeniedAccess(VerifiedUser user) {
-        user.writeAndFlushConstSilently(accessDeniedMessagePacket);
+        user.writeConstSilently(accessDeniedMessagePacket);
 
         send(Sounds.ENTITY_ITEM_BREAK, user, vec3iLoc(user));
     }

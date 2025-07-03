@@ -96,8 +96,8 @@ public final class EventManager {
         }
     }
 
-    //Internal registration methods, seperated for lesser overhead during
-    // registration/unregistration of an array of EventListeners
+    //Internal registration methods, separated for lesser overhead during
+    // registration/de-registration of an array of EventListeners
 
     private boolean registerNoRecalculation(EventListener listener) {
         return this.map.computeIfAbsent(listener.getPriority(), p -> new CopyOnWriteArraySet<>()).add(listener);
@@ -105,8 +105,7 @@ public final class EventManager {
 
     private boolean unregisterNoRecalculation(EventListener listener) {
         Set<EventListener> set = this.map.get(listener.getPriority());
-        if (set == null) return false;
-        return set.remove(listener);
+        return set != null && set.remove(listener);
     }
 
     private void recalculateListeners() {

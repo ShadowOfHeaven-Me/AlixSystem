@@ -11,6 +11,7 @@ import alix.common.utils.other.throwable.AlixError;
 
 import java.util.Arrays;
 
+import static alix.common.data.security.password.hashing.Hashing.CONFIG_HASH;
 import static alix.common.data.security.password.matcher.PasswordMatchers.*;
 import static alix.common.utils.AlixCommonUtils.generationChars;
 
@@ -25,7 +26,7 @@ public final class Password {
     //private final String savablePassword;
 
     private Password(String hashedPassword, byte hashId, String salt, byte matcherId) {
-        this(hashedPassword, Hashing.ofHashId(hashId), salt, matcherOfId(matcherId));
+        this(hashedPassword, hashId, salt, matcherOfId(matcherId));
     }
 
     private Password(String hashedPassword, byte hashId, String salt, PasswordMatcher matcher) {
@@ -46,7 +47,12 @@ public final class Password {
     }
 
     public boolean isEqualTo(String unhashedPassword) {
-        return this.hashedPassword != null && this.matcher.matches(this, unhashedPassword); //this.hashedPassword.equals(Hashing.hashSaltFirst(this.hashing, unhashedPassword, this.salt));
+        try {
+            return this.hashedPassword != null && this.matcher.matches(this, unhashedPassword); //this.hashedPassword.equals(Hashing.hashSaltFirst(this.hashing, unhashedPassword, this.salt));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 /*    public boolean isCorrectLiteral(String hashedPassword) {
@@ -102,7 +108,6 @@ public final class Password {
     }*/
 
     private static final Password SHARED_EMPTY = new Password(null, (byte) 0, "", ALIX_FORMAT);
-    private static final HashingAlgorithm CONFIG_HASH = Hashing.getConfigHashingAlgorithm();
 
 /*    public static void write(Password password, ByteArrayDataOutput output) {
         if (!password.isSet()) {
@@ -130,8 +135,15 @@ public final class Password {
         return fromHashed(new String(passBytes, StandardCharsets.UTF_8), hashId);
     }*/
 
+    public static Password fromBCryptMigrated(String bcryptStr) {
+        return new Password(bcryptStr, Hashing.BCRYPT, "", BCRYPT_FORMAT);
+    }
+
     public static Password fromHashedMigrated(String hashedPassword, String salt, HashingAlgorithm algorithm) {
-        return new Password(hashedPassword, algorithm, salt, algorithm.isBCrypt() ? BCRYPT_FORMAT : MIGRATION_FORMAT);
+        if (algorithm.isBCrypt())
+            throw new AlixError();
+
+        return new Password(hashedPassword, algorithm, salt, MIGRATION_FORMAT);
     }
 
     public static Password fromUnhashed(String unhashedPassword) {
@@ -147,7 +159,8 @@ public final class Password {
         String[] s = savablePassword.split(":");
         String password = s[0];
 
-        if (password.equals("null")) return empty();
+        if (password.equals("null"))
+            return empty();
 
         switch (s.length) {
             case 1:

@@ -11,8 +11,13 @@ public final class PacketPlayInPluginMessage extends InRetrooperPacket<WrapperPl
         super(WrapperPlayClientPluginMessage.class);
     }
 
-    //!LEAVE THIS BE!
+    @Override
+    public boolean isSkippable(ClientConnection conn) {
+        return !conn.getDuplexHandler().passPayloads;
+    }
+
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
+        server.getIntegration().fireCustomPayloadEvent(conn, this.wrapper().getChannelName(), this.wrapper().getData());
     }
 }

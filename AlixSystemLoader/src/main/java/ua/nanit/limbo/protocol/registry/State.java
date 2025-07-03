@@ -21,9 +21,9 @@ import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
-import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
+import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.HandleMask;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.PacketIn;
@@ -84,108 +84,46 @@ import ua.nanit.limbo.util.map.VersionMap;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static ua.nanit.limbo.protocol.registry.Version.*;
+import static ua.nanit.limbo.protocol.registry.Version.getMin;
 
 public enum State {
 
     HANDSHAKING {
         {
-            serverBound.register(PacketHandshake::new,
-                    map(0x00, Version.getMin(), Version.getMax())
-            );
+            serverBound.registerRetrooper(PacketHandshake::new, PacketType.Handshaking.Client.HANDSHAKE);
         }
     },
     STATUS {
         {
-            serverBound.register(PacketStatusRequest::new,
-                    map(0x00, Version.getMin(), Version.getMax())
-            );
-            serverBound.register(PacketInStatusPing::new,
-                    map(0x01, Version.getMin(), Version.getMax())
-            );
-            /*clientBound.register(PacketStatusResponse::new,
-                    map(0x00, Version.getMin(), Version.getMax())
-            );*/
-            clientBound.register(PacketOutStatusPing::new,
-                    map(0x01, Version.getMin(), Version.getMax())
-            );
+            serverBound.registerRetrooper(PacketStatusRequest::new, PacketType.Status.Client.REQUEST);
+            serverBound.registerRetrooper(PacketInStatusPing::new, PacketType.Status.Client.PING);
+            clientBound.registerRetrooper(PacketOutStatusPing::new, PacketType.Status.Server.PONG);
         }
     },
     LOGIN {
         {
-            serverBound.register(PacketLoginStart::new,
-                    map(0x00, Version.getMin(), Version.getMax())
-            );
-            serverBound.register(PacketLoginPluginResponse::new,
-                    map(0x02, Version.getMin(), Version.getMax())
-            );
-            serverBound.register(
-                    PacketLoginAcknowledged::new,
-                    map(0x03, V1_20_2, Version.getMax())
-            );
+            serverBound.registerRetrooper(PacketLoginStart::new, PacketType.Login.Client.LOGIN_START);
+            serverBound.registerRetrooper(PacketLoginPluginResponse::new, PacketType.Login.Client.LOGIN_PLUGIN_RESPONSE);
+            serverBound.registerRetrooper(PacketLoginAcknowledged::new, PacketType.Login.Client.LOGIN_SUCCESS_ACK);
 
-            clientBound.register(PacketLoginDisconnect::new,
-                    map(0x00, Version.getMin(), Version.getMax())
-            );
-            clientBound.register(PacketLoginSuccess::new,
-                    map(0x02, Version.getMin(), Version.getMax())
-            );
-            clientBound.register(PacketLoginPluginRequest::new,
-                    map(0x04, Version.getMin(), Version.getMax())
-            );
+            clientBound.registerRetrooper(PacketLoginDisconnect::new, PacketType.Login.Server.DISCONNECT);
+            clientBound.registerRetrooper(PacketLoginSuccess::new, PacketType.Login.Server.LOGIN_SUCCESS);
+            clientBound.registerRetrooper(PacketLoginPluginRequest::new, PacketType.Login.Server.LOGIN_PLUGIN_REQUEST);
             clientBound.registerRetrooper(PacketOutSetCompression::new, PacketType.Login.Server.SET_COMPRESSION);
         }
     },
     CONFIGURATION {
         {
-            clientBound.registerRetrooper(
-                    PacketConfigPluginMessage::new,
-                    PacketType.Configuration.Server.PLUGIN_MESSAGE
-            );
-            clientBound.register(
-                    PacketConfigDisconnect::new,
-                    map(0x01, V1_20_2, V1_20_3),
-                    map(0x02, V1_20_5, V1_21_4)
-            );
-            clientBound.register(
-                    PacketOutFinishConfiguration::new,
-                    map(0x02, V1_20_2, V1_20_3),
-                    map(0x03, V1_20_5, V1_21_4)
-            );
-            clientBound.register(
-                    PacketOutConfigKeepAlive::new,
-                    map(0x03, V1_20_2, V1_20_3),
-                    map(0x04, V1_20_5, V1_21_4)
-            );
-            clientBound.register(
-                    PacketKnownPacks::new,
-                    map(0x0E, V1_20_5, V1_21_4)
-            );
-            clientBound.register(
-                    PacketUpdateTags::new,
-                    map(0x0D, V1_20_5, V1_21_4)
-            );
-            clientBound.register(
-                    PacketRegistryData::new,
-                    map(0x05, V1_20_2, V1_20_3),
-                    map(0x07, V1_20_5, V1_21_4)
-            );
+            clientBound.registerRetrooper(PacketConfigPluginMessage::new, PacketType.Configuration.Server.PLUGIN_MESSAGE);
+            clientBound.registerRetrooper(PacketConfigDisconnect::new, PacketType.Configuration.Server.DISCONNECT);
+            clientBound.registerRetrooper(PacketOutFinishConfiguration::new, PacketType.Configuration.Server.CONFIGURATION_END);
+            clientBound.registerRetrooper(PacketOutConfigKeepAlive::new, PacketType.Configuration.Server.KEEP_ALIVE);
+            clientBound.registerRetrooper(PacketKnownPacks::new, PacketType.Configuration.Server.SELECT_KNOWN_PACKS);
+            clientBound.registerRetrooper(PacketUpdateTags::new, PacketType.Configuration.Server.UPDATE_TAGS);
+            clientBound.registerRetrooper(PacketRegistryData::new, PacketType.Configuration.Server.REGISTRY_DATA);
 
-            /*serverBound.register(
-                    PacketPluginMessage::new,
-                    map(0x01, V1_20_2, V1_20_3),
-                    map(0x02, V1_20_2, V1_21_4)
-            );*/
-            serverBound.register(
-                    PacketInFinishConfiguration::new,
-                    map(0x02, V1_20_2, V1_20_3),
-                    map(0x03, V1_20_5, V1_21_4)
-            );
-            serverBound.register(
-                    PacketInConfigKeepAlive::new,
-                    map(0x03, V1_20_2, V1_20_3),
-                    map(0x04, V1_20_5, V1_21_4)
-            );
+            serverBound.registerRetrooper(PacketInFinishConfiguration::new, PacketType.Configuration.Client.CONFIGURATION_END_ACK);
+            serverBound.registerRetrooper(PacketInConfigKeepAlive::new, PacketType.Configuration.Client.KEEP_ALIVE);
         }
     },
     PLAY {
@@ -211,25 +149,8 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInClickSlot::new, PacketType.Play.Client.CLICK_WINDOW);
             serverBound.registerRetrooper(PacketPlayInItemRename::new, PacketType.Play.Client.NAME_ITEM);
             serverBound.registerRetrooper(PacketPlayInReconfigureAck::new, PacketType.Play.Client.CONFIGURATION_ACK);
+            serverBound.registerRetrooper(PacketInPlayKeepAlive::new, PacketType.Play.Client.KEEP_ALIVE);
 
-            serverBound.register(PacketInPlayKeepAlive::new,
-                    map(0x00, V1_7_6, V1_8),
-                    map(0x0B, V1_9, V1_11_1),
-                    map(0x0C, V1_12, V1_12),
-                    map(0x0B, V1_12_1, V1_12_2),
-                    map(0x0E, V1_13, V1_13_2),
-                    map(0x0F, V1_14, V1_15_2),
-                    map(0x10, V1_16, V1_16_4),
-                    map(0x0F, V1_17, V1_18_2),
-                    map(0x11, V1_19, V1_19),
-                    map(0x12, V1_19_1, V1_19_1),
-                    map(0x11, V1_19_3, V1_19_3),
-                    map(0x12, V1_19_4, V1_20),
-                    map(0x14, V1_20_2, V1_20_2),
-                    map(0x15, V1_20_3, V1_20_3),
-                    map(0x18, V1_20_5, V1_21),
-                    map(0x1A, V1_21_2, V1_21_4)
-            );
             clientBound.registerRetrooper(PacketPlayOutTransaction::new, PacketType.Play.Server.WINDOW_CONFIRMATION);
             clientBound.registerRetrooper(PacketPlayOutPluginMessage::new, PacketType.Play.Server.PLUGIN_MESSAGE);
             clientBound.registerRetrooper(PacketPlayOutPing::new, PacketType.Play.Server.PING);
@@ -268,178 +189,18 @@ public enum State {
                     map(0x10, V1_19_4, V1_20),
                     map(0x11, V1_20_2, V1_21_2)
             );*/
-            clientBound.register(PacketJoinGame::new,
-                    map(0x01, V1_7_6, V1_8),
-                    map(0x23, V1_9, V1_12_2),
-                    map(0x25, V1_13, V1_14_4),
-                    map(0x26, V1_15, V1_15_2),
-                    map(0x25, V1_16, V1_16_1),
-                    map(0x24, V1_16_2, V1_16_4),
-                    map(0x26, V1_17, V1_18_2),
-                    map(0x23, V1_19, V1_19),
-                    map(0x25, V1_19_1, V1_19_1),
-                    map(0x24, V1_19_3, V1_19_3),
-                    map(0x28, V1_19_4, V1_20),
-                    map(0x29, V1_20_2, V1_20_3),
-                    map(0x2B, V1_20_5, V1_21),
-                    map(0x2C, V1_21_2, V1_21_4)
-            );
-
-            clientBound.register(PacketPlayerAbilities::new,
-                    map(0x39, V1_7_6, V1_8),
-                    map(0x2B, V1_9, V1_12),
-                    map(0x2C, V1_12_1, V1_12_2),
-                    map(0x2E, V1_13, V1_13_2),
-                    map(0x31, V1_14, V1_14_4),
-                    map(0x32, V1_15, V1_15_2),
-                    map(0x31, V1_16, V1_16_1),
-                    map(0x30, V1_16_2, V1_16_4),
-                    map(0x32, V1_17, V1_18_2),
-                    map(0x2F, V1_19, V1_19),
-                    map(0x31, V1_19_1, V1_19_1),
-                    map(0x30, V1_19_3, V1_19_3),
-                    map(0x34, V1_19_4, V1_20),
-                    map(0x36, V1_20_2, V1_20_3),
-                    map(0x38, V1_20_5, V1_21),
-                    map(0x3A, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketPlayerPositionAndLook::new,
-                    map(0x08, V1_7_6, V1_8),
-                    map(0x2E, V1_9, V1_12),
-                    map(0x2F, V1_12_1, V1_12_2),
-                    map(0x32, V1_13, V1_13_2),
-                    map(0x35, V1_14, V1_14_4),
-                    map(0x36, V1_15, V1_15_2),
-                    map(0x35, V1_16, V1_16_1),
-                    map(0x34, V1_16_2, V1_16_4),
-                    map(0x38, V1_17, V1_18_2),
-                    map(0x36, V1_19, V1_19),
-                    map(0x39, V1_19_1, V1_19_1),
-                    map(0x38, V1_19_3, V1_19_3),
-                    map(0x3C, V1_19_4, V1_20),
-                    map(0x3E, V1_20_2, V1_20_3),
-                    map(0x40, V1_20_5, V1_21),
-                    map(0x42, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketPlayOutMessage::new,
-                    map(0x02, V1_7_6, V1_8),
-                    map(0x0F, V1_9, V1_12_2),
-                    map(0x0E, V1_13, V1_14_4),
-                    map(0x0F, V1_15, V1_15_2),
-                    map(0x0E, V1_16, V1_16_4),
-                    map(0x0F, V1_17, V1_18_2),
-                    map(0x5F, V1_19, V1_19),
-                    map(0x62, V1_19_1, V1_19_1),
-                    map(0x60, V1_19_3, V1_19_3),
-                    map(0x64, V1_19_4, V1_20),
-                    map(0x67, V1_20_2, V1_20_2),
-                    map(0x69, V1_20_3, V1_20_3),
-                    map(0x6C, V1_20_5, V1_21),
-                    map(0x73, V1_21_2, V1_21_4)
-            );
-            /*clientBound.register(PacketBossBar::new,
-                    map(0x0C, V1_9, V1_14_4),
-                    map(0x0D, V1_15, V1_15_2),
-                    map(0x0C, V1_16, V1_16_4),
-                    map(0x0D, V1_17, V1_18_2),
-                    map(0x0A, V1_19, V1_19_3),
-                    map(0x0B, V1_19_4, V1_20),
-                    map(0x0A, V1_20_2, V1_21_4)
-            );*/
-            clientBound.register(PacketPlayerInfo::new,
-                    map(0x38, V1_7_6, V1_8),
-                    map(0x2D, V1_9, V1_12),
-                    map(0x2E, V1_12_1, V1_12_2),
-                    map(0x30, V1_13, V1_13_2),
-                    map(0x33, V1_14, V1_14_4),
-                    map(0x34, V1_15, V1_15_2),
-                    map(0x33, V1_16, V1_16_1),
-                    map(0x32, V1_16_2, V1_16_4),
-                    map(0x36, V1_17, V1_18_2),
-                    map(0x34, V1_19, V1_19),
-                    map(0x37, V1_19_1, V1_19_1),
-                    map(0x36, V1_19_3, V1_19_3),
-                    map(0x3A, V1_19_4, V1_20),
-                    map(0x3C, V1_20_2, V1_20_3),
-                    map(0x3E, V1_20_5, V1_21),
-                    map(0x40, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketTitleLegacy::new,
-                    map(0x45, V1_8, V1_11_1),
-                    map(0x47, V1_12, V1_12),
-                    map(0x48, V1_12_1, V1_12_2),
-                    map(0x4B, V1_13, V1_13_2),
-                    map(0x4F, V1_14, V1_14_4),
-                    map(0x50, V1_15, V1_15_2),
-                    map(0x4F, V1_16, V1_16_4)
-            );
-            clientBound.register(PacketTitleSetTitle::new,
-                    map(0x59, V1_17, V1_17_1),
-                    map(0x5A, V1_18, V1_19),
-                    map(0x5D, V1_19_1, V1_19_1),
-                    map(0x5B, V1_19_3, V1_19_3),
-                    map(0x5F, V1_19_4, V1_20),
-                    map(0x61, V1_20_2, V1_20_2),
-                    map(0x63, V1_20_3, V1_20_3),
-                    map(0x65, V1_20_5, V1_21),
-                    map(0x6C, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketTitleSetSubTitle::new,
-                    map(0x57, V1_17, V1_17_1),
-                    map(0x58, V1_18, V1_19),
-                    map(0x5B, V1_19_1, V1_19_1),
-                    map(0x59, V1_19_3, V1_19_3),
-                    map(0x5D, V1_19_4, V1_20),
-                    map(0x5F, V1_20_2, V1_20_2),
-                    map(0x61, V1_20_3, V1_20_3),
-                    map(0x63, V1_20_5, V1_21),
-                    map(0x6A, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketTitleTimes::new,
-                    map(0x5A, V1_17, V1_17_1),
-                    map(0x5B, V1_18, V1_19),
-                    map(0x5E, V1_19_1, V1_19_1),
-                    map(0x5C, V1_19_3, V1_19_3),
-                    map(0x60, V1_19_4, V1_20),
-                    map(0x62, V1_20_2, V1_20_2),
-                    map(0x64, V1_20_3, V1_20_3),
-                    map(0x66, V1_20_5, V1_21),
-                    map(0x6D, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketPlayerListHeader::new,
-                    map(0x47, V1_8, V1_8),
-                    map(0x48, V1_9, V1_9_2),
-                    map(0x47, V1_9_4, V1_11_1),
-                    map(0x49, V1_12, V1_12),
-                    map(0x4A, V1_12_1, V1_12_2),
-                    map(0x4E, V1_13, V1_13_2),
-                    map(0x53, V1_14, V1_14_4),
-                    map(0x54, V1_15, V1_15_2),
-                    map(0x53, V1_16, V1_16_4),
-                    map(0x5E, V1_17, V1_17_1),
-                    map(0x5F, V1_18, V1_18_2),
-                    map(0x60, V1_19, V1_19),
-                    map(0x63, V1_19_1, V1_19_1),
-                    map(0x61, V1_19_3, V1_19_3),
-                    map(0x65, V1_19_4, V1_20),
-                    map(0x68, V1_20_2, V1_20_2),
-                    map(0x6A, V1_20_3, V1_20_3),
-                    map(0x6D, V1_20_5, V1_21),
-                    map(0x74, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketSpawnPosition::new,
-                    map(0x4C, V1_19_3, V1_19_3),
-                    map(0x50, V1_19_4, V1_20),
-                    map(0x52, V1_20_2, V1_20_2),
-                    map(0x54, V1_20_3, V1_20_3),
-                    map(0x56, V1_20_5, V1_21),
-                    map(0x5B, V1_21_2, V1_21_4)
-            );
-            clientBound.register(PacketGameEvent::new,
-                    map(0x20, V1_20_3, V1_20_3),
-                    map(0x22, V1_20_5, V1_21),
-                    map(0x23, V1_21_2, V1_21_4)
-            );
+            clientBound.registerRetrooper(PacketJoinGame::new, PacketType.Play.Server.JOIN_GAME);
+            clientBound.registerRetrooper(PacketPlayerAbilities::new, PacketType.Play.Server.PLAYER_ABILITIES);
+            clientBound.registerRetrooper(PacketPlayerPositionAndLook::new, PacketType.Play.Server.PLAYER_POSITION_AND_LOOK);
+            clientBound.registerRetrooper(PacketPlayOutMessage::new, PacketType.Play.Server.CHAT_MESSAGE);
+            clientBound.registerRetrooper(PacketPlayerInfo::new, PacketType.Play.Server.PLAYER_INFO);
+            clientBound.registerRetrooper(PacketTitleLegacy::new, PacketType.Play.Server.TITLE);
+            clientBound.registerRetrooper(PacketTitleSetTitle::new, PacketType.Play.Server.TITLE);
+            clientBound.registerRetrooper(PacketTitleSetSubTitle::new, PacketType.Play.Server.SET_TITLE_SUBTITLE);
+            clientBound.registerRetrooper(PacketTitleTimes::new, PacketType.Play.Server.SET_TITLE_TIMES);
+            clientBound.registerRetrooper(PacketPlayerListHeader::new, PacketType.Play.Server.PLAYER_LIST_HEADER_AND_FOOTER);
+            clientBound.registerRetrooper(PacketSpawnPosition::new, PacketType.Play.Server.SPAWN_POSITION);
+            clientBound.registerRetrooper(PacketGameEvent::new, PacketType.Play.Server.CHANGE_GAME_STATE);
             clientBound.registerRetrooper(PacketEmptyChunkData::new, PacketType.Play.Server.CHUNK_DATA);
             clientBound.registerRetrooper(PacketUnloadChunk::new, PacketType.Play.Server.UNLOAD_CHUNK);
         }
@@ -524,8 +285,8 @@ public enum State {
             Class<? extends Packet> clazz = packet.get().getClass();
             registerAndEnsureNoDuplicate(clazz, state);
 
-            if (PacketIn.class.isAssignableFrom(clazz))
-                HandleMask.register(clazz);
+            /*if (PacketIn.class.isAssignableFrom(clazz))
+                HandleMask.register(clazz);*/
         }
 
         //Gotta love packetevents ;]
@@ -534,7 +295,7 @@ public enum State {
             for (Version ver : Version.values()) {
                 if (!ver.isSupported()) continue;
 
-                int packetId = type.getId(ClientVersion.getById(ver.getProtocolNumber()));
+                int packetId = type.getId(ver.getClientVersion());
                 if (packetId < 0) continue;//check if the packet exists on the specified version
 
                 PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
@@ -578,7 +339,7 @@ public enum State {
     public static final class PacketRegistry {
 
         private final Version version;
-        private final IntObjectMap<Supplier<? extends Packet>> packetsById = new IntObjectHashMap<>();
+        private final IntObjectMap<PacketFactory> packetsById = new IntObjectHashMap<>();
         private final Map<Class<?>, Integer> packetIdByClass = new IdentityHashMap<>();
 
         public PacketRegistry(Version version) {
@@ -589,9 +350,8 @@ public enum State {
             return version;
         }
 
-        public Packet getPacket(int packetId) {
-            Supplier<? extends Packet> supplier = packetsById.get(packetId);
-            return supplier == null ? null : supplier.get();
+        public PacketFactory getFactory(int packetId) {
+            return packetsById.get(packetId);
         }
 
         public boolean hasPacket(Class<?> packetClass) {
@@ -603,8 +363,31 @@ public enum State {
         }
 
         public void register(int packetId, Supplier<? extends Packet> supplier) {
-            this.packetsById.put(packetId, supplier);
+            this.packetsById.put(packetId, new PacketFactory(supplier));
             this.packetIdByClass.put(supplier.get().getClass(), packetId);
+        }
+    }
+
+    public static final class PacketFactory {
+        private final Supplier<? extends Packet> supplier;
+        private final Packet cached;//empty, used only for isSkippable
+        private final boolean skippable;
+
+        private PacketFactory(Supplier<? extends Packet> supplier) {
+            this.supplier = supplier;
+
+            var cached = supplier.get();
+            this.skippable = HandleMask.isSkippable0(cached.getClass());
+            //let the instance be gc'ed if not needed
+            this.cached = this.skippable ? null : cached;
+        }
+
+        public boolean isPacketSkippable(ClientConnection connection) {
+            return this.skippable || this.cached.isSkippable(connection);
+        }
+
+        public Packet newPacket() {
+            return this.supplier.get();
         }
     }
 

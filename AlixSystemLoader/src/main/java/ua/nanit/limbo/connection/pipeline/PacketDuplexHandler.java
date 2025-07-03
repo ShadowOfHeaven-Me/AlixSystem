@@ -11,7 +11,6 @@ import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.flush.FlushBatcher;
 import ua.nanit.limbo.protocol.*;
-import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayInPluginMessage;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
@@ -41,8 +40,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         this.connection = connection;
         this.flushBatcher = FlushBatcher.implFor(channel);
         this.voidPromise = channel.voidPromise();
-        this.isGeyser = this.server.getIntegration().geyserUtil().isBedrock(channel);
-        this.passPayloads = this.isGeyser && this.server.getIntegration().geyserUtil().isFloodgatePresent();
+        var geyserUtil = this.server.getIntegration().geyserUtil();
+        this.isGeyser = geyserUtil.isBedrock(channel);
+        this.passPayloads = this.isGeyser && geyserUtil.isFloodgatePresent();
         updateVersion(Version.getMin());
         updateState(State.HANDSHAKING);
     }
@@ -64,7 +64,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         if (NanoLimbo.debugPackets)
             Log.error("LIMBO IN: " + packet);
 
-        if (this.passPayloads && packet.getClass() == PacketPlayInPluginMessage.class) {
+        /*if (this.passPayloads && packet.getClass() == PacketPlayInPluginMessage.class) {
             PacketPlayInPluginMessage pluginMessage = (PacketPlayInPluginMessage) packet;
 
             this.server.getIntegration().fireCustomPayloadEvent(this.connection, pluginMessage.wrapper().getChannelName(), pluginMessage.wrapper().getData());
@@ -77,11 +77,17 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
             //getBefore(channel, this.channel.pipeline().context(PacketEvents.DECODER_NAME)).fireChannelRead(pluginMessageBuf);
 
             //Log.error("receivePacketSilently: " + pluginMessage.wrapper().getChannelName() + " NAMES: " + channel.pipeline().names());
-        }
+        }*/
 
         this.flushBatcher.readBegin();
         try {
             packet.handle(this.connection, this.server);
+        } catch (Exception e) {
+            if (NanoLimbo.suppressInvalidPackets) {
+                UnsafeCloseFuture.unsafeClose(this.connection.getChannel());
+                return;
+            }
+            Log.error("Error during packet handle", e);
         } finally {
             this.flushBatcher.readComplete();
         }
@@ -289,6 +295,14 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) {
+    }
+
+    @Override
     public void channelActive(ChannelHandlerContext ctx) {
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
     }
 }

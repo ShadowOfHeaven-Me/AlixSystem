@@ -43,7 +43,7 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setDifficulty(Difficulty.EASY);
 
         if (ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setViewDistance", int.class), world, 2)) {
-            Main.logInfo("Optimizing chunk rendering in the verification world, thanks to the Paper environment");
+            Main.logInfo("Optimizing chunk rendering in the verification world thanks to the Paper environment");
             ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setSimulationDistance", int.class), world, 2);
             ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setSendViewDistance", int.class), world, 2);
         }

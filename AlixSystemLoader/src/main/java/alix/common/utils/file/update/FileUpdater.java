@@ -33,8 +33,6 @@ public final class FileUpdater {
                 //updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;
             case VELOCITY:
-                updateFile("config.yml", DEFAULT_SPLITERATOR, Validation.VALIDATE_TRIMMED_DASH_START);
-
                 var params = VelocityAlixMain.instance.getEngineParams();
 
                 //messages.properties

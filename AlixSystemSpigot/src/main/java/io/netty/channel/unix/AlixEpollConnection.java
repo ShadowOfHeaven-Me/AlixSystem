@@ -1,6 +1,6 @@
 package io.netty.channel.unix;
 
-import alix.common.antibot.IPUtils;
+import alix.common.antibot.ip.IPUtils;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.annotation.RemotelyInvoked;
@@ -31,7 +31,7 @@ public final class AlixEpollConnection {
                 // 8 bytes:
                 // - 4  == ipaddress
                 // - 4  == port
-                long val = Integer.toUnsignedLong(((addr[1] & 0xff) << 24) + ((addr[2] & 0xff) << 16) + ((addr[3] & 0xff) << 8) + (addr[4] & 0xff));
+                long val = Integer.toUnsignedLong(((addr[1] & 0xff) << 24) | ((addr[2] & 0xff) << 16) | ((addr[3] & 0xff) << 8) | (addr[4] & 0xff));
 
                 //long tA = System.nanoTime();
                 if (FireWallManager.isBlocked(val)) {//fast ipv4 look-up

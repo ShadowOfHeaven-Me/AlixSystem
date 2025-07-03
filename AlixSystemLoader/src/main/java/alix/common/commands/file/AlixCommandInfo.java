@@ -51,6 +51,10 @@ public final class AlixCommandInfo {
         return fallbackRegistered;
     }
 
+    public boolean isAnyCommandRegistered() {
+        return registered || fallbackRegistered;
+    }
+
     /*    public static class Builder {
         public String command;
         public String[] aliases;

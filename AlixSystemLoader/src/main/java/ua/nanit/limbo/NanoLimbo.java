@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo;
 
+import alix.common.utils.other.annotation.DebugOnly;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.server.LimboServer;
@@ -28,22 +29,24 @@ public final class NanoLimbo {
 
     public static final boolean debugMode = false;
 
-    private static boolean of(boolean val, boolean def) {
-        return debugMode ? val : def;
+    //debugMode ? !val : val
+    private static boolean of(boolean val) {
+        return debugMode != val;
     }
 
-    public static final boolean suppressInvalidPackets = of(true, true);
-    public static final boolean debugCipher = of(false, false);
-    public static final boolean debugPackets = of(false, false);
-    public static final boolean debugSnapshots = of(false, false);
-    public static final boolean allowFreeMovement = of(false, false);
-    public static final boolean performChecks = of(true, true);
+    public static final boolean suppressInvalidPackets = of(true);
+    public static final boolean debugCipher = false;//of(false, false);
+    public static final boolean debugPackets = of(false);
+    public static final boolean debugSnapshots = of(false);
+    public static final boolean allowFreeMovement = false;
+    public static final boolean performChecks = true;
     //@DebugOnly
-    public static final boolean logPos = of(false, false);
-    public static final boolean removeTimeout = of(true, true);
-    public static final boolean centerSpawn = of(false, false);
-    public static final boolean printCaptchaFailed = of(false, false);
-    public static final boolean verifyTheDud = of(true, true);
+    public static final boolean logPos = of(false);
+    public static final boolean removeTimeout = true;
+    public static final boolean centerSpawn = false;
+    @DebugOnly
+    public static final boolean printCaptchaFailed = false;
+    public static final boolean verifyTheDud = true;
 
     public static LimboServer LIMBO;
     public static LimboIntegration INTEGRATION;
@@ -52,7 +55,7 @@ public final class NanoLimbo {
         try {
             return new LimboServer(integration);
         } catch (Exception e) {
-            Log.error("Cannot start server: ", e);
+            Log.error("Cannot start virtual server: ", e);
             throw new AlixException(e);
         }
     }

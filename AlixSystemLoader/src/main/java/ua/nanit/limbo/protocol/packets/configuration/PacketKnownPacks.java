@@ -19,5 +19,4 @@ public class PacketKnownPacks implements PacketOut {
             msg.writeString(versionName);
         }
     }
-
 }

@@ -48,7 +48,7 @@ public final class CaptchaState implements VerifyState {
         try {
             this.invokeHandle0(packet, type);
         } catch (CaptchaFailedException ex) {
-            this.disconnect();
+            if (NanoLimbo.performChecks) this.disconnect();
             if (NanoLimbo.printCaptchaFailed) ex.printStackTrace();
         }
     }

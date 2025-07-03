@@ -51,14 +51,14 @@ public enum CaptchaBlock {
     private final StateType blockType;
     private final Function<Version, Double> heightFunction;
     private final Consumer<WrappedBlockState> transformer;
-    private final PacketSnapshot packetSnapshot;
+    private final PacketSnapshot packet;
 
     CaptchaBlock(StateType blockType, Function<Version, Double> heightFunction, Consumer<WrappedBlockState> transformer) {
         this.blockType = blockType;
         this.heightFunction = heightFunction;
         this.transformer = transformer;
 
-        this.packetSnapshot = PacketSnapshot.of(new PacketPlayOutBlockUpdate()
+        this.packet = PacketSnapshot.of(new PacketPlayOutBlockUpdate()
                 .setType(this.blockType)
                 .setPosition(CaptchaStateImpl.BLOCK_POS)
                 .setTransformer(this.transformer));
@@ -75,7 +75,7 @@ public enum CaptchaBlock {
 
         //Log.warning("BLOCK: " + block.blockType);
 
-        connection.writePacket(block.packetSnapshot);
+        connection.writePacket(block.packet);
         return block;
     }
 

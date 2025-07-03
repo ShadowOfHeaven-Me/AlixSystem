@@ -301,7 +301,6 @@ public final class PremiumAuthenticator {
         }
     }
 
-
     private void async(Runnable r) {
         AlixScheduler.asyncBlocking(r);
     }

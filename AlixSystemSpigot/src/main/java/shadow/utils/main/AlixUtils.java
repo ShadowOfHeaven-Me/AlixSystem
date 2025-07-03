@@ -23,6 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import shadow.Main;
 import shadow.systems.commands.ExecutableCommandList;
+import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.login.captcha.types.CaptchaType;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.math.MathUtils;
@@ -30,7 +31,6 @@ import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.misc.skull.SkullSupplier;
 import shadow.utils.objects.AlixConsoleFilterHolder;
-import shadow.utils.world.AlixWorldHolder;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -128,18 +128,18 @@ public final class AlixUtils {
                     break;
                 }
 
-                if (captchaVisualType.equals("map")) {
+                /*if (captchaVisualType.equals("map")) {
                     Main.logWarning("The option 'map' in 'captcha-visual-type' is currently disabled. " +
                             "Switching to 'smooth', as it's visual equivalent.");
                     captchaVisualType = "smooth";
-                }
+                }*/
 
                 break;
             case "subtitle":
             case "message":
                 break;
             default:
-                String best = AlixCommonUtils.isGraphicEnvironmentHeadless ? "subtitle" : "smooth";
+                String best = CaptchaVisualType.fallback().name();
                 Main.logWarning("Invalid 'captcha-visual-type' parameter set in config! Available: particle, map, subtitle & message, but instead got '" +
                         captchaVisualType + "! Switching to '" + best + "', as default.");
                 captchaVisualType = best;
@@ -379,11 +379,11 @@ public final class AlixUtils {
         return div + " second" + (millis != 1000 ? "s" : "");
     }
 
-    public static boolean equalsArrayCheck(Object[] a1, Object[] a2) {
+    /*public static boolean equalsArrayCheck(Object[] a1, Object[] a2) {
         if (a1.length != a2.length) return false;
         for (int i = 0; i < a1.length; i++) if (!Objects.equals(a1[i], a2[i])) return false;
         return true;
-    }
+    }*/
 
 /*    public static boolean cancelCommandSend(UnverifiedUser user, String cmd) {
         if (user == null) return false;
@@ -640,20 +640,27 @@ public final class AlixUtils {
     }
 
     public static boolean canSendColoredChatMessages(Player p) {
-        return p.hasPermission("alixsystem.chatcolor");
+        return AlixUtils.interveneInChatFormat && p.hasPermission("alixsystem.chatcolor");
     }
 
     public static boolean hasChatBypass(Player p) {
-        return /*p.isOp() ||*/ p.hasPermission("alixsystem.admin.chat.bypass");
+        return AlixUtils.interveneInChatFormat && p.hasPermission("alixsystem.admin.chat.bypass");
+    }
+
+    private static final class MaxHomesOptimize {
+        private static final boolean isHomeCommandRegistered = AlixCommandManager.getCommand("home").isAnyCommandRegistered();
     }
 
     public static short getMaxHomes(Player p) {
         //if (p.isOp()) return 32767;
-        if (!p.hasPermission("alixsystem.home")) return 0;
+        if (!MaxHomesOptimize.isHomeCommandRegistered || !p.hasPermission("alixsystem.home")) return 0;
+
         String a = getPermissionWithCertainStart(p, "alixsystem.maxhomes");
         if (a == null) return 0;
+
         String[] b = split(a, '.');
         if (b.length < 3) return 0;
+
         String c = b[2];
         int i;
         try {
@@ -714,6 +721,7 @@ public final class AlixUtils {
 
         BukkitBanList.get(ip).ban(nameOrIp, reason, date, byWho);
         if (ip) return;
+
         Player p = Bukkit.getPlayer(nameOrIp);
         if (p != null) p.kickPlayer(reason);
     }
@@ -992,7 +1000,7 @@ public final class AlixUtils {
         for (char value : b) {
             int d = value - 48;
             if (d < 0 || d > 9)
-                throw new NumberFormatException("[AlixSystem] > Invalid symbol found in string '" + a + "': " + (char) d);
+                throw new NumberFormatException("[AlixSystem] > Invalid symbol found in string '" + a + "': '" + value + "'");
             c = c * 10 + d;
         }
         return c;
@@ -1470,9 +1478,9 @@ public final class AlixUtils {
         return parseInteger(getServerVersion().split("\\.")[1]);
     }*/
 
-    private static int getLowestTeleportableLevel() {
+    /*private static int getLowestTeleportableLevel() {
         return AlixWorldHolder.getMain().getMaxHeight() >= 319 ? -66 : -2;
-    }
+    }*/
 
 /*    private static void implementConfig(FileConfiguration config) {
         isPluginLanguageEnglish = true;

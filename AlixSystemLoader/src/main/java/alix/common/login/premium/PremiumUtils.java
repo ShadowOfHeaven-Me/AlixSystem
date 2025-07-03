@@ -15,8 +15,7 @@ public final class PremiumUtils {
     //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/premium/AuthenticPremiumProvider.java
 
     private static final PremiumCheckImpl premiumCheck = PremiumCheckImpl.INSTANCE;
-
-    public static final char
+    private static final char
             PREMIUM_PREFIX = '+',
             NON_PREMIUM_PREFIX = '-';
 

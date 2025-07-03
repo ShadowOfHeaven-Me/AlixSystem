@@ -35,5 +35,4 @@ public class PacketTitleSetSubTitle implements PacketOut {
     public void encode(ByteMessage msg, Version version) {
         msg.writeNbtMessage(subtitle, version);
     }
-
 }

@@ -54,13 +54,13 @@ public final class VirtualFallPhase {
 
     public void playPhase() {
         if (firstPlayPacketReceived) return;
+        this.firstPlayPacketReceived = true;
 
         //Main.debug(this.user.getChannel().pipeline().names() + " ");
 
         this.user.writeDynamicSilently(new WrapperPlayServerEntityAnimation(user.getPlayer().getEntityId(), WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM));
         this.user.writeConstSilently(PLAYER_ABILITIES_FALL_PACKET);
         this.user.writeAndFlushConstSilently(FALL_TELEPORT);
-        this.firstPlayPacketReceived = true;
         //this.user.keepAliveSent = System.currentTimeMillis();
         //user.writeAndFlushDynamicSilently(new WrapperPlayServerKeepAlive(2137));
         //this.t = System.currentTimeMillis();

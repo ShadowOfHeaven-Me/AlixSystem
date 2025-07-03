@@ -1,6 +1,7 @@
 package shadow.utils.objects.savable.data.gui.builders;
 
 import alix.common.data.LoginType;
+import alix.common.scheduler.AlixScheduler;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.main.AlixUtils;
@@ -68,7 +69,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
                     return;
                 }
                 this.user.writeConstSilently(CommandManager.passwordRegisterMessagePacket);
-                this.user.registerAsync(password);//invokes flush
+                AlixScheduler.async(() -> this.user.registerAsync(password));//invokes flush
         }
     }
 

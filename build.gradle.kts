@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "AlixSystem"
-version = "3.6.1"
+version = "${project.findProperty("alix-spigot-version")}"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,7 @@ publishing {
             from(components["java"])
             groupId = "com.github.ShadowOfHeaven-Me"
             artifactId = "AlixSystem"
-            version = "3.6.1"
+            version = "${project.findProperty("alix-spigot-version")}"
         }
     }
 }

@@ -17,6 +17,7 @@ import io.netty.channel.*;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
@@ -315,9 +316,15 @@ public final class AlixChannelHandler {
         return channel.hasAttr(SENT_LOGIN_UUID) ? channel.attr(SENT_LOGIN_UUID).get() : null;
     }
 
+    private static final String UNKNOWN_IP = Bukkit.getIp();
+
     @NotNull
     public static String getJoinedWithIP(Channel channel) {
-        return channel.attr(JOINED_WITH_IP).get();
+        if (!channel.hasAttr(JOINED_WITH_IP))
+            return UNKNOWN_IP;
+
+        var ip = channel.attr(JOINED_WITH_IP).get();
+        return ip != null ? ip : UNKNOWN_IP;
     }
 
     //Thanks onechris ;]

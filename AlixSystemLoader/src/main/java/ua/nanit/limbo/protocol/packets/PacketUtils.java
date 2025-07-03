@@ -6,7 +6,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
-import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.registry.State;
@@ -32,7 +31,7 @@ public final class PacketUtils {
     }
 
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, boolean pooled) {
-        return encode0(packet, clientbound, version, GlobalCompressionHandler::getCompressionFor, pooled);
+        return encode0(packet, clientbound, version, CompressionSupplier.GLOBAL, pooled);
     }
 
     private static ByteBuf encode0(Packet packet, boolean clientbound, Version version, CompressionSupplier compressSupplier, boolean pooled) {

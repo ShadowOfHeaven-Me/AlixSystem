@@ -22,12 +22,12 @@ public final class TitlePacketSnapshot {
 
     public TitlePacketSnapshot(Title title) {
         this.title = PacketSnapshot.of(new PacketTitleSetTitle().setTitle(title.getTitle()));
-        subtitle = PacketSnapshot.of(new PacketTitleSetSubTitle().setSubtitle(title.getSubtitle()));
-        times = PacketSnapshot.of(new PacketTitleTimes().setFadeIn(title.getFadeIn()).setStay(title.getStay()).setFadeOut(title.getFadeOut()));
+        this.subtitle = PacketSnapshot.of(new PacketTitleSetSubTitle().setSubtitle(title.getSubtitle()));
+        this.times = PacketSnapshot.of(new PacketTitleTimes().setFadeIn(title.getFadeIn()).setStay(title.getStay()).setFadeOut(title.getFadeOut()));
 
-        legacyTitle = PacketSnapshot.of(new PacketTitleLegacy().setTitle(title).setAction(SET_TITLE));
-        legacySubtitle = PacketSnapshot.of(new PacketTitleLegacy().setTitle(title).setAction(SET_SUBTITLE));
-        legacyTimes = PacketSnapshot.of(new PacketTitleLegacy().setTitle(title).setAction(SET_TIMES_AND_DISPLAY));
+        this.legacyTitle = PacketSnapshot.of(new PacketTitleLegacy().setTitle(title).setAction(SET_TITLE));
+        this.legacySubtitle = PacketSnapshot.of(new PacketTitleLegacy().setTitle(title).setAction(SET_SUBTITLE));
+        this.legacyTimes = PacketSnapshot.of(new PacketTitleLegacy().setTitle(title).setAction(SET_TIMES_AND_DISPLAY));
     }
 
     public void write(ClientConnection connection) {

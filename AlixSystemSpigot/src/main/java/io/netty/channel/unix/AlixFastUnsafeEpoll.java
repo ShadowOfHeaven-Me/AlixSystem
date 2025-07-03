@@ -60,6 +60,7 @@ public final class AlixFastUnsafeEpoll {
             }, 0);
             try (InputStream in = AlixFastUnsafeEpoll.class.getClassLoader().getResourceAsStream("io/netty/channel/unix/AlixSocketAccessBridge.class")) {
                 MethodHandles.Lookup l = MethodHandles.privateLookupIn(Socket.class, MethodHandles.lookup());
+                //l.ensureInitialized()
                 AlixUnsafe.getUnsafe().ensureClassInitialized(l.defineClass(in.readAllBytes()));
             }
             instrumentation.redefineClasses(new ClassDefinition(Socket.class, cw.toByteArray()));

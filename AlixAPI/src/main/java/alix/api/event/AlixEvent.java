@@ -24,7 +24,7 @@ public interface AlixEvent {
     enum ThreadSource {
 
         /**
-         * Invoked on the server's main thread
+         * Invoked on the server's main thread (spigot and forks)
          **/
         SYNC,
         /**

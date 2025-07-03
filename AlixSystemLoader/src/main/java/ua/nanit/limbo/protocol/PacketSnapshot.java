@@ -26,7 +26,6 @@ import lombok.SneakyThrows;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
-import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
 import ua.nanit.limbo.protocol.packets.CompressionSupplier;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -61,7 +60,7 @@ public final class PacketSnapshot implements PacketOut {
     private PacketSnapshot(PacketOut packet) {
         this.packet = packet;
         this.state = State.getState(packet);
-        this.encodings = encode0(packet, state, GlobalCompressionHandler::getCompressionFor);
+        this.encodings = encode0(packet, state, CompressionSupplier.GLOBAL);
         //encode(packet, CompressionSupplier.NULL_SUPPLIER)
         /*if (CompressionHandler.COMPRESSION_ENABLED)
             this.noCompressionEncodings = floodgateNoCompression ? new ConcurrentVersionMap<>() : null;
@@ -72,10 +71,11 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     void release() {
-        this.encodings.forEach(buf -> {
+        this.encodings.forEach(ByteBuf::release);
+        /*this.encodings.forEach(buf -> {
             int refCnt = buf.refCnt();
             if (refCnt != 0) buf.release(refCnt);
-        });
+        });*/
     }
 
     private ByteBuf getEnsureNotNull(Version version) {
@@ -141,7 +141,7 @@ public final class PacketSnapshot implements PacketOut {
         Map<ByteBuf, Version> encoded = new HashMap<>();
 
         for (Version version : Version.values()) {
-            if (version == Version.UNDEFINED) continue;
+            if (version.isUndefined()) continue;
 
             State.PacketRegistry mappings = state.clientBound.getRegistry(version);
                 /*if ((mappings == null || !mappings.hasPacket(packet.getClass())) && packet.getClass() == PacketPlayOutTransaction.class) {

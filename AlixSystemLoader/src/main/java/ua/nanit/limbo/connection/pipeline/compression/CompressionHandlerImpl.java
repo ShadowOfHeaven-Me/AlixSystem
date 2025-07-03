@@ -4,6 +4,7 @@ import alix.common.utils.collections.queue.AlixQueue;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
+import alix.common.utils.netty.NettySafety;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -88,6 +89,7 @@ final class CompressionHandlerImpl implements CompressionHandler {
         int length = FastNettyUtils.readVarInt(in);
         if (length == 0) return in;//uncompressed
 
+        NettySafety.validateUserInputBufAlloc(length);
         return this.impl.decompress0(in, length);
     }
 }

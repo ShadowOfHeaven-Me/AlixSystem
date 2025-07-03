@@ -179,6 +179,22 @@ public final class ByteMessage {
         }
     }
 
+
+
+    public <T extends BinaryTag> void writeBinaryTag(Version version, T tag) {
+        final BinaryTagType<T> type = (BinaryTagType<T>) tag.type();
+        this.writeByte(type.id());
+        try {
+            if (version.less(Version.V1_20_2)) {
+                // pre-1.20.2 clients need an empty name
+                this.writeShort(0);
+            }
+            type.write(tag, new ByteBufOutputStream(this.buf));
+        } catch (IOException exception) {
+            throw new EncoderException("Unable to encode BinaryTag", exception);
+        }
+    }
+
     public <T extends BinaryTag> void writeNamelessCompoundTag(T binaryTag) {
         try (ByteBufOutputStream stream = new ByteBufOutputStream(buf)) {
             BinaryTagType<T> type = (BinaryTagType<T>) binaryTag.type();

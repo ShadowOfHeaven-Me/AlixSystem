@@ -11,7 +11,7 @@ abstract class AbstractAlixEvent implements AlixEvent {
     private final ExecutorService executor;
     private final ThreadSource source;
 
-    public AbstractAlixEvent(AlixCommonUser user, ExecutorService executor, ThreadSource source) {
+    AbstractAlixEvent(AlixCommonUser user, ExecutorService executor, ThreadSource source) {
         this.user = user;
         this.executor = executor;
         this.source = source;

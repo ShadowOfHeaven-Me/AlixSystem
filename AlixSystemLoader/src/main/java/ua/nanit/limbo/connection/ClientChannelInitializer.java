@@ -118,8 +118,10 @@ public final class ClientChannelInitializer {
     public void uninjectHandlersAndConnection(ClientConnection connection) {
         Channel channel = connection.getChannel();
         ChannelPipeline pipeline = channel.pipeline();
-        pipeline.remove(duplexHandlerName);
-        pipeline.remove(frameDecoderName);
+        if (pipeline.context(duplexHandlerName) != null) {
+            pipeline.remove(duplexHandlerName);
+            pipeline.remove(frameDecoderName);
+        }
 
         this.server.getConnections().removeConnection0(connection);
     }

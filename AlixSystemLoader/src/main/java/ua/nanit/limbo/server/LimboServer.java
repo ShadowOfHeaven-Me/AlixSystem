@@ -51,8 +51,7 @@ public final class LimboServer {
         //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
 
         //this.commandHandler = integration.createCommandHandler();
-        this.dimensionRegistry = new DimensionRegistry(this);
-        this.dimensionRegistry.load("minecraft:" + config.getDimensionType().toLowerCase());
+        this.dimensionRegistry = new DimensionRegistry(this, "minecraft:" + config.getDimensionType().toLowerCase());
         this.connections = new Connections();
 
         PacketSnapshots.init();

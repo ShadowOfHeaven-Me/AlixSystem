@@ -64,6 +64,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
     public abstract PreLoginResult onLoginStart(T connection, PacketLoginStart loginStart, boolean[] recode);
 
+    //Utils
     public abstract GeyserUtil geyserUtil();
 
     public int getCompressionThreshold() {

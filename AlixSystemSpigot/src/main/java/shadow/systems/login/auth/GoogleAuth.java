@@ -87,25 +87,27 @@ public final class GoogleAuth {
 
             OriginalLocationsManager.add(player, loc);//try to prevent any potential data loss
 
-            MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC).thenAccept(b -> {
-                if (!b) {
-                    for (ByteBuf buf : buffers) buf.release();
-                    user.originalLocation.set(null);
+            AlixScheduler.sync(() -> {
+                MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC).thenAccept(b -> {
+                    if (!b) {
+                        for (ByteBuf buf : buffers) buf.release();
+                        user.originalLocation.set(null);
+                        channel.eventLoop().execute(() -> {
+                            user.writeAndFlushConstSilently(tpFailedMessage);
+                            user.getDuplexProcessor().endQRCodeShow();
+                            MethodProvider.closeInventoryAsyncSilently(user.silentContext());
+                        });
+                        return;
+                    }
                     channel.eventLoop().execute(() -> {
-                        user.writeAndFlushConstSilently(tpFailedMessage);
-                        user.getDuplexProcessor().endQRCodeShow();
-                        MethodProvider.closeInventoryAsyncSilently(user.silentContext());
-                    });
-                    return;
-                }
-                channel.eventLoop().execute(() -> {
-                    user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
-                    user.writeConstSilently(PLAYER_ABILITIES_PACKET);
-                    for (ByteBuf buf : buffers) user.writeSilently(buf);
+                        user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
+                        user.writeConstSilently(PLAYER_ABILITIES_PACKET);
+                        for (ByteBuf buf : buffers) user.writeSilently(buf);
 
-                    user.writeConstSilently(AuthReminder.MESSAGE);
-                    //user.flush();
-                    MethodProvider.closeInventoryAsyncSilently(user.silentContext());//serves as a flush
+                        user.writeConstSilently(AuthReminder.MESSAGE);
+                        //user.flush();
+                        MethodProvider.closeInventoryAsyncSilently(user.silentContext());//serves as a flush
+                    });
                 });
             });
 

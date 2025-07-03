@@ -7,6 +7,8 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
+import alix.common.database.migrate.MigrateManager;
+import alix.common.database.migrate.MigrateType;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -42,6 +44,17 @@ public final class AdminAlixCommands implements CommandExecutor {
             if (l > 1) {
                 String arg2 = args[1];
                 switch (arg1) {
+                    case "migrate": {
+                        MigrateType type;
+                        try {
+                            type = MigrateType.valueOf(arg2.toUpperCase());
+                        } catch (Exception e) {
+                            sendMessage(sender, "'" + arg2 + " is not a supported migration type!");
+                            return false;
+                        }
+                        AlixScheduler.asyncBlocking(() -> MigrateManager.migrate(type));
+                        break;
+                    }
                     case "bl":
                     case "bypasslist":
                     case "bypasslimit": {
@@ -72,7 +85,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "Removed the name " + arg2 + " from the allow-list!");
                         }
 
-                        //todo: Also remove from UserTokensFileManager
+                        //todo: Also remove from UserTokensFileManager?
                         if (data == null) {
                             sendMessage(sender, playerDataNotFound.format(arg2));
                             return false;

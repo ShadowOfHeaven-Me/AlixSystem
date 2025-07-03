@@ -36,6 +36,7 @@ import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 import ua.nanit.limbo.util.NbtMessageUtil;
+import ua.nanit.limbo.world.Dimension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,16 +78,20 @@ public final class PacketSnapshots {
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK;
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_VALID;
 
-    public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, EMPTY;
+    public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, EMPTY_TITLE;
 
     public static final PacketSnapshot PACKET_REGISTRY_DATA;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA;
 
     public static final PacketSnapshot PACKET_KNOWN_PACKS;
-    public static final PacketSnapshot PACKET_UPDATE_TAGS;
-    public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_20_5;
-    public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21;
-    public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_2;
-    public static List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_4;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_20_5;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_2;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_5;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_20_5;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_2;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_4;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_5;
 
     public static final PacketSnapshot PACKET_FINISH_CONFIGURATION;
 
@@ -211,25 +216,58 @@ public final class PacketSnapshots {
 
         LOGIN_TITLE = new TitlePacketSnapshot(server.getConfig().getLoginTitle());
         REGISTER_TITLE = new TitlePacketSnapshot(server.getConfig().getRegisterTitle());
-        EMPTY = new TitlePacketSnapshot(new Title().setTitle(NbtMessageUtil.fromLiteral("")).setSubtitle(NbtMessageUtil.fromLiteral("")).setStay(999999999));
+        EMPTY_TITLE = new TitlePacketSnapshot(new Title().setTitle(NbtMessageUtil.fromLiteral("")).setSubtitle(NbtMessageUtil.fromLiteral("")).setStay(999999999));
 
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();
         PACKET_KNOWN_PACKS = PacketSnapshot.of(packetKnownPacks);
 
-        PacketUpdateTags packetUpdateTags = new PacketUpdateTags();
-        packetUpdateTags.setTags(server.getDimensionRegistry().getTags_1_20_5());
+        var registry = server.getDimensionRegistry();
 
-        PACKET_UPDATE_TAGS = PacketSnapshot.of(packetUpdateTags);
+        PACKET_UPDATE_TAGS_1_20_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_20_5()));
+        PACKET_UPDATE_TAGS_1_21_2 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_2()));
+        PACKET_UPDATE_TAGS_1_21_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_5()));
 
         PacketRegistryData packetRegistryData = new PacketRegistryData();
         packetRegistryData.setDimensionRegistry(server.getDimensionRegistry());
 
         PACKET_REGISTRY_DATA = PacketSnapshot.of(packetRegistryData);
 
+        Dimension dimension1_21 = server.getDimensionRegistry().getDimension_1_21();
+        List<PacketSnapshot> packetRegistries = new ArrayList<>();
+        CompoundBinaryTag dimensionTag = dimension1_21.getData();
+        for (String registryType : dimensionTag.keySet()) {
+            CompoundBinaryTag compoundRegistryType = dimensionTag.getCompound(registryType);
+
+            PacketRegistryData registryData = new PacketRegistryData();
+            registryData.setDimensionRegistry(server.getDimensionRegistry());
+
+            ListBinaryTag values = compoundRegistryType.getList("value");
+            registryData.setMetadataWriter((message, version) -> {
+                message.writeString(registryType);
+
+                message.writeVarInt(values.size());
+                for (BinaryTag entry : values) {
+                    CompoundBinaryTag entryTag = (CompoundBinaryTag) entry;
+
+                    String name = entryTag.getString("name");
+                    CompoundBinaryTag element = entryTag.getCompound("element");
+
+                    message.writeString(name);
+                    message.writeBoolean(true);
+                    message.writeNamelessCompoundTag(element);
+                }
+            });
+
+            packetRegistries.add(PacketSnapshot.of(registryData));
+        }
+
+        PACKETS_REGISTRY_DATA = packetRegistries;
+
         PACKETS_REGISTRY_DATA_1_20_5 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_20_5());
         PACKETS_REGISTRY_DATA_1_21 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21());
         PACKETS_REGISTRY_DATA_1_21_2 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21_2());
         PACKETS_REGISTRY_DATA_1_21_4 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21_4());
+        PACKETS_REGISTRY_DATA_1_21_5 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21_5());
 
         PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(new PacketOutFinishConfiguration());
 

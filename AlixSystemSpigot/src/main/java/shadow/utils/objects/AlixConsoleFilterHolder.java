@@ -28,12 +28,12 @@ public final class AlixConsoleFilterHolder implements Filter {
         this.delegate.obsolete = true;
     }
 
-    public void startFilteringStdErr() {
-        this.delegate.filterStdErr = true;
+    public void startFilteringStd() {
+        this.delegate.filterStd = true;
     }
 
-    public void stopFilteringStdErr() {
-        this.delegate.filterStdErr = false;
+    public void stopFilteringStd() {
+        this.delegate.filterStd = false;
     }
 /*    public void removeInstance() {
         this.delegate = null;
@@ -44,11 +44,11 @@ public final class AlixConsoleFilterHolder implements Filter {
         private final char[]
                 regex = "logged in with entity id".toCharArray();//,
         //regex2 = "lost connection".toCharArray();
-        private boolean obsolete, filterStdErr;
+        private volatile boolean obsolete, filterStd;
 
         private Result filter(LogEvent e) {
             if (obsolete) return Result.NEUTRAL;
-            if (filterStdErr && e.getLevel() == Level.ERROR && e.getMessage().getFormattedMessage().startsWith("[STDERR]")) {
+            if (filterStd && e.getMessage().getFormattedMessage().startsWith("[STD")) {//[STDERR] or [STDOUT]
                 //Main.logInfo("OUTPUT: '" + e.getMessage().getFormattedMessage() + "'");
                 return Result.DENY;
             }

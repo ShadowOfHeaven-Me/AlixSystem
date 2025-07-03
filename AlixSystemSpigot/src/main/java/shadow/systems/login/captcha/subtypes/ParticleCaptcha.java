@@ -2,6 +2,7 @@ package shadow.systems.login.captcha.subtypes;
 
 import alix.common.antibot.captcha.CaptchaImageGenerator;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.netty.BufTransformer;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.ScheduledFuture;
 import shadow.systems.login.captcha.Captcha;
@@ -38,7 +39,7 @@ public final class ParticleCaptcha extends Captcha {
 
         //already on the eventLoop
         //long t0 = System.nanoTime();
-        UnsafeNettyUtils.sendAndSetRaw(user.silentContext(), user.bufHarvester, b -> b, this.buffers);
+        UnsafeNettyUtils.sendAndSetRaw(user.silentContext(), user.bufHarvester, BufTransformer.NONE, this.buffers);
         //int size = 0;
         //for (ByteBuf buf : buffers) size += buf.readableBytes();
         //Main.logError("OF SIZE: " + size);

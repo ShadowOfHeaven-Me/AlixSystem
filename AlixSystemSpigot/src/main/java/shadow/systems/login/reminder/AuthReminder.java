@@ -50,11 +50,12 @@ public final class AuthReminder {// implements Runnable {
         ComponentBuilder<?, ?> combined = Component.text();
 
         //for (int i = 0; i < 50; i++) combined.appendNewline();
-        combined.appendNewline();
-        combined.append(explanation).appendNewline();
+        var newLine = Component.text('\n');
+        combined.append(newLine);
+        combined.append(explanation).append(newLine);
         combined.append(confirm).appendNewline();
         combined.append(cancel);
-        combined.appendNewline();
+        combined.append(newLine);
 
         MESSAGE = OutMessagePacketConstructor.constructConst(combined.build());
     }

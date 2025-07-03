@@ -1,7 +1,7 @@
 package alix.common.antibot.firewall;
 
 import alix.common.AlixCommonMain;
-import alix.common.antibot.IPUtils;
+import alix.common.antibot.ip.IPUtils;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
 import alix.common.utils.file.AlixFileManager;

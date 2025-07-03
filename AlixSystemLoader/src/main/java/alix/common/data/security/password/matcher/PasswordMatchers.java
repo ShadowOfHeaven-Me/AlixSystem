@@ -3,7 +3,7 @@ package alix.common.data.security.password.matcher;
 import alix.common.data.security.password.Password;
 import alix.common.data.security.password.hashing.Hashing;
 import alix.common.data.security.password.hashing.HashingAlgorithm;
-import alix.common.database.migrate.CryptoUtil;
+import alix.common.database.migrate.util.CryptoUtil;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
 public final class PasswordMatchers {

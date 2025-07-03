@@ -42,7 +42,6 @@ public final class AlixInternalNIOInterceptor {
 
             Class<?> serverChannelClass = delegate.getClass();//ServerSocketChannelImpl
 
-
             implCloseSelectableChannel = serverChannelClass.getDeclaredMethod("implCloseSelectableChannel");
             implCloseSelectableChannel.setAccessible(true);
             implConfigureBlocking = serverChannelClass.getDeclaredMethod("implConfigureBlocking", boolean.class);

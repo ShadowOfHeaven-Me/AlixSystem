@@ -224,7 +224,10 @@ public final class LoginState implements VerifyState {
     }
 
     public static final PacketSnapshot CLOSE_INV = PacketSnapshot.of(new PacketPlayOutInventoryClose(0));
-    private static final PacketSnapshot enterSecondaryPassword = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("login-enter-secondary-password"));
+
+    private static final class LazyLoad {
+        private static final PacketSnapshot enterSecondaryPassword = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("login-enter-secondary-password"));
+    }
 
     private boolean init2FA() {
         if (this.data.getLoginParams().getAuthSettings() != AuthSetting.PASSWORD_AND_AUTH_APP) return false;
@@ -259,10 +262,10 @@ public final class LoginState implements VerifyState {
             }
 
             if (data.getLoginType() == extraLoginType)
-                this.write(enterSecondaryPassword);
+                this.write(LazyLoad.enterSecondaryPassword);
 
             if (isSecondaryGui) {
-                if (this.gui == null) this.connection.writeTitle(PacketSnapshots.EMPTY);
+                if (this.gui == null) this.connection.writeTitle(PacketSnapshots.EMPTY_TITLE);
                 this.gui = this.newBuilder(extraLoginType);
                 this.gui.show();
             }

@@ -8,10 +8,15 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
+import shadow.Main;
+import shadow.utils.netty.opt.PacketFactory;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.users.types.AlixUser;
 
 public final class NettyUtils {
+
+    private static final boolean writeConst = Main.config.getBoolean("write-const-bufs");
+    private static final PacketFactory packetFactory = PacketFactory.of(writeConst);
 
 /*    private static final AttributeKey<?> STATE_ATTR = AttributeKey.valueOf("protocol");//EnumProtocol
 
@@ -23,7 +28,7 @@ public final class NettyUtils {
     }*/
 
     public static ByteBuf directPooledBuffer() {
-        return BufUtils.unpooledBuffer();
+        return BufUtils.pooledBuffer();
     }
 
     public static ByteBuf directPooledBuffer(int capacity) {
@@ -36,7 +41,7 @@ public final class NettyUtils {
     }
 
     private static ByteBuf prepareConstToSend(ByteBuf constByteBuf) {
-        return constByteBuf.duplicate();//we only need to duplicate it (so not copy), since the contents of a constant ByteBuf are unmodifiable as per the constBuffer method
+        return packetFactory.prepareConstToSend(constByteBuf);//impl-specific
     }
 
     public static void writeConst(ChannelHandlerContext context, ByteBuf constByteBuf) {

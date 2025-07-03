@@ -1,6 +1,7 @@
 package ua.nanit.limbo.connection.pipeline.compression;
 
 import alix.common.utils.netty.FastNettyUtils;
+import alix.common.utils.netty.NettySafety;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
@@ -26,7 +27,7 @@ final class CompressorJavaImpl implements CompressionImpl {
         this.deflater = new Deflater();
         this.deflater.setLevel(level.getJavaLevel());
         this.inflater = new Inflater();
-        this.encodeBuf = new byte[32768];
+        this.encodeBuf = new byte[NettySafety.MAX_RECEIVED_SIZE];
     }
 
     @Override
