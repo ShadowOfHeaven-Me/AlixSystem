@@ -4,8 +4,10 @@ import org.bukkit.*;
 import org.jetbrains.annotations.Nullable;
 import shadow.Main;
 import shadow.systems.executors.captcha.CaptchaRespawnExecutors;
-import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.world.generator.chunk.AlixChunkGenerator;
+
+import static shadow.utils.misc.ReflectionUtils.getMethodOrNull;
+import static shadow.utils.misc.ReflectionUtils.invokeIfPresent;
 
 public final class AlixWorldGenerator extends WorldCreator {
 
@@ -42,10 +44,10 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setSpawnFlags(false, false);
         world.setDifficulty(Difficulty.EASY);
 
-        if (ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setViewDistance", int.class), world, 2)) {
+        if (invokeIfPresent(getMethodOrNull(World.class, "setViewDistance", int.class), world, 2)) {
             Main.logInfo("Optimizing chunk rendering in the verification world thanks to the Paper environment");
-            ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setSimulationDistance", int.class), world, 2);
-            ReflectionUtils.invokeIfPresent(ReflectionUtils.getMethodOrNull(World.class, "setSendViewDistance", int.class), world, 2);
+            invokeIfPresent(getMethodOrNull(World.class, "setSimulationDistance", int.class), world, 2);
+            invokeIfPresent(getMethodOrNull(World.class, "setSendViewDistance", int.class), world, 2);
         }
         //setSendViewDistance
 
@@ -64,7 +66,6 @@ public final class AlixWorldGenerator extends WorldCreator {
         world.setGameRule(GameRule.RANDOM_TICK_SPEED, -1);
         world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
         world.setGameRule(GameRule.SPAWN_RADIUS, 0);
-        world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
         world.setGameRule(GameRule.DO_TILE_DROPS, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         world.setGameRule(GameRule.DISABLE_RAIDS, true);

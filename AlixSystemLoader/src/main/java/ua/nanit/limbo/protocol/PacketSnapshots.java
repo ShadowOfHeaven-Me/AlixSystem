@@ -36,7 +36,6 @@ import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 import ua.nanit.limbo.util.NbtMessageUtil;
-import ua.nanit.limbo.world.Dimension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,17 +80,23 @@ public final class PacketSnapshots {
     public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, EMPTY_TITLE;
 
     public static final PacketSnapshot PACKET_REGISTRY_DATA;
-    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA;
+    //public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA;
 
     public static final PacketSnapshot PACKET_KNOWN_PACKS;
     public static final PacketSnapshot PACKET_UPDATE_TAGS_1_20_5;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21;
     public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_2;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_4;
     public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_5;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_6;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_7;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_20_5;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_2;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_4;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_5;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_6;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_7;
 
     public static final PacketSnapshot PACKET_FINISH_CONFIGURATION;
 
@@ -113,6 +118,7 @@ public final class PacketSnapshots {
 
     static {
         var server = NanoLimbo.LIMBO;
+        var registry = server.getDimensionRegistry();
         /*final String username = server.getConfig().getPingData().getVersion();
         final UUID uuid = UuidUtil.getOfflineModeUuid(username);
 
@@ -138,7 +144,7 @@ public final class PacketSnapshots {
         joinGame.setWorldNames(worldName);
         joinGame.setLimitedCrafting(false);
         joinGame.setSecureProfile(true);
-        joinGame.setDimensionRegistry(server.getDimensionRegistry());
+        joinGame.setDimensionRegistry(registry);
         PACKET_JOIN_GAME = PacketSnapshot.of(joinGame);
 
         PacketPlayerAbilities abilities = new PacketPlayerAbilities();
@@ -221,25 +227,27 @@ public final class PacketSnapshots {
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();
         PACKET_KNOWN_PACKS = PacketSnapshot.of(packetKnownPacks);
 
-        var registry = server.getDimensionRegistry();
-
         PACKET_UPDATE_TAGS_1_20_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_20_5()));
+        PACKET_UPDATE_TAGS_1_21 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21()));
         PACKET_UPDATE_TAGS_1_21_2 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_2()));
+        PACKET_UPDATE_TAGS_1_21_4 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_4()));
         PACKET_UPDATE_TAGS_1_21_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_5()));
+        PACKET_UPDATE_TAGS_1_21_6 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_6()));
+        PACKET_UPDATE_TAGS_1_21_7 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_7()));
 
         PacketRegistryData packetRegistryData = new PacketRegistryData();
-        packetRegistryData.setDimensionRegistry(server.getDimensionRegistry());
+        packetRegistryData.setDimensionRegistry(registry);
 
         PACKET_REGISTRY_DATA = PacketSnapshot.of(packetRegistryData);
 
-        Dimension dimension1_21 = server.getDimensionRegistry().getDimension_1_21();
+        /*Dimension dimension1_21 = registry.getDimension_1_21();
         List<PacketSnapshot> packetRegistries = new ArrayList<>();
         CompoundBinaryTag dimensionTag = dimension1_21.getData();
         for (String registryType : dimensionTag.keySet()) {
             CompoundBinaryTag compoundRegistryType = dimensionTag.getCompound(registryType);
 
             PacketRegistryData registryData = new PacketRegistryData();
-            registryData.setDimensionRegistry(server.getDimensionRegistry());
+            registryData.setDimensionRegistry(registry);
 
             ListBinaryTag values = compoundRegistryType.getList("value");
             registryData.setMetadataWriter((message, version) -> {
@@ -261,13 +269,15 @@ public final class PacketSnapshots {
             packetRegistries.add(PacketSnapshot.of(registryData));
         }
 
-        PACKETS_REGISTRY_DATA = packetRegistries;
+        PACKETS_REGISTRY_DATA = packetRegistries;*/
 
-        PACKETS_REGISTRY_DATA_1_20_5 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_20_5());
-        PACKETS_REGISTRY_DATA_1_21 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21());
-        PACKETS_REGISTRY_DATA_1_21_2 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21_2());
-        PACKETS_REGISTRY_DATA_1_21_4 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21_4());
-        PACKETS_REGISTRY_DATA_1_21_5 = createRegistryData(server, server.getDimensionRegistry().getCodec_1_21_5());
+        PACKETS_REGISTRY_DATA_1_20_5 = createRegistryData(server, registry.getCodec_1_20_5());
+        PACKETS_REGISTRY_DATA_1_21 = createRegistryData(server, registry.getCodec_1_21());
+        PACKETS_REGISTRY_DATA_1_21_2 = createRegistryData(server, registry.getCodec_1_21_2());
+        PACKETS_REGISTRY_DATA_1_21_4 = createRegistryData(server, registry.getCodec_1_21_4());
+        PACKETS_REGISTRY_DATA_1_21_5 = createRegistryData(server, registry.getCodec_1_21_5());
+        PACKETS_REGISTRY_DATA_1_21_6 = createRegistryData(server, registry.getCodec_1_21_6());
+        PACKETS_REGISTRY_DATA_1_21_7 = createRegistryData(server, registry.getCodec_1_21_7());
 
         PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(new PacketOutFinishConfiguration());
 

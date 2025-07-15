@@ -5,6 +5,7 @@ import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.exception.PacketProcessException;
 import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.channel.ChannelHandlerContext;
+import shadow.Main;
 
 import java.net.InetSocketAddress;
 
@@ -21,7 +22,7 @@ public final class AlixPEDecoder extends PacketEventsDecoder {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        //Main.logError("ERROR: " + cause.getMessage());
+        Main.logError("ERROR: " + cause.getMessage());
         //cause.printStackTrace();
         if (isPPE(cause)) {
             FireWallManager.addCauseException((InetSocketAddress) ctx.channel().remoteAddress(), cause);

@@ -153,11 +153,12 @@ public final class AlixInterceptor {
             //Main.logError("CHANNEL IDENTITY HASH: " + System.identityHashCode(channel) + " CLAZZ: " + msg.getClass().getSimpleName());
             //AlixUtils.debug(Thread.currentThread().getStackTrace());
             //Main.logError("CTX NAME: " + ctx.name() + " HASH: " + System.identityHashCode(ctx));
+
+            //Main.debug("CHANNEL CONNECT=" + channel);
             AntiBotStatistics.INSTANCE.incrementJoins();
             if (isNettyFireWall) {
                 InetAddress address = ((InetSocketAddress) channel.unsafe().remoteAddress()).getAddress();
                 //Channel serverChannel = AlixHandler.SERVER_CHANNEL_FUTURE.channel();
-                //Main.logInfo(channel + " " + serverChannel + " " + serverChannel.eventLoop());
                 if (FireWallManager.isBlocked(address)) {
                     channel.unsafe().closeForcibly();
                     return;

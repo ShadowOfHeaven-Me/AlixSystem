@@ -316,7 +316,9 @@ public class PacketJoinGame implements PacketOut {
             msg.writeBoolean(reducedDebugInfo);
             msg.writeBoolean(enableRespawnScreen);
             msg.writeBoolean(limitedCrafting);
-            if (version.moreOrEqual(Version.V1_21_5)) {
+            if (version.moreOrEqual(Version.V1_21_6)) {
+                msg.writeVarInt(dimensionRegistry.getDimension_1_21_6().getId());
+            } else if (version.moreOrEqual(Version.V1_21_5)) {
                 msg.writeVarInt(dimensionRegistry.getDimension_1_21_5().getId());
             } else if (version.moreOrEqual(Version.V1_21_4)) {
                 msg.writeVarInt(dimensionRegistry.getDimension_1_21_4().getId());

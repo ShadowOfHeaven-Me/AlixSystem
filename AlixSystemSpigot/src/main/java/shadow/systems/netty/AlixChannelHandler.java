@@ -135,6 +135,7 @@ public final class AlixChannelHandler {
             super.channelActive(ctx);
             Channel channel = ctx.channel();
             ChannelPipeline pipeline = channel.pipeline();
+            //Main.debug("channelActive=" + ctx);
 
             if (AlixUtils.antibotService) {
                 pipeline.addBefore("packet_handler", CHANNEL_MONITOR_NAME, CHANNEL_MONITOR);
@@ -142,6 +143,7 @@ public final class AlixChannelHandler {
 
                 //Fix for invalid packet attacks
                 //used until automatically removed during handler relocation after SET_COMPRESSION
+                //Main.debug("AlixPEDecoder SET");
                 pipeline.replace(PacketEvents.DECODER_NAME, PacketEvents.DECODER_NAME, new AlixPEDecoder(decoder));
 
                 if (timeout) TIMEOUT_TASKS.put(channel, channel.eventLoop().schedule(() -> {

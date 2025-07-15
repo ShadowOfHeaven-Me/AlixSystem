@@ -357,16 +357,24 @@ public class ClientConnection {
             writePacket(PacketSnapshots.PACKET_KNOWN_PACKS);
 
             //this.writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA);
-            if (clientVersion.moreOrEqual(Version.V1_21_5)) {
+            if (clientVersion.moreOrEqual(Version.V1_21_7)) {
+                writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_7);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_7);
+            } else if (clientVersion.moreOrEqual(Version.V1_21_6)) {
+                writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_6);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_6);
+            } else if (clientVersion.moreOrEqual(Version.V1_21_5)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_5);
                 writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_5);
             } else if (clientVersion.moreOrEqual(Version.V1_21_4)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_4);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_4);
             } else if (clientVersion.moreOrEqual(Version.V1_21_2)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_2);
                 writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_2);
             } else if (clientVersion.moreOrEqual(Version.V1_21)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21);
             } else {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_20_5);
                 writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_20_5);

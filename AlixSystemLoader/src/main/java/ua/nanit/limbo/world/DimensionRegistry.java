@@ -41,6 +41,7 @@ public final class DimensionRegistry {
     private final Dimension dimension_1_21_2;
     private final Dimension dimension_1_21_4;
     private final Dimension dimension_1_21_5;
+    private final Dimension dimension_1_21_6;
 
     private final CompoundBinaryTag codec_1_16;
     private final CompoundBinaryTag codec_1_16_2;
@@ -55,12 +56,16 @@ public final class DimensionRegistry {
     private final CompoundBinaryTag codec_1_21_2;
     private final CompoundBinaryTag codec_1_21_4;
     private final CompoundBinaryTag codec_1_21_5;
+    private final CompoundBinaryTag codec_1_21_6;
+    private final CompoundBinaryTag codec_1_21_7;
     //private final CompoundBinaryTag oldCodec;
     private final CompoundBinaryTag tags_1_20_5;
     private final CompoundBinaryTag tags_1_21;
     private final CompoundBinaryTag tags_1_21_2;
     private final CompoundBinaryTag tags_1_21_4;
     private final CompoundBinaryTag tags_1_21_5;
+    private final CompoundBinaryTag tags_1_21_6;
+    private final CompoundBinaryTag tags_1_21_7;
 
     public DimensionRegistry(LimboServer server, String def) throws IOException {
         this.server = server;
@@ -78,12 +83,16 @@ public final class DimensionRegistry {
         codec_1_21_2 = readNbtFile("codec_1_21_2");
         codec_1_21_4 = readNbtFile("codec_1_21_4");
         codec_1_21_5 = readNbtFile("codec_1_21_5");
+        codec_1_21_6 = readNbtFile("codec_1_21_6");
+        codec_1_21_7 = readNbtFile("codec_1_21_7");
 
         tags_1_20_5 = readNbtFile("tags_1_20_5");
         tags_1_21 = readNbtFile("tags_1_21");
         tags_1_21_2 = readNbtFile("tags_1_21_2");
         tags_1_21_4 = readNbtFile("tags_1_21_4");
         tags_1_21_5 = readNbtFile("tags_1_21_5");
+        tags_1_21_6 = readNbtFile("tags_1_21_6");
+        tags_1_21_7 = readNbtFile("tags_1_21_7");
 
         defaultDimension_1_16 = getLegacyDimension(def);
         defaultDimension_1_16_2 = getModernDimension(def, codec_1_16_2);
@@ -95,6 +104,7 @@ public final class DimensionRegistry {
         dimension_1_21_2 = getModernDimension(def, codec_1_21_2);
         dimension_1_21_4 = getModernDimension(def, codec_1_21_4);
         dimension_1_21_5 = getModernDimension(def, codec_1_21_5);
+        dimension_1_21_6 = getModernDimension(def, codec_1_21_6);
     }
 
     public CompoundBinaryTag getCodec_1_16() {
@@ -163,6 +173,10 @@ public final class DimensionRegistry {
 
     public Dimension getDimension_1_21_4() {
         return dimension_1_21_4;
+    }
+
+    public CompoundBinaryTag getCodec_1_21_6() {
+        return this.codec_1_21_6;
     }
 
     public CompoundBinaryTag getCodec_1_21_5() {
@@ -257,6 +271,22 @@ public final class DimensionRegistry {
             throw new AlixException("Cannot find nbt file " + resPath);
 
         return BinaryTagIO.unlimitedReader().read(in, BinaryTagIO.Compression.GZIP);
+    }
+
+    public CompoundBinaryTag getTags_1_21_6() {
+        return tags_1_21_6;
+    }
+
+    public Dimension getDimension_1_21_6() {
+        return dimension_1_21_6;
+    }
+
+    public CompoundBinaryTag getTags_1_21_7() {
+        return tags_1_21_7;
+    }
+
+    public CompoundBinaryTag getCodec_1_21_7() {
+        return codec_1_21_7;
     }
     /*private CompoundBinaryTag readSnbtFile(String resPath) throws IOException {
         InputStream in = DimensionRegistry.class.getClassLoader().getResourceAsStream(resPath);
