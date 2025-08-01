@@ -1,0 +1,115 @@
+#------------------------------------------------------------------------------------#
+#                 This is the config.yml file for AlixVelocity.                      #
+#                  Currently there is no proper documentation.                       #
+#             Support will be provided at https://discord.com/invite/bWjmA7s3xV      #
+#------------------------------------------------------------------------------------#
+
+
+#-----------------------------------------------#
+#                  PRE-REGISTER                 #
+#-----------------------------------------------#
+
+#Config used when an unregistered player has not joined the server yet, but is trying to
+
+#Prevent the very first connection for unregistered users, if Alix determines the traffic to be high
+prevent-first-time-join-during-high-traffic: true
+#Used for the parameter above to help determine the maximum size of the connecting users list
+connection-list-size: 500
+#Defines how long (in seconds) should a connection be stored for until it is forgotten (Used for 'prevent-first-time-join')
+forget-connection-in: 60
+#Defines how much accounts in total should be a player allowed to have (counted by their ip), set it to 0 or less if you want to disable it (usually works as an antibot safety measure when the botter uses a single IP to send the bots)
+max-total-accounts: 1
+#Prevents unregistered players from logging in using a VPN (designed with the main purpose of preventing players bypassing the limit of 'max-total-accounts' by using VPNs, but may also work a bot counter-measurement)
+anti-vpn: true
+#Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join-during-high-traffic' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
+antibot-service: true
+#Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
+validate-name: true
+
+
+#----------------------------------------------#
+#                    LOGIN                     #
+#----------------------------------------------#
+
+
+#Config used for matters related to logging in/registering
+
+#Defines the default way the users have to register/log in. Available:
+# command - The user registers/logs in using the traditional password typed in the verification command
+# anvil - The user registers/logs in using an anvil rename gui
+# pin - The user registers/logs in using a pin gui
+password-type: command
+#Defines how long (in seconds) should be a player allowed to be on the server not logged in
+max-login-time: 75
+#Defines how many attempts does a user have when entering his password (setting it too high could be risky because of password crackers)
+max-login-attempts: 2
+#Defines whether the registering user should have to repeat the password he's trying to set whilst registering
+#Parameter 'true' would result in the format /register <password> <password>
+#Parameter 'false' would result in the format /register <password>
+require-password-repeat-in-register: false
+#Defines whether all characters (so including non-english chars) should be shown as valid during verification command typing, either during login or register.
+#If set to false, only english characters will be seen as valid by the verifying user. Any other character range will be shown in red as invalid. However, when
+# password repeat in /register is enabled, the second password argument will differ in color, making it more distinguishable.
+# Set it to false if you only expect english users
+command-support-all-characters: true
+#Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server
+# join if account ownership is not proven (unless 'assume-non-premium-if-auth-failed' is true). If successfully proven, the user will from now on be automatically logged in/registered if premium
+# Possible values:
+# never - Allows cracked players to join with premium nicknames
+# unregistered_and_suggested -
+#    Unregistered players with premium nicknames, who suggest they are premium by various means (1.19+ clients),
+#    will be requested to authenticate their account ownership. Remember that this also means that cracked players with premium nicknames will also be able to register,
+#    which in return might disallow the owners of those premium accounts from ever joining your server.
+# unregistered - Unregistered players with premium nicknames will always be requested to authenticate their account ownership
+#  (unregistered cracked players can't ever join with the nickname of a premium player)
+# always - Premium nicknames will always be requested to perform premium authentication (WARNING: This technically allows any premium player to steal a cracked user's account by simply changing their name to match theirs)
+require-ownership-of-premium-nickname: unregistered_and_suggested
+#Defines whether clients using a version before 1.19, and a premium nickname, should be assumed to be premium
+# When true:
+# Premium pre-1.19 clients will be automatically logged in/registered, but cracked clients within that version range
+# might not be able to join with nicknames of premium players (if the client does not disconnect by itself, the premium status will be assumed by the 'assume-non-premium-if-auth-failed' parameter)
+# When false:
+# Premium pre-1.19 clients will need to manually log in/register, but cracked clients within that version range will be
+# able to join with nicknames of premium players without the risk of disconnecting
+require-premium-when-no-suggestion: true
+#Defines whether, if the joining user is unregistered and joining with a nickname of a premium player,
+# and the client does not disconnect by itself, but fails at authorization, he should be assumed to be a non-premium
+# player of that nickname (will disallow the actual owner of the premium account from joining)
+assume-non-premium-if-auth-failed: true
+#Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure their ip autologin preference, right after registering
+ip-autologin-ask: true
+#Defines whether the ip autologin should be forcefully disabled. This option has a higher priority than the user's /account settings
+forcefully-disable-auto-login: false
+#Defines whether the players who joined with the same ip as before should be automatically logged in (this may cause problems for VPN users if you allow vpn connections). This value is used as the default if the given user does not specify it himself.
+auto-login: true
+#Defines the way the passwords set by the users will be hashed in by default
+# 0 - No hash, not recommended in case of password leaks
+# 1 - Mixes character's code point, very fast but possibly repeatable, stored in a 32-bit integer
+# 2 - Uses uuid's bit generation & MD5 hashing, takes more computing time, stored in a 64-bit integer
+# 3 - Uses uuid's bit generation & SHA-256 hashing, most secure of all the options, stored in a 64-bit integer
+# 4 - Uses SHA-256, always saved into a 64 character-long hex
+# 5 - Uses SHA-512, always saved into a 64 character-long hex
+password-hash-type: 3
+
+
+
+#------------------------------------------------#
+#                    GENERAL                     #
+#------------------------------------------------#
+
+#Config used for the overall set-up
+
+#Prefix of the messages sent by Alix
+prefix: "&c[Alix] > &7"
+#Defines whether the prefix should be appended
+append-prefix: true
+
+
+#------------------------------------------------#
+#                   TECHNICAL                    #
+#------------------------------------------------#
+
+#Config used for the very technical features of Alix
+
+#Defines whether debug messages should be sent (usually helps the developer in identifying the source of an error)
+debug: false

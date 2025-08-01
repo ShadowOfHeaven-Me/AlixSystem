@@ -1,0 +1,6 @@
+alixsystem: as, alix
+register: -
+login: -
+account: settings
+changepassword: changepass
+premium: -
