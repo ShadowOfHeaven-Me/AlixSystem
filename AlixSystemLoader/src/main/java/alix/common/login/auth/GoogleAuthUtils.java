@@ -9,8 +9,8 @@ import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
 public final class GoogleAuthUtils {
@@ -39,14 +39,10 @@ public final class GoogleAuthUtils {
     }
 
     public static String getGoogleAuthenticatorBarCode(String secretKey, String account, String issuer) {
-        try {
-            return "otpauth://totp/"
-                    + URLEncoder.encode(account, "UTF-8").replace("+", "%20")
-                    + "?secret=" + URLEncoder.encode(secretKey, "UTF-8").replace("+", "%20")
-                    + "&issuer=" + URLEncoder.encode(issuer, "UTF-8").replace("+", "%20");
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException(e);
-        }
+        return "otpauth://totp/"
+                + URLEncoder.encode(account, StandardCharsets.UTF_8).replace("+", "%20")
+                + "?secret=" + URLEncoder.encode(secretKey, StandardCharsets.UTF_8).replace("+", "%20")
+                + "&issuer=" + URLEncoder.encode(issuer, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     public static byte[] createQRCode(String barCodeData, int height, int width) throws Exception {

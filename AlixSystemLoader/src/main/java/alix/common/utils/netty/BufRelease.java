@@ -21,6 +21,10 @@ public interface BufRelease extends Function<ByteBuf, Boolean>, Consumer<ByteBuf
         return isConst ? CONST : DYNAMIC;
     }
 
+    /*static boolean safeRelease(ByteBuf buf) {
+        if (buf != null) return false;
+    }*/
+
     static boolean release(ByteBuf buf) {
         return buf != null && buf.release();
     }

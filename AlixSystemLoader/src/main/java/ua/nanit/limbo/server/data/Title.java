@@ -17,12 +17,10 @@
 
 package ua.nanit.limbo.server.data;
 
-import ua.nanit.limbo.protocol.NbtMessage;
-
 public class Title {
 
-    private NbtMessage title;
-    private NbtMessage subtitle;
+    private String title;
+    private String subtitle;
     private int fadeIn;
     private int stay;
     private int fadeOut;
@@ -30,11 +28,11 @@ public class Title {
     public Title() {
     }
 
-    public NbtMessage getTitle() {
+    public String getTitle() {
         return title;
     }
 
-    public NbtMessage getSubtitle() {
+    public String getSubtitle() {
         return subtitle;
     }
 
@@ -50,12 +48,12 @@ public class Title {
         return fadeOut;
     }
 
-    public Title setTitle(NbtMessage title) {
+    public Title setTitle(String title) {
         this.title = title;
         return this;
     }
 
-    public Title setSubtitle(NbtMessage subtitle) {
+    public Title setSubtitle(String subtitle) {
         this.subtitle = subtitle;
         return this;
     }

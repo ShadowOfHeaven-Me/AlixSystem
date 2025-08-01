@@ -38,6 +38,7 @@ import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketPlayOutKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.transfer.PacketPlayOutTransfer;
+import ua.nanit.limbo.protocol.packets.shadow.DisconnectPacket;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
@@ -75,7 +76,7 @@ public class ClientConnection {
         this.server = server;
         this.channel = channel;
         this.duplexHandler = new PacketDuplexHandler(channel, this.server, this);
-        this.frameDecoder = new VarIntFrameDecoder();
+        this.frameDecoder = new VarIntFrameDecoder(this);
         this.address = (InetSocketAddress) channel.remoteAddress();
         this.gameProfile = new GameProfile();
         this.verifyState = state.apply(this);
@@ -432,7 +433,7 @@ public class ClientConnection {
     }
 
     public void sendPacketAndClose(PacketOut packet) {
-        if (isConnected())
+        if (this.isConnected())
             this.safeExecute(() -> this.closeWith0(packet));
     }
 
@@ -447,7 +448,7 @@ public class ClientConnection {
     }
 
     public boolean isConnected() {
-        return channel.isOpen();
+        return this.channel.isOpen();
     }
 
     public void updateState(State state) {
@@ -474,6 +475,16 @@ public class ClientConnection {
     public void updateVersion(Version version) {
         this.clientVersion = version;
         this.duplexHandler.updateVersion(version);
+    }
+
+    private static final DisconnectPacket invalidPacket = DisconnectPacket.error("Invalid packet, Alix");
+
+    public void closeInvalidPacket() {
+        invalidPacket.disconnect(this);
+    }
+
+    public State getState() {
+        return state;
     }
 
     /*public void setAddress(String host) {

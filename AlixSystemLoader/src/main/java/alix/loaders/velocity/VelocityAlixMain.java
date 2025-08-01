@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import java.nio.file.Path;
 
 @MainClass
-@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.0.1", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
+@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.1.0", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
         authors = "ShadowOfHeaven", dependencies = @Dependency(id = "floodgate", optional = true))
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
@@ -44,6 +44,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         this.loggerAdapter = new VelocityLoggerAdapter(server); //LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
         dataDirectory.toFile().mkdir();
+
         //new File(dataDirectory.toAbsolutePath().toString()).mkdir();
 
         //File f = AlixFileManager.createPluginFile("config.yml", AlixFileManager.FileType.CONFIG);
@@ -60,7 +61,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         //CommonAlixMain.bootstrap = this.plugin;
 
         FileUpdater.updateFiles();
-        this.bootstrap.onLoad();
+        //this.bootstrap.onLoad();
     }
 
     @Subscribe

@@ -263,17 +263,8 @@ public final class AlixUtils {
         return isFakeChannel((Channel) ProtocolManager.CHANNELS.get(player.getUniqueId()));
     }
 
-    //From PacketEvents
     public static boolean isFakeChannel(Channel channel) {
-        //Main.logError("CHANNEL: " + channel);
-        if (channel == null) return true;
-        switch (channel.getClass().getSimpleName()) {
-            case "FakeChannel":
-            case "SpoofedChannel":
-                return true;
-            default:
-                return false;
-        }
+        return AlixCommonUtils.isFakeChannel(channel);
     }
 
     public static String getFields(Object o) {

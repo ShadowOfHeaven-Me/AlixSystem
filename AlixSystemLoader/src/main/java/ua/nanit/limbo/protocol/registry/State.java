@@ -195,7 +195,7 @@ public enum State {
             clientBound.registerRetrooper(PacketPlayOutMessage::new, PacketType.Play.Server.CHAT_MESSAGE);
             clientBound.registerRetrooper(PacketPlayerInfo::new, PacketType.Play.Server.PLAYER_INFO);
             clientBound.registerRetrooper(PacketTitleLegacy::new, PacketType.Play.Server.TITLE);
-            clientBound.registerRetrooper(PacketTitleSetTitle::new, PacketType.Play.Server.TITLE);
+            clientBound.registerRetrooper(PacketTitleSetTitle::new, PacketType.Play.Server.SET_TITLE_TEXT);
             clientBound.registerRetrooper(PacketTitleSetSubTitle::new, PacketType.Play.Server.SET_TITLE_SUBTITLE);
             clientBound.registerRetrooper(PacketTitleTimes::new, PacketType.Play.Server.SET_TITLE_TIMES);
             clientBound.registerRetrooper(PacketPlayerListHeader::new, PacketType.Play.Server.PLAYER_LIST_HEADER_AND_FOOTER);
@@ -289,9 +289,15 @@ public enum State {
                 HandleMask.register(clazz);*/
         }
 
+        //private static final Set<PacketTypeCommon> packets = new HashSet<>();
+
         //Gotta love packetevents ;]
         private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
             register0(packet, this.state);
+
+            /*if (!packets.add(type))
+                throw new AlixException("PacketTypeCommon duplicate! - " + type);*/
+
             for (Version ver : Version.values()) {
                 if (!ver.isSupported()) continue;
 

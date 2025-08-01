@@ -85,8 +85,9 @@ public final class PacketEventsManager {
                 return;
             }*/
 
-            if (!onlineMode && event.getClass() == PacketLoginReceiveEvent.class) {
+            if (event.getClass() == PacketLoginReceiveEvent.class) {
                 PacketLoginReceiveEvent e = (PacketLoginReceiveEvent) event;
+
                 switch (e.getPacketType()) {
                     case LOGIN_START:
                         //AlixChannelHandler.assignLoginUUID(e);

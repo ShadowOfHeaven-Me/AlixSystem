@@ -47,7 +47,7 @@ public final class AntiBotStatistics {
     }
 
     private int getBlockedSinceStart(int total) {
-        return total - startingBlocked;
+        return total - this.startingBlocked;
     }
 
     private int getTotalBlocked() {

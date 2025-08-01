@@ -222,7 +222,7 @@ public final class PacketSnapshots {
 
         LOGIN_TITLE = new TitlePacketSnapshot(server.getConfig().getLoginTitle());
         REGISTER_TITLE = new TitlePacketSnapshot(server.getConfig().getRegisterTitle());
-        EMPTY_TITLE = new TitlePacketSnapshot(new Title().setTitle(NbtMessageUtil.fromLiteral("")).setSubtitle(NbtMessageUtil.fromLiteral("")).setStay(999999999));
+        EMPTY_TITLE = new TitlePacketSnapshot(new Title().setTitle("").setSubtitle("").setStay(999999999));
 
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();
         PACKET_KNOWN_PACKS = PacketSnapshot.of(packetKnownPacks);

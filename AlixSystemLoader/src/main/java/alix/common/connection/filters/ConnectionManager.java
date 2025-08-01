@@ -14,14 +14,14 @@ public final class ConnectionManager {
     public static final String preventFirstTimeJoinMessage = Messages.get("prevent-first-time-join");
     //private static final ConcurrentLoopSet<ArrayKey> set;
     private static final long forgetInMillis = ConfigProvider.config.getInt("forget-connection-in") * 1000L;
-    public static final Map<String, Long> CACHE;
+    private static final Map<String, Boolean> CACHE;
 
     static {
         if (!isEnabled) {
             CACHE = null;
         } else {
             int maxSize = Math.max(Math.min(ConfigProvider.config.getInt("connection-list-size"), 32767), 3);
-            Cache<String, Long> cache = AlixCache.newBuilder().expireAfterWrite(forgetInMillis, TimeUnit.MILLISECONDS).maximumSize(maxSize).build();
+            Cache<String, Boolean> cache = AlixCache.newBuilder().expireAfterWrite(forgetInMillis, TimeUnit.MILLISECONDS).maximumSize(maxSize).build();
             CACHE = cache.asMap();
         }
         //CACHE = isEnabled ? (Map<String, Long>) CacheBuilder.newBuilder().expireAfterWrite(forgetInMillis, TimeUnit.MILLISECONDS).maximumSize(maxSize).build().asMap() : null;
@@ -29,7 +29,7 @@ public final class ConnectionManager {
     }
 
     public static boolean disallowJoin(String name) {
-        return isEnabled && CACHE.put(name, System.currentTimeMillis() + forgetInMillis) == null;
+        return isEnabled && CACHE.put(name, Boolean.TRUE) == null;
         //return !set.putNext(KeyUtils.key(name));
     }
 

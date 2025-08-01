@@ -8,6 +8,7 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import shadow.Main;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
@@ -120,15 +121,17 @@ public final class UserManager {
     }
 
     public static User putConnecting(String name, User user) {
-        return CONNECTING_USERS.compute(name, (n, alreadyConnecting) -> alreadyConnecting != null ? alreadyConnecting : user);
+        Main.debug("putConnecting - " + name);
+        return CONNECTING_USERS.compute(name.toLowerCase(), (n, alreadyConnecting) -> alreadyConnecting != null ? alreadyConnecting : user);
     }
 
     public static User getConnecting(String name) {
-        return CONNECTING_USERS.get(name);
+        return CONNECTING_USERS.get(name.toLowerCase());
     }
 
     public static User removeConnecting(String name) {
-        return CONNECTING_USERS.remove(name);
+        Main.debug("removeConnecting - " + name);
+        return CONNECTING_USERS.remove(name.toLowerCase());
     }
 
 /*    public static void remove(Player p) {

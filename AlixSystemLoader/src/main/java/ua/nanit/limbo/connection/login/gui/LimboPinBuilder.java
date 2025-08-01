@@ -199,7 +199,7 @@ public final class LimboPinBuilder implements LimboGUI {
                 this.setItem(FIRST_EMPTY_DIGIT_SLOT + pin.length(), BARRIER);
                 this.duplexHandler.writeAndFlush(NOTE_BLOCK_SNARE);
             }
-            if (this.pin.length() == 0) spoofWithSnapshot = true;
+            if (this.pin.length() == 0) this.spoofWithSnapshot = true;
             return false;
         }
 

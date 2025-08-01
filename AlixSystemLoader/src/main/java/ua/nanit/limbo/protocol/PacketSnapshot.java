@@ -20,6 +20,7 @@ package ua.nanit.limbo.protocol;
 import alix.common.utils.collections.queue.AlixQueue;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import alix.common.utils.netty.BufUtils;
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 import lombok.SneakyThrows;
@@ -71,17 +72,16 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     void release() {
-        this.encodings.forEach(ByteBuf::release);
-        /*this.encodings.forEach(buf -> {
+        //this.encodings.forEach(ByteBuf::release);
+        this.encodings.forEach(buf -> {
             int refCnt = buf.refCnt();
-            if (refCnt != 0) buf.release(refCnt);
-        });*/
+            if (refCnt != 0) buf.unwrap().release();
+        });
     }
 
     private ByteBuf getEnsureNotNull(Version version) {
         var buf = this.encodings.get(version);
-        if (buf == null)
-            throw new AlixException("NULL ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
+        if (buf == null) throw new AlixError("NULL ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
         return buf;
     }
 
@@ -223,7 +223,6 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     public static PacketSnapshot of(PacketOut packet) {
-        if (packet instanceof PacketSnapshot) return (PacketSnapshot) packet;
-        return new PacketSnapshot(packet);
+        return packet instanceof PacketSnapshot snapshot ? snapshot : new PacketSnapshot(packet);
     }
 }

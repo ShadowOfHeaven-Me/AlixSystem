@@ -38,7 +38,7 @@ public final class OutDisconnectPacketConstructor {
 
     public static ByteBuf constructDynamicAtLoginPhase(String message) {
         try {
-            return NettyUtils.createBuffer(new WrapperLoginServerDisconnect(Component.text(message)));
+            return NettyUtils.createBuffer(new WrapperLoginServerDisconnect(Component.text(message)), false);
             //Object chatComponent = ReflectionUtils.constructTextComponents(message)[0];
             //return loginPhasePacketConstructor.newInstance(chatComponent);
         } catch (Exception e) {

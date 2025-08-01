@@ -23,7 +23,6 @@ import ua.nanit.limbo.server.data.InfoForwarding;
 import ua.nanit.limbo.server.data.PingData;
 import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.util.Colors;
-import ua.nanit.limbo.util.NbtMessageUtil;
 
 import static ua.nanit.limbo.connection.login.LoginState.requirePasswordRepeatInRegister;
 
@@ -61,8 +60,8 @@ public final class LimboConfig {
 
         int registerStayTicks = 999999999;
         int loginStayTicks = 999999999;
-        registerTitle = new Title().setTitle(NbtMessageUtil.fromLiteral(Messages.get("reminder-register-title"))).setSubtitle(NbtMessageUtil.fromLiteral(requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle"))).setStay(registerStayTicks);
-        loginTitle = new Title().setTitle(NbtMessageUtil.fromLiteral(Messages.get("reminder-login-title"))).setSubtitle(NbtMessageUtil.fromLiteral(Messages.get("reminder-login-subtitle"))).setStay(loginStayTicks);
+        registerTitle = new Title().setTitle(Messages.get("reminder-register-title")).setSubtitle(requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle")).setStay(registerStayTicks);
+        loginTitle = new Title().setTitle(Messages.get("reminder-login-title")).setSubtitle(Messages.get("reminder-login-subtitle")).setStay(loginStayTicks);
 
         playerListHeader = Colors.of("none");
         playerListFooter = Colors.of("none");

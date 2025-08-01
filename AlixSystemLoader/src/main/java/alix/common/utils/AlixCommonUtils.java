@@ -7,6 +7,7 @@ import alix.common.messages.Messages;
 import alix.common.utils.collections.RandomCharIterator;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
+import io.netty.channel.Channel;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -45,6 +46,19 @@ public final class AlixCommonUtils {
             isGraphicEnvironmentHeadless0 = true;
         }
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
+    }
+
+    //From PacketEvents
+    public static boolean isFakeChannel(Channel channel) {
+        //Main.logError("CHANNEL: " + channel);
+        if (channel == null) return true;
+        switch (channel.getClass().getSimpleName()) {
+            case "FakeChannel":
+            case "SpoofedChannel":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public static String getNumbersOnly(String a) {

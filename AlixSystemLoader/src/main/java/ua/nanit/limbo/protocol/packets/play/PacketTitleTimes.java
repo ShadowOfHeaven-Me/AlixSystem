@@ -48,5 +48,4 @@ public class PacketTitleTimes implements PacketOut {
         msg.writeInt(stay);
         msg.writeInt(fadeOut);
     }
-
 }

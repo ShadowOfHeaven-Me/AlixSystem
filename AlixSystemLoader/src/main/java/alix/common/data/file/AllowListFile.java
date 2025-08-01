@@ -20,7 +20,6 @@ public final class AllowListFile extends AlixFileManager {
         this.names.add(line);
     }
 
-
     void save() {
         try {
             super.save0(this.names);

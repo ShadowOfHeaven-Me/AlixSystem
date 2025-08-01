@@ -17,6 +17,7 @@ import alix.common.utils.multiengine.ban.BukkitBanList;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -232,12 +233,15 @@ public final class OfflineExecutors extends UniversalExecutors {
     //Teleportation on login fix
     @EventHandler(priority = EventPriority.MONITOR)
     public void onTeleport(PlayerTeleportEvent event) {
-        if (event.isCancelled() && event.getCause() == MethodProvider.ASYNC_TP_CAUSE && event.getFrom().getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {//ensure the tp back from verification happens at all cost
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (event.isCancelled() && event.getCause() == MethodProvider.ASYNC_TP_CAUSE && from.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {//ensure the tp back from verification happens at all cost
             event.setCancelled(false);//look at me, saying how uncancelling an event is bad writing, and then doing it myself
             return;
         }
-        if (!event.isCancelled() && !event.getTo().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && event.getFrom().getWorld().equals(AlixWorld.CAPTCHA_WORLD) && event.getCause() != MethodProvider.ASYNC_TP_CAUSE && Verifications.has(event.getPlayer())) {
-            OriginalLocationsManager.add(event.getPlayer(), event.getTo());
+        Player player = event.getPlayer();
+        if (!event.isCancelled() && !to.getWorld().equals(AlixWorld.CAPTCHA_WORLD) && from.getWorld().equals(AlixWorld.CAPTCHA_WORLD) && event.getCause() != MethodProvider.ASYNC_TP_CAUSE && Verifications.has(player)) {
+            OriginalLocationsManager.add(player, to);
             event.setCancelled(true);
             //Bukkit.broadcastMessage("CANCELLED - " + UserManager.get(event.getPlayer().getUniqueId()).getClass().getSimpleName());
         }

@@ -170,11 +170,11 @@ public final class PremiumAuthenticator {
         //String sessionKey = user.getAddress().toString();
         String packetUsername = packet.getUsername();
         //Main.logInfo("PACKET USERNAME: " + packetUsername);
-        String bedrockName = Dependencies.getCorrectUsername(channel, packetUsername);
+        String serverUsername = Dependencies.getCorrectUsername(channel, packetUsername);
         UUID uuid = packet.getPlayerUUID().orElse(null);
         //Main.debug("packetUsername: '" + packetUsername + "' bedrockName: '" + bedrockName + "'");
 
-        user.getProfile().setName(bedrockName);
+        user.getProfile().setName(serverUsername);
         user.getProfile().setUUID(uuid);
         //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " VARIANT " + uuid.variant() + " ");
         ClientVersion version = user.getClientVersion();
@@ -183,13 +183,13 @@ public final class PremiumAuthenticator {
 
         if (Dependencies.isFloodgatePresent) {
             // don't continue execution if the player was kicked by Floodgate
-            if (!FloodgateHelper.processFloodgateTasks(channel)) return;
+            if (!FloodgateHelper.isJoinAllowed(channel)) return;
         }
 
         ClientPublicKey clientKey = ClientPublicKey.createKey(packet.getSignatureData().orElse(null));
 
         //Alix - start
-        PersistentUserData data = UserFileManager.get(bedrockName);
+        PersistentUserData data = UserFileManager.get(serverUsername);
 
         /*boolean justCreatedPremiumData = false;
 
@@ -218,9 +218,9 @@ public final class PremiumAuthenticator {
                 return;
             }*/
             //Since AlixChannelHandler.onLoginStart will not be invoked, add the connecting user manually
-            if (!AlixChannelHandler.putConnecting(user, bedrockName)) return;
+            if (!AlixChannelHandler.putConnecting(user, serverUsername)) return;
 
-        } else if (!AlixChannelHandler.onLoginStart(user, packetUsername, bedrockName, data, performPremiumCheck))
+        } else if (!AlixChannelHandler.onLoginStart(user, packetUsername, serverUsername, data, performPremiumCheck))
             return;
         //Alix - end
 
@@ -239,7 +239,7 @@ public final class PremiumAuthenticator {
                 byte[] token = EncryptionUtil.generateVerifyToken();
 
                 WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token);
-                this.encryptionDataCache.put(user, new EncryptionData(packetUsername, bedrockName, token, clientKey, newPremiumData.premiumUUID()));
+                this.encryptionDataCache.put(user, new EncryptionData(packetUsername, serverUsername, token, clientKey, newPremiumData.premiumUUID()));
 
                 ByteBuf dynamicWrapper = NettyUtils.dynamic(newPacket);
                 ChannelHandlerContext silentCtx = NettyUtils.getSilentContext(channel);

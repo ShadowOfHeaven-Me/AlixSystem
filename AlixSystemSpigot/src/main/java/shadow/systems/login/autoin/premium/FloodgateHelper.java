@@ -12,7 +12,7 @@ final class FloodgateHelper {
     private static final AttributeKey<String> kickMessageAttribute = AttributeKey.valueOf("floodgate-kick-message");
 
     //returns true if the login is allowed, false if a kick occurred
-    static boolean processFloodgateTasks(Channel channel) {
+    static boolean isJoinAllowed(Channel channel) {
         //FloodgatePlayer floodgatePlayer = FloodgateAccess.getBedrockPlayer(channel);
         if (!Dependencies.isBedrock(channel)) return true;
 

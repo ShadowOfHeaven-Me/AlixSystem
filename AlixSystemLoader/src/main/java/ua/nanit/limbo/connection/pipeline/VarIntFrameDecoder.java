@@ -17,14 +17,14 @@
 
 package ua.nanit.limbo.connection.pipeline;
 
-import alix.common.utils.other.throwable.AlixException;
+import alix.common.utils.netty.NettySafety;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.ByteProcessor;
 import ua.nanit.limbo.NanoLimbo;
-import ua.nanit.limbo.connection.UnsafeCloseFuture;
+import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.server.Log;
 
 import java.util.Collections;
@@ -47,6 +47,11 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
 
     //must be an IdentityHashMap, cuz the ByteBuf#hashCode changes depending on its readerIndex
     private final Set<ByteBuf> resend = Collections.newSetFromMap(new IdentityHashMap<>(2));
+    private final ClientConnection connection;
+
+    public VarIntFrameDecoder(ClientConnection connection) {
+        this.connection = connection;
+    }
     //private final BufSet12 resend = new BufSet12();
 
     //private final VarIntByteDecoder reader = new VarIntByteDecoder();
@@ -138,7 +143,7 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         if (readableBytes == 0) return;
 
         int len = readVarIntPacketLength(in);
-        if (len < 0) throw new AlixException("NUH-UH");
+        if (len < 0) throw NettySafety.INVALID_PACKET_LEN;
 
         //readVarInt() returns 0 for partial VarInts with a continuation bit, and for actual VarInts read as a 0
         if (len == 0) {
@@ -159,11 +164,10 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
 
         try {
             out.add(in.readRetainedSlice(len));
-        } catch (Exception ex) {
-            if (NanoLimbo.suppressInvalidPackets) {
-                UnsafeCloseFuture.unsafeClose(ctx.channel());
-                return;
-            }
+        } catch (Throwable ex) {
+            this.connection.closeInvalidPacket();
+            if (NanoLimbo.suppress(ex)) return;
+
             Log.error("len=" + len + " rdx=" + in.readerIndex() + " rby=" + in.readableBytes(), ex);
         }
 
@@ -202,7 +206,7 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         final int atStop = ~wholeOrMore & 0x808080; // Check for stop bits
 
         // If no stop bits are found, throw an exception
-        if (atStop == 0) throw new AlixException("VarInt larger than 21 bits");
+        if (atStop == 0) throw NettySafety.INVALID_VAR_INT;
 
         // Find the position of the first stop bit
         final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;

@@ -37,7 +37,7 @@ import static alix.common.utils.config.ConfigProvider.config;
 public final class AlixCommonHandler {
 
     static final class DoNotThrow {
-        static final boolean antibotService = config.getBoolean("antibot-service");
+        static final boolean antibotService = config.getBoolean("antibot-service", true);
         static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]*");
         static final boolean validateName = config.getBoolean("validate-name");
     }
@@ -69,7 +69,7 @@ public final class AlixCommonHandler {
                 return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
             }
 
-            if (AntiVPN.disallowJoin(address)) {
+            if (AntiVPN.disallowJoin(address, nameRefactored)) {
                 //event.setCancelled(true);
                 return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
             }

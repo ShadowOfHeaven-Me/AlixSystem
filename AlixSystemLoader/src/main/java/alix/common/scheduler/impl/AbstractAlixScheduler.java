@@ -55,7 +55,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
 
     @Override
     public void asyncBlocking(Runnable r) {
-        this.asyncBlockingExecutor.execute(r);
+        this.asyncBlockingExecutor.execute(new ErrorReportingRunnable(r));
     }
 
     @Override
@@ -65,12 +65,12 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
 
     @Override
     public <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier) {
-        return CompletableFuture.supplyAsync(supplier, this.asyncExecutor);
+        return CompletableFuture.supplyAsync(new ErrorReportingSupplier<>(supplier), this.asyncExecutor);
     }
 
     @Override
     public <T> AlixFuture<T> singleAlixFuture(Supplier<T> r) {
-        return AlixFuture.singleFuture(this.asyncExecutor, r);
+        return AlixFuture.singleFuture(this.asyncExecutor, new ErrorReportingSupplier<>(r));
     }
 
     @Override
@@ -115,6 +115,24 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
         }
     }
 
+    private static final class ErrorReportingSupplier<T> implements Supplier<T> {
+
+        private final Supplier<T> delegate;
+
+        private ErrorReportingSupplier(Supplier<T> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public T get() {
+            try {
+               return this.delegate.get();
+            } catch (Throwable e) {
+                AlixCommonUtils.logException(e);
+            }
+            return null;
+        }
+    }
 /*    private static final class ExceptionHandler implements Thread.UncaughtExceptionHandler {
 
         @Override

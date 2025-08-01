@@ -17,23 +17,18 @@
 
 package ua.nanit.limbo.protocol.packets.play;
 
-import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.NbtMessage;
-import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.registry.Version;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetTitleText;
+import net.kyori.adventure.text.Component;
+import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
-public class PacketTitleSetTitle implements PacketOut {
+public class PacketTitleSetTitle extends OutRetrooperPacket<WrapperPlayServerSetTitleText> {
 
-    private NbtMessage title;
+    public PacketTitleSetTitle() {
+        super(WrapperPlayServerSetTitleText.class);
+    }
 
-    public PacketTitleSetTitle setTitle(NbtMessage title) {
-        this.title = title;
+    public PacketTitleSetTitle setTitle(String title) {
+        this.wrapper().setTitle(Component.text(title));
         return this;
     }
-
-    @Override
-    public void encode(ByteMessage msg, Version version) {
-        msg.writeNbtMessage(title, version);
-    }
-
 }

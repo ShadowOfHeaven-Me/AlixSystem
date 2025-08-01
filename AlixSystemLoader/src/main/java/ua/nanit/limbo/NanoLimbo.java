@@ -17,7 +17,7 @@
 
 package ua.nanit.limbo;
 
-import alix.common.utils.other.annotation.DebugOnly;
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.server.LimboServer;
@@ -36,6 +36,7 @@ public final class NanoLimbo {
 
     public static final boolean suppressInvalidPackets = of(true);
     public static final boolean debugCipher = false;//of(false, false);
+    //@DebugOnly
     public static final boolean debugPackets = of(false);
     public static final boolean debugSnapshots = of(false);
     public static final boolean allowFreeMovement = false;
@@ -44,7 +45,6 @@ public final class NanoLimbo {
     public static final boolean logPos = of(false);
     public static final boolean removeTimeout = true;
     public static final boolean centerSpawn = false;
-    @DebugOnly
     public static final boolean printCaptchaFailed = false;
     public static final boolean verifyTheDud = true;
 
@@ -58,5 +58,9 @@ public final class NanoLimbo {
             Log.error("Cannot start virtual server: ", e);
             throw new AlixException(e);
         }
+    }
+
+    public static boolean suppress(Throwable t) {
+        return suppressInvalidPackets && !(t instanceof AlixError);
     }
 }

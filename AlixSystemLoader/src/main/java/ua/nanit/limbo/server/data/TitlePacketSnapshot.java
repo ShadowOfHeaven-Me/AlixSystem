@@ -8,7 +8,7 @@ import ua.nanit.limbo.protocol.packets.play.PacketTitleSetTitle;
 import ua.nanit.limbo.protocol.packets.play.PacketTitleTimes;
 import ua.nanit.limbo.protocol.registry.Version;
 
-import static ua.nanit.limbo.protocol.packets.play.PacketTitleLegacy.Action.*;
+import static com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTitle.TitleAction.*;
 
 public final class TitlePacketSnapshot {
 

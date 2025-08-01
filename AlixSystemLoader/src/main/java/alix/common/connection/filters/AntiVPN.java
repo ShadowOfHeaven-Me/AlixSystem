@@ -1,6 +1,7 @@
 package alix.common.connection.filters;
 
 import alix.common.connection.vpn.ProxyCheckManager;
+import alix.common.data.file.AllowListFileManager;
 import alix.common.messages.Messages;
 import alix.common.utils.config.ConfigProvider;
 
@@ -19,11 +20,11 @@ public final class AntiVPN implements ConnectionFilter {
 
     @Override
     public boolean disallowJoin(InetAddress ip, String strAddress, String name) {
-        return this.proxyCheck.isProxy(ip, strAddress);
+        return !AllowListFileManager.has(name) && this.proxyCheck.isProxy(ip, strAddress);
     }
 
-    public static boolean disallowJoin(InetAddress ip) {
-        return isEnabled && INSTANCE.disallowJoin(ip, ip.getHostAddress(), null);
+    public static boolean disallowJoin(InetAddress ip, String name) {
+        return isEnabled && INSTANCE.disallowJoin(ip, ip.getHostAddress(), name);
     }
 
     /*try {

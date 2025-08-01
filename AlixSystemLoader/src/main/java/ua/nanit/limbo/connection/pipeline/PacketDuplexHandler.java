@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection.pipeline;
 
+import alix.common.utils.netty.NettySafety;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
@@ -52,7 +53,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         //ByteBuf in = (ByteBuf) msg;
 
         ByteBuf buf = this.tryDecompress((ByteBuf) msg);
-        if (buf == null) throw new AlixException("Invalid buf");
+        if (buf == null) throw NettySafety.INVALID_BUF;
 
         //Log.error("VALID BUF - " + buf);
 
@@ -83,10 +84,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         try {
             packet.handle(this.connection, this.server);
         } catch (Exception e) {
-            if (NanoLimbo.suppressInvalidPackets) {
-                UnsafeCloseFuture.unsafeClose(this.connection.getChannel());
-                return;
-            }
+            this.connection.closeInvalidPacket();
+            if (NanoLimbo.suppress(e)) return;
+
             Log.error("Error during packet handle", e);
         } finally {
             this.flushBatcher.readComplete();
@@ -295,14 +295,16 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelUnregistered(ChannelHandlerContext ctx) {
-    }
-
-    @Override
     public void channelActive(ChannelHandlerContext ctx) {
     }
 
-    @Override
+    //DO NOT BLOCK channelInactive
+
+    /*@Override
+    public void channelUnregistered(ChannelHandlerContext ctx) {
+    }*/
+
+    /*@Override
     public void channelInactive(ChannelHandlerContext ctx) {
-    }
+    }*/
 }

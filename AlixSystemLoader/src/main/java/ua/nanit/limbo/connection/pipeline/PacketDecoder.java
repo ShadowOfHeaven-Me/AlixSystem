@@ -21,7 +21,6 @@ import alix.common.utils.netty.FastNettyUtils;
 import io.netty.buffer.ByteBuf;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.registry.State;
@@ -67,10 +66,9 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
         try {
             packet.decode(msg, version);
         } catch (Exception e) {
-            if (NanoLimbo.suppressInvalidPackets) {
-                UnsafeCloseFuture.unsafeClose(connection.getChannel());
-                return null;
-            }
+            connection.closeInvalidPacket();
+            if (NanoLimbo.suppress(e)) return null;
+
             if (Log.isDebug()) {
                 Log.warning("Cannot decode %s, per %s packet 0x%s", packet.getClass().getSimpleName(), e, Integer.toHexString(packetId));
             } else {
