@@ -130,12 +130,12 @@ public final class Main implements LoaderBootstrap {
         MethodProvider.init();
         IpAutoLoginGUI.init();
         AlixCommandManager.init();
+        UserSemiVirtualization.init();
         Dependencies.initAdditional();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the captcha world");
         AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
         if (Bukkit.getServer().getOnlineMode())
             AlixScheduler.sync(() -> Main.logError("Online mode is enabled! Alix is now mainly an offline mode plugin! Bear that in mind!"));
-        UserSemiVirtualization.init();
         //AlixScheduler.sync(UserVirtualization::init);
     }
 
@@ -146,7 +146,7 @@ public final class Main implements LoaderBootstrap {
         //UserVirtualization.RETURN_ORIGINAL_PLAYER_LIST.run();
         FileManager.saveFiles();
         //if (AlixInterceptor.fireWallType == FireWallType.FAST_UNSAFE_NIO) AlixFastUnsafeNIO.unregister();
-        UserSemiVirtualization.RETURN_ORIGINAL_SETUP.run();
+        UserSemiVirtualization.returnOriginalSetup();
         Captcha.cleanUp();
         //logConsoleInfo("Saved!");
         //Verifications.disable();

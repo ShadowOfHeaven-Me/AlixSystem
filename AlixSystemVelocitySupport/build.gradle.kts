@@ -72,6 +72,9 @@ dependencies {
     //velocity already uses caffeine
     compileOnly("com.github.ben-manes.caffeine:caffeine:3.2.0")
 
+    compileOnly("org.projectlombok:lombok:1.18.36")
+    annotationProcessor("org.projectlombok:lombok:1.18.36")
+
     var srcDir = project.findProperty("velocity-sources-dir")
     compileOnly(files("$srcDir\\Geyser-Velocity.jar"))
     compileOnly(files("$srcDir\\floodgate-velocity.jar"))

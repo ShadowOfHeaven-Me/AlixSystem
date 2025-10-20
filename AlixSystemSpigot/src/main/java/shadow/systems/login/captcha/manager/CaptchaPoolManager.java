@@ -5,7 +5,7 @@ import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import shadow.systems.login.captcha.Captcha;
 import shadow.systems.login.captcha.manager.generator.CaptchaGenerator;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 public final class CaptchaPoolManager {
 
@@ -13,7 +13,7 @@ public final class CaptchaPoolManager {
     public static final int maxSize = 3;//Math.min(Math.max(Bukkit.getMaxPlayers() >> 6, 10), 20);//(int) (Bukkit.getMaxPlayers() * AlixUtils.getRandom(1.05, 1.1)) + 1;
     //private final LoopDeque<AlixFuture<Captcha>> deque = LoopDeque.ofSize(maxSize);
     private final ConcurrentAlixDeque<AlixFuture<Captcha>> deque = new ConcurrentAlixDeque<>();
-    private final AtomicInteger size = new AtomicInteger();
+    private final LongAdder size = new LongAdder();
     //private final AlixDeque<Captcha> deque = new ConcurrentAlixDeque<>();
 
     public CaptchaPoolManager() {
@@ -34,9 +34,9 @@ public final class CaptchaPoolManager {
 
     public AlixFuture<Captcha> poll() {
         //return this.deque.getNextAndReplace(CaptchaGenerator.generateCaptchaFuture());
-        int size = this.size.get();
+        int size = (int) this.size.sum();
         if (size <= maxSize) this.deque.offerLast(CaptchaGenerator.generateCaptchaFuture());//generate a captcha future, to always keep maxSize or more futures
-        else this.size.getAndDecrement();
+        else this.size.decrement();
         return this.deque.pollFirst();
     }
 
@@ -51,6 +51,6 @@ public final class CaptchaPoolManager {
 
     private void add0(AlixFuture<Captcha> future) {
         this.deque.offerLast(future);
-        this.size.getAndIncrement();
+        this.size.increment();
     }
 }

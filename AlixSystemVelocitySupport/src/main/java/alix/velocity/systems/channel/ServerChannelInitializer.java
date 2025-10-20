@@ -52,12 +52,15 @@ public final class ServerChannelInitializer extends com.velocitypowered.proxy.ne
         AntiBotStatistics.INSTANCE.incrementJoins();
         if (address != null) ConnectionThreadManager.onConnection(address);
 
+        //var config = channel.config();
+        //config.setAutoRead(false);
         try {
             initChannelMethod.invoke(this.original, channel);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         AlixVelocityLimbo.initChannel(channel);
+        //config.setAutoRead(true);
 
         //Main.logInfo("Pipeline: " + channel.pipeline().names());
     }

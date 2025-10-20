@@ -105,7 +105,7 @@ public final class AlixFormatter {
             if (c == '{' && a[i + 2] == '}') {
                 int index = a[i + 1] - 48;//48 is '0' in ascii
                 if (index < args.length && index >= 0) {//the given index is valid
-                    sb.append(args[index].toString());
+                    sb.append(args[index]);
                     i += 2;//skipping '<digit>}' in the text, as the first '{' is already skipped by the default for(i) iterator
                     continue;//continue to the next loop and stop this
                 }//continue, the index was invalid

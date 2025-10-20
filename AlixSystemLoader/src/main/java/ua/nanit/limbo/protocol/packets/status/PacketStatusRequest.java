@@ -25,6 +25,8 @@ import ua.nanit.limbo.server.LimboServer;
 
 public class PacketStatusRequest implements PacketIn {
 
+    public static final PacketStatusRequest INSTANCE = new PacketStatusRequest();
+
     @Override
     public void decode(ByteMessage msg, Version version) {
     }
@@ -34,8 +36,6 @@ public class PacketStatusRequest implements PacketIn {
         server.getPacketHandler().handle(conn, this);
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
+    private PacketStatusRequest() {
     }
 }

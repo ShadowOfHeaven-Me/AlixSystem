@@ -65,7 +65,7 @@ public final class AlixUtils {
             captchaVerificationCaseSensitive, isDebugEnabled, userDataAutoSave, interveneInChatFormat, isOnlineModeEnabled,
             requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
             anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService,
-            requirePasswordRepeatInRegister;//renderFancyCaptchaDigits
+            requirePasswordRepeatInRegister, __noPremiumAuthButKeepIdentity, assignPremiumUUID;//renderFancyCaptchaDigits
 
     static {
         FileConfiguration config = Main.config;
@@ -187,6 +187,8 @@ public final class AlixUtils {
         isOnlineModeEnabled = Bukkit.getServer().getOnlineMode();
         antibotService = config.getBoolean("antibot-service");
         requirePasswordRepeatInRegister = config.getBoolean("require-password-repeat-in-register");
+        __noPremiumAuthButKeepIdentity = config.getBoolean("__no-premium-auth-but-keep-identity");
+        assignPremiumUUID = config.getBoolean("premium-uuid");
         maxLoginAttempts = config.getInt("max-login-attempts");
         isDebugEnabled = config.getBoolean("debug");
         userDataAutoSave = config.getBoolean("auto-save");

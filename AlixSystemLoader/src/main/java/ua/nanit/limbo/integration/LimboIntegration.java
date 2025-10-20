@@ -23,7 +23,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
     //private static final Map<InetAddress, String> ;
 
     static {
-        Cache<String, InetAddress> cache = AlixCache.newBuilder().expireAfterWrite(20, TimeUnit.SECONDS).maximumSize(300).build();
+        Cache<String, InetAddress> cache = AlixCache.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).maximumSize(300).build();
         completedCaptchaCache = cache.asMap();
     }
     //Netty integration

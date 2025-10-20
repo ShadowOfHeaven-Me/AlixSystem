@@ -14,6 +14,7 @@ import shadow.systems.login.autoin.premium.PremiumAuthenticator;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
+import ua.nanit.limbo.NanoLimbo;
 
 public final class PacketEventsManager {
 
@@ -37,7 +38,7 @@ public final class PacketEventsManager {
 
     private static final class GeneralListener extends PacketListenerAbstract {
 
-        private static final boolean debugPackets = false;
+        private static final boolean debugPackets = NanoLimbo.debugPackets;
         private static final boolean onlineMode = Bukkit.getServer().getOnlineMode();
         private final PremiumAuthenticator premiumAuthenticator = new PremiumAuthenticator();
 
@@ -197,10 +198,73 @@ public final class PacketEventsManager {
 /*            if (event.getPacketType() == PacketType.Play.Server.WINDOW_PROPERTY) {
                 Main.logInfo("PACKET OUT: " + event.getPacketType().getName() + " " + AlixUtils.getFields(new WrapperPlayServerWindowProperty(event)));
             }*/
-            AlixUser user;
+            var user = event.getUser();
 
-            if (event.getClass() == PacketPlaySendEvent.class && (user = UserManager.get(event.getUser().getUUID())) != null)
-                user.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
+            /*if (event.getPacketType() == PacketType.Play.Server.PLAYER_INFO_UPDATE) {
+                var wrapper = new WrapperPlayServerPlayerInfoUpdate(event);
+                var data = UserFileManager.get(user.getName());
+                if (data == null || !data.getPremiumData().getStatus().isPremium()) return;
+
+                var entries = wrapper.getEntries().stream()
+                        .map(e -> (e.getDisplayName() instanceof TextComponent t ? t.content() : e.getDisplayName()) + " " + e.getProfileId() + " " + e.getProfileId().version() + " XTR PROPERTIES=" + e.getGameProfile().getTextureProperties().stream().map(p -> p.getName() + " sign=" + p.getSignature()).findAny().orElse(""))
+                        .collect(Collectors.joining());
+                Main.debug("DLA CHŁOPA " + user.getName() + "=" + entries + " TXTR PROPERTIES= ");
+            }*/
+
+            /*if (AlixUtils.assignPremiumUUID && event.getPacketType() == PacketType.Login.Server.LOGIN_SUCCESS) {
+                //needs v4 if it ain't on proxy
+                //boolean needsV4 = !AlixUtils.__noPremiumAuthButKeepIdentity;
+
+                //var u = new WrapperLoginServerLoginSuccess(event).getUserProfile().getUUID();
+                //Main.logError("UUID SENT= " + u + " ver= " + u.version());
+
+                //if (user.getUUID().version() == (needsV4 ? 4 : 3)) return;
+
+                var name = event.getUser().getName();
+                var data = UserFileManager.get(name);
+
+                boolean isPremium = VerifiedCache.isPremium(data, name, user) || PremiumUtils.getCachedData(data, name).getStatus().isPremium();
+                //Main.debug("isPremium="+ isPremium + " uuid=" + new WrapperLoginServerLoginSuccess(event).getUserProfile().getUUID());
+                if (!isPremium)
+                    return;
+
+                boolean needsV4 = isPremium;
+                //so needs v3
+                if (!needsV4) {
+                    var premiumUUID = user.getUUID();
+                    var nonPremiumUUID = UUIDUtil.getOfflineModeUuid(user.getName());
+                    Main.logWarning("Server tried sending UUID v4 " + nonPremiumUUID + " to a v3 UUID " + premiumUUID + " user " + name + "! Overriding");
+
+                    var wrapper = new WrapperLoginServerLoginSuccess(event);
+                    wrapper.getUserProfile().setUUID(nonPremiumUUID);
+                    event.markForReEncode(true);
+                    return;
+                }
+                UUID premiumUUID;
+
+                if (data == null) {
+                    premiumUUID = PremiumDataCache.getOrUnknown(name).premiumUUID();
+                    if (premiumUUID == null) {
+                        Main.logWarning("premiumUUID cache is null, when verified cache states premium status, omitting");
+                        return;
+                    }
+                } else {
+                    premiumUUID = data.getPremiumData().premiumUUID();
+                }
+
+                var wrapper = new WrapperLoginServerLoginSuccess(event);
+                var nonPremiumUUID = wrapper.getUserProfile().getUUID();
+                wrapper.getUserProfile().setUUID(premiumUUID);
+                event.markForReEncode(true);
+
+                Main.logWarning("Server tried sending UUID v3 " + nonPremiumUUID + " to a v4 UUID " + premiumUUID + " user " + name + "! Overriding");
+                return;
+            }*/
+
+            AlixUser alixUser;
+
+            if (event.getClass() == PacketPlaySendEvent.class && (alixUser = UserManager.get(user.getUUID())) != null)
+                alixUser.getPacketProcessor().onPacketSend((PacketPlaySendEvent) event);//Main.logInfo("OUT NONNULL: " + event.getPacketType().getName());
 
             //if (!event.isCancelled()) Main.debug("PACKET OUT ALLOWED: " + event.getPacketType().getName());
 
@@ -280,7 +344,7 @@ public final class PacketEventsManager {
         }
 
         private GeneralListener() {
-            super(PacketListenerPriority.MONITOR);
+            super(PacketListenerPriority.MONITOR);//do not set to LOWEST
         }
     }
 /*

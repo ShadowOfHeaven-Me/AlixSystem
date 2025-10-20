@@ -24,17 +24,17 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.captcha.blocks.BlockPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
+import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
+import ua.nanit.limbo.protocol.PacketIn;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
-import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketPlayOutKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.transfer.PacketPlayOutTransfer;
@@ -49,6 +49,9 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import static ua.nanit.limbo.NanoLimbo.useTransfer;
+import static ua.nanit.limbo.NanoLimbo.verifyTheDud;
 
 public class ClientConnection {
 
@@ -69,7 +72,7 @@ public class ClientConnection {
 
     //NanoLimbo
     private final InetSocketAddress address;
-    private State state;
+    private State decoderState, encoderState;
     private Version clientVersion;
 
     public ClientConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
@@ -84,32 +87,23 @@ public class ClientConnection {
 
     public void verify() {
         Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress() + "] passed the antibot verification");
-        if (!NanoLimbo.verifyTheDud) return;
+        if (!verifyTheDud) {
+            Log.warning("VERIFICATION NOT PERFORMED - DISABLED");
+            return;
+        }
 
         //UiiaiuiiiaiCat.cat(this);
 
         this.server.getIntegration().setHasCompletedCaptcha(this.address.getAddress(), this.gameProfile.getUsername());
         //Log.info("Brotha you got verified");
 
-        if (this.clientVersion.moreOrEqual(Version.V1_20_5)) {
+        if (useTransfer && this.clientVersion.moreOrEqual(Version.V1_20_5)) {
 
-            String host = extractHost(this.handshakePacket.getHost()); //this.server.getIntegration().getServerIP();
+            String host = this.handshakePacket.getExtractedHost(); //this.server.getIntegration().getServerIP();
             int port = this.handshakePacket.getPort(); //this.server.getIntegration().getPort();
 
             this.sendPacketAndClose(new PacketPlayOutTransfer().setHost(host).setPort(port));
         } else this.sendPacketAndClose(REJOIN);
-    }
-
-    //todo: verify this
-    //extra info can be sent from bedrock/forge players in the host name
-    private static String extractHost(String host) {
-        for (int i = 0; i < host.length(); i++) {
-            char c = host.charAt(i);
-            //forge's delimiter is the null character
-            if (c == '\0') return host.substring(0, i + 1);
-            //if((c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' && c > 'Z') && c != '.')
-        }
-        return host;
     }
 
     /*public void setJoinedInfo(String host, int port) {
@@ -126,8 +120,8 @@ public class ClientConnection {
         this.uninject0(this::resendCollected);
     }
 
-    public void uninjectWithRecoded(PacketLoginStart recodedLoginStart) {
-        this.uninject0(() -> this.resendRecoded(recodedLoginStart));
+    public void uninjectWithRecoded(PacketIn recodedLoginStartOrStatusReq) {
+        this.uninject0(() -> this.resendRecoded(recodedLoginStartOrStatusReq));
     }
 
     private void uninject0(Runnable resendAction) {
@@ -144,20 +138,20 @@ public class ClientConnection {
 
     //can be optimized via caching the originally decoded Handshake ByteBuf slice (since we do not modify it whatsoever, not sure if this is plausible)
     @OptimizationCandidate
-    private void resendRecoded(PacketLoginStart loginStart) {
+    private void resendRecoded(PacketIn loginStartOrStatusReq) {
         //release what we originally received - we won't be resending that
         this.frameDecoder.releaseCollected();
 
         //re-encode received packets
         CompressionHandler compression = null;//compression is always null at this point in time //this.duplexHandler.compressionHandler();
         ByteBuf handshake = PacketUtils.encode(this.handshakePacket, false, this.clientVersion, compression, true);
-        ByteBuf loginStartBuf = PacketUtils.encode(loginStart, false, this.clientVersion, compression, true);
+        ByteBuf secondaryBuf = PacketUtils.encode(loginStartOrStatusReq, false, this.clientVersion, compression, true);
 
         //write everything into a single buf
-        handshake.writeBytes(loginStartBuf);
+        handshake.writeBytes(secondaryBuf);
 
         //release the secondary buf
-        loginStartBuf.release();
+        secondaryBuf.release();
 
         //pass the re-encoded bufs as a single ByteBuf onto the original server channel handlers
         this.channel.pipeline().fireChannelRead(handshake);
@@ -351,14 +345,17 @@ public class ClientConnection {
     public void onLoginAcknowledgedReceived() {
         updateState(State.CONFIGURATION);
 
-        if (PacketSnapshots.PACKET_CONFIG_PLUGIN_MESSAGE != null)
-            writePacket(PacketSnapshots.PACKET_CONFIG_PLUGIN_MESSAGE);
+        /*if (PacketSnapshots.PACKET_CONFIG_PLUGIN_MESSAGE != null)
+            writePacket(PacketSnapshots.PACKET_CONFIG_PLUGIN_MESSAGE);*/
 
         if (clientVersion.moreOrEqual(Version.V1_20_5)) {
             writePacket(PacketSnapshots.PACKET_KNOWN_PACKS);
 
             //this.writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA);
-            if (clientVersion.moreOrEqual(Version.V1_21_7)) {
+            if (clientVersion.moreOrEqual(Version.V1_21_9)) {
+                writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_9);
+                writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_9);
+            } else if (clientVersion.moreOrEqual(Version.V1_21_7)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_7);
                 writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_7);
             } else if (clientVersion.moreOrEqual(Version.V1_21_6)) {
@@ -406,7 +403,7 @@ public class ClientConnection {
     }
 
     public void sendKeepAlive() {
-        if (state.equals(State.PLAY)) {
+        if (decoderState.equals(State.PLAY)) {
             PacketPlayOutKeepAlive keepAlive = new PacketPlayOutKeepAlive();
             keepAlive.setId(ThreadLocalRandom.current().nextLong());
             writeAndFlushPacket(keepAlive);
@@ -452,23 +449,29 @@ public class ClientConnection {
     }
 
     public void updateState(State state) {
-        this.state = state;
+        this.decoderState = state;
+        this.encoderState = state;
         this.duplexHandler.updateState(state);
     }
 
+    public State getEncoderState() {
+        return encoderState;
+    }
+
     public boolean isInLoginPhase() {
-        return this.state == State.LOGIN;
+        return this.decoderState == State.LOGIN;
     }
 
     public boolean isInConfigPhase() {
-        return this.state == State.CONFIGURATION;
+        return this.decoderState == State.CONFIGURATION;
     }
 
     public boolean isInPlayPhase() {
-        return this.state == State.PLAY;
+        return this.decoderState == State.PLAY;
     }
 
     public void updateEncoderState(State state) {
+        this.encoderState = state;
         this.duplexHandler.updateEncoderState(state);
     }
 
@@ -483,8 +486,19 @@ public class ClientConnection {
         invalidPacket.disconnect(this);
     }
 
-    public State getState() {
-        return state;
+    private static final DisconnectPacket timedOut = DisconnectPacket.error("Timed Out, Alix");
+
+    public void closeTimedOut() {
+        timedOut.disconnect(this);
+    }
+
+    public State getDecoderState() {
+        return decoderState;
+    }
+
+    public void setCipher(CipherHandler cipher) {
+        this.duplexHandler.setCipher(cipher);
+        this.frameDecoder.setCipher(cipher);
     }
 
     /*public void setAddress(String host) {

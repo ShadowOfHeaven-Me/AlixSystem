@@ -5,7 +5,7 @@ import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
 import alix.common.utils.netty.NettySafety;
-import alix.common.utils.other.throwable.AlixException;
+import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -45,7 +45,7 @@ final class CompressionHandlerImpl implements CompressionHandler {
 
     static CompressionHandlerImpl getHandler0(Channel channel) {
         //Must be invoked in the netty eventLoop
-        if (!channel.eventLoop().inEventLoop()) throw new AlixException("Not in eventLoop");
+        if (!channel.eventLoop().inEventLoop()) throw new AlixError("Not in eventLoop");
 
         CompressionHandlerImpl cache = CACHE.get();
         if (cache != null) return cache;

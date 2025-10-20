@@ -304,7 +304,7 @@ public final class AlixChannelHandler {
     private static final AttributeKey<String> JOINED_WITH_IP = AttributeKey.valueOf("alix-joined-with-ip");
 
     public static void onHandshake(Channel channel, PacketHandshake handshake) {
-        channel.attr(JOINED_WITH_IP).set(handshake.getHost());
+        channel.attr(JOINED_WITH_IP).set(handshake.getExtractedHost());
     }
 
     private static final AttributeKey<UUID> SENT_LOGIN_UUID = AttributeKey.valueOf("alix-sent-login-uuid");

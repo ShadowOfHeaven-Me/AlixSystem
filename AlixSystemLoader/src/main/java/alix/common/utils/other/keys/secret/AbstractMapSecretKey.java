@@ -4,9 +4,8 @@ abstract class AbstractMapSecretKey<T> implements MapSecretKey<T> {
 
     @Override
     public final boolean equals(Object obj) {
-        if (!(obj instanceof MapSecretKey)) return false;
+        if (!(obj instanceof MapSecretKey other)) return false;
 
-        MapSecretKey other = (MapSecretKey) obj;
         return this.key().equals(other.key());
     }
 

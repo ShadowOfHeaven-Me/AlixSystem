@@ -1,5 +1,6 @@
 package shadow.systems.commands;
 
+import alix.common.commands.file.AlixCommandInfo;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
@@ -11,6 +12,7 @@ import alix.common.packets.command.CommandsWrapperConstructor;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
+import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -22,7 +24,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import shadow.Main;
-import alix.common.commands.file.AlixCommandInfo;
 import shadow.systems.commands.alix.AlixCommandManager;
 import shadow.systems.commands.alix.impl.AlixCommand;
 import shadow.systems.commands.tab.CommandTabCompleterAS;
@@ -266,30 +267,31 @@ public final class CommandManager {
         AlixCommandInfo info = AlixCommandManager.getCommand(commandLabel);
 
         if (info == null)
-            throw new RuntimeException("The given command " + commandLabel + " does not have an Alix implementation, and therefore cannot be registered!");
+            throw new AlixError("The given command " + commandLabel + " does not have an Alix implementation, and therefore cannot be registered!");
 
-        CommandMap map = ReflectionUtils.commandMap;
-        Command command = map.getCommand(commandLabel);
+        //CommandMap map = ReflectionUtils.commandMap;
+        Command command = ReflectionUtils.commandMap.getCommand(commandLabel);
 
         if (!info.isRegistered() && forceRegister)
             Main.logWarning("Unable to prevent the registering of a System command - " + info.getCommand());
 
+        var serverKnownCommands = ReflectionUtils.serverKnownCommands;
         if (forceRegister || info.isRegistered() && (overrideExistingCommands || command == null)) {
             AlixCommand alix = new AlixCommand(info, permission, executor, completer);
             //Main.logInfo("Arix: " + info.getCommand() + " " + map.register(FALLBACK_PREFIX, alix));
-            ReflectionUtils.serverKnownCommands.put(commandLabel, alix);
-            ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);
+            serverKnownCommands.put(commandLabel, alix);
+            serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);
             if (info.hasAliases()) {
                 for (String alias : info.getAliases()) {
-                    ReflectionUtils.serverKnownCommands.put(alias, alix);
-                    ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + alias, alix);
+                    serverKnownCommands.put(alias, alix);
+                    serverKnownCommands.put(FALLBACK_PREFIX + ":" + alias, alix);
                 }
             }
             return;
         }
         if (info.isFallbackRegistered()) {
             AlixCommand alix = new AlixCommand(commandLabel, permission, executor, completer);//creates a prefix fallback command
-            ReflectionUtils.serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);//registers it directly into the map
+            serverKnownCommands.put(FALLBACK_PREFIX + ":" + commandLabel, alix);//registers it directly into the map
         }
     }
         /*if (!info.isRegistered() && !forceRegister) {
@@ -391,7 +393,8 @@ public final class CommandManager {
 
             registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
             registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
-            registerPermissionlessCommandForcibly("premium", new PremiumCommand());
+            if (!__noPremiumAuthButKeepIdentity)
+                registerPermissionlessCommandForcibly("premium", new PremiumCommand());
 
             registerCommand("unban", new UnbanCommand(), new NameBanCommandTabCompleter());
             registerCommand("unbanip", new UnbanIPCommand(), new IPBanCommandTabCompleter());
@@ -724,6 +727,8 @@ public final class CommandManager {
                     sendMessage(sender, mutedForever, arg1);
                     data.setMutedUntil(0x9b627f782d8L); //10677959230168L as for 1677959230168L, which is the time this code was written in,
                     //but in hex to look fancy :>
+
+                    //Sat Mar 04 20:47:10 CET 2023
                 }
                 return true;
                 case 2: {

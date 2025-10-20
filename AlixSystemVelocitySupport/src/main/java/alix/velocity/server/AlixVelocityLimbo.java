@@ -9,12 +9,14 @@ import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import io.netty.channel.Channel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.handlers.DummyHandler;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Connections;
 import ua.nanit.limbo.server.LimboServer;
 
-import static com.velocitypowered.proxy.network.Connections.READ_TIMEOUT;
+import static com.velocitypowered.proxy.network.Connections.*;
 
 public final class AlixVelocityLimbo {
 
@@ -27,13 +29,26 @@ public final class AlixVelocityLimbo {
         limbo.getClientChannelInitializer().initChannel(channel);
     }
 
+    private static boolean enableCompress(ClientConnection connection) {
+        var channel = connection.getChannel();
+        var pipeline = channel.pipeline();
+        return pipeline.context(COMPRESSION_ENCODER) != null;
+    }
+
+    private static CipherHandler encryptionFor(ClientConnection connection) {
+        var channel = connection.getChannel();
+        var pipeline = channel.pipeline();
+        return pipeline.context(CIPHER_ENCODER) != null ? CipherHandler.newVelocityHandler(channel) : null;
+    }
+
     public static void initAfterLoginSuccess(ConnectedPlayer player, Continuation continuation, GeyserUtil geyserUtil) {
         Channel channel = player.getConnection().getChannel();
         Version version = Version.of(player.getProtocolVersion().getProtocol());
+        var pipeline = channel.pipeline();
+        pipeline.replace(READ_TIMEOUT, VELOCITY_TIMEOUT, DummyHandler.HANDLER);
 
-        channel.pipeline().replace(READ_TIMEOUT, VELOCITY_TIMEOUT, DummyHandler.HANDLER);
-
-        limbo.getClientChannelInitializer().initAfterLoginSuccess(channel, version, player.getUsername(), connection -> {
+        //Main.logInfo("PIPELINE=" + pipeline.names());
+        limbo.getClientChannelInitializer().initAfterLoginSuccess(channel, version, player.getUsername(), AlixVelocityLimbo::enableCompress, AlixVelocityLimbo::encryptionFor, connection -> {
             channel.pipeline().replace(VELOCITY_TIMEOUT, READ_TIMEOUT, new ReadTimeoutHandler(Main.PLUGIN.getServer().getConfiguration().getReadTimeout()));
             UserManager.add(player);
             continuation.resume();

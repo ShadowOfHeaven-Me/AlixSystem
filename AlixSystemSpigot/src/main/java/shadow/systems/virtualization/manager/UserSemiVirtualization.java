@@ -1,5 +1,7 @@
 package shadow.systems.virtualization.manager;
 
+import alix.common.utils.other.AlixUnsafe;
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -10,8 +12,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import shadow.Main;
 import shadow.utils.misc.ReflectionUtils;
-import alix.common.utils.other.AlixUnsafe;
 import shadow.utils.users.Verifications;
 import sun.misc.Unsafe;
 
@@ -25,18 +27,20 @@ import java.util.stream.Stream;
 public final class UserSemiVirtualization {
 
     private static final Unsafe UNSAFE = AlixUnsafe.getUnsafe();
-    private static final SpawnLocEventManager spawnLocEventManager;
+    /*private static final SpawnLocEventManager spawnLocEventManager;
     private static final JoinEventManager joinEventManager;
-    private static final QuitEventManager quitEventManager;
+    private static final QuitEventManager quitEventManager;*/
+    private static final VirtualEventManager[] listeners;
+
+    private static final boolean unsafeMode = false;
+
     /*private static final List ENTITY_PLAYER_LIST;
     private static final Map ENTITY_PLAYERS_BY_UUID;
     private static final Map ENTITY_PLAYERS_BY_NAME;*/
-    public static final Runnable RETURN_ORIGINAL_SETUP;
     //public static final boolean isEnabled;
 
     static {
-        try {
-            //Main.logInfo("Started User Semi-Virtualization set-up...");
+        //Main.logInfo("Started User Semi-Virtualization set-up...");
             /*Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
             Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
 
@@ -56,29 +60,28 @@ public final class UserSemiVirtualization {
             Field f3 = ReflectionUtils.getFieldByTypeAndParams(playerListClazz, Map.class, String.class, ReflectionUtils.entityPlayerClass);
             f3.set(playerList, new SemiVirtualizingMap<>(ENTITY_PLAYERS_BY_NAME = (Map) f3.get(playerList)));*/
 
-            spawnLocEventManager = new SpawnLocEventManager();
-            joinEventManager = new JoinEventManager();
-            quitEventManager = new QuitEventManager();
+        /*spawnLocEventManager = new SpawnLocEventManager();
+        joinEventManager = new JoinEventManager();
+        quitEventManager = new QuitEventManager();*/
 
-            RETURN_ORIGINAL_SETUP = () -> {
-                try {
-                    /*f1.set(playerList, ENTITY_PLAYER_LIST);
-                    f2.set(playerList, ENTITY_PLAYERS_BY_UUID);
-                    f3.set(playerList, ENTITY_PLAYERS_BY_NAME);*/
-
-                    spawnLocEventManager.returnOriginalHandler();
-                    joinEventManager.returnOriginalHandler();
-                    quitEventManager.returnOriginalHandler();
-
-                    //UserSemiVirtualization.replaceHandlers(PlayerSpawnLocationEvent.class, HandlerList::new);
-                } catch (Exception e) {
-                    throw new AlixException(e);
-                }
-            };
-            //Main.logInfo("Finished User Semi-Virtualization set-up.");
-        } catch (Exception e) {
-            throw new AlixException(e);
+        if (unsafeMode) {
+            listeners = new VirtualEventManager[]{new SpawnLocEventManager(), new JoinEventManager(), new QuitEventManager()};
+            Main.logInfo("Finished unsafe priority listeners load");
+        } else {
+            listeners = null;
+            UserSafeExecutors.register();
+            Main.logInfo("Finished safe priority listeners load");
         }
+    }
+
+    public static void returnOriginalSetup() {
+        if (!unsafeMode)
+            return;
+        for (var listener : listeners)
+            listener.returnOriginalHandler();
+        /*spawnLocEventManager.returnOriginalHandler();
+        joinEventManager.returnOriginalHandler();
+        quitEventManager.returnOriginalHandler();*/
     }
 
 /*    public static void invokeQuit0(AlixUser user) {
@@ -131,6 +134,8 @@ public final class UserSemiVirtualization {
             Field f = ReflectionUtils.getFieldFromTypeAssignable(eventClazz, HandlerList.class);// eventClazz.getDeclaredField("handlers");
             f.setAccessible(true);
             HandlerList original = (HandlerList) f.get(null);
+            if (original == null)
+                throw new AlixError("No HandlerList for " + eventClazz);
             VirtualEventManager.VirtualizedHandlerList virtualizedHandlerList = new VirtualEventManager.VirtualizedHandlerList(original, executor);
             UNSAFE.putObject(UNSAFE.staticFieldBase(f), UNSAFE.staticFieldOffset(f), virtualizedHandlerList);
             return virtualizedHandlerList;

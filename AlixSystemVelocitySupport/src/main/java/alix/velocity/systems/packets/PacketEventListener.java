@@ -27,6 +27,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientCl
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPluginMessage;
 import com.velocitypowered.api.event.Continuation;
 import io.netty.channel.Channel;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.login.LoginInfo;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
@@ -58,13 +59,33 @@ public final class PacketEventListener extends PacketListenerAbstract {
     cachedNameDoesNotMatch = PacketLoginDisconnect.snapshot("§cCached name does not match");*/
     public static final Map<Channel, ClientPublicKey> publicKeys = new ConcurrentHashMap<>();
     private static final KeyPair keyPair = PremiumVerifier.keyPair;
-    private static final boolean debugPackets = false;
+    private static final boolean debugPackets = NanoLimbo.debugPackets;
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (debugPackets) Main.logInfo("IN: " + event.getPacketType());
+        /*event.getPostTasks().add(() -> {
+            Main.logInfo("IS: " + event.getPacketType() + " CANCELLED " + event.isCancelled());
+        });*/
         Channel channel = (Channel) event.getChannel();
         var user = event.getUser();
+
+        /*if (event.getPacketType() == PacketType.Status.Client.REQUEST) {
+            channel.pipeline().addAfter("pe-decoder-alixsystem", "seks", new ChannelDuplexHandler() {
+                @Override
+                public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                    Main.logInfo("CO TO WYJEBAŁO");
+                    cause.printStackTrace();
+                    //super.exceptionCaught(ctx, cause);
+                }
+            });
+
+            Main.logInfo("PIP=" + channel.pipeline().names());
+            channel.closeFuture().addListener(f -> {
+                Main.logInfo("CLOSED");
+                new Exception().printStackTrace();
+            });
+        }*/
 
         if (event instanceof PacketLoginReceiveEvent loginEvent) {
             switch (loginEvent.getPacketType()) {
@@ -82,7 +103,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
             return;
         }
         if (event instanceof PacketPlayReceiveEvent playEvent) {
-            var alixUser = UserManager.get(user.getUUID());
+            var alixUser = UserManager.getVerified(user.getUUID());
             if (alixUser == null) return;//...how?
 
             alixUser.getDuplexProcessor().onReceive(playEvent);
@@ -152,8 +173,18 @@ public final class PacketEventListener extends PacketListenerAbstract {
         });
 
         if (!PremiumVerifier.verifyNonce(packet, encryptionData.publicKey(), expectedToken, user.getClientVersion().toServerVersion())) {
+            if (!encryptionData.shouldAuthenticate()) {
+                //wtf do we do now
+                this.disconnectWith(user, invalidNonce);
+                return;
+            }
+
             this.onInvalidAuth(user, continuation, invalidNonce);
             return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
+        }
+        if (!encryptionData.shouldAuthenticate()) {
+            continuation.resume();
+            return;
         }
 
         //Verify session
@@ -194,7 +225,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
 
     private final boolean
             assumeNonPremiumOnFailedAuth = config.getBoolean("assume-non-premium-if-auth-failed");
-            //assignPremiumUUID = config.getBoolean("premium-uuid");
+    //assignPremiumUUID = config.getBoolean("premium-uuid");
 
     private void onInvalidAuth(User user, Continuation continuation, PacketSnapshot invalidReason) {
         String name = user.getName();
@@ -240,8 +271,8 @@ public final class PacketEventListener extends PacketListenerAbstract {
             return;
         }
 
-        if (event instanceof PacketPlaySendEvent playEvent) {
-            /*switch (playEvent.getPacketType()) {
+        if (event instanceof PacketPlaySendEvent play) {
+            /*switch (play.getPacketType()) {
                 case SYSTEM_CHAT_MESSAGE -> {
                     var wrapper = new WrapperPlayServerSystemChatMessage(event);
                     Main.logInfo("WRAPPER=" + wrapper.getMessage());
@@ -249,9 +280,9 @@ public final class PacketEventListener extends PacketListenerAbstract {
                     return;
                 }
             }*/
-            var alixUser = UserManager.get(user.getUUID());
+            var alixUser = UserManager.getVerified(user.getUUID());
             if (alixUser == null) return;//uhhhhhhh
-            alixUser.getDuplexProcessor().onSend(playEvent);
+            alixUser.getDuplexProcessor().onSend(play);
         }
     }
 }

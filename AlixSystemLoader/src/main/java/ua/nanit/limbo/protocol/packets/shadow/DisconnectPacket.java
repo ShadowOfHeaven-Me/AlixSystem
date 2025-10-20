@@ -1,6 +1,5 @@
 package ua.nanit.limbo.protocol.packets.shadow;
 
-import alix.common.utils.other.throwable.AlixError;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.protocol.PacketSnapshot;
@@ -19,7 +18,7 @@ public final class DisconnectPacket {
     }
 
     public void disconnect(ClientConnection connection) {
-        var packet = switch (connection.getState()) {
+        var packet = switch (connection.getDecoderState()) {
             case HANDSHAKING, LOGIN -> this.login;
             case CONFIGURATION -> this.config;
             case PLAY -> this.play;
@@ -27,7 +26,8 @@ public final class DisconnectPacket {
         };
         if (packet == null) {
             UnsafeCloseFuture.unsafeClose(connection.getChannel());
-            throw new AlixError("connection.getState()=" + connection.getState());
+            return;
+            //throw new AlixError("connection.getState()=" + connection.getState());
         }
         connection.sendPacketAndClose(packet);
     }

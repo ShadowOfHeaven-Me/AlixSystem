@@ -90,6 +90,7 @@ public final class PacketSnapshots {
     public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_5;
     public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_6;
     public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_7;
+    public static final PacketSnapshot PACKET_UPDATE_TAGS_1_21_9;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_20_5;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_2;
@@ -97,6 +98,7 @@ public final class PacketSnapshots {
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_5;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_6;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_7;
+    public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_9;
 
     public static final PacketSnapshot PACKET_FINISH_CONFIGURATION;
 
@@ -234,6 +236,7 @@ public final class PacketSnapshots {
         PACKET_UPDATE_TAGS_1_21_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_5()));
         PACKET_UPDATE_TAGS_1_21_6 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_6()));
         PACKET_UPDATE_TAGS_1_21_7 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_7()));
+        PACKET_UPDATE_TAGS_1_21_9 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_9()));
 
         PacketRegistryData packetRegistryData = new PacketRegistryData();
         packetRegistryData.setDimensionRegistry(registry);
@@ -278,6 +281,7 @@ public final class PacketSnapshots {
         PACKETS_REGISTRY_DATA_1_21_5 = createRegistryData(server, registry.getCodec_1_21_5());
         PACKETS_REGISTRY_DATA_1_21_6 = createRegistryData(server, registry.getCodec_1_21_6());
         PACKETS_REGISTRY_DATA_1_21_7 = createRegistryData(server, registry.getCodec_1_21_7());
+        PACKETS_REGISTRY_DATA_1_21_9 = createRegistryData(server, registry.getCodec_1_21_9());
 
         PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(new PacketOutFinishConfiguration());
 

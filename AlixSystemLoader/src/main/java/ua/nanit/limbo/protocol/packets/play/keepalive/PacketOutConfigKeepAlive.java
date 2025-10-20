@@ -25,6 +25,13 @@ public class PacketOutConfigKeepAlive implements PacketOut {
 
     private long id;
 
+    public PacketOutConfigKeepAlive(int id) {
+        this.id = id;
+    }
+
+    public PacketOutConfigKeepAlive() {
+    }
+
     public long getId() {
         return id;
     }

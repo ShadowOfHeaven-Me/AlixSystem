@@ -10,7 +10,7 @@ import java.util.UUID;
 public final class Verifications {
     //private static final AlixMap<UUID, UnverifiedUser> map = new KeyedIdentityMap<>(Bukkit.getMaxPlayers());
 
-    //not done async, because introducing a delay on packet blocking can prove fatal
+    //not done async, cuz no need
     public static UnverifiedUser add(Player p, TemporaryUser tempUser) {
         UnverifiedUser user = new UnverifiedUser(p, tempUser);
         UserManager.putUnv(user);
@@ -35,8 +35,7 @@ public final class Verifications {
     }
 
     public static UnverifiedUser get(UUID uuid) {
-        AlixUser u = UserManager.get(uuid);
-        return u instanceof UnverifiedUser ? (UnverifiedUser) u : null;
+        return UserManager.get(uuid) instanceof UnverifiedUser unv ? unv : null;
     }
 
 /*    public static void forEach(BiConsumer<UUID, UnverifiedUser> consumer) {

@@ -1,14 +1,15 @@
 package shadow.utils.users;
 
 import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
 import alix.common.data.security.password.Password;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.player.User;
+import com.google.common.collect.MapMaker;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import shadow.Main;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
@@ -19,15 +20,17 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public final class UserManager {
 
-    private static final Map<UUID, AlixUser> USERS = new ConcurrentHashMap<>(Bukkit.getMaxPlayers() << 1);//always use more buckets to lessen the chance of a hash collision
-    private static final Map<String, User> CONNECTING_USERS = new ConcurrentHashMap<>();//the default size of 16 will do, since the joining players are only stored here since connection till login start
-    //public static final List<User> users = new ArrayList<>();
-    //public static final List<String> notVanishedUserNicknames = new ArrayList<>();
+    private static final Map<UUID, AlixUser> USERS = new MapMaker()
+            .initialCapacity(Bukkit.getMaxPlayers() << 1)//always use more buckets to lessen the chance of a hash collision
+            //.weakValues()//auto clean-up for failed logins
+            .makeMap();
+
+    //the default size of 16 will do, since the joining players are only stored here since connection till login start
+    private static final Map<String, User> CONNECTING_USERS = new MapMaker().weakValues().makeMap();
 
 /*    public static TemporaryUser tempUser(UUID uuid) {
         return users.
@@ -66,7 +69,12 @@ public final class UserManager {
     public static VerifiedUser register(Player p, String password, InetAddress ip, User user, ChannelHandlerContext silentContext) {
         //if (GeoIPTracker.disallowLogin(ip)) return false;
 
-        PersistentUserData data = PersistentUserData.createDefault(p.getName(), ip, Password.fromUnhashed(password));
+        PersistentUserData data = UserFileManager.get(p.getName());
+        if (data == null) data = PersistentUserData.createDefault(p.getName(), ip, Password.fromUnhashed(password));
+        else {
+            data.setIP(ip);
+            data.setPassword(password);
+        }
         //data.setPassword(password);
 
         return addVerifiedUser(p, data, ip, user, silentContext);
@@ -121,7 +129,7 @@ public final class UserManager {
     }
 
     public static User putConnecting(String name, User user) {
-        Main.debug("putConnecting - " + name);
+        //Main.debug("putConnecting - " + name);
         return CONNECTING_USERS.compute(name.toLowerCase(), (n, alreadyConnecting) -> alreadyConnecting != null ? alreadyConnecting : user);
     }
 
@@ -130,7 +138,7 @@ public final class UserManager {
     }
 
     public static User removeConnecting(String name) {
-        Main.debug("removeConnecting - " + name);
+        //Main.debug("removeConnecting - " + name);
         return CONNECTING_USERS.remove(name.toLowerCase());
     }
 

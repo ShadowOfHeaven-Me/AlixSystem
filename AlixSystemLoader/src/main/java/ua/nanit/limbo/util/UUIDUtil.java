@@ -35,7 +35,8 @@ public final class UUIDUtil {
     //Possible optimization: https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/util/FastUuidSansHyphens.java
     @OptimizationCandidate
     public static UUID fromString(String str) {
-        if (str.contains("-")) return UUID.fromString(str);
+        if (str.contains("-"))
+            return UUID.fromString(str);
         return UUID.fromString(str.replaceFirst("(\\p{XDigit}{8})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}{4})(\\p{XDigit}+)", "$1-$2-$3-$4-$5"));
     }
 }

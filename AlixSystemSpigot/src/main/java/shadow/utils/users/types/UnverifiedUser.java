@@ -182,7 +182,8 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
 
     public void uninject() {//reverses back all changes (but does not teleport back)
         //release allocated
-        if (captchaInitialized) Captcha.uninject(this.captchaFuture); //this.captchaFuture.whenCompleted(Captcha::release);
+        if (captchaInitialized)
+            Captcha.uninject(this.captchaFuture); //this.captchaFuture.whenCompleted(Captcha::release);
         this.reminderTask.cancel(true);
         this.verificationMessage.destroy();
         if (this.alixGui != null) this.alixGui.destroy();
@@ -496,7 +497,10 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         AlixEventInvoker.callOnAuth(AuthReason.MANUAL_REGISTER, verifiedUser, AlixEvent.ThreadSource.ASYNC);
         //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
-        data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
+
+        if (data.getPremiumData().getStatus().isUnknown())
+            data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
+
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
         /*if (captchaInitialized && originalJoinMessage != null)

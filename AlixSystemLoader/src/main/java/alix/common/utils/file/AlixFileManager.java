@@ -123,10 +123,10 @@ public abstract class AlixFileManager {
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {//new BufferedWriter(new FileWriter(file, CHARSET))
             for (Object line : lines) {
                 try {
-                    writer.write(line.toString());
+                    writer.write(String.valueOf(line));
                     writer.newLine();
                 } catch (Exception e) {
-                    AlixCommonMain.logError("Error during file writing!");
+                    AlixCommonMain.logError("Error during file writing, lines=" + lines + ", file=" + file.getName());
                     AlixCommonUtils.logException(e);
                 }
             }

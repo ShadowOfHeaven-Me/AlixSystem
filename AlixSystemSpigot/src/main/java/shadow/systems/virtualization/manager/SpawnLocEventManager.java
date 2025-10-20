@@ -20,12 +20,12 @@ final class SpawnLocEventManager extends VirtualEventManager {
         super(PlayerSpawnLocationEvent.class, SpawnEventExecutor::new);
     }
 
-    private static final class SpawnEventExecutor extends VirtualEventExecutor<PlayerSpawnLocationEvent> {
+    static final class SpawnEventExecutor extends VirtualEventExecutor<PlayerSpawnLocationEvent> {
 
         private final AlixMessage joinVerified = Messages.getAsObject("log-player-join-auto-verified");
 
-        SpawnEventExecutor(VirtualEventManager eventManager) {
-            super(eventManager);
+        SpawnEventExecutor() {
+            super();
         }
 
         @Override

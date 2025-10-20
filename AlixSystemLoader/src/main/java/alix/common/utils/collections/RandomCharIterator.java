@@ -4,6 +4,7 @@ import alix.common.utils.other.throwable.AlixException;
 
 import java.util.Random;
 
+//not exactly an 'iterator' ;]
 public class RandomCharIterator {
 
     private static final Random random = new Random();

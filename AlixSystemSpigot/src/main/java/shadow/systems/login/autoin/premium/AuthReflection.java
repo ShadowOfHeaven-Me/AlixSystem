@@ -2,8 +2,10 @@ package shadow.systems.login.autoin.premium;
 
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.util.reflection.Reflection;
+import com.google.common.collect.MapMaker;
 import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelPromise;
 import lombok.SneakyThrows;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
@@ -16,7 +18,9 @@ import java.lang.reflect.Method;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static io.github.retrooper.packetevents.util.SpigotReflectionUtil.NETWORK_MANAGER_CLASS;
 
@@ -24,14 +28,15 @@ final class AuthReflection {
 
     private static final Class<?> ENCRYPTION_CLASS;
     private static final Field CHANNEL_FIELD;
-    private static final List<Object> managers;
+    private static final NetworkManagerList managers;
 
     private static final Field SPOOFED_UUID_FIELD;
 
     static final Method encryptMethod, cipherMethod;
 
     static {
-        managers = SpigotReflectionUtil.getNetworkManagers();
+        managers = replaceNetworkManagerList();
+
         ENCRYPTION_CLASS = ReflectionUtils.nms2("util.MinecraftEncryption", "util.Crypt");
 
         Method encryptMethod0;
@@ -67,6 +72,24 @@ final class AuthReflection {
             Main.logError("Could not find the spoofedUUID field! Send this to shadow: " + AlixUtils.getFields(null, networkManagerClass));
     }
 
+    @SneakyThrows
+    private static <T> NetworkManagerList<T> replaceNetworkManagerList() {
+        var managers = SpigotReflectionUtil.getNetworkManagers();
+        var serverConnection = SpigotReflectionUtil.getMinecraftServerConnectionInstance();
+
+        for (Field f : serverConnection.getClass().getDeclaredFields()) {
+            f.setAccessible(true);
+            var obj = f.get(serverConnection);
+            if (obj == managers) {//maybe an .equals(...)? In case some other plugin also replaces it in the meantime
+                var replaced = new NetworkManagerList<>((List<T>) obj);
+                f.set(serverConnection, replaced);
+                return replaced;
+            }
+        }
+        AlixUtils.debug(serverConnection.getClass().getDeclaredFields());
+        throw new AlixError();
+    }
+
     private static Field getFieldByNameOrType(Class<?> clazz, String name, Class<?> type) {
         Field f = Reflection.getField(clazz, name);
         if (f != null) return f;
@@ -96,19 +119,55 @@ final class AuthReflection {
         SPOOFED_UUID_FIELD.set(networkManager, uuid);
     }
 
-    static Object findNetworkManager(Channel channel) {
-        /*Main.debug("CHANNEL: " + channel);
-        for (Object manager : managers) {
-            Main.debug("MANAGER CHANNEL: " + getChannel(manager));
-        }*/
+    //private static final Consumer<Object> NO_CALLBACK = AlixCommonUtils.EMPTY_CONSUMER;
+    private static final Map<ChannelPromise, Consumer<Object>> MAP = new MapMaker().weakKeys().makeMap();
+
+    static void onAdd0(Object networkManager) {
+        Channel managerChannel = getChannel(networkManager);
+        if (managerChannel == null || !managerChannel.isOpen()) return;
+
+        //should be alright to sync here
+        synchronized (managerChannel.voidPromise()) {
+            var callback = MAP.remove(managerChannel.voidPromise());
+            if (callback == null) return;
+
+            callback.accept(networkManager);
+        }
+    }
+
+    static void findNetworkManager(Channel channel, Consumer<Object> callback) {
+        //Try to find it immediately
         for (Object manager : managers) {
             Channel managerChannel = getChannel(manager);
             if (managerChannel == null || !managerChannel.isOpen()) continue;
 
             //some plugins could've replaced the Channel field, but it's likely
-            //that they hadn't replaced the channel's pipeline() method - use identity comparison on that
-            //if (managerChannel.pipeline() == channel.pipeline()) return manager;
-            if (managerChannel.pipeline() == channel.pipeline()) {
+            //that they hadn't replaced the channel's voidPromise() method - use identity comparison on that
+            //do not use Channel#id cuz ProtocolLib is AIDS
+            if (managerChannel.voidPromise() == channel.voidPromise()) {
+                callback.accept(manager);
+                return;
+            }
+        }
+        //Otherwise add a callback
+        //add a sync block to prevent race conditions
+        synchronized (channel.voidPromise()) {
+            MAP.put(channel.voidPromise(), callback);
+        }
+    }
+
+    /*static Object findNetworkManager(Channel channel) {
+     *//*Main.debug("CHANNEL: " + channel);
+        for (Object manager : managers) {
+            Main.debug("MANAGER CHANNEL: " + getChannel(manager));
+        }*//*
+        for (Object manager : managers) {
+            Channel managerChannel = getChannel(manager);
+            if (managerChannel == null || !managerChannel.isOpen()) continue;
+
+            //some plugins could've replaced the Channel field, but it's likely
+            //that they hadn't replaced the channel's id() method - use identity comparison on that
+            if (managerChannel.id() == channel.id()) {
                 //Main.debug("CHANNEL: " + channel);
                 return manager;
             }
@@ -117,7 +176,7 @@ final class AuthReflection {
         AlixUtils.debug(managers.toArray());
         throw new AlixError("Could not find NetworkManager!");
         //return null;
-    }
+    }*/
 
     private static Field getChannelFieldInNetworkManagerClazz() {
         Class<?> clazz = NETWORK_MANAGER_CLASS;

@@ -22,6 +22,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.alix.ABStats;
+import shadow.systems.login.autoin.premium.SpigotEncryption;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.ReflectionUtils;
@@ -128,7 +129,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             LoginType type;
 
                             try {
-                                type = LoginType.valueOf(arg3);
+                                type = LoginType.from(arg3, false, false);
                             } catch (Exception e) {
                                 sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg3);
                                 return false;
@@ -163,7 +164,12 @@ public final class AdminAlixCommands implements CommandExecutor {
                             if (dVer)
                                 sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
 
-                            sendMessage(sender, "Double password verification: " + (dVer ? "&aEnabled" : "&cDisabled"));
+                            sendMessage(sender, "Double password verification: &c" + (dVer ? "Enabled" : "Disabled"));
+
+                            var isEncrypted = SpigotEncryption.isOnlineEncryptionEnabled(data);
+                            if (isEncrypted != null)
+                                sendMessage(sender, "Encryption: &c" + (isEncrypted ? "Enabled" : "Disabled"));
+
                             String authApp;
                             switch (data.getLoginParams().getAuthSettings()) {
                                 case PASSWORD:
@@ -332,6 +338,12 @@ public final class AdminAlixCommands implements CommandExecutor {
                     //sendMessage(sender, "&c/as incognitooff &7- Gives you back your original name");//, and skin.");
 
                     break;
+                case "__reset_all_premium_passwords": {
+                    UserFileManager.getAllData().stream()
+                            .filter(data -> data.getPremiumData().getStatus().isPremium())
+                            .forEach(PersistentUserData::resetPasswords);
+                    return true;
+                }
                 case "abstats":
                     if (isConsoleButPlayerRequired(sender)) return false;
                     Player player = (Player) sender;

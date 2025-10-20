@@ -1,5 +1,6 @@
 package alix.common.data.premium;
 
+import alix.common.data.PersistentUserData;
 import alix.common.utils.AlixCache;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.google.common.cache.Cache;
@@ -19,7 +20,16 @@ public final class VerifiedCache {
         verifiedNamesTempCache.put(nickname, user);
     }
 
+    public static boolean isPremium(PersistentUserData data, String name, User user) {
+        return (data != null && data.getPremiumData().getStatus().isPremium() || getAndCheckIfEquals(name, user));
+    }
+
+    //Intentional identity checks
+    public static boolean getAndCheckIfEquals(String nickname, User user) {
+        return user == verifiedNamesTempCache.get(nickname);
+    }
+
     public static boolean removeAndCheckIfEquals(String nickname, User user) {
-        return user.equals(verifiedNamesTempCache.remove(nickname));
+        return user == verifiedNamesTempCache.remove(nickname);
     }
 }

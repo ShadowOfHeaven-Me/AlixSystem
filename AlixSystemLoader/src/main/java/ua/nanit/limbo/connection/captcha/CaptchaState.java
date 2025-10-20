@@ -19,6 +19,7 @@ import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
 import ua.nanit.limbo.protocol.packets.play.tick.PacketPlayInTickEnd;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
+import ua.nanit.limbo.server.Log;
 
 import static ua.nanit.limbo.connection.captcha.CaptchaState.CaptchaPacketType.*;
 
@@ -49,6 +50,8 @@ public final class CaptchaState implements VerifyState {
             this.invokeHandle0(packet, type);
         } catch (CaptchaFailedException ex) {
             if (NanoLimbo.performChecks) this.disconnect();
+            else Log.error("CaptchaFailedException, performChecks=false");
+
             if (NanoLimbo.printCaptchaFailed) ex.printStackTrace();
         }
     }

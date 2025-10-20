@@ -10,15 +10,12 @@ final class JoinEventManager extends VirtualEventManager {
         super(PlayerJoinEvent.class, JoinEventExecutor::new);
     }
 
-    private static final class JoinEventExecutor extends VirtualEventExecutor<PlayerJoinEvent> {
-
-        JoinEventExecutor(VirtualEventManager eventManager) {
-            super(eventManager);
-        }
+    static final class JoinEventExecutor extends VirtualEventExecutor<PlayerJoinEvent> {
 
         @Override
         void onInvocation(PlayerJoinEvent event) {
-            //Main.debug("JOIN EVENT");
+            //var uuid = event.getPlayer().getUniqueId();
+            //Main.debug("JOIN EVENT UUID= " + uuid + " ver=" + uuid.version());
             UnverifiedUser user = Verifications.get(event.getPlayer());
             if (user != null) {//stop the event's side effects
                 user.originalJoinMessage = event.getJoinMessage();

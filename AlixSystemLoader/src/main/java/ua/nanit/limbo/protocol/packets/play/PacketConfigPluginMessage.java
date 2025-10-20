@@ -39,5 +39,4 @@ public class PacketConfigPluginMessage implements PacketOut {
         msg.writeString(channel);
         msg.writeString(message);
     }
-
 }

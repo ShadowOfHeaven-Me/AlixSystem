@@ -8,10 +8,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.login.LoginVerdict;
-import alix.common.login.premium.ClientPublicKey;
-import alix.common.login.premium.EncryptionData;
-import alix.common.login.premium.EncryptionUtil;
-import alix.common.login.premium.PremiumSetting;
+import alix.common.login.premium.*;
 import alix.common.messages.Messages;
 import alix.common.reflection.CommonReflection;
 import alix.common.utils.AlixCache;
@@ -34,6 +31,8 @@ import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import com.velocitypowered.proxy.connection.client.InitialInboundConnection;
 import com.velocitypowered.proxy.connection.client.LoginInboundConnection;
 import io.netty.channel.Channel;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import ua.nanit.limbo.connection.login.LoginInfo;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
@@ -59,6 +58,11 @@ public final class Events {
         this.util = util;
         //this.limboRegisteredServer = new LimboRegisteredServer(server);
     }
+
+    /*@Subscribe
+    public void onPing(ProxyPingEvent event) {
+        Main.logInfo("ProxyPingEvent=" + event);
+    }*/
 
     @Subscribe(order = PostOrder.FIRST)
     public void onInitialServer(PlayerChooseInitialServerEvent event, Continuation continuation) {
@@ -123,6 +127,12 @@ public final class Events {
         Channel channel = minecraftConnection.getChannel();
 
         String name = this.util.getCorrectUsername(channel, event.getUsername());
+
+        if (!UserManager.addConnected(name, channel)) {
+            event.setResult(PreLoginEvent.PreLoginComponentResult.denied(Component.text("[Alix] Already connected").color(NamedTextColor.RED)));
+            return;
+        }
+
         UUID uuid = event.getUniqueId();
         PersistentUserData data = UserFileManager.get(name);
 
@@ -180,20 +190,24 @@ public final class Events {
                 return;
             }*/
 
-        if (!performPremiumCheck) {
+        //we'll be the ones doing the premium auth if anything
+        event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
+
+        if (!performPremiumCheck && !EncryptionSetting.enableEncryption(version)) {
             continuation.resume();
             return;
         }
 
-        event.setResult(PreLoginEvent.PreLoginComponentResult.forceOfflineMode());
 
         //Premium Auth
 
+        //the player should auth if the encryption request stems from premium auth req
+        boolean shouldAuthenticate = performPremiumCheck;
         ClientPublicKey publicKey = PacketEventListener.publicKeys.remove(channel);
         byte[] token = EncryptionUtil.generateVerifyToken();
-        EncryptionData encryptionData = new EncryptionData(name, name, token, publicKey, newPremiumData.premiumUUID());
+        EncryptionData encryptionData = new EncryptionData(name, name, token, publicKey, newPremiumData.premiumUUID(), shouldAuthenticate);
 
-        WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token);
+        WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token, shouldAuthenticate);
         PacketEvents.getAPI().getProtocolManager().sendPacketSilently(channel, newPacket);
 
         preLoginContinuations.put(channel, new EncryptionInfo(encryptionData, continuation, minecraftConnection, newPremiumData, data));

@@ -1,5 +1,6 @@
 package alix.common.utils.netty;
 
+import alix.common.utils.AlixCommonHandler;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -11,6 +12,7 @@ public final class BufUtils {
 
     public static final ByteBufAllocator POOLED = PooledByteBufAllocator.DEFAULT;
     public static final ByteBufAllocator UNPOOLED = UnpooledByteBufAllocator.DEFAULT; //new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
+    private static final boolean PREFER_DIRECT = AlixCommonHandler.preferDirectBufs();
     //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
 
 /*    static {
@@ -21,20 +23,28 @@ public final class BufUtils {
         return unpooledBuffer(); //ALLOC.ioBuffer();
     }*/
 
+    private static ByteBuf buffer0(ByteBufAllocator alloc) {
+        return PREFER_DIRECT ? alloc.directBuffer() : alloc.heapBuffer();
+    }
+
+    private static ByteBuf buffer0(ByteBufAllocator alloc, int capacity) {
+        return PREFER_DIRECT ? alloc.directBuffer(capacity) : alloc.heapBuffer(capacity);
+    }
+
     public static ByteBuf unpooledBuffer() {
-        return UNPOOLED.directBuffer();
+        return buffer0(UNPOOLED);
     }
 
     public static ByteBuf unpooledBuffer(int capacity) {
-        return UNPOOLED.directBuffer(capacity);
+        return buffer0(UNPOOLED, capacity);
     }
 
     public static ByteBuf pooledBuffer() {
-        return POOLED.directBuffer();
+        return buffer0(POOLED);
     }
 
     public static ByteBuf pooledBuffer(int capacity) {
-        return POOLED.directBuffer(capacity);
+        return buffer0(POOLED, capacity);
     }
 
     public static ByteBuf createBuffer(PacketWrapper<?> wrapper) {

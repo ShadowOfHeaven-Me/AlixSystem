@@ -40,11 +40,12 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
 
     //private static final ThreadLocal
 
-    static Packet decode(ByteBuf buf, State.PacketRegistry mappings, Version version, ClientConnection connection) {
+    public static Packet decode(ByteBuf buf, State.PacketRegistry mappings, Version version, ClientConnection connection) {
         if (mappings == null) return null;
 
         //ByteMessage msg = new ByteMessage(buf);
         int packetId = FastNettyUtils.readVarInt(buf); //msg.readVarInt();
+        //Log.error("PACKET ID= " + packetId);
 
         //Log.info("PACKET ID=" + packetId + " 0x" + Integer.toHexString(packetId).toUpperCase());
 
@@ -53,7 +54,7 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
         }*/
 
         PacketFactory factory = mappings.getFactory(packetId);
-        if (factory == null || factory.isPacketSkippable(connection))
+        if (factory == null || connection != null && factory.isPacketSkippable(connection))
             return null;
 
         //Log.error("PACKET ID: " + packetId + " PACKET: " + packet);

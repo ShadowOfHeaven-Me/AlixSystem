@@ -10,7 +10,6 @@ import com.velocitypowered.natives.util.MoreByteBufUtils;
 import com.velocitypowered.natives.util.Natives;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import ua.nanit.limbo.server.Log;
 
 final class CompressorVelocityImpl implements CompressionImpl {
 
@@ -61,7 +60,7 @@ final class CompressorVelocityImpl implements CompressionImpl {
         if (isCompatible(nativeStuff, buf)) return buf;
 
         //throw new AlixError("INCOMPATIBLE: GOT: " + buf + " PREFERRED: " + nativeStuff.preferredBufferType());
-        Log.error("INCOMPATIBLE: GOT: " + buf + " PREFERRED: " + nativeStuff.preferredBufferType());
+        //Log.error("INCOMPATIBLE: GOT: " + buf + " PREFERRED: " + nativeStuff.preferredBufferType());
 
         ByteBuf newBuf = MoreByteBufUtils.preferredBuffer(alloc, nativeStuff, buf.readableBytes());
         newBuf.writeBytes(buf);

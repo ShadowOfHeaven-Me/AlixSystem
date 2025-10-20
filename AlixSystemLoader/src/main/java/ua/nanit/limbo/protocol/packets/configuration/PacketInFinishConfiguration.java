@@ -8,9 +8,10 @@ import ua.nanit.limbo.server.LimboServer;
 
 public class PacketInFinishConfiguration implements PacketIn {
 
+    public static final PacketInFinishConfiguration INSTANCE = new PacketInFinishConfiguration();
+
     @Override
     public void decode(ByteMessage msg, Version version) {
-
     }
 
     @Override
@@ -21,5 +22,8 @@ public class PacketInFinishConfiguration implements PacketIn {
     @Override
     public String toString() {
         return getClass().getSimpleName();
+    }
+
+    private PacketInFinishConfiguration() {
     }
 }

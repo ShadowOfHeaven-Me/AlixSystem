@@ -48,13 +48,14 @@ public final class AlixCommonUtils {
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
     }
 
-    //From PacketEvents
+    //From PacketEvents, FakeChannelUtil.isFakeChannel
     public static boolean isFakeChannel(Channel channel) {
         //Main.logError("CHANNEL: " + channel);
         if (channel == null) return true;
         switch (channel.getClass().getSimpleName()) {
             case "FakeChannel":
             case "SpoofedChannel":
+            case "EmbeddedChannel":
                 return true;
             default:
                 return false;
@@ -194,7 +195,7 @@ public final class AlixCommonUtils {
     }
 
     private static boolean isPrime0(int n) {
-        for (int i = 3; i < n; i++) if (n % i == 0) return false;
+        for (int i = 3; i < n; i += 2) if (n % i == 0) return false;
         return true;
     }
 

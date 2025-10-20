@@ -27,7 +27,7 @@ final class PremiumCheckImpl {
         PremiumData data;
         int looped = 0;
         while ((data = this.checks.current().isPremium(name)).getStatus().isUnknown()) {
-            this.checks.next();
+            this.checks.nextIndex();
             if (++looped == this.checks.size())
                 break;//we couldn't figure it out - return UNKNOWN
         }

@@ -24,7 +24,7 @@ public final class AlixChunkGenerator extends ChunkGenerator {
     private static ChunkData createEmptyChunkData(World world) {
         ChunkData chunkData = Bukkit.createChunkData(world);
         // Set all block types to air (empty)
-        chunkData.setRegion(0, 0, 0, 16, 256, 16, Material.AIR);
+        chunkData.setRegion(0, world.getMinHeight(), 0, 16, world.getMaxHeight(), 16, Material.AIR);
         return chunkData;
     }
 }

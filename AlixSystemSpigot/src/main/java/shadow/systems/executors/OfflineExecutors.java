@@ -9,6 +9,7 @@ import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
 import alix.common.data.security.password.Password;
+import alix.common.environment.ServerEnvironment;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -26,6 +27,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
+import shadow.systems.login.paper.PaperReflection;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
 import shadow.utils.main.file.managers.SpawnFileManager;
@@ -34,6 +36,7 @@ import shadow.utils.users.UserManager;
 import shadow.utils.users.Verifications;
 import shadow.utils.world.AlixWorld;
 import shadow.utils.world.AlixWorldHolder;
+import ua.nanit.limbo.util.UUIDUtil;
 
 import static shadow.utils.main.AlixUtils.*;
 
@@ -45,10 +48,43 @@ public final class OfflineExecutors extends UniversalExecutors {
     //serverIsFull = Messages.get("server-is-full");
     //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
     private final boolean onlineMode = Bukkit.getServer().getOnlineMode();
+    private static final boolean canOverride = assignPremiumUUID && ServerEnvironment.isPaper() && PaperReflection.isAvailable();
 
     //Pre-to-join executors - start
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    private void overrideUUIDIfNecessary(AsyncPlayerPreLoginEvent e, PersistentUserData data, String name, User user) {
+        if (!assignPremiumUUID)
+            return;
+
+        var uuid = e.getUniqueId();
+        boolean isPremium = VerifiedCache.isPremium(data, name, user);
+
+        if (uuid.version() == 3 && isPremium) {
+            if (canOverride) {
+                var premiumUUID = data.getPremiumData().premiumUUID();
+                PaperReflection.override(e, premiumUUID);
+
+                Main.logInfo("Late overriding of player's " + name + " non-premium uuid " + uuid + " with premium uuid " + premiumUUID);
+            } else
+                Main.logWarning("Player " + name + " could not have his uuid late set to premium, despite config 'premium-uuid: true' & premium status! Report this as an error immediately!");
+            return;
+        }
+
+        //hmmm
+        if (uuid.version() == 4 && !isPremium) {
+            if (canOverride) {
+                var nonPremiumUUID = UUIDUtil.getOfflineModeUuid(name);
+                PaperReflection.override(e, nonPremiumUUID);
+
+                Main.logInfo("Late overriding of player's " + name + " premium uuid " + uuid + " with non-premium uuid " + nonPremiumUUID);
+            } else
+                Main.logWarning("Player " + name + " could not have his uuid late set to non-premium, despite config 'premium-uuid: true' & a non-premium status! Report this as an error immediately!");
+
+        }
+    }
+
+    //per https://github.com/LuckPerms/LuckPerms/blob/65c42b9b09be6510992c29b2f29b67bffb740232/bukkit/src/main/java/me/lucko/luckperms/bukkit/listeners/BukkitConnectionListener.java#L88
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
         //Main.logInfo("ASYNC PRE LOGIN EVENT");
         String name = e.getName();
@@ -63,6 +99,7 @@ public final class OfflineExecutors extends UniversalExecutors {
             e.disallow(PlayerPreLoginEvent.Result.KICK_OTHER, "§cSomething went wrong! (No user, AlixSystem)");
             return;
         }
+
         //Main.logError("WWWWWWWWWWWW " + PremiumAutoIn.isPremium(e.getUniqueId()));
         //The FireWall should handle unnecessary connections from being processed
 
@@ -92,9 +129,9 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
 
         PersistentUserData data = UserFileManager.get(name);
-
         boolean isLinked = Dependencies.isLinked((Channel) user.getChannel());
 
+        this.overrideUUIDIfNecessary(e, data, name, user);
         //Main.logInfo("PREMIUM " + PremiumAutoIn.getPremiumPlayers().contains(name) + " DATA EXISTS " + (data != null));
 
         if (data != null) {//the account exists
@@ -103,8 +140,10 @@ public final class OfflineExecutors extends UniversalExecutors {
                 return;
             }
 
-            if (data.getPremiumData().getStatus().isPremium()) LoginVerdictManager.addOnline(user, ip, data, false, e);
-            else LoginVerdictManager.addOffline(user, ip, data, e);
+            if (data.getPremiumData().getStatus().isPremium() && !__noPremiumAuthButKeepIdentity && VerifiedCache.removeAndCheckIfEquals(name, user))
+                LoginVerdictManager.addOnline(user, ip, data, false, e);
+            else
+                LoginVerdictManager.addOffline(user, ip, data, e);
             return;
         }
 
@@ -227,7 +266,8 @@ public final class OfflineExecutors extends UniversalExecutors {
             event.setRespawnLocation(this.useLastLoc ? OriginalLocationsManager.getOriginalLocation(event.getPlayer()) : SpawnFileManager.getSpawnLocation());
             return;
         }
-        if (!verified) event.setRespawnLocation(AlixWorld.TELEPORT_LOCATION);
+        if (!verified)
+            event.setRespawnLocation(AlixWorld.TELEPORT_LOCATION);
     }
 
     //Teleportation on login fix
@@ -250,9 +290,10 @@ public final class OfflineExecutors extends UniversalExecutors {
     //Damage during verification fix
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDamage(EntityDamageEvent event) {
-        if (event.isCancelled() || !(event.getEntity() instanceof Player)) return;
+        if (event.isCancelled() || !(event.getEntity() instanceof Player player)) return;
 
-        if (Verifications.has(event.getEntity().getUniqueId())) event.setCancelled(true);
+        if (Verifications.has(player.getUniqueId()))
+            event.setCancelled(true);
     }
     //During verification executors - end
 
@@ -266,6 +307,10 @@ public final class OfflineExecutors extends UniversalExecutors {
     public void onCommand(PlayerCommandPreprocessEvent e) {
         if (!e.isCancelled() && isOperatorCommandRestricted)
             super.onOperatorCommandCheck(e, e.getMessage().substring(1));
+        if (!e.isCancelled() && Verifications.has(e.getPlayer())) {
+            e.setCancelled(true);
+            Main.logWarning("Player " + e.getPlayer().getName() + " tried executing command while unverified - cancelling! Report this if this is a security error!");
+        }
     }
 
     @Override

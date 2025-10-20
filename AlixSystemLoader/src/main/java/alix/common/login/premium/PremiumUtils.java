@@ -25,7 +25,7 @@ public final class PremiumUtils {
         StringBuilder sb = new StringBuilder(name.length() + 1);
         sb.append(prefix).append(name);
 
-        //we need to stay within the 16 character range to follow the mc protocol's limitations
+        //we need to stay within the 16 character range in order to follow the mc protocol's limitations
         return sb.length() > 16 ? sb.substring(0, 16) : sb.toString();
     }
 
@@ -56,7 +56,8 @@ public final class PremiumUtils {
     }
 
     public static PremiumStatus suggestsStatus(UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
-        if (clientPublicKey != null) return PremiumStatus.PREMIUM;
+        //Not sure about this one
+        //if (clientPublicKey != null) return PremiumStatus.PREMIUM;
         if (uuid == null || version.isOlderThan(ClientVersion.V_1_19)) return PremiumStatus.UNKNOWN;
 
         return uuid.version() == 4 ? PremiumStatus.PREMIUM : PremiumStatus.NON_PREMIUM;

@@ -47,7 +47,7 @@ public final class CommandManager {
             if (isConsole(ctx)) return SINGLE_SUCCESS;
             Player player = (Player) ctx.getSource();
 
-            VerifiedUser user = UserManager.get(player.getUniqueId());
+            VerifiedUser user = UserManager.getVerified(player.getUniqueId());
 
             /*if(user.isEncrypted()) {
 
@@ -75,7 +75,7 @@ public final class CommandManager {
                 .executes(ctx -> {
                     if (isConsole(ctx)) return SINGLE_SUCCESS;
                     Player player = (Player) ctx.getSource();
-                    VerifiedUser user = UserManager.get(player.getUniqueId());
+                    VerifiedUser user = UserManager.getVerified(player.getUniqueId());
 
                     var data = user.getData();
                     if (data == null) {
@@ -130,7 +130,7 @@ public final class CommandManager {
         LiteralArgumentBuilder<CommandSource> premiumLiteral = command("premium", ctx -> {
             if (isConsole(ctx)) return 0;
             Player player = (Player) ctx.getSource();
-            var user = UserManager.get(player.getUniqueId());
+            var user = UserManager.getVerified(player.getUniqueId());
             var channel = user.getChannel();
             var uuid = VelocityLimboIntegration.getLoginAssignedUUID(channel);
             boolean canBePremium = uuid == null || uuid.version() == 4;

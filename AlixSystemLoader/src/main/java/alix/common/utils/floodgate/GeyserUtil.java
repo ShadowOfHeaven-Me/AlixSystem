@@ -55,6 +55,7 @@ public final class GeyserUtil {
     }
 
     public boolean isBedrock(@NotNull Channel channel) {
+        //AlixCommonMain.logInfo("isFloodgatePresent && FloodgateAccess.isBedrock(channel)=" + (isFloodgatePresent && FloodgateAccess.isBedrock(channel)));
         return isFloodgatePresent && FloodgateAccess.isBedrock(channel);
     }
 }

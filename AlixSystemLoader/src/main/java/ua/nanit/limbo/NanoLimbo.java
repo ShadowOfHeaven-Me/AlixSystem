@@ -35,18 +35,22 @@ public final class NanoLimbo {
     }
 
     public static final boolean suppressInvalidPackets = of(true);
-    public static final boolean debugCipher = false;//of(false, false);
+    public static final boolean debugCipher = of(false);//of(false, false);
     //@DebugOnly
     public static final boolean debugPackets = of(false);
+    public static final boolean debugBytes = false;//of(false);
+    public static final boolean debugFrames = false;//(false);
     public static final boolean debugSnapshots = of(false);
+    public static final boolean usePacketSnapshots = true;
     public static final boolean allowFreeMovement = false;
     public static final boolean performChecks = true;
     //@DebugOnly
     public static final boolean logPos = of(false);
     public static final boolean removeTimeout = true;
     public static final boolean centerSpawn = false;
-    public static final boolean printCaptchaFailed = false;
+    public static final boolean printCaptchaFailed = of(false);
     public static final boolean verifyTheDud = true;
+    public static final boolean useTransfer = true;
 
     public static LimboServer LIMBO;
     public static LimboIntegration INTEGRATION;

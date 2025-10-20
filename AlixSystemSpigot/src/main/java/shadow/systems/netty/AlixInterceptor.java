@@ -12,6 +12,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
+import io.netty.util.internal.PlatformDependent;
 import org.bukkit.Bukkit;
 import shadow.Main;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
@@ -57,10 +58,13 @@ public final class AlixInterceptor {
                     } finally {
                         AlixConsoleFilterHolder.INSTANCE.stopFilteringStd();
                     }
-                } else {
+                } else if (PlatformDependent.javaVersion() <= 8) {//before modularization
                     type = FireWallType.INTERNAL_NIO_INTERCEPTOR;
                     AlixInternalNIOInterceptor.init();
                     AlixCommonMain.logInfo("Using Internal NIO Interceptor for FireWall Protection.");
+                } else {
+                    type = FireWallType.NETTY;
+                    AlixCommonMain.logInfo("Using Netty for FireWall Protection.");
                 }
             } catch (Throwable e) {
                 //e.printStackTrace();

@@ -11,7 +11,6 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCache;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixError;
-import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -29,6 +28,7 @@ import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.netty.AlixChannelHandler;
+import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -80,7 +80,8 @@ public final class PremiumAuthenticator {
     private final KeyPair keyPair = PremiumVerifier.keyPair;
     private final boolean
             assumeNonPremiumOnFailedAuth = Main.config.getBoolean("assume-non-premium-if-auth-failed"),
-            assignPremiumUUID = Main.config.getBoolean("premium-uuid");
+            assignPremiumUUID = AlixUtils.assignPremiumUUID,
+            __noPremiumAuthButKeepIdentity = AlixUtils.__noPremiumAuthButKeepIdentity;
 
     private void onInvalidAuth(User user, ClientPublicKey publicKey, ByteBuf disconnectReason) {
         String name = user.getName();
@@ -124,43 +125,56 @@ public final class PremiumAuthenticator {
         }
 
         //enable encryption once we know that the player is expecting the connection to be encrypted
-        Object networkManager = AuthReflection.findNetworkManager((Channel) user.getChannel());
+        AuthReflection.findNetworkManager((Channel) user.getChannel(), networkManager -> {
+            if (!enableEncryption(loginKey, user, networkManager))
+                return;
 
-        if (!enableEncryption(loginKey, user, networkManager))
-            return;
+            if (!verifyNonce(packet, data.publicKey(), expectedToken)) {
+                if (!data.shouldAuthenticate()) {
+                    //wtf do we do now
+                    this.disconnectWith(user, invalidNonce);
+                    return;
+                }
 
-        if (!verifyNonce(packet, data.publicKey(), expectedToken)) {
-            this.onInvalidAuth(user, data.publicKey(), invalidNonce);
-            return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
-        }
-
-        //Verify session
-
-        String serverId = EncryptionUtil.getServerIdHashString("", loginKey, keyPair.getPublic());
-        String packetUsername = data.packetUsername();
-        String serverUsername = data.serverUsername();
-        InetSocketAddress address = user.getAddress();
-
-        try {
-            //make sure to remove the name char prefix
-            if (hasJoined(PremiumUtils.getNonPrefixedName(packetUsername), serverId, address.getAddress())) {
-
-                if (this.assignPremiumUUID)
-                    this.setPremiumUUID(networkManager, data.premiumUUID());
-
-                VerifiedCache.verify(serverUsername, user);
-                receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.premiumUUID());
-            } else {
-                this.onInvalidAuth(user, data.publicKey(), invalidSession);
+                this.onInvalidAuth(user, data.publicKey(), invalidNonce);
+                return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
             }
-        } catch (IOException e) {
-            if (e instanceof SocketTimeoutException) {
-                Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
+
+            String packetUsername = data.packetUsername();
+            String serverUsername = data.serverUsername();
+            InetSocketAddress address = user.getAddress();
+
+            if (!data.shouldAuthenticate()) {
+                receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
+                return;
             }
-            //todo: see if this correct
-            this.onInvalidAuth(user, data.publicKey(), cannotVerifySession);
-        }
+
+            //Verify session
+
+            String serverId = EncryptionUtil.getServerIdHashString("", loginKey, keyPair.getPublic());
+
+            try {
+                //make sure to remove the name char prefix
+                if (hasJoined(PremiumUtils.getNonPrefixedName(packetUsername), serverId, address.getAddress())) {
+
+                    if (this.assignPremiumUUID)
+                        this.setPremiumUUID(networkManager, data.uuid());
+
+                    VerifiedCache.verify(serverUsername, user);
+                    receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
+                } else {
+                    this.onInvalidAuth(user, data.publicKey(), invalidSession);
+                }
+            } catch (IOException e) {
+                if (e instanceof SocketTimeoutException) {
+                    Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
+                }
+                //todo: see if this correct
+                this.onInvalidAuth(user, data.publicKey(), cannotVerifySession);
+            }
+        });
     }
+
 
     private void onLoginStart(User user, WrapperLoginClientLoginStart packet) {
         //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " " + packet.getPlayerUUID().get().version());
@@ -201,7 +215,10 @@ public final class PremiumAuthenticator {
         PremiumData newPremiumData;
         boolean performPremiumCheck;// = data != null ? performPremiumCheck(data) : performPremiumCheckNullData(name);
 
-        if (data != null) {
+        if (__noPremiumAuthButKeepIdentity) {
+            newPremiumData = PremiumData.UNKNOWN;
+            performPremiumCheck = false;
+        } else if (data != null) {
             performPremiumCheck = PremiumSetting.performPremiumCheck(data, packetUsername, uuid, clientKey, version);
             newPremiumData = data.getPremiumData();
         } else {
@@ -220,6 +237,7 @@ public final class PremiumAuthenticator {
             //Since AlixChannelHandler.onLoginStart will not be invoked, add the connecting user manually
             if (!AlixChannelHandler.putConnecting(user, serverUsername)) return;
 
+            //If hasn't passed the limbo captcha - either limbo is disabled or the player failed the captcha (so this isn't a reconnect after the limbo pass), so invoke onLoginStart here
         } else if (!AlixChannelHandler.onLoginStart(user, packetUsername, serverUsername, data, performPremiumCheck))
             return;
         //Alix - end
@@ -231,15 +249,36 @@ public final class PremiumAuthenticator {
         }
         //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/listener/AuthenticListeners.java#L29
 
-        if (performPremiumCheck) {
+        if (__noPremiumAuthButKeepIdentity && assignPremiumUUID) {
+            PremiumData premiumData = PersistentUserData.getPremiumData(data);
+            //Bukkit.getOfflinePlayer()
+
+            if (premiumData.getStatus().isPremium()) {
+                AuthReflection.findNetworkManager((Channel) user.getChannel(), networkManager -> {
+                    this.setPremiumUUID(networkManager, premiumData.premiumUUID());
+                    Main.logError("setPremiumUUID=" + premiumData.premiumUUID());
+                    receiveFakeStartPacket(packetUsername, clientKey, channel, uuid);
+                });
+                return;
+            }
+
+            receiveFakeStartPacket(packetUsername, clientKey, channel, uuid);
+            return;
+        }
+
+        if (performPremiumCheck || EncryptionSetting.enableEncryption(user.getClientVersion())) {
             try {
                 //should never happen
-                if (newPremiumData.premiumUUID() == null) throw new AlixError("Null uuid during encryption send");
+                if (performPremiumCheck && newPremiumData.premiumUUID() == null)
+                    throw new AlixError("Null uuid during encryption send");
 
                 byte[] token = EncryptionUtil.generateVerifyToken();
 
-                WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token);
-                this.encryptionDataCache.put(user, new EncryptionData(packetUsername, serverUsername, token, clientKey, newPremiumData.premiumUUID()));
+                //the player should auth if the encryption request stems from premium auth req
+                boolean shouldAuthenticate = performPremiumCheck;
+                WrapperLoginServerEncryptionRequest newPacket = new WrapperLoginServerEncryptionRequest("", keyPair.getPublic(), token, shouldAuthenticate);
+                var dataUuid = shouldAuthenticate ? newPremiumData.premiumUUID() : uuid;
+                this.encryptionDataCache.put(user, new EncryptionData(packetUsername, serverUsername, token, clientKey, dataUuid, shouldAuthenticate));
 
                 ByteBuf dynamicWrapper = NettyUtils.dynamic(newPacket);
                 ChannelHandlerContext silentCtx = NettyUtils.getSilentContext(channel);
@@ -378,7 +417,8 @@ public final class PremiumAuthenticator {
     }
 
     private void setPremiumUUID(Object networkManager, UUID premiumUUID) {
-        if (premiumUUID == null) throw new AlixException("premiumUUID is null! Report this immediately!");
+        if (premiumUUID == null)
+            throw new AlixError("premiumUUID is null! Report this immediately!");
         AuthReflection.setUUID(networkManager, premiumUUID);
     }
 
@@ -388,6 +428,7 @@ public final class PremiumAuthenticator {
 
     private boolean verifyNonce(WrapperLoginClientEncryptionResponse packet,
                                 ClientPublicKey clientPublicKey, byte[] expectedToken) {
+        //TODO: is getServerVersion() correct?
         return PremiumVerifier.verifyNonce(packet, clientPublicKey, expectedToken, this.getServerVersion());
     }
 }

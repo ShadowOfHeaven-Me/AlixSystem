@@ -19,6 +19,6 @@ final class DatabaseSQLite extends AbstractDatabaseConnector {
 
     @Override
     public DatabaseType getType() {
-        return DatabaseType.MY_SQL;
+        return DatabaseType.SQLITE;
     }
 }

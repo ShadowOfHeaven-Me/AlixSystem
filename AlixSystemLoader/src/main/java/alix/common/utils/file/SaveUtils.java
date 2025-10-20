@@ -9,7 +9,7 @@ public final class SaveUtils {
         String separator = String.valueOf(separatorChar);
         for (int i = 0; i < args.length; i++) {
             Object o = args[i];
-            String savable = o.toString();
+            String savable = String.valueOf(o);
 
             if (savable.contains(separator)) new AlixException("STRING '" + savable + "' contains separator char '" + separator + "'! Report this immediately!").printStackTrace();
 

@@ -1,30 +1,24 @@
 package ua.nanit.limbo.protocol.packets.play;
 
-import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.registry.Version;
+import com.github.retrooper.packetevents.resources.ResourceLocation;
+import com.github.retrooper.packetevents.util.Vector3i;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnPosition;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
-public class PacketSpawnPosition implements PacketOut {
+import java.util.Locale;
 
-    private long x;
-    private long y;
-    private long z;
+public class PacketSpawnPosition extends OutRetrooperPacket<WrapperPlayServerSpawnPosition> {
 
-    public PacketSpawnPosition() { }
-
-    public PacketSpawnPosition(long x, long y, long z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    public PacketSpawnPosition() {
+        super(WrapperPlayServerSpawnPosition.class);
     }
 
-    @Override
-    public void encode(ByteMessage msg, Version version) {
-        msg.writeLong(encodePosition(x, y ,z));
-        msg.writeFloat(0);
-    }
+    public PacketSpawnPosition(int x, int y, int z) {
+        this();
+        this.wrapper().setPosition(new Vector3i(x, y, z));
 
-    private static long encodePosition(long x, long y, long z) {
-        return ((x & 0x3FFFFFF) << 38) | ((z & 0x3FFFFFF) << 12) | (y & 0xFFF);
+        var dimension = NanoLimbo.LIMBO.getConfig().getDimensionType().toLowerCase(Locale.ROOT);
+        this.wrapper().setDimension(new ResourceLocation("minecraft:" + dimension));
     }
 }

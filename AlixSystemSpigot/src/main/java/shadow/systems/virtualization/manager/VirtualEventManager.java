@@ -1,7 +1,7 @@
 package shadow.systems.virtualization.manager;
 
+import alix.common.utils.AlixCommonUtils;
 import org.bukkit.event.*;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
@@ -9,19 +9,22 @@ import org.jetbrains.annotations.NotNull;
 import shadow.Main;
 
 import java.util.Collection;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 abstract class VirtualEventManager {
 
     private static final EmptyListener EMPTY_LISTENER = new EmptyListener();//a non-null instance is required
     private final VirtualizedHandlerList virtualHandlerList;
+    private final Class<? extends Event> eventClazz;
 
-    <T extends Event> VirtualEventManager(Class<T> eventClazz, Function<VirtualEventManager, VirtualEventExecutor<T>> eventExecutorFunc) {
-        this.virtualHandlerList = UserSemiVirtualization.replaceHandlers(eventClazz, eventExecutorFunc.apply(this));
+    <T extends Event> VirtualEventManager(Class<T> eventClazz, Supplier<VirtualEventExecutor<T>> eventExecutorFunc) {
+        this.virtualHandlerList = UserSemiVirtualization.replaceHandlers(eventClazz, eventExecutorFunc.get());
+        this.eventClazz = eventClazz;
     }
 
     final void returnOriginalHandler() {
-        UserSemiVirtualization.replaceVirtualHandlerWithOriginal(PlayerQuitEvent.class, this.virtualHandlerList);
+        //why tf was PlayerQuitEvent.class here
+        UserSemiVirtualization.replaceVirtualHandlerWithOriginal(this.eventClazz, this.virtualHandlerList);
     }
 
 /*    final void invokeOriginalListeners(Event event) {
@@ -30,10 +33,7 @@ abstract class VirtualEventManager {
 
     static abstract class VirtualEventExecutor<T extends Event> implements EventExecutor {
 
-        private final VirtualEventManager eventManager;
-
-        VirtualEventExecutor(VirtualEventManager eventManager) {
-            this.eventManager = eventManager;
+        VirtualEventExecutor() {
         }
 
         abstract void onInvocation(T event);
@@ -41,7 +41,11 @@ abstract class VirtualEventManager {
         @Override
         public final void execute(@NotNull Listener listener, @NotNull Event event) throws EventException {
             //this.eventManager.invokeOriginalListeners(event);
-            this.onInvocation((T) event);
+            try {
+                this.onInvocation((T) event);
+            } catch (Exception e) {
+                AlixCommonUtils.logException(e);
+            }
         }
     }
 
@@ -65,14 +69,14 @@ abstract class VirtualEventManager {
         @Override
         public RegisteredListener[] getRegisteredListeners() {
             RegisteredListener[] current = this.originalHandler.getRegisteredListeners();
-
             if (current == lastCache) return current;
+
+            this.lastCache = current;
 
             RegisteredListener[] full = new RegisteredListener[current.length + 1];
             System.arraycopy(current, 0, full, 0, current.length);
             full[current.length] = this.virtualListener;
 
-            this.lastCache = full;
             return full;
         }
 

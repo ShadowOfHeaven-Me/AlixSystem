@@ -21,6 +21,7 @@ import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
 import ua.nanit.limbo.connection.ClientConnection;
@@ -95,7 +96,7 @@ public enum State {
     },
     STATUS {
         {
-            serverBound.registerRetrooper(PacketStatusRequest::new, PacketType.Status.Client.REQUEST);
+            serverBound.registerRetrooper(() -> PacketStatusRequest.INSTANCE, PacketType.Status.Client.REQUEST);
             serverBound.registerRetrooper(PacketInStatusPing::new, PacketType.Status.Client.PING);
             clientBound.registerRetrooper(PacketOutStatusPing::new, PacketType.Status.Server.PONG);
         }
@@ -104,7 +105,7 @@ public enum State {
         {
             serverBound.registerRetrooper(PacketLoginStart::new, PacketType.Login.Client.LOGIN_START);
             serverBound.registerRetrooper(PacketLoginPluginResponse::new, PacketType.Login.Client.LOGIN_PLUGIN_RESPONSE);
-            serverBound.registerRetrooper(PacketLoginAcknowledged::new, PacketType.Login.Client.LOGIN_SUCCESS_ACK);
+            serverBound.registerRetrooper(() -> PacketLoginAcknowledged.INSTANCE, PacketType.Login.Client.LOGIN_SUCCESS_ACK);
 
             clientBound.registerRetrooper(PacketLoginDisconnect::new, PacketType.Login.Server.DISCONNECT);
             clientBound.registerRetrooper(PacketLoginSuccess::new, PacketType.Login.Server.LOGIN_SUCCESS);
@@ -116,13 +117,13 @@ public enum State {
         {
             clientBound.registerRetrooper(PacketConfigPluginMessage::new, PacketType.Configuration.Server.PLUGIN_MESSAGE);
             clientBound.registerRetrooper(PacketConfigDisconnect::new, PacketType.Configuration.Server.DISCONNECT);
-            clientBound.registerRetrooper(PacketOutFinishConfiguration::new, PacketType.Configuration.Server.CONFIGURATION_END);
+            clientBound.registerRetrooper(() -> PacketOutFinishConfiguration.INSTANCE, PacketType.Configuration.Server.CONFIGURATION_END);
             clientBound.registerRetrooper(PacketOutConfigKeepAlive::new, PacketType.Configuration.Server.KEEP_ALIVE);
             clientBound.registerRetrooper(PacketKnownPacks::new, PacketType.Configuration.Server.SELECT_KNOWN_PACKS);
             clientBound.registerRetrooper(PacketUpdateTags::new, PacketType.Configuration.Server.UPDATE_TAGS);
             clientBound.registerRetrooper(PacketRegistryData::new, PacketType.Configuration.Server.REGISTRY_DATA);
 
-            serverBound.registerRetrooper(PacketInFinishConfiguration::new, PacketType.Configuration.Client.CONFIGURATION_END_ACK);
+            serverBound.registerRetrooper(() -> PacketInFinishConfiguration.INSTANCE, PacketType.Configuration.Client.CONFIGURATION_END_ACK);
             serverBound.registerRetrooper(PacketInConfigKeepAlive::new, PacketType.Configuration.Client.KEEP_ALIVE);
         }
     },
@@ -137,7 +138,7 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInRotation::new, PacketType.Play.Client.PLAYER_ROTATION);
 
             serverBound.registerRetrooper(PacketPlayInPong::new, PacketType.Play.Client.PONG);
-            serverBound.registerRetrooper(PacketPlayInTickEnd::new, PacketType.Play.Client.CLIENT_TICK_END);
+            serverBound.registerRetrooper(() -> PacketPlayInTickEnd.INSTANCE, PacketType.Play.Client.CLIENT_TICK_END);
             serverBound.registerRetrooper(PacketPlayInPluginMessage::new, PacketType.Play.Client.PLUGIN_MESSAGE);
             serverBound.registerRetrooper(PacketPlayInTeleportConfirm::new, PacketType.Play.Client.TELEPORT_CONFIRM);
             serverBound.registerRetrooper(PacketPlayInTransaction::new, PacketType.Play.Client.WINDOW_CONFIRMATION);
@@ -225,6 +226,10 @@ public enum State {
         return ProtocolMappings.clazzToState.get(packet.getClass());
     }
 
+    public static Class<? extends PacketWrapper<?>> getWrapperClazz(Packet packet) {
+        return ProtocolMappings.clazzToWrapper.get(packet.getClass());
+    }
+
     //Will not fully work, but may stay for now
     public static boolean isCompressible(State state, Class<? extends Packet> clazz) {
         switch (state) {
@@ -261,6 +266,7 @@ public enum State {
     public static final class ProtocolMappings<T extends Packet> {
 
         private static final Map<Class<? extends Packet>, State> clazzToState = new IdentityHashMap<>();
+        private static final Map<Class<? extends Packet>, Class<? extends PacketWrapper<?>>> clazzToWrapper = new IdentityHashMap<>();
         //No need to use ConcurrentVersionMap here
         private final VersionMap<PacketRegistry> registry = new VersionMap<>();
         private final State state;
@@ -278,13 +284,14 @@ public enum State {
         private static void registerAndEnsureNoDuplicate(Class<? extends Packet> clazz, State state) {
             //Log.error("CLAZZ: " + clazz + " STATE: " + state);
             if (clazzToState.put(clazz, state) != null)
-                throw new AlixException("Packet clazz duplicate! - " + clazz.getSimpleName());
+                throw new AlixError("Packet clazz duplicate! - " + clazz.getSimpleName());
         }
 
-        private static void register0(Supplier<? extends Packet> packet, State state) {
+        private static void register0(Supplier<? extends Packet> packet, State state, PacketTypeCommon type) {
             Class<? extends Packet> clazz = packet.get().getClass();
             registerAndEnsureNoDuplicate(clazz, state);
 
+            clazzToWrapper.put(clazz, type.getWrapperClass());
             /*if (PacketIn.class.isAssignableFrom(clazz))
                 HandleMask.register(clazz);*/
         }
@@ -293,7 +300,7 @@ public enum State {
 
         //Gotta love packetevents ;]
         private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
-            register0(packet, this.state);
+            register0(packet, this.state, type);
 
             /*if (!packets.add(type))
                 throw new AlixException("PacketTypeCommon duplicate! - " + type);*/
@@ -302,6 +309,9 @@ public enum State {
                 if (!ver.isSupported()) continue;
 
                 int packetId = type.getId(ver.getClientVersion());
+                /*if(ver == V1_21_7 && this.state == CONFIGURATION) {
+                    Log.error("PACKET ID=" + packetId);
+                }*/
                 if (packetId < 0) continue;//check if the packet exists on the specified version
 
                 PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
@@ -309,7 +319,7 @@ public enum State {
             }
         }
 
-        private void register(Supplier<T> packet, Mapping... mappings) {
+        /*private void register(Supplier<T> packet, Mapping... mappings) {
             register0(packet, this.state);
             for (Mapping mapping : mappings) {
                 for (Version ver : getRange(mapping)) {
@@ -317,7 +327,7 @@ public enum State {
                     reg.register(mapping.packetId, packet);
                 }
             }
-        }
+        }*/
 
         private Collection<Version> getRange(Mapping mapping) {
             return getRange(mapping.from, mapping.to);

@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-public final class FloodgateAccess {
+final class FloodgateAccess {
 
     //public static final String PLAYER_PREFIX = FloodgateApi.getInstance().getPlayerPrefix();
     private static final AttributeKey<FloodgatePlayer> floodgate_player = AttributeKey.valueOf("floodgate-player");
@@ -58,7 +58,9 @@ public final class FloodgateAccess {
     }
 
     public static boolean isBedrock(Channel channel) {
-        return channel.hasAttr(floodgate_player); //channel.getClass() == CHANNEL_WRAPPER_CLAZZ;
+        return getBedrockPlayer(channel) != null;
+        //channel.hasAttr(floodgate_player);
+        // channel.getClass() == CHANNEL_WRAPPER_CLAZZ;
     }
 
     /*public static String getName(Channel channel, String name) {

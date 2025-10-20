@@ -32,7 +32,7 @@ public final class BlockedPacketsQueue {
         ByteBuf buf = NettyUtils.directPooledBuffer(eventBuf.capacity() + varIntBytes);
 
         //prefix the ByteBuf with the packet id
-        FastNettyUtils.writeVarInt(buf, packetId, varIntBytes);//reuse the known VarInt's size
+        FastNettyUtils.writeVarInt0(buf, packetId, varIntBytes);//reuse the known VarInt's size
         buf.writeBytes(eventBuf);
 
         this.dynamicPackets.offerLast(buf);

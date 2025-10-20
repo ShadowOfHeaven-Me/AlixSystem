@@ -23,14 +23,18 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.captcha.CaptchaState;
 import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
+import ua.nanit.limbo.connection.pipeline.compression.ClientCompressSupply;
+import ua.nanit.limbo.connection.pipeline.encryption.EncryptionSupplier;
 import ua.nanit.limbo.handlers.DummyHandler;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
+import ua.nanit.limbo.server.Log;
 
 import java.util.function.Consumer;
 
@@ -47,29 +51,35 @@ public final class ClientChannelInitializer {
         //this.channelInitImpl = new ChannelInitImpl(silentServerContext);
     }
 
-    public void initAfterLoginSuccess(Channel channel, Version clientVersion, String name, Consumer<ClientConnection> authAction, GeyserUtil geyserUtil) {
+    public void initAfterLoginSuccess(Channel channel, Version clientVersion, String name, ClientCompressSupply compress, EncryptionSupplier cipherSupplier, Consumer<ClientConnection> authAction, GeyserUtil geyserUtil) {
         ChannelPipeline pipeline = channel.pipeline();
-
         ClientConnection connection = this.server.getIntegration().newConnection(channel, server, LoginState::new);
 
-        connection.updateVersion(clientVersion);
-        connection.updateState(connection.hasConfigPhase() ? State.CONFIGURATION : State.PLAY);
-        connection.getGameProfile().setUsername(name);
-        connection.getVerifyState().setData(UserFileManager.get(name), authAction, geyserUtil);
-
-        PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
-        VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
-
-        frameDecoder.stopResendCollection();
-
-        pipeline.addFirst(duplexHandlerName, duplexHandler);
-        pipeline.addFirst(frameDecoderName, frameDecoder);
-
-        this.server.getConnections().addConnection(connection);
-
         Runnable r = () -> {
+            //Ensure thread locality by setting fields on the client's netty thread
+            connection.updateVersion(clientVersion);
+            connection.updateState(connection.hasConfigPhase() ? State.CONFIGURATION : State.PLAY);
+            connection.getGameProfile().setUsername(name);
+            connection.getVerifyState().setData(UserFileManager.get(name), authAction, geyserUtil);
+
+            PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
+            VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
+
+            var cipher = cipherSupplier.getHandlerFor(connection);
+            connection.setCipher(cipher);
             frameDecoder.stopResendCollection();
-            duplexHandler.tryEnableCompression(false);
+
+            pipeline.addFirst(duplexHandlerName, duplexHandler);
+            pipeline.addFirst(frameDecoderName, frameDecoder);
+
+            this.server.getConnections().addConnection(connection);
+
+            //frameDecoder.stopResendCollection();
+            if (compress.shouldEnableCompress(connection)) {
+                boolean success = duplexHandler.tryEnableCompression(false, true);
+                if (!success)
+                    Log.warning("COULD NOT ENABLE COMPRESSION FOR " + name + " ");
+            }
 
             //todo: add HAProxyMessageDecoder support
 
@@ -119,9 +129,14 @@ public final class ClientChannelInitializer {
         Channel channel = connection.getChannel();
         ChannelPipeline pipeline = channel.pipeline();
         if (pipeline.context(duplexHandlerName) != null) {
+            //make sure to always remove the duplex handler first,
+            // so that the frame decoder can pass the cumulation to other handlers during handlerRemoved
             pipeline.remove(duplexHandlerName);
             pipeline.remove(frameDecoderName);
         }
+
+        if (NanoLimbo.debugMode)
+            Log.error("uninjectHandlersAndConnection, PIPELINE=" + pipeline.names());
 
         this.server.getConnections().removeConnection0(connection);
     }
@@ -141,9 +156,13 @@ public final class ClientChannelInitializer {
         if (pipeline.context("--timeout") != null)
             pipeline.replace("--timeout", "timeout", new ReadTimeoutHandler(30));
         //not sure why, but FlushConsolidationHandler causes some packets to not be sent at all by the main server, after I do this limbo voodoo magic
-        boolean replacedFCH = pipeline.context("FlushConsolidationHandler#0") != null;
+
+        var fchName = "FlushConsolidationHandler#0";
+        var prefixedFchName = "--FlushConsolidationHandler#0";
+
+        boolean replacedFCH = pipeline.context(fchName) != null;
         if (replacedFCH)
-            pipeline.replace("FlushConsolidationHandler#0", "--FlushConsolidationHandler#0", DummyHandler.HANDLER);
+            pipeline.replace(fchName, prefixedFchName, DummyHandler.HANDLER);
 
         this.uninjectHandlersAndConnection(connection);
 
@@ -157,8 +176,8 @@ public final class ClientChannelInitializer {
 
         //after replacing it, it returns back to normal
         //still, unsure why
-        if (replacedFCH)
-            pipeline.replace("--FlushConsolidationHandler#0", "FlushConsolidationHandler#0", new FlushConsolidationHandler());
+        if (replacedFCH && pipeline.context(prefixedFchName) != null)
+            pipeline.replace(prefixedFchName, fchName, new FlushConsolidationHandler());
 
         //config.setAutoRead(true);
         //pipeline.firstContext()

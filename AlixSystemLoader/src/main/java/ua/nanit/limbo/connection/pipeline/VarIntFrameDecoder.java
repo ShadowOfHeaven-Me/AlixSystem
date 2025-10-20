@@ -17,29 +17,35 @@
 
 package ua.nanit.limbo.connection.pipeline;
 
+import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.NettySafety;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.ByteToMessageDecoder.Cumulator;
 import io.netty.util.ByteProcessor;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
+import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.server.Log;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public final class VarIntFrameDecoder extends ByteToMessageDecoder {
+import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
+
+public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
     //Original: https://github.com/Nan1t/NanoLimbo/blob/main/src/main/java/ua/nanit/limbo/connection/pipeline/VarIntFrameDecoder.java
     //Optimized with: https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/netty/FallbackVarInt21FrameDecoder.java#L69
 
     //private static final Boolean PRESENT = Boolean.TRUE;
     private boolean collectResend = true;
+    private CipherHandler cipher;
     //private final Map<ByteBuf, Integer> resendMap = new IdentityHashMap<>(2);
     //private final FixedSizeQueue<ByteBuf> collectedIdentity = new FixedSizeQueue<>(2);
     //private final FixedSizeQueue<ByteBuf> resendCopies = new FixedSizeQueue<>(2);
@@ -83,54 +89,100 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         this.resend.forEach(consumer);
     }
 
-    private static final class BufSet12 {
+    public void setCipher(CipherHandler cipher) {
+        this.cipher = cipher;
+    }
 
-        //Inspired by java's ImmutableCollections.List12 from List.of(e1, e2)
-
-        private ByteBuf buf1;
-        private ByteBuf buf2;
-
-        //HAProxyDecoder could've changed the reader index
-
-        //private int rIdx1;
-        //private int rIdx2;
-
-        private BufSet12() {
-        }
-
-        private void add(ByteBuf buf) {
-            if (this.buf1 == null) {
-                this.buf1 = buf;
-                //this.rIdx1 = buf.readerIndex();
-                return;
-            }
-            if (this.buf1 == buf) return;
-            this.buf2 = buf;
-            //this.rIdx2 = buf.readerIndex();
-        }
-
-        private void forEach(Consumer<ByteBuf> consumer) {
-            if (this.buf1 == null) return;
-
-            //this.buf1.readerIndex(this.rIdx1);
-            consumer.accept(this.buf1);
-
-            if (this.buf2 == null) return;
-
-            //this.buf2.readerIndex(this.rIdx2);
-            consumer.accept(this.buf2);
-        }
+    private ByteBuf tryDecrypt(ByteBuf buf) throws Exception {
+        return CipherHandler.decrypt(buf, this.cipher);
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        if (!ctx.channel().isActive()) return;
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        //just being extra safe here
+        var e = ctx.channel().eventLoop();
 
+        if (e.inEventLoop()) this.cleanUp();
+        else {
+            //normally, a terrible idea, here however, should be good enough
+            if (this.cumulation != null)
+                e.execute(this::cleanUp);
+        }
+    }
+
+    private void cleanUp() {
+        /*if (!this.connection.getChannel().eventLoop().inEventLoop())
+            throw new AlixError("AAAAAAA " + Thread.currentThread());*/
+
+        ByteBuf cum = this.cumulation;
+        if (cum == null) return;
+
+        this.cumulation = null;
+        //super.channelRead(ctx, this.cumulation);
+
+        //will always be readable
+        /*if (cum.isReadable())
+            Log.error("CUM SIZE= " + cum.readableBytes());*/
+
+        //safe release
+        //if (cum.refCnt() != 0)
+        //(no need now, since executed on event loop)
+        cum.release();
+    }
+
+    private final Cumulator cumulator = MERGE_CUMULATOR;
+    private ByteBuf cumulation;
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //two volatile reads should be good enough perf here, since arriving packets should be large enough to overshadow this minor perf dent
+        if (!ctx.channel().isActive() || ctx.isRemoved()) {
+            this.cleanUp();
+            return;
+        }
+
+        if (NanoLimbo.debugFrames)
+            Log.error("FRAME=" + msg);
+
+        ByteBuf in = this.tryDecrypt((ByteBuf) msg);
+
+        if (NanoLimbo.debugBytes)
+            PacketUtils.debugBytes(in);
+
+        //From ByteToMessageDecoder
+        if (this.cumulation == null) this.cumulation = in;
+        else {
+            this.cumulation = this.cumulator.cumulate(BufUtils.POOLED, this.cumulation, in);
+        }
+
+        while (this.cumulation.isReadable()) {
+            //get the current frame
+            ByteBuf decoded = this.decode(this.cumulation);
+            if (decoded == null)
+                break;//nothing left to decode (or nothing was decoded at all)
+
+            super.channelRead(ctx, decoded);
+
+            if (this.cumulation == null)
+                return;//Can become null inside super.channelRead(...)
+        }
+
+        if (!this.cumulation.isReadable()) {
+            this.cumulation.release();
+            this.cumulation = null;
+        } else if (this.cumulation.readerIndex() > 1024) {
+            //is discardSomeReadBytes a better alternative here?
+            this.cumulation.discardReadBytes();
+        }
+    }
+
+    //@Override
+    private ByteBuf decode(ByteBuf in) {
         int packetStart = in.forEachByte(ByteProcessor.FIND_NON_NUL);
         if (packetStart == -1) {
             in.clear();
             //in.readerIndex(0);
-            return;
+            return null;
         }
         //the name of the var isn't exactly true ;]
         //pretty sure it returns true, like, always
@@ -140,33 +192,34 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         in.markReaderIndex();
 
         int readableBytes = in.readableBytes();
-        if (readableBytes == 0) return;
+        if (readableBytes == 0) return null;//I don't think this can ever be true here
 
         int len = readVarIntPacketLength(in);
+        //NettySafety.validateUserInputBufAlloc(len);
         if (len < 0) throw NettySafety.INVALID_PACKET_LEN;
 
         //readVarInt() returns 0 for partial VarInts with a continuation bit, and for actual VarInts read as a 0
         if (len == 0) {
             in.resetReaderIndex();
-            return;
+            return null;
         }
 
         //the packet is said to be larger than what we've cumulated (hehe) so far
         if (len > readableBytes) {
             in.resetReaderIndex();
-            return;
+            return null;
         }
         //Log.error("PACKET START: " + packetStart + " IDX: " + in.readerIndex() + " notReadYet: " + notReadYet);
 
-        if (collectResend)// && notReadYet) {
+        if (collectResend && !this.resend.contains(in))// && notReadYet) {
             this.resend.add(in.retain());
         //Log.error("IN BUF COUNT: " + resend.size() + " === " + in + " HASH: " + System.identityHashCode(in));
 
         try {
-            out.add(in.readRetainedSlice(len));
+            return in.readRetainedSlice(len);
         } catch (Throwable ex) {
             this.connection.closeInvalidPacket();
-            if (NanoLimbo.suppress(ex)) return;
+            if (NanoLimbo.suppress(ex)) return null;
 
             Log.error("len=" + len + " rdx=" + in.readerIndex() + " rby=" + in.readableBytes(), ex);
         }
@@ -180,6 +233,7 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
 //
 //        if (isLastBuf) out.add(in.retain());
 //        else out.add(in.readRetainedSlice(len));
+        return null;
     }
 
     private static int readVarIntPacketLength(ByteBuf buf) {
@@ -241,6 +295,44 @@ public final class VarIntFrameDecoder extends ByteToMessageDecoder {
         preservedBytes = (preservedBytes & 0x007F) | ((preservedBytes & 0x7F00) >> 1);
         return preservedBytes;
     }
+    /*private static final class BufSet12 {
+
+        //Inspired by java's ImmutableCollections.List12 from List.of(e1, e2)
+
+        private ByteBuf buf1;
+        private ByteBuf buf2;
+
+        //HAProxyDecoder could've changed the reader index
+
+        //private int rIdx1;
+        //private int rIdx2;
+
+        private BufSet12() {
+        }
+
+        private void add(ByteBuf buf) {
+            if (this.buf1 == null) {
+                this.buf1 = buf;
+                //this.rIdx1 = buf.readerIndex();
+                return;
+            }
+            if (this.buf1 == buf) return;
+            this.buf2 = buf;
+            //this.rIdx2 = buf.readerIndex();
+        }
+
+        private void forEach(Consumer<ByteBuf> consumer) {
+            if (this.buf1 == null) return;
+
+            //this.buf1.readerIndex(this.rIdx1);
+            consumer.accept(this.buf1);
+
+            if (this.buf2 == null) return;
+
+            //this.buf2.readerIndex(this.rIdx2);
+            consumer.accept(this.buf2);
+        }
+    }*/
 
 /*    @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {

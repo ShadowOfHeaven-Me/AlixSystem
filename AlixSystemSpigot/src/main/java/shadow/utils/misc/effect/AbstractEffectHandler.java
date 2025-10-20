@@ -23,10 +23,10 @@ abstract class AbstractEffectHandler implements PotionEffectHandler {
             try {
                 UnsafeEffectHandler.init();//check if it's available
                 func = UnsafeEffectHandler::new;//use the faster handler if possible
-                Main.logInfo("Using the optimized Unsafe Effect Handler for potion effect management");
+                Main.logInfo("Using the optimized UnsafeEffectHandler for potion effect management");
             } catch (Throwable e) {
                 func = APIEffectHandler::new;//use the slower handler using the spigot API as fallback
-                Main.logInfo("Using the unoptimized API Effect Handler for potion effect management");
+                Main.logInfo("Using the unoptimized APIEffectHandler for potion effect management");
                 if (AlixUtils.isDebugEnabled) {
                     Main.logInfo("Send this to the developer: " + PlatformDependent.hasUnsafe());
                     e.printStackTrace();

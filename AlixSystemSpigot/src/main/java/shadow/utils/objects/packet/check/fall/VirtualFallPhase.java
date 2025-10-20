@@ -2,7 +2,6 @@ package shadow.utils.objects.packet.check.fall;
 
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTeleportConfirm;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityAnimation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.main.AlixUtils;
@@ -16,7 +15,7 @@ public final class VirtualFallPhase {
 
     //private static final double MIN_Y = AlixWorld.TELEPORT_LOCATION.getY() - 10;
     private static final int NOT_FALLING_TELEPORT_ID = AlixUtils.getRandom(13456789, 34567898) + 96;// ;]
-    private static final int TIMEOUT = BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND * 3;//timeout the player after 3 seconds
+    private static final int TIMEOUT = BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND * 15;//timeout the player after 15 seconds
     public static final ByteBuf FALL_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_FALL_LOCATION, 10);
     public static final ByteBuf NOT_FALLING_TELEPORT = OutPositionPacketConstructor.constructConst(AlixWorld.TELEPORT_LOCATION, NOT_FALLING_TELEPORT_ID);
     //private static final ByteBuf BARRIER = NettyUtils.constBuffer(new WrapperPlayServerBlockChange(AlixWorld.TELEPORT_VEC3I.add(0, -1, 0), SpigotConversionUtil.fromBukkitBlockData(Material.DIRT.createBlockData()).getGlobalId()));
@@ -58,7 +57,7 @@ public final class VirtualFallPhase {
 
         //Main.debug(this.user.getChannel().pipeline().names() + " ");
 
-        this.user.writeDynamicSilently(new WrapperPlayServerEntityAnimation(user.getPlayer().getEntityId(), WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM));
+        //this.user.writeDynamicSilently(new WrapperPlayServerEntityAnimation(user.getPlayer().getEntityId(), WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM));
         this.user.writeConstSilently(PLAYER_ABILITIES_FALL_PACKET);
         this.user.writeAndFlushConstSilently(FALL_TELEPORT);
         //this.user.keepAliveSent = System.currentTimeMillis();

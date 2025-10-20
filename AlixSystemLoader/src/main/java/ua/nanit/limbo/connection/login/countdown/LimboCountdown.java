@@ -7,6 +7,7 @@ import ua.nanit.limbo.connection.login.packets.ExperiencePackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
+import ua.nanit.limbo.protocol.registry.State;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +39,12 @@ public final class LimboCountdown {//shows xp countdown and kicks out
     }
 
     void tick() {
+        if (this.connection.getEncoderState() != State.PLAY) {
+            if(--this.index == 0) {
+                this.connection.closeTimedOut();
+            }
+            return;
+        }
         if (this.index != 0) {
             //if (!this.connection.isInPlayPhase()) return;
             this.duplexHandler.writeAndFlush(this.packets[--this.index]);

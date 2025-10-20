@@ -277,6 +277,10 @@ public final class FileUpdater {
 
     private static String removeHashtagStart(String s) {
         while (!s.isEmpty() && s.charAt(0) == '#') s = s.substring(1);//lazy writing
+        /*for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) != '#')
+                return s.substring()
+        }*/
         return s;
     }
 

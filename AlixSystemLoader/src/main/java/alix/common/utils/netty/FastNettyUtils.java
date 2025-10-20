@@ -34,7 +34,7 @@ public final class FastNettyUtils {
     }
 
     //Optimize VarInts with explicit cases when their exact size is known
-    public static void writeVarInt(ByteBuf buf, int i, byte bytesCount) {
+    public static void writeVarInt0(ByteBuf buf, int i, byte bytesCount) {
         switch (bytesCount) {
             case 1:
                 buf.writeByte(i);
@@ -74,30 +74,45 @@ public final class FastNettyUtils {
 
     public static int readVarInt(ByteBuf buf) {
         switch (buf.readableBytes()) {
+            case 3:
+                return readVarInt3Or4Byte(buf, buf.getMediumLE(buf.readerIndex()));
             case 2:
                 return readVarInt2Byte(buf);
             case 1: {
                 byte val = buf.readByte();
                 //check if it has the continuation bit set
-                if ((val & 0x80) != 0) throw new AlixException("1 byte VarInt too big");
+                if ((val & 0x80) != 0) throw NettySafety.INVALID_VAR_INT;
                 return val;
             }
             case 0:
-                throw new AlixException("VarInt not readable");
+                throw NettySafety.INVALID_VAR_INT;
             //case 3:
             default:
-                //wwe read a medium, because mc VarInts are up to 3 bytes long
-                return readVarInt3Or4Byte(buf, buf.getMediumLE(buf.readerIndex()));
+                return readVarInt3Or4Byte(buf, buf.getIntLE(buf.readerIndex()));
         }
     }
 
-    //can't really be 4 bytes in minecraft, but whatever
+    public static int readVarIntSlow(ByteBuf buffer) {
+        int i = 0;
+        int i1 = 0;
+
+        byte b;
+        do {
+            b = buffer.readByte();
+            i |= (b & 127) << i1++ * 7;
+            if (i1 > 5) throw NettySafety.INVALID_VAR_INT;
+        } while ((b & 128) == 128);
+
+        return i;
+    }
+
     private static int readVarInt3Or4Byte(final ByteBuf buf, final int wholeOrMore) {
         // Read 3 bytes in little-endian order
         final int atStop = ~wholeOrMore & 0x808080; // Check for stop bits
 
-        // If no stop bits are found, throw an exception
-        if (atStop == 0) throw new AlixException("VarInt larger than 21 bits");
+        // If no stop bits are found, default to a slow read
+        // I'm too lazy to make a 5 byte read method
+        if (atStop == 0) return readVarIntSlow(buf);
 
         // Find the position of the first stop bit
         final int bitsToKeep = Integer.numberOfTrailingZeros(atStop) + 1;

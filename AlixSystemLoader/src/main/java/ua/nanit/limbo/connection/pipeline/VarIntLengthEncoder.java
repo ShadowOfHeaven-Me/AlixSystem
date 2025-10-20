@@ -31,7 +31,7 @@ final class VarIntLengthEncoder {// extends MessageToByteEncoder<ByteBuf> {
         int newCapacity = readableBytes + varIntBytes;
         ByteBuf out = pooled ? BufUtils.pooledBuffer(newCapacity) : BufUtils.unpooledBuffer(newCapacity); //Unpooled.directBuffer(msg.capacity() + varIntBytes);
 
-        FastNettyUtils.writeVarInt(out, readableBytes, varIntBytes);
+        FastNettyUtils.writeVarInt0(out, readableBytes, varIntBytes);
         out.writeBytes(msg);
 
         msg.release();

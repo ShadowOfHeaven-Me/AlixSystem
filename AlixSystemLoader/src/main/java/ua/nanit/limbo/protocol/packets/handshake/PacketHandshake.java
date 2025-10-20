@@ -37,7 +37,19 @@ public final class PacketHandshake implements PacketIn {
         return version;
     }
 
-    public String getHost() {
+    public String getExtractedHost() {
+        return extractHost(this.host);
+    }
+
+    //todo: verify this
+    //extra info can be sent from bedrock/forge players in the host name
+    private static String extractHost(String host) {
+        for (int i = 0; i < host.length(); i++) {
+            char c = host.charAt(i);
+            //forge's delimiter is the null character
+            if (c == '\0') return host.substring(0, i + 1);
+            //if((c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' && c > 'Z') && c != '.')
+        }
         return host;
     }
 

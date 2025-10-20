@@ -14,13 +14,15 @@ import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.natives.encryption.JavaVelocityCipher;
+import com.velocitypowered.natives.util.Natives;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
 @MainClass
-@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.1.0", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
+@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.2.0 (DEV-1)", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
         authors = "ShadowOfHeaven", dependencies = @Dependency(id = "floodgate", optional = true))
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
@@ -77,6 +79,12 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
     /*public Logger getLogger() {
         return logger;
     }*/
+
+    public static boolean nativePreferDirectBufs() {
+        //JavaVelocityCipher requires heap
+        //NativeVelocityCipher requires direct
+        return Natives.cipher.get() != JavaVelocityCipher.FACTORY;
+    }
 
     public ProxyServer getServer() {
         return server;

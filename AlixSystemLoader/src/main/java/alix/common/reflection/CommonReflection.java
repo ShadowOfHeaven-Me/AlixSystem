@@ -14,6 +14,16 @@ public final class CommonReflection {
             method.setAccessible(true);
             return method;
         } catch (Exception e) {
+            return getDeclaredMethod(clazz, name, params);
+        }
+    }
+
+    public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... params) {
+        try {
+            Method method = clazz.getDeclaredMethod(name, params);
+            method.setAccessible(true);
+            return method;
+        } catch (Exception e) {
             throw new AlixException(e, "No method: " + clazz.getSimpleName() + "." + name + "(" + Arrays.toString(params) + ")");
         }
     }

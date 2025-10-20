@@ -64,13 +64,12 @@ public final class LoginVerdictManager {
     public static TemporaryUser get(Player p) {
         AlixUser user = UserManager.get(p.getUniqueId());
         TemporaryUser temp = user instanceof TemporaryUser ? (TemporaryUser) user : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
-        if (temp == null) {
-            if (user == null) {
-                p.kickPlayer("§cSomething went wrong! (TempUser not assigned)");//cannot use MethodProvider.kickAsync, because AlixUser is null
-                Main.logWarning("No Temporary User was found for the player " + p.getName() + " - disconnecting him for safety! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
-            }
-            return null;
+
+        if (user == null) {
+            p.kickPlayer("§cSomething went wrong! (TempUser not assigned)");//cannot use MethodProvider.kickAsync, because AlixUser is null
+            Main.logWarning("No Temporary User was found for the player " + p.getName() + " - disconnecting him for safety! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
         }
+
         return temp;
     }
 

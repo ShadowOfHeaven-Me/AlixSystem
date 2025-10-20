@@ -537,10 +537,8 @@ public class PacketBlocker implements PacketProcessor {
                 CommandManager.onCaptchaCompletionAttempt(this.user, new WrapperPlayClientChatMessage(event).getMessage().trim());
                 break;
             case ANIMATION:
-                this.user.armSwingReceived = true;
-                //this.user.debug("ANIMATION RECEIVED");
-                //this.t = System.currentTimeMillis();
-                //Main.debug("ANIMATION RECEIVED " + (System.currentTimeMillis() - user.armSwingSent) + "ms");
+                //3.7.1 - remove
+                //this.user.armSwingReceived = true;
                 break;
 /*            case CHAT_COMMAND:
                 this.processCommand(new WrapperPlayClientChatCommand(event).getCommand().toCharArray());
@@ -551,10 +549,11 @@ public class PacketBlocker implements PacketProcessor {
                 WrapperPlayClientKeepAlive keepAlive = new WrapperPlayClientKeepAlive(event);
                 if (keepAlive.getId() == AlixHandler.KEEP_ALIVE_ID) {
                     event.setCancelled(true);
-                    //this.user.debug("KEEP ALIVE RECEIVED: " + (System.currentTimeMillis() - t));
-                    //Main.debug("KEEP ALIVE RECEIVED " + (System.currentTimeMillis() - user.keepAliveSent) + "ms");
+
                     this.user.keepAliveReceived = true;
-                    if (!this.user.armSwingReceived) MethodProvider.kickAsync(this.user, invalidProtocolError);
+                    //3.7.1 - remove
+                    /*if (!this.user.armSwingReceived)
+                        MethodProvider.kickAsync(this.user, invalidProtocolError);*/
                 }
                 return;//exempt keep alive from the total packet count limitation
             case PONG:

@@ -15,7 +15,7 @@ public final class GlobalCompressionHandler implements CompressionHandler {
     }
 
     public static CompressionHandler getCompressionFor(Packet packet, Version version, State state) {
-        if (!COMPRESSION_ENABLED || version.lessOrEqual(Version.V1_7_6) || !State.isCompressible(state, packet.getClass()))
+        if (CompressionSupplier.compressDisabled(packet, version, state))
             return null;
 
         return INSTANCE;

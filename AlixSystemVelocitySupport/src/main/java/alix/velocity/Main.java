@@ -15,6 +15,7 @@ import alix.velocity.systems.packets.PacketEventsManager;
 import alix.velocity.utils.AlixChannelInitInterceptor;
 import alix.velocity.utils.AlixUtils;
 import alix.velocity.utils.file.FileManager;
+import alix.velocity.utils.user.UserManager;
 import com.velocitypowered.proxy.VelocityServer;
 import org.slf4j.Logger;
 
@@ -62,6 +63,7 @@ public final class Main implements LoaderBootstrap {
         CommandManager.register(this.server);
         FileManager.loadFiles();
         AlixUtils.init();
+        UserManager.init(this.server);
         //server.getBackendChannelInitializer();
         //VelocityServerConnection
     }

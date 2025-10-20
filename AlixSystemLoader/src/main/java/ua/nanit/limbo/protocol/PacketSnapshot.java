@@ -27,13 +27,15 @@ import lombok.SneakyThrows;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
-import ua.nanit.limbo.protocol.packets.CompressionSupplier;
+import ua.nanit.limbo.connection.pipeline.compression.CompressionSupplier;
+import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Log;
 import ua.nanit.limbo.util.map.VersionMap;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,7 +49,7 @@ public final class PacketSnapshot implements PacketOut {
     static final AlixQueue<PacketSnapshot> snapshots = new ConcurrentAlixDeque<>();
     public static final boolean floodgateNoCompression = NanoLimbo.INTEGRATION.isFloodgateNoCompressionPresent();
     private final PacketOut packet;
-    private final State state;
+    public final State state;
     //private final Map<Version, ByteBuf> cache = new ConcurrentHashMap<>();
     private final VersionMap<ByteBuf> encodings;
 
@@ -61,7 +63,7 @@ public final class PacketSnapshot implements PacketOut {
     private PacketSnapshot(PacketOut packet) {
         this.packet = packet;
         this.state = State.getState(packet);
-        this.encodings = encode0(packet, state, CompressionSupplier.GLOBAL);
+        this.encodings = NanoLimbo.usePacketSnapshots ? encode0(packet, state, CompressionSupplier.GLOBAL) : null;
         //encode(packet, CompressionSupplier.NULL_SUPPLIER)
         /*if (CompressionHandler.COMPRESSION_ENABLED)
             this.noCompressionEncodings = floodgateNoCompression ? new ConcurrentVersionMap<>() : null;
@@ -73,6 +75,9 @@ public final class PacketSnapshot implements PacketOut {
 
     void release() {
         //this.encodings.forEach(ByteBuf::release);
+        if (!NanoLimbo.usePacketSnapshots)
+            return;
+
         this.encodings.forEach(buf -> {
             int refCnt = buf.refCnt();
             if (refCnt != 0) buf.unwrap().release();
@@ -80,8 +85,13 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     private ByteBuf getEnsureNotNull(Version version) {
+        //terrible performance, but this should only be used in debugging anyway
+        if (!NanoLimbo.usePacketSnapshots)
+            return this.encodePacket(version, GlobalCompressionHandler.INSTANCE, true);
+
         var buf = this.encodings.get(version);
-        if (buf == null) throw new AlixError("NULL ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
+        if (buf == null)
+            throw new AlixError("NULL ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
         return buf;
     }
 
@@ -151,6 +161,7 @@ public final class PacketSnapshot implements PacketOut {
 
             CompressionHandler compression = compressionSupplier.getHandlerFor(packet, version, state);
 
+            //Consider: Use a pooled buf for faster allocation, and later copy into an unpooled
             ByteBuf buf = PacketDuplexHandler.encodeToRaw0(packet, mappings, version, compression, false);
             Version alreadyCached = encoded.get(buf);
 
@@ -167,6 +178,9 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     public Collection<ByteBuf> buffers() {
+        if (!NanoLimbo.usePacketSnapshots)
+            return Collections.EMPTY_LIST;
+
         return this.encodings.valuesSnapshot();
     }
 

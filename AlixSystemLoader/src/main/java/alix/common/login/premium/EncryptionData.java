@@ -9,20 +9,22 @@ public final class EncryptionData {
     private final byte[] token;
     private final ClientPublicKey publicKey;
     private final UUID uuid;
+    private final boolean shouldAuthenticate;
 
-    public EncryptionData(String packetUsername, String serverUsername, byte[] token, ClientPublicKey publicKey, UUID uuid) {
+    public EncryptionData(String packetUsername, String serverUsername, byte[] token, ClientPublicKey publicKey, UUID uuid, boolean shouldAuthenticate) {
         this.packetUsername = packetUsername;
         this.serverUsername = serverUsername;
         this.token = token;
         this.publicKey = publicKey;
         this.uuid = uuid;
+        this.shouldAuthenticate = shouldAuthenticate;
     }
 
     public byte[] token() {
         return token;
     }
 
-    public UUID premiumUUID() {
+    public UUID uuid() {
         return uuid;
     }
 
@@ -36,5 +38,9 @@ public final class EncryptionData {
 
     public String serverUsername() {
         return serverUsername;
+    }
+
+    public boolean shouldAuthenticate() {
+        return shouldAuthenticate;
     }
 }

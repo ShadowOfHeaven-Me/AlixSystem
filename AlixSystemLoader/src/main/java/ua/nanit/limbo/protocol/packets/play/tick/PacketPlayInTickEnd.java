@@ -10,6 +10,7 @@ import ua.nanit.limbo.server.LimboServer;
 
 public final class PacketPlayInTickEnd implements PacketIn {
 
+    public static final PacketPlayInTickEnd INSTANCE = new PacketPlayInTickEnd();
     public static final WrapperPlayClientClientTickEnd WRAPPER = WrapperUtils.allocEmpty(WrapperPlayClientClientTickEnd.class);
 
     @Override
@@ -19,5 +20,8 @@ public final class PacketPlayInTickEnd implements PacketIn {
     @Override
     public void handle(ClientConnection conn, LimboServer server) {
         conn.getVerifyState().handle(this);
+    }
+
+    private PacketPlayInTickEnd() {
     }
 }

@@ -8,6 +8,8 @@ import ua.nanit.limbo.server.LimboServer;
 
 public final class PacketLoginAcknowledged implements PacketIn {
 
+    public static final PacketLoginAcknowledged INSTANCE = new PacketLoginAcknowledged();
+
     @Override
     public void decode(ByteMessage msg, Version version) {
     }
@@ -17,8 +19,6 @@ public final class PacketLoginAcknowledged implements PacketIn {
         server.getPacketHandler().handle(conn, this);
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
+    private PacketLoginAcknowledged() {
     }
 }

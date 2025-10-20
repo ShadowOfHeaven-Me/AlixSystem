@@ -1,6 +1,7 @@
 package alix.common.data;
 
 import alix.common.AlixCommonMain;
+import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 
@@ -14,6 +15,10 @@ public enum LoginType {
     BEDROCK_VER;
 
     public static LoginType from(String t, boolean config) {
+        return from(t, config, true);
+    }
+
+    public static LoginType from(String t, boolean config, boolean fallbackToCmd) {
         boolean isOlderThan1_14 = PacketEvents.getAPI().getServerManager().getVersion().isOlderThan(ServerVersion.V_1_14);
         switch (t) {
             case "PASSWORD":
@@ -35,6 +40,9 @@ public enum LoginType {
             default:
                 if (config)
                     AlixCommonMain.logWarning("Invalid login type in config: '" + config + "'! Defaulting to 'COMMAND'!");
+                if (!fallbackToCmd)
+                    throw new AlixException("Invalid LoginType: " + t);
+
                 return COMMAND;
         }
     }

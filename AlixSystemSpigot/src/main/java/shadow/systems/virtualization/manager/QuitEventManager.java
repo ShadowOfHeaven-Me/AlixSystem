@@ -9,11 +9,7 @@ final class QuitEventManager extends VirtualEventManager {
         super(PlayerQuitEvent.class, QuitEventExecutor::new);
     }
 
-    private static final class QuitEventExecutor extends VirtualEventExecutor<PlayerQuitEvent> {
-
-        QuitEventExecutor(VirtualEventManager eventManager) {
-            super(eventManager);
-        }
+    static final class QuitEventExecutor extends VirtualEventExecutor<PlayerQuitEvent> {
 
         @Override
         void onInvocation(PlayerQuitEvent event) {

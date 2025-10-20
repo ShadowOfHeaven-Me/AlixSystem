@@ -136,6 +136,9 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
             recode[0] = true;
         }
 
+        //just to be extra safe
+        recode[0] = true;
+
         //we cannot include `isPremium` here, because this would introduce a bypass
         return data != null || this.geyserUtil.isBedrock(channel) || (hasCompletedCaptcha != null ? hasCompletedCaptcha == Boolean.TRUE : hasCompletedCaptcha(ip, name)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
     }

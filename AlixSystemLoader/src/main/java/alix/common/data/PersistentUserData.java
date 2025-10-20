@@ -1,5 +1,7 @@
 package alix.common.data;
 
+import alix.api.user.data.AlixUserData;
+import alix.api.user.data.PremiumStatus;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.file.UserFileManager;
@@ -12,8 +14,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.UUID;
 
-public final class PersistentUserData {
+public final class PersistentUserData implements AlixUserData {
 
     private static final LocationListProvider homesProvider = LocationListProvider.createImpl();
     private static final int CURRENT_DATA_LENGTH = 10;
@@ -51,6 +54,10 @@ public final class PersistentUserData {
         this.premiumData = PremiumData.UNKNOWN;
         UserFileManager.putData(this);
         //The GeoIPTracker add should not be invoked
+    }
+
+    public static PremiumData getPremiumData(PersistentUserData data) {
+        return data == null ? PremiumData.UNKNOWN : data.getPremiumData();
     }
 
     public static boolean isRegistered(PersistentUserData data) {
@@ -110,6 +117,7 @@ public final class PersistentUserData {
                 premiumData.toSavable());
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -122,6 +130,7 @@ public final class PersistentUserData {
         return loginParams;
     }
 
+    @Override
     public InetAddress getSavedIP() {
         return ip;
     }
@@ -138,6 +147,7 @@ public final class PersistentUserData {
         return mutedUntil;
     }
 
+    @Override
     public long getLastSuccessfulLogin() {
         return lastSuccessfulLogin;
     }
@@ -180,11 +190,42 @@ public final class PersistentUserData {
         this.loginParams.setExtraLoginType(null);
         this.loginParams.setAuthSettings(AuthSetting.PASSWORD);
         this.loginParams.setHasProvenAuthAccess(false);
-        this.premiumData = PremiumData.UNKNOWN;//is this right?
+        //nieeee
+        //this.premiumData = PremiumData.UNKNOWN;//is this right?
     }
 
     public PersistentUserData setIP(InetAddress ip) {
         this.ip = ip;
         return this;
+    }
+
+    @Override
+    public boolean matchesPassword(@NotNull String str) {
+        return this.getPassword().isEqualTo(str);
+    }
+
+    @Override
+    public boolean hasSecondaryPassword() {
+        return this.loginParams.getExtraPassword() != null;
+    }
+
+    @Override
+    public boolean hasSecondaryPasswordActive() {
+        return this.loginParams.getExtraLoginType() != null;
+    }
+
+    @Override
+    public boolean matchesSecondaryPassword(@NotNull String str) {
+        return this.hasSecondaryPassword() && this.loginParams.getExtraPassword().isEqualTo(str);
+    }
+
+    @Override
+    public PremiumStatus getPremiumStatus() {
+        return PremiumStatus.values()[this.premiumData.getStatus().ordinal()];
+    }
+
+    @Override
+    public UUID premiumUUID() {
+        return this.premiumData.premiumUUID();
     }
 }

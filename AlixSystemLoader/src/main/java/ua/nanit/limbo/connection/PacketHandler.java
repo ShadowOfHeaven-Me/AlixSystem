@@ -19,6 +19,7 @@ package ua.nanit.limbo.connection;
 
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.integration.PreLoginResult;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.configuration.PacketInFinishConfiguration;
@@ -29,6 +30,7 @@ import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.status.PacketStatusRequest;
 import ua.nanit.limbo.server.LimboServer;
+import ua.nanit.limbo.server.Log;
 
 public final class PacketHandler {
 
@@ -66,7 +68,7 @@ public final class PacketHandler {
 
     public void handle(ClientConnection conn, PacketStatusRequest packet) {
         conn.getFrameDecoder().stopResendCollection();
-        conn.uninject();
+        conn.uninjectWithRecoded(packet);
         //Log.error("STATUS REQUEST");
         //conn.sendPacket(new PacketStatusResponse(server));
     }
@@ -78,7 +80,9 @@ public final class PacketHandler {
     private void handleLogin1(ClientConnection conn) {
         //conn.ensureFirst();
         conn.getFrameDecoder().releaseCollected();
-        conn.getDuplexHandler().tryEnableCompression();
+        if (!conn.getDuplexHandler().tryEnableCompression(true, false) && NanoLimbo.debugMode) {
+            Log.warning("COMPRESS NOT ENABLED");
+        }
 
         /*if (server.getConfig().getInfoForwarding().isModern()) {
             int loginId = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);

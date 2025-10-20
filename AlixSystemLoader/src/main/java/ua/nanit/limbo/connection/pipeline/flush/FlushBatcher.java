@@ -1,6 +1,8 @@
 package ua.nanit.limbo.connection.pipeline.flush;
 
 import io.netty.channel.Channel;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.server.Log;
 
 public interface FlushBatcher {
 
@@ -17,7 +19,8 @@ public interface FlushBatcher {
     }
 
     static void flush0(Channel channel) {
-        if (!channel.isActive()) return;
         channel.unsafe().flush();
+        if (NanoLimbo.debugPackets)
+            Log.warning("FLUSH0");
     }
 }

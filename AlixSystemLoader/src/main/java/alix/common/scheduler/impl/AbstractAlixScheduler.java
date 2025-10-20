@@ -33,7 +33,6 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
         this.poolExecutor.setRemoveOnCancelPolicy(true);
 
         this.asyncBlockingExecutor = AlixCommonHandler.createExecutorForBlockingTasks();
-
         this.syncExecutor = DelegatingExecutorService.of(this::sync);
         //this.asyncExecutor = this.poolExecutor;
     }

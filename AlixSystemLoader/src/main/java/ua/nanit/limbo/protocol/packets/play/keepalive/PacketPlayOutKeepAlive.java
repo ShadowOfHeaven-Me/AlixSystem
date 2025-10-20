@@ -26,6 +26,11 @@ public final class PacketPlayOutKeepAlive extends OutRetrooperPacket<WrapperPlay
         super(WrapperPlayServerKeepAlive.class);
     }
 
+    public PacketPlayOutKeepAlive(int id) {
+        this();
+        this.setId(id);
+    }
+
     public PacketPlayOutKeepAlive setId(long id) {
         this.wrapper().setId(id);
         return this;

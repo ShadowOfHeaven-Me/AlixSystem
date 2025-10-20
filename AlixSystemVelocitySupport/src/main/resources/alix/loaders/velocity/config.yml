@@ -90,7 +90,11 @@ auto-login: true
 # 4 - Uses SHA-256, always saved into a 64 character-long hex
 # 5 - Uses SHA-512, always saved into a 64 character-long hex
 password-hash-type: 3
-
+#Defines whether a non-premium, server-client connection should be encrypted - helps mitigate MITM attacks, but slightly increases CPU usage
+# always - All client connections will always be requested to encrypt their connection (some pre-1.20.5 cracked clients might disconnect because of this)
+# safe - Only 1.20.5+ client connections will be encrypted (no risk of disconnecting)
+# never - Will never try to enable encryption (Beyond side effects of checking the client's premium status)
+encrypt-connection: safe
 
 
 #------------------------------------------------#

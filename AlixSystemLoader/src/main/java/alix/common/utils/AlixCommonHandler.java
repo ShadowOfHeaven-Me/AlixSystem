@@ -77,6 +77,16 @@ public final class AlixCommonHandler {
         return PreLoginVerdict.ALLOWED;
     }
 
+    public static boolean preferDirectBufs() {
+        switch (ServerEnvironment.getEnvironment()) {
+            case VELOCITY: {
+                return VelocityAlixMain.nativePreferDirectBufs();
+            }
+            default:
+                return true;
+        }
+    }
+
     public static InterfaceAlixScheduler createSchedulerImpl() {
         switch (ServerEnvironment.getEnvironment()) {
             case PAPER:
