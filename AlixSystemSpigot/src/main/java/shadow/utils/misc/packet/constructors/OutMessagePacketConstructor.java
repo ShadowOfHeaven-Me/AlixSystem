@@ -1,23 +1,12 @@
 package shadow.utils.misc.packet.constructors;
 
+import alix.common.packets.message.MessageWrapper;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
-import com.github.retrooper.packetevents.protocol.chat.ChatType;
-import com.github.retrooper.packetevents.protocol.chat.ChatTypes;
-import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage;
-import com.github.retrooper.packetevents.protocol.chat.message.ChatMessageLegacy;
-import com.github.retrooper.packetevents.protocol.chat.message.ChatMessage_v1_16;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerActionBar;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import shadow.utils.netty.NettyUtils;
-
-import java.util.UUID;
-import java.util.function.BiFunction;
 
 public final class OutMessagePacketConstructor {
 
@@ -86,36 +75,17 @@ public final class OutMessagePacketConstructor {
     }
 
     private static final ServerVersion version = PacketEvents.getAPI().getServerManager().getVersion();
-    private static final BiFunction<Component, Boolean, PacketWrapper<?>> packetWrapperFunc = createPacketWrapperFunc0();
+    //private static final BiFunction<Component, Boolean, PacketWrapper<?>> packetWrapperFunc = createPacketWrapperFunc0();
 
     //From User#sendMessage(Component, ChatType)
     public static PacketWrapper<?> packetWrapper(Component message, boolean actionBar) {
-        return packetWrapperFunc.apply(message, actionBar);
+        return MessageWrapper.createWrapper(message, actionBar, version);// packetWrapperFunc.apply(message, actionBar);
     }
 
     //From User#sendMessage(Component, ChatType)
-    private static BiFunction<Component, Boolean, PacketWrapper<?>> createPacketWrapperFunc0() {
-        if (version.isNewerThanOrEquals(ServerVersion.V_1_19)) {
-            return (message, actionBar) -> new WrapperPlayServerSystemChatMessage(actionBar, message);
-        } else return (message, actionBar) -> {
-            if (actionBar) {
-                if (PacketType.Play.Server.ACTION_BAR.getId(version.toClientVersion()) == -1) {//doesn't exist
-                    return constructOld(message, ChatTypes.GAME_INFO);
-                }
-                return new WrapperPlayServerActionBar(message);
-            }
-
-            return constructOld(message, ChatTypes.CHAT);
-        };
-    }
-
-    private static WrapperPlayServerChatMessage constructOld(Component message, ChatType type) {
-        ChatMessage m;
-        if (version.isNewerThanOrEquals(ServerVersion.V_1_16)) m = new ChatMessage_v1_16(message, type, new UUID(0L, 0L));
-        else m = new ChatMessageLegacy(message, type);
-
-        return new WrapperPlayServerChatMessage(m);
-    }
+    /*private static BiFunction<Component, Boolean, PacketWrapper<?>> createPacketWrapperFunc0() {
+        return MessageWrapper.createWrapperFunc(version);
+    }*/
 
     /*private static Object construct_1_19(String message, boolean actionBar) throws Exception {
         return constructor.newInstance(ReflectionUtils.constructTextComponents(message)[0], actionBar);

@@ -319,9 +319,11 @@ public class ClientConnection {
             else
                 */
 
-            //Why do 1.8 clients duplicate this singular block onto the neighbouring, not sent chunks?
-            writePacket(BlockPackets.DECOY);//sent before the chunk - should be ignored by the client
-            writePacket(PacketSnapshots.MIDDLE_CHUNK);
+            if(!this.duplexHandler.isGeyser) {
+                //Why do 1.8 clients duplicate this singular block onto the neighbouring, not sent chunks?
+                writePacket(BlockPackets.DECOY);//sent before the chunk - should be ignored by the client
+                writePacket(PacketSnapshots.MIDDLE_CHUNK);
+            }
             //if (clientVersion.moreOrEqual(Version.V1_9))
             //if (clientVersion.moreOrEqual(Version.V1_9)) writePacket(new PacketUnloadChunk());
             //writePacket(new PacketPlayOutBlockUpdate().setPosition(new Vector3i(0, 62, 0)).setType(StateTypes.DIRT));
@@ -351,8 +353,11 @@ public class ClientConnection {
         if (clientVersion.moreOrEqual(Version.V1_20_5)) {
             writePacket(PacketSnapshots.PACKET_KNOWN_PACKS);
 
+            writePackets(PacketSnapshots.REGISTRY_DATA.get(this.clientVersion));
+            writePacket(PacketSnapshots.UPDATE_TAGS.get(this.clientVersion));
+
             //this.writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA);
-            if (clientVersion.moreOrEqual(Version.V1_21_9)) {
+            /*if (clientVersion.moreOrEqual(Version.V1_21_9)) {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_21_9);
                 writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_21_9);
             } else if (clientVersion.moreOrEqual(Version.V1_21_7)) {
@@ -376,7 +381,7 @@ public class ClientConnection {
             } else {
                 writePackets(PacketSnapshots.PACKETS_REGISTRY_DATA_1_20_5);
                 writePacket(PacketSnapshots.PACKET_UPDATE_TAGS_1_20_5);
-            }
+            }*/
 
         } else {
             writePacket(PacketSnapshots.PACKET_REGISTRY_DATA);

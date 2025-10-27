@@ -84,6 +84,7 @@ import ua.nanit.limbo.util.map.VersionMap;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import static ua.nanit.limbo.protocol.registry.Version.getMin;
 
@@ -193,7 +194,7 @@ public enum State {
             clientBound.registerRetrooper(PacketJoinGame::new, PacketType.Play.Server.JOIN_GAME);
             clientBound.registerRetrooper(PacketPlayerAbilities::new, PacketType.Play.Server.PLAYER_ABILITIES);
             clientBound.registerRetrooper(PacketPlayerPositionAndLook::new, PacketType.Play.Server.PLAYER_POSITION_AND_LOOK);
-            clientBound.registerRetrooper(PacketPlayOutMessage::new, PacketType.Play.Server.CHAT_MESSAGE);
+            clientBound.registerMultiWrapper(PacketPlayOutMessage::new);
             clientBound.registerRetrooper(PacketPlayerInfo::new, PacketType.Play.Server.PLAYER_INFO);
             clientBound.registerRetrooper(PacketTitleLegacy::new, PacketType.Play.Server.TITLE);
             clientBound.registerRetrooper(PacketTitleSetTitle::new, PacketType.Play.Server.SET_TITLE_TEXT);
@@ -291,32 +292,36 @@ public enum State {
             Class<? extends Packet> clazz = packet.get().getClass();
             registerAndEnsureNoDuplicate(clazz, state);
 
-            clazzToWrapper.put(clazz, type.getWrapperClass());
+            if (type != null)
+                clazzToWrapper.put(clazz, type.getWrapperClass());
             /*if (PacketIn.class.isAssignableFrom(clazz))
                 HandleMask.register(clazz);*/
         }
 
         //private static final Set<PacketTypeCommon> packets = new HashSet<>();
 
-        //Gotta love packetevents ;]
-        private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
+        private void register0(Supplier<T> packet, PacketTypeCommon type, ToIntFunction<Version> idFunc) {
             register0(packet, this.state, type);
-
-            /*if (!packets.add(type))
-                throw new AlixException("PacketTypeCommon duplicate! - " + type);*/
 
             for (Version ver : Version.values()) {
                 if (!ver.isSupported()) continue;
 
-                int packetId = type.getId(ver.getClientVersion());
-                /*if(ver == V1_21_7 && this.state == CONFIGURATION) {
-                    Log.error("PACKET ID=" + packetId);
-                }*/
+                int packetId = idFunc.applyAsInt(ver);
                 if (packetId < 0) continue;//check if the packet exists on the specified version
 
                 PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
                 reg.register(packetId, packet);
             }
+        }
+
+        private void registerMultiWrapper(Supplier<T> packet) {
+            var inst = packet.get();
+            this.register0(packet, null, inst::packetId);
+        }
+
+        //Gotta love packetevents ;]
+        private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
+            this.register0(packet, type, ver -> type.getId(ver.getClientVersion()));
         }
 
         /*private void register(Supplier<T> packet, Mapping... mappings) {

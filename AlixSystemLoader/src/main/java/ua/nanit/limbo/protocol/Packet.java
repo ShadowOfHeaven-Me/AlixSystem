@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.protocol;
 
+import alix.common.utils.other.throwable.AlixError;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
@@ -39,6 +40,10 @@ public interface Packet {
 
     default boolean isSkippable(ClientConnection conn) {
         return false;
+    }
+
+    default int packetId(Version version) {
+        throw new AlixError("packetId(...) is unsupported on " + this.getClass().getSimpleName());
     }
 
     @Target(ElementType.METHOD)

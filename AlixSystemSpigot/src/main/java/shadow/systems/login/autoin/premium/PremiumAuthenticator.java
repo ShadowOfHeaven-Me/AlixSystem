@@ -180,7 +180,6 @@ public final class PremiumAuthenticator {
         //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " " + packet.getPlayerUUID().get().version());
 
         Channel channel = (Channel) user.getChannel();
-        InetAddress address = user.getAddress().getAddress();
         //String sessionKey = user.getAddress().toString();
         String packetUsername = packet.getUsername();
         //Main.logInfo("PACKET USERNAME: " + packetUsername);
@@ -228,7 +227,7 @@ public final class PremiumAuthenticator {
 
         //Main.logError("IS PREMIUM: " + performPremiumCheck + " DATA: " + newPremiumData.getStatus() + " suggestsStatus: " + PremiumUtils.suggestsStatus(uuid, clientKey, version));
 
-        if (LimboIntegration.hasCompletedCaptcha(address, packetUsername)) {
+        if (LimboIntegration.hasCompletedCaptcha(channel, packetUsername)) {
             //Main.logError("passed name: " + passedCaptchaNameCache + " current name: " + name);
             /*if (!name.equals(passedCaptchaNameCache)) {
                 this.disconnectWith(user, cachedNameDoesNotMatch);

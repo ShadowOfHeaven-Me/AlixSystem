@@ -31,7 +31,7 @@ public final class PacketEmptyChunkData implements PacketOut {
 
         if (version.moreOrEqual(Version.V1_17)) {
             if (version.lessOrEqual(Version.V1_17_1)) {
-                msg.writeVarInt( 0); // mask
+                msg.writeVarInt(0); // mask
             }
         } else {
             msg.writeBoolean(true); // full chunk
@@ -41,7 +41,7 @@ public final class PacketEmptyChunkData implements PacketOut {
             }
 
             if (version.more(Version.V1_8)) {
-                msg.writeVarInt( 0);
+                msg.writeVarInt(0);
             } else {
                 msg.writeShort(1); // fix void chunk
             }
@@ -50,10 +50,10 @@ public final class PacketEmptyChunkData implements PacketOut {
         if (version.moreOrEqual(Version.V1_14)) {
             if (version.moreOrEqual(Version.V1_21_5)) {
                 // In 1.21.5. They changed to List<EnumMap<Heightmap.Type, long[]>>
-                msg.writeVarInt( 1); // List size
-                msg.writeVarInt( 4); // Ordinal of MOTION_BLOCKING
+                msg.writeVarInt(1); // List size
+                msg.writeVarInt(4); // Ordinal of MOTION_BLOCKING
                 // Write long array
-                msg.writeVarInt( 37);
+                msg.writeVarInt(37);
                 for (int i = 0; i < 37; i++) {
                     msg.writeLong(0);
                 }
@@ -71,10 +71,10 @@ public final class PacketEmptyChunkData implements PacketOut {
 
             if (version.inBetween(Version.V1_15, Version.V1_17_1)) {
                 if (version.moreOrEqual(Version.V1_16_2)) {
-                    msg.writeVarInt( 1024);
+                    msg.writeVarInt(1024);
 
                     for (int i = 0; i < 1024; i++) {
-                        msg.writeVarInt( 1);
+                        msg.writeVarInt(1);
                     }
                 } else {
                     for (int i = 0; i < 1024; i++) {
@@ -88,11 +88,11 @@ public final class PacketEmptyChunkData implements PacketOut {
             msg.writeInt(0);
             msg.writeBytes(new byte[2]);
         } else if (version.less(Version.V1_13)) {
-            msg.writeVarInt( 0);
+            msg.writeVarInt(0);
         } else if (version.less(Version.V1_15)) {
             msg.writeBytes(new byte[256 * 4]);
         } else if (version.less(Version.V1_18)) {
-            msg.writeVarInt( 0);
+            msg.writeVarInt(0);
         } else {
             // nonEmptyBlockCount. short occupies 2 bytes.
             // SingularPalette (byte) + id (varint) + long array with size (older)
@@ -101,7 +101,7 @@ public final class PacketEmptyChunkData implements PacketOut {
             // So we'll remove suffix 0 as array length here. The cost of writing a palette has been reduced from 3 to 2 bytes.
             final byte[] sectionData = version.less(Version.V1_21_5) ? new byte[]{0, 0, 0, 0, 0, 0, 1, 0} : new byte[]{0, 0, 0, 0, 0, 1};
             int count = 24;
-            msg.writeVarInt( sectionData.length * count);
+            msg.writeVarInt(sectionData.length * count);
 
             for (int i = 0; i < count; i++) {
                 msg.writeBytes(sectionData);
@@ -109,12 +109,12 @@ public final class PacketEmptyChunkData implements PacketOut {
         }
 
         if (version.moreOrEqual(Version.V1_9_4)) {
-            msg.writeVarInt( 0);
+            msg.writeVarInt(0);
         }
 
         if (version.moreOrEqual(Version.V1_21_2)) {
             for (int i = 0; i < 6; i++) {
-                msg.writeVarInt( 0);
+                msg.writeVarInt(0);
             }
         } else if (version.moreOrEqual(Version.V1_18)) {
             final byte[] lightData = new byte[]{1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 3, -1, -1, 0, 0};

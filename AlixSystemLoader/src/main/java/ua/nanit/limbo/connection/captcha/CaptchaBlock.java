@@ -90,4 +90,7 @@ public enum CaptchaBlock {
     public double getHeight(Version version) {
         return this.heightFunction.apply(version);
     }
+
+    public static void init() {
+    }
 }

@@ -25,6 +25,7 @@ public final class VerifiedCache {
     }
 
     //Intentional identity checks
+
     public static boolean getAndCheckIfEquals(String nickname, User user) {
         return user == verifiedNamesTempCache.get(nickname);
     }

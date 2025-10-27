@@ -18,6 +18,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
@@ -312,6 +313,12 @@ public final class AlixChannelHandler {
     public static void assignLoginUUID(Channel channel, PacketLoginStart loginStart) {
         var uuid = loginStart.getUUID();
         if (uuid != null) channel.attr(SENT_LOGIN_UUID).set(uuid);
+    }
+
+    public static UUID getLoginAssignedUUID(Player player) {
+        var user = UserManager.get(player.getUniqueId());
+        var channel = user.getChannel();
+        return getLoginAssignedUUID(channel);
     }
 
     public static UUID getLoginAssignedUUID(Channel channel) {

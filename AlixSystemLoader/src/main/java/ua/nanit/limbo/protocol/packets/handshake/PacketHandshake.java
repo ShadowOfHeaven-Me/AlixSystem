@@ -37,6 +37,10 @@ public final class PacketHandshake implements PacketIn {
         return version;
     }
 
+    public String getHost() {
+        return host;
+    }
+
     public String getExtractedHost() {
         return extractHost(this.host);
     }
@@ -101,11 +105,6 @@ public final class PacketHandshake implements PacketIn {
         msg.writeString(this.host);
         msg.writeShort(this.port);
         msg.writeVarInt(this.intention);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
     }
 
     @Override

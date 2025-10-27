@@ -27,7 +27,4 @@ public interface CompressionHandler {
     static void releaseAll() {
         CompressionHandlerImpl.releaseAll();
     }
-
-
-
 }

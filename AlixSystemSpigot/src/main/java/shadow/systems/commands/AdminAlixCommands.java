@@ -7,8 +7,11 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.premium.PremiumDataCache;
+import alix.common.data.premium.PremiumStatus;
 import alix.common.database.migrate.MigrateManager;
 import alix.common.database.migrate.MigrateType;
+import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -23,10 +26,12 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import shadow.systems.commands.alix.ABStats;
 import shadow.systems.login.autoin.premium.SpigotEncryption;
+import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.users.UserManager;
+import shadow.utils.users.Verifications;
 
 import java.util.Date;
 
@@ -91,11 +96,11 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, playerDataNotFound.format(arg2));
                             return false;
                         }
-
                         GeoIPTracker.removeIP(data.getSavedIP());
                         sendMessage(sender, "Fully removed the data of the account " + arg2 + "!");
                     }
                     break;
+
                     case "rs":
                     case "resetstatus": {
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -107,6 +112,73 @@ public final class AdminAlixCommands implements CommandExecutor {
                         data.setPremiumData(PremiumData.UNKNOWN);
 
                         sendMessage(sender, "The premium status of the player " + arg2 + " has been set to UNKNOWN.");
+                        break;
+                    }
+                    case "fs":
+                    case "forcestatus": {
+                        if (l != 3) {
+                            sendMessage(sender, "&cFormat: /as fs <player> <status>");
+                            return false;
+                        }
+                        PersistentUserData data = UserFileManager.get(arg2);
+
+                        if (data == null) {
+                            sendMessage(sender, playerDataNotFound.format(arg2));
+                            return false;
+                        }
+
+                        String arg3 = args[2];
+                        PremiumStatus status;
+                        try {
+                            status = PremiumStatus.valueOf(arg3.toUpperCase());
+                        } catch (Exception e) {
+                            sendMessage(sender, "&cInvalid status, should be either PREMIUM, NON_PREMIUM or UNKNOWN");
+                            return false;
+                        }
+
+                        if (data.getPremiumData().getStatus() == status) {
+                            sendMessage(sender, "&cPlayer " + arg2 + " already has the premium status of " + status);
+                            return false;
+                        }
+
+                        if (!status.isPremium()) {
+                            data.setPremiumData(status.isNonPremium() ? PremiumData.NON_PREMIUM : PremiumData.UNKNOWN);
+                            sendMessage(sender, "The premium status of the player " + arg2 + " has been set to " + status + ".");
+                            return true;
+                        }
+
+                        var cached = PremiumDataCache.getOrUnknown(arg2);
+                        if (cached.getStatus().isKnown()) {
+                            if (cached.getStatus().isPremium()) {
+                                data.setPremiumData(cached);
+                                sendMessage(sender, "The premium status of the player " + arg2 + " has been set to " + cached.getStatus() + ".");
+                                return true;
+                            }
+                            sendMessage(sender, "&cPlayer's " + arg2 + " status was determined as NON_PREMIUM, and thus it cannot be set to PREMIUM.");
+                            return false;
+                        }
+                        var player = Bukkit.getPlayer(arg2);
+                        if (player != null && !Verifications.has(player)) {
+                            var packetUUID = AlixChannelHandler.getLoginAssignedUUID(player);
+                            if (packetUUID != null && packetUUID.version() != 4) {
+                                sendMessage(sender, "&ePlayer " + arg2 + " declared himself as NON_PREMIUM, and thus his status cannot be set to PREMIUM.");
+                                return false;
+                            }
+                        }
+                        AlixScheduler.asyncBlocking(() -> {
+                            var newPremiumData = PremiumUtils.requestPremiumData(arg2);
+                            if (newPremiumData.getStatus().isUnknown()) {
+                                sendMessage(sender, "&cCould not determine player's " + arg2 + " premium status in any way, the status cannot be set");
+                                return;
+                            }
+                            PremiumDataCache.add(arg2, newPremiumData);
+                            if (newPremiumData.getStatus().isNonPremium()) {
+                                sendMessage(sender, "&cPlayer's " + arg2 + " status api request returned NON_PREMIUM, and thus it cannot be set to PREMIUM.");
+                                return;
+                            }
+                            data.setPremiumData(newPremiumData);
+                            sendMessage(sender, "The premium status of the player " + arg2 + " has been set to PREMIUM, premium uuid=" + newPremiumData.premiumUUID());
+                        });
                         break;
                     }
                     case "rp":

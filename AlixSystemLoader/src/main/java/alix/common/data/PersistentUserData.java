@@ -180,7 +180,7 @@ public final class PersistentUserData implements AlixUserData {
         this.loginParams.setPassword(password);
     }
 
-    public void setPremiumData(PremiumData premiumData) {
+    public void setPremiumData(@NotNull PremiumData premiumData) {
         this.premiumData = premiumData;
     }
 

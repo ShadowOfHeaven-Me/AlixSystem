@@ -22,6 +22,7 @@ import ua.nanit.limbo.configuration.LimboConfig;
 import ua.nanit.limbo.connection.ClientChannelInitializer;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.PacketHandler;
+import ua.nanit.limbo.connection.captcha.CaptchaBlock;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.protocol.PacketSnapshots;
@@ -63,6 +64,7 @@ public final class LimboServer {
 
         this.clientChannelInitializer = new ClientChannelInitializer(this);
         //UiiaiuiiiaiCat.init();
+        CaptchaBlock.init();
         Log.info("Server started.");
     }
 

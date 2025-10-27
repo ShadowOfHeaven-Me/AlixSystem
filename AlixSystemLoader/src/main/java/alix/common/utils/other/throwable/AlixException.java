@@ -28,7 +28,7 @@ public final class AlixException extends RuntimeException {
         onException0(this);
     }
 
-    private static final boolean debug = true;
+    private static final boolean debug = false;
 
     static void onException0(Throwable t) {
         if (!debug)

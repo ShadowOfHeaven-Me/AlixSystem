@@ -12,7 +12,7 @@ public final class PremiumDataCache {
     private static final Map<String, PremiumData> premiumPlayersCache;
 
     static {
-        Cache<String, PremiumData> cache = AlixCache.newBuilder().maximumSize(200).expireAfterWrite(10, TimeUnit.MINUTES).build();
+        Cache<String, PremiumData> cache = AlixCache.newBuilder().maximumSize(300).expireAfterWrite(10, TimeUnit.MINUTES).build();
         premiumPlayersCache = cache.asMap();
     }
 

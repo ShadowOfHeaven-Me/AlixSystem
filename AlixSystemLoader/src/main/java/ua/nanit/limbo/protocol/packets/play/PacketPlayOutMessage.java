@@ -17,71 +17,44 @@
 
 package ua.nanit.limbo.protocol.packets.play;
 
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.formatter.AlixFormatter;
+import alix.common.utils.netty.WrapperUtils;
+import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.NbtMessage;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.registry.Version;
-import ua.nanit.limbo.util.NbtMessageUtil;
-
-import java.util.UUID;
 
 public final class PacketPlayOutMessage implements PacketOut {
 
-    private static final UUID sender = new UUID(53, 35);
-    private PositionLegacy position;
-    private NbtMessage message;
+    private String message;
+
+    public PacketPlayOutMessage() {
+    }
 
     public static PacketSnapshot snapshot(String message) {
         return withMessage(message).toSnapshot();
     }
 
     public static PacketPlayOutMessage withMessage(String message) {
-        return new PacketPlayOutMessage().setMessage(NbtMessageUtil.fromLiteral(AlixFormatter.translateColors(message))).setPosition(PositionLegacy.SYSTEM_MESSAGE);
+        return new PacketPlayOutMessage().setMessage(AlixFormatter.translateColors(message));
     }
 
-    public PacketPlayOutMessage setMessage(NbtMessage message) {
+    public PacketPlayOutMessage setMessage(String message) {
         this.message = message;
         return this;
     }
 
-    public PacketPlayOutMessage setPosition(PositionLegacy position) {
-        this.position = position;
-        return this;
+    @Override
+    public int packetId(Version version) {
+        return MessageWrapper.createWrapper(Component.empty(), false, version.getRetrooperVersion()).getNativePacketId();
     }
 
     @Override
     public void encode(ByteMessage msg, Version version) {
-        msg.writeNbtMessage(message, version);
-        if (version.moreOrEqual(Version.V1_19_1)) {
-            msg.writeBoolean(position.index == PositionLegacy.ACTION_BAR.index);
-        } else if (version.moreOrEqual(Version.V1_19)) {
-            msg.writeVarInt(position.index);
-        } else if (version.moreOrEqual(Version.V1_8)) {
-            msg.writeByte(position.index);
-        }
-
-        if (version.moreOrEqual(Version.V1_16) && version.less(Version.V1_19))
-            msg.writeUuid(sender);
-    }
-
-    public enum PositionLegacy {
-
-        CHAT(0),
-        SYSTEM_MESSAGE(1),
-        ACTION_BAR(2);
-
-        private final int index;
-
-        PositionLegacy(int index) {
-            this.index = index;
-        }
-
-    }
-
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName();
+        var retrooperVersion = version.getRetrooperVersion();
+        var wrapper = MessageWrapper.createWrapper(this.message, false, retrooperVersion);
+        WrapperUtils.writeNoID(wrapper, msg.getBuf(), retrooperVersion);
     }
 }

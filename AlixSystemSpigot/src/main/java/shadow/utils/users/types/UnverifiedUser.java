@@ -118,7 +118,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
 
         this.joinedRegistered = registered;
         this.hasCompletedCaptcha = this.isBedrock || hasAccount || !requireCaptchaVerification//is a bedrock player, has an account or captcha is disabled
-                || LimboIntegration.hasCompletedCaptcha(this.address, player.getName());//passed the check in the virtual limbo server
+                || LimboIntegration.hasCompletedCaptcha(tempUser.getChannel(), player.getName());//passed the check in the virtual limbo server
         this.captchaInitialized = !hasCompletedCaptcha;//the captcha (will be) initialized if the user is required to complete it
 
         this.loginType = hasAccount ? data.getLoginType() : ConfigParams.defaultLoginType;

@@ -19,6 +19,7 @@ import java.util.function.Function;
 
 public abstract class LimboIntegration<T extends ClientConnection> {
 
+    protected static GeyserUtil GEYSER_UTIL;
     protected static final Map<String, InetAddress> completedCaptchaCache;
     //private static final Map<InetAddress, String> ;
 
@@ -48,12 +49,11 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 //Captcha
     @Nullable
     public static boolean hasCompletedCaptcha(Channel channel, String name) {
-        return hasCompletedCaptcha(((InetSocketAddress) channel.remoteAddress()).getAddress(), name);
-    }
+        /*if (GEYSER_UTIL.isBedrock(channel))
+            return true;*/
 
-    @Nullable
-    public static boolean hasCompletedCaptcha(InetAddress address, String name) {
-        return address.equals(completedCaptchaCache.get(name));
+        var ip = ((InetSocketAddress) channel.remoteAddress()).getAddress();
+        return ip.equals(completedCaptchaCache.get(name));
     }
 
     public abstract T newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state);
@@ -67,8 +67,13 @@ public abstract class LimboIntegration<T extends ClientConnection> {
     //Utils
     public abstract GeyserUtil geyserUtil();
 
+    //Config
     public int getCompressionThreshold() {
         return 128;
+    }
+
+    public boolean isTransferAccepted() {
+        return false;
     }
 
     //floodgate with compression disabled is present

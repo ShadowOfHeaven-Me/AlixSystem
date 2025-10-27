@@ -164,6 +164,8 @@ final class CaptchaStateImpl {
 
         //Log.error("RECEIVED TP CONFIRM ID: " + tpConfirm.getTeleportId());
         this.tpConfirmsReceived++;
+        if (duplexHandler.isGeyser)
+            return;
         switch (tpConfirm.getTeleportId()) {
             case 1:
                 this.failIf(this.movementsReceived != 0 || this.tpConfirmsReceived != 1);

@@ -94,6 +94,10 @@ public final class ClientChannelInitializer {
         else r.run();
     }
 
+    private boolean isFloodgatePresent() {
+        return NanoLimbo.INTEGRATION.geyserUtil().isFloodgatePresent();
+    }
+
     public void initChannel(Channel channel) {
         ChannelPipeline pipeline = channel.pipeline();
 
@@ -104,6 +108,13 @@ public final class ClientChannelInitializer {
         pipeline.addFirst(duplexHandlerName, duplexHandler);
         pipeline.addFirst(frameDecoderName, frameDecoder);
 
+        /*if (this.isFloodgatePresent() && pipeline.context("GeyserVelocityInjector$3#0") != null) {
+            pipeline.addAfter("GeyserVelocityInjector$3#0", duplexHandlerName, duplexHandler);
+            pipeline.addAfter("GeyserVelocityInjector$3#0", frameDecoderName, frameDecoder);
+        } else {
+            pipeline.addFirst(duplexHandlerName, duplexHandler);
+            pipeline.addFirst(frameDecoderName, frameDecoder);
+        }*/
         //PacketDecoder decoder = new PacketDecoder();
         //PacketEncoder encoder = new PacketEncoder();
         //this.channelInitImpl.initialChannelRegister(channel);

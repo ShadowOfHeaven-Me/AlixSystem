@@ -42,6 +42,10 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
         return completedCaptchaCache.remove(address);
     }*/
 
+    static {
+        GEYSER_UTIL = Dependencies.util;
+    }
+
     //@Override
     public void invokeSilentServerChannelRead(Channel channel) {
         AlixInterceptor.invokeSilentChannelRead(channel);
@@ -229,6 +233,11 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
     public GeyserUtil geyserUtil() {
         return Dependencies.util;
     }
+
+    /*@Override
+    public boolean isTransferAccepted() {
+        return false;//ReflectionUtils.serverProperties.getBoolean("accepts-transfers");
+    }*/
 
     //@Override
     /*public CommandHandler<LimboConnection> createCommandHandler() {

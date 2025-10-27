@@ -1,5 +1,6 @@
 package ua.nanit.limbo.util.map;
 
+import alix.common.utils.other.throwable.AlixError;
 import ua.nanit.limbo.protocol.registry.Version;
 
 import java.util.ArrayList;
@@ -38,8 +39,17 @@ public abstract class AbstractVersionMap<T> {
         }
     }
 
+    public final void putRange(Version min, Version max, T value) {
+        if (min.more(max) || min.isUndefined() || max.isUndefined())
+            throw new AlixError("Invalid: " + min + ", " + max);
+
+        for (int i = min.ordinal(); i <= max.ordinal(); i++) {
+            this.setElement(this.data, i, value);
+        }
+    }
+
     public final void put(Version version, T value) {
-        Objects.requireNonNull(version);
+        //Objects.requireNonNull(version);
         Objects.requireNonNull(value);
         this.setElement(this.data, version.ordinal(), value);
     }
@@ -59,7 +69,7 @@ public abstract class AbstractVersionMap<T> {
     }
 
     public final T get(Version version) {
-        Objects.requireNonNull(version);
+        //Objects.requireNonNull(version);
         return this.getElement(this.data, version.ordinal());
     }
 

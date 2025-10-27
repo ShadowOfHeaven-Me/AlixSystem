@@ -64,8 +64,12 @@ public final class PacketUtils {
 
         //the outgoing packet does not have a decode method impl
         if (decompressed.writerIndex() > 0 && decompressed.readerIndex() == 0) {
-            var wrapper = WrapperUtils.alloc(decompressed, version.getRetrooperVersion(), State.getWrapperClazz(packet));
-            wrapper.read();
+            var wrapperClazz = State.getWrapperClazz(packet);
+            //ignore MultiWrappers (PacketPlayOutMessage)
+            if (wrapperClazz != null) {
+                var wrapper = WrapperUtils.alloc(decompressed, version.getRetrooperVersion(), wrapperClazz);
+                wrapper.read();
+            }
         }
         decompressed.release();
     }
