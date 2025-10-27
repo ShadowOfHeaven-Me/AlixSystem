@@ -47,6 +47,7 @@ public final class AlixVelocityLimbo {
         var pipeline = channel.pipeline();
         pipeline.replace(READ_TIMEOUT, VELOCITY_TIMEOUT, DummyHandler.HANDLER);
 
+        //Main.logInfo("initAfterLoginSuccess");
         //Main.logInfo("PIPELINE=" + pipeline.names());
         limbo.getClientChannelInitializer().initAfterLoginSuccess(channel, version, player.getUsername(), AlixVelocityLimbo::enableCompress, AlixVelocityLimbo::encryptionFor, connection -> {
             channel.pipeline().replace(VELOCITY_TIMEOUT, READ_TIMEOUT, new ReadTimeoutHandler(Main.PLUGIN.getServer().getConfiguration().getReadTimeout()));

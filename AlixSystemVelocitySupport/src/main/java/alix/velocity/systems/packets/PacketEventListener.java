@@ -4,6 +4,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
+import alix.common.data.premium.VerifiedCache;
 import alix.common.login.LoginVerdict;
 import alix.common.login.premium.*;
 import alix.common.scheduler.AlixScheduler;
@@ -86,8 +87,9 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 new Exception().printStackTrace();
             });
         }*/
-
         if (event instanceof PacketLoginReceiveEvent loginEvent) {
+            if (NanoLimbo.INTEGRATION.geyserUtil().isBedrock(channel))
+                return;
             switch (loginEvent.getPacketType()) {
                 case LOGIN_START: {
                     var key = ClientPublicKey.createKey(new WrapperLoginClientLoginStart(event).getSignatureData().orElse(null));
@@ -207,7 +209,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 boolean joinedRegistered = encryptionData != null;
                 LoginInfo.set(channel, joinedRegistered, joinedRegistered ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
 
-                //VerifiedCache.verify(serverUsername, user);
+                VerifiedCache.verify(serverUsername, user);
                 continuation.resume();
                 //Main.logInfo("CONTINUATION TRUE");
                 //receiveFakeStartPacket(packetUsername, encryptionData.publicKey(), user.getChannel(), encryptionData.uuid());

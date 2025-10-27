@@ -7,6 +7,7 @@ import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.premium.VerifiedCache;
 import alix.common.login.LoginVerdict;
 import alix.common.login.premium.*;
 import alix.common.messages.Messages;
@@ -18,12 +19,12 @@ import alix.velocity.systems.events.premium.EncryptionInfo;
 import alix.velocity.systems.packets.PacketEventListener;
 import alix.velocity.utils.user.UserManager;
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
 import com.google.common.cache.Cache;
 import com.velocitypowered.api.event.Continuation;
 import com.velocitypowered.api.event.PostOrder;
 import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.connection.PreLoginEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.proxy.connection.MinecraftConnection;
@@ -36,6 +37,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import ua.nanit.limbo.connection.login.LoginInfo;
 import ua.nanit.limbo.protocol.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
+import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.registry.Version;
 
 import java.lang.reflect.Field;
@@ -70,12 +72,15 @@ public final class Events {
         ConnectedPlayer player = (ConnectedPlayer) event.getPlayer();
         var data = UserFileManager.get(player.getUsername());
         var channel = player.getConnection().getChannel();
+        //Main.logInfo("onInitialServer");
 
         boolean bedrockPremium = this.authorizeLinked && this.util.isLinked(channel);
 
         //*should* be safe
-        boolean premium = bedrockPremium || this.authorizePremium && data != null && data.getPremiumData().getStatus().isPremium();
+        boolean premium = bedrockPremium || this.authorizePremium && data != null && data.getPremiumData().getStatus().isPremium()
+                && VerifiedCache.removeAndCheckIfEquals(player.getUsername(), ProtocolManager.USERS.get(channel.pipeline()));
         if (premium) {
+            LoginInfo.set(channel, data != null, data != null ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
             UserManager.add(player);
             continuation.resume();
             return;
@@ -102,7 +107,7 @@ public final class Events {
     private static final Field delegate = CommonReflection.getDeclaredFieldAccessible(LoginInboundConnection.class, "delegate");
 
     public static final PacketSnapshot
-            //alreadyConnectingPacket = PacketPlayOutDisconnect.snapshot(Messages.get("already-connecting")),
+            alreadyConnectingPacket = PacketPlayOutDisconnect.snapshot(Messages.get("already-connected")),
             invalidNamePacket = PacketLoginDisconnect.snapshot(Messages.get("anti-bot-invalid-name-blocked")),
             preventFirstTimeJoinPacket = PacketLoginDisconnect.snapshot(ConnectionManager.preventFirstTimeJoinMessage),
             maxTotalAccountsPacket = PacketLoginDisconnect.snapshot(GeoIPTracker.maxAccountsReached),
@@ -110,10 +115,12 @@ public final class Events {
 
     private final boolean assumePremiumWhenNoSuggestion = config.getBoolean("require-premium-when-no-suggestion");
 
-    @Subscribe(order = PostOrder.LAST)
+    /*@Subscribe(order = PostOrder.LAST)
     public void onDisconnect(DisconnectEvent event) {
         //Main.logInfo("DisconnectEvent=" + event.getPlayer() + " " + event.getLoginStatus());
-    }
+    }*/
+
+    private static final PreLoginEvent.PreLoginComponentResult DENIED_ALREADY_CONNECTED = PreLoginEvent.PreLoginComponentResult.denied(Component.text("[Alix] Already connected").color(NamedTextColor.RED));
 
     @Subscribe(order = PostOrder.LAST)
     public void onPreLogin(PreLoginEvent event, Continuation continuation) throws IllegalAccessException {
@@ -128,15 +135,17 @@ public final class Events {
 
         String name = this.util.getCorrectUsername(channel, event.getUsername());
 
-        if (!UserManager.addConnected(name, channel)) {
-            event.setResult(PreLoginEvent.PreLoginComponentResult.denied(Component.text("[Alix] Already connected").color(NamedTextColor.RED)));
+        //Moved to VelocityLimboIntegration
+        /*if (!UserManager.addConnected(name, channel)) {
+            event.setResult(DENIED_ALREADY_CONNECTED);
             return;
-        }
+        }*/
 
         UUID uuid = event.getUniqueId();
         PersistentUserData data = UserFileManager.get(name);
 
-        boolean bedrockPremium = this.authorizeLinked && this.util.isLinked(channel);
+        boolean isBedrock = this.util.isBedrock(channel);
+        boolean bedrockPremium = isBedrock && this.authorizeLinked && this.util.isLinked(channel);
 
         if (bedrockPremium) {
             if (data == null)
@@ -145,6 +154,12 @@ public final class Events {
             boolean joinedRegistered = data != null;
             LoginInfo.set(channel, joinedRegistered, joinedRegistered ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
 
+            continuation.resume();
+            return;
+        }
+
+        //very important to skip any encryption/changes on floodgate connections
+        if (isBedrock) {
             continuation.resume();
             return;
         }

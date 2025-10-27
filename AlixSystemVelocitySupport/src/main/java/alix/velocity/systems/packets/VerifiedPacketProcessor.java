@@ -47,11 +47,11 @@ public final class VerifiedPacketProcessor {
         this.user = user;
         var channel = user.getChannel();
 
-        var attr = channel.attr(LoginInfo.JOIN_INFO);
+        var attr = channel.hasAttr(LoginInfo.JOIN_INFO) ? channel.attr(LoginInfo.JOIN_INFO) : null;
         if (attr == null) {
             user.getPlayer().disconnect(Component.text("§cSomething went wrong."));
-            this.info = null;
-            throw new AlixException("No LoginInfo");
+            //this.info = null;
+            throw new AlixException("No LoginInfo fpr player " + user.getName());
         }
         this.info = attr.get();
 

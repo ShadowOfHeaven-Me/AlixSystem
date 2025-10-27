@@ -12,6 +12,7 @@ import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.Main;
 import alix.velocity.server.impl.user.VelocityClientConnection;
+import alix.velocity.utils.user.UserManager;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
@@ -19,6 +20,7 @@ import com.velocitypowered.api.proxy.messages.ChannelMessageSink;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.PluginMessageEncoder;
 import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.config.VelocityConfiguration;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +41,11 @@ import static alix.velocity.systems.events.Events.*;
 public final class VelocityLimboIntegration extends LimboIntegration<VelocityClientConnection> {
 
     public static final AttributeKey<UUID> JOINED_UUID = AttributeKey.newInstance("alix:joined-uuid");
-    private final GeyserUtil geyserUtil = Main.INSTANCE.util;
+    private final GeyserUtil geyserUtil = GEYSER_UTIL;
+
+    static {
+        GEYSER_UTIL = Main.INSTANCE.util;
+    }
 
     @Override
     public void fireCustomPayloadEvent(VelocityClientConnection connection, String channel, byte[] data) {
@@ -70,7 +76,16 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
 
     @Override
     public int getCompressionThreshold() {
-        return Main.PLUGIN.getServer().getConfiguration().getCompressionThreshold();
+        return this.getConfig().getCompressionThreshold();
+    }
+
+    @Override
+    public boolean isTransferAccepted() {
+        return this.getConfig().isAcceptTransfers();
+    }
+
+    private VelocityConfiguration getConfig() {
+        return (VelocityConfiguration) Main.PLUGIN.getServer().getConfiguration();
     }
 
     @Override
@@ -95,8 +110,9 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
     public PreLoginResult onLoginStart(VelocityClientConnection connection, PacketLoginStart packet, boolean[] recode) {
         var channel = connection.getChannel();
         InetAddress ip = connection.getAddress().getAddress();
-        String name = packet.getUsername();
-        PersistentUserData data = UserFileManager.get(name);
+        String packetUsername = packet.getUsername();
+        String serverUsername = this.geyserUtil.getCorrectUsername(channel, packetUsername);
+        PersistentUserData data = UserFileManager.get(packetUsername);
         UUID uuid = packet.getUUID();
 
         if (uuid != null) channel.attr(JOINED_UUID).set(uuid);
@@ -104,11 +120,17 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
         var suggestsStatus = PremiumUtils.suggestsStatus(uuid, ClientPublicKey.createKey(packet.getSignatureData()), connection.getRetrooperClientVersion());
 
         PremiumData premiumData = null;
-        var isPremium = suggestsStatus.isPremium() && (premiumData = PremiumUtils.getOrRequestAndCacheData(data, name)).getStatus().isPremium();
+        var isPremium = suggestsStatus.isPremium() && (premiumData = PremiumUtils.getOrRequestAndCacheData(data, packetUsername)).getStatus().isPremium();
 
         //String ip = event.getConnection().getRemoteAddress().getAddress().getHostAddress();
 
-        switch (AlixCommonHandler.getPreLoginVerdict(ip, name, name, data, isPremium)) {
+
+        if (!UserManager.addConnected(serverUsername, channel)) {
+            connection.sendPacketAndClose(alreadyConnectingPacket);
+            return PreLoginResult.DISCONNECTED;
+        }
+
+        switch (AlixCommonHandler.getPreLoginVerdict(ip, packetUsername, serverUsername, data, isPremium)) {
             case ALLOWED:
                 break;
             case DISALLOWED_INVALID_NAME:
@@ -131,16 +153,19 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
 
         //Intention hide
         boolean isTransfer = connection.getHandshakePacket().isTransfer();
-        if (isTransfer && (hasCompletedCaptcha = hasCompletedCaptcha(ip, name))) {
+        if (isTransfer &&
+                !this.isTransferAccepted()//might result in some invalid
+                && (hasCompletedCaptcha = hasCompletedCaptcha(channel, packetUsername))) {
             connection.getHandshakePacket().setLoginIntention();
             recode[0] = true;
         }
 
         //just to be extra safe
-        recode[0] = true;
+        //recode[0] = true;
+        //Log.warning("isBedrock=" + this.geyserUtil.isBedrock(channel) + " " + channel + " " + connection.getHandshakePacket().getHost());
 
         //we cannot include `isPremium` here, because this would introduce a bypass
-        return data != null || this.geyserUtil.isBedrock(channel) || (hasCompletedCaptcha != null ? hasCompletedCaptcha == Boolean.TRUE : hasCompletedCaptcha(ip, name)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
+        return data != null || this.geyserUtil.isBedrock(channel) || (hasCompletedCaptcha != null ? hasCompletedCaptcha == Boolean.TRUE : hasCompletedCaptcha(channel, packetUsername)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
     }
 
     @Override
