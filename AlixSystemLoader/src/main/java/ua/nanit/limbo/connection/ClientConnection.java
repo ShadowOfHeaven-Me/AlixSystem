@@ -82,10 +82,17 @@ public class ClientConnection {
         this.frameDecoder = new VarIntFrameDecoder(this);
         this.address = (InetSocketAddress) channel.remoteAddress();
         this.gameProfile = new GameProfile();
+
+        updateVersion(Version.getMin());
+        updateState(State.HANDSHAKING);
+
         this.verifyState = state.apply(this);
     }
 
     public void verify() {
+        if (!this.channel.isOpen())
+            return;
+
         Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress() + "] passed the antibot verification");
         if (!verifyTheDud) {
             Log.warning("VERIFICATION NOT PERFORMED - DISABLED");
@@ -319,7 +326,7 @@ public class ClientConnection {
             else
                 */
 
-            if(!this.duplexHandler.isGeyser) {
+            if (!this.duplexHandler.isGeyser) {
                 //Why do 1.8 clients duplicate this singular block onto the neighbouring, not sent chunks?
                 writePacket(BlockPackets.DECOY);//sent before the chunk - should be ignored by the client
                 writePacket(PacketSnapshots.MIDDLE_CHUNK);
@@ -482,7 +489,6 @@ public class ClientConnection {
 
     public void updateVersion(Version version) {
         this.clientVersion = version;
-        this.duplexHandler.updateVersion(version);
     }
 
     private static final DisconnectPacket invalidPacket = DisconnectPacket.error("Invalid packet, Alix");
@@ -498,7 +504,7 @@ public class ClientConnection {
     }
 
     public State getDecoderState() {
-        return decoderState;
+        return this.decoderState;
     }
 
     public void setCipher(CipherHandler cipher) {

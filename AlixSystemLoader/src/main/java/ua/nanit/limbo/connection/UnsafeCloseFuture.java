@@ -23,7 +23,7 @@ public final class UnsafeCloseFuture implements ChannelFutureListener {
     public static void unsafeClose(Channel channel) {
         //channel.unsafe().close(channel.voidPromise());
         //TODO: see if the upper is plausible
-        if(NanoLimbo.debugMode) {
+        if (NanoLimbo.debugMode) {
             Log.warning("unsafeClose");
             new Exception().printStackTrace();
         }

@@ -69,7 +69,9 @@ public final class AntiBotStatistics {
         this.cps.offerLast(currentCps);
         Integer polled = this.cps.pollFirst();
 
-        this.currentSum.add(currentCps - polled);
+        int delta = currentCps - polled;
+        if (delta != 0)
+            this.currentSum.add(delta);
 
         //if (this.cpsSampleSize == SAMPLE_SIZE) {
         //} else this.cpsSampleSize++;

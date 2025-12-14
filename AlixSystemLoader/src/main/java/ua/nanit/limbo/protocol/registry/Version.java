@@ -91,7 +91,9 @@ public enum Version {
     V1_21_6(771, List.of("1.21.6")),
     V1_21_7(772, List.of("1.21.7")),
     // 1.21.8 has same protocol number
-    V1_21_9(773, List.of("1.21.9"));
+    V1_21_9(773, List.of("1.21.9")),
+    // 1.21.10 has same protocol number
+    V1_21_11(774, List.of("1.21.11"));
 
     private static final IntObjectMap<Version> VERSION_MAP;
     private static final Version MIN, MAX;

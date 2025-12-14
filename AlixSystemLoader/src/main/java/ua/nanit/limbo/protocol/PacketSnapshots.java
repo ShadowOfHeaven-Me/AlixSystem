@@ -50,6 +50,7 @@ public final class PacketSnapshots {
     public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketOutSetCompression());
     public static final PacketSnapshot RECONFIGURE = PacketSnapshot.of(new PacketPlayOutReconfigure());
     public static final int PLAYER_ENTITY_ID = 0;
+    public static final UUID PLAYER_UUID = new UUID(0, 0);
     public static final PacketSnapshot PACKET_LOGIN_SUCCESS;
     public static final PacketSnapshot PACKET_JOIN_GAME;
     public static final PacketSnapshot PACKET_SPAWN_POSITION;
@@ -174,7 +175,7 @@ public final class PacketSnapshots {
         info.setUuid(UUID.randomUUID());
 
         //float validYaw = 0;
-        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername("Sex").setUUID(new UUID(0, 0)));
+        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername("Sex").setUUID(PLAYER_UUID));
         //PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
         PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0.1f, 0, TELEPORT_VALID_ID));
         PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
@@ -241,6 +242,7 @@ public final class PacketSnapshots {
         var PACKET_UPDATE_TAGS_1_21_6 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_6()));
         var PACKET_UPDATE_TAGS_1_21_7 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_7()));
         var PACKET_UPDATE_TAGS_1_21_9 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_9()));
+        var PACKET_UPDATE_TAGS_1_21_11 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_11()));
 
         PacketRegistryData packetRegistryData = new PacketRegistryData();
         packetRegistryData.setDimensionRegistry(registry);
@@ -284,8 +286,9 @@ public final class PacketSnapshots {
         var PACKETS_REGISTRY_DATA_1_21_4 = createRegistryData(server, registry.getCodec_1_21_4());
         var PACKETS_REGISTRY_DATA_1_21_5 = createRegistryData(server, registry.getCodec_1_21_5());
         var PACKETS_REGISTRY_DATA_1_21_6 = createRegistryData(server, registry.getCodec_1_21_6());
-        var  PACKETS_REGISTRY_DATA_1_21_7 = createRegistryData(server, registry.getCodec_1_21_7());
+        var PACKETS_REGISTRY_DATA_1_21_7 = createRegistryData(server, registry.getCodec_1_21_7());
         var PACKETS_REGISTRY_DATA_1_21_9 = createRegistryData(server, registry.getCodec_1_21_9());
+        var PACKETS_REGISTRY_DATA_1_21_11 = createRegistryData(server, registry.getCodec_1_21_11());
 
         PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(new PacketOutFinishConfiguration());
 
@@ -303,6 +306,7 @@ public final class PacketSnapshots {
         UPDATE_TAGS.put(Version.V1_21_6, PACKET_UPDATE_TAGS_1_21_6);
         UPDATE_TAGS.put(Version.V1_21_7, PACKET_UPDATE_TAGS_1_21_7);
         UPDATE_TAGS.put(Version.V1_21_9, PACKET_UPDATE_TAGS_1_21_9);
+        UPDATE_TAGS.put(Version.V1_21_11, PACKET_UPDATE_TAGS_1_21_11);
 
         REGISTRY_DATA.put(Version.V1_20_5, PACKETS_REGISTRY_DATA_1_20_5);
         REGISTRY_DATA.put(Version.V1_21,   PACKETS_REGISTRY_DATA_1_21);
@@ -312,6 +316,7 @@ public final class PacketSnapshots {
         REGISTRY_DATA.put(Version.V1_21_6, PACKETS_REGISTRY_DATA_1_21_6);
         REGISTRY_DATA.put(Version.V1_21_7, PACKETS_REGISTRY_DATA_1_21_7);
         REGISTRY_DATA.put(Version.V1_21_9, PACKETS_REGISTRY_DATA_1_21_9);
+        REGISTRY_DATA.put(Version.V1_21_11, PACKETS_REGISTRY_DATA_1_21_11);
 
         /*int chunkXOffset = (int) 0 >> 4; // Default x position is 0
         int chunkZOffset = (int) 0 >> 4; // Default z position is 0

@@ -18,7 +18,7 @@ public final class DisconnectPacket {
     }
 
     public void disconnect(ClientConnection connection) {
-        var packet = switch (connection.getDecoderState()) {
+        var packet = switch (connection.getEncoderState()) {
             case HANDSHAKING, LOGIN -> this.login;
             case CONFIGURATION -> this.config;
             case PLAY -> this.play;

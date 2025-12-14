@@ -2,6 +2,7 @@ plugins {//java-library
     id("java")
     id("java-library")
     id("com.gradleup.shadow") version "8.3.2"
+    id("de.eldoria.plugin-yml.bukkit") version "0.8.0"
 }
 
 group = "AlixSystemSpigot"
@@ -14,6 +15,18 @@ tasks.withType<JavaCompile> {
 tasks.build {
     actions.clear()
     dependsOn(tasks.shadowJar)
+}
+
+bukkit {
+    name = "AlixSystem"
+    version = project.findProperty("alix-spigot-version") as String
+    main = "alix.loaders.bukkit.BukkitAlixMain"
+    author = "ShadowOfHeaven"
+    apiVersion = "1.13"
+    softDepend = listOf(
+        "SkinsRestorer", "FastLogin", "LuckPerms", "floodgate",
+        "Essentials"//to ensure it loads first, and has it's commands registered first, so that we can potentially override them
+    )
 }
 
 tasks.shadowJar {

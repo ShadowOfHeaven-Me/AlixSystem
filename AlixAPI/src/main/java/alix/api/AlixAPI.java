@@ -1,11 +1,13 @@
 package alix.api;
 
 import alix.api.event.EventManager;
+import alix.api.settings.AlixSettings;
 import org.jetbrains.annotations.NotNull;
 
 public final class AlixAPI {
 
     private final EventManager eventManager = new EventManager();
+    private final AlixSettings settings = new AlixSettings();
 
     private AlixAPI() {
     }
@@ -18,6 +20,11 @@ public final class AlixAPI {
     @NotNull
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    @NotNull
+    public AlixSettings getSettings() {
+        return settings;
     }
 
     private static final class Holder {

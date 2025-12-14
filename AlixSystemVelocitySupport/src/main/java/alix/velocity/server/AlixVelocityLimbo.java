@@ -35,10 +35,14 @@ public final class AlixVelocityLimbo {
         return pipeline.context(COMPRESSION_ENCODER) != null;
     }
 
+    public static boolean isEncrypted(Channel channel) {
+        var pipeline = channel.pipeline();
+        return pipeline.context(CIPHER_ENCODER) != null;
+    }
+
     private static CipherHandler encryptionFor(ClientConnection connection) {
         var channel = connection.getChannel();
-        var pipeline = channel.pipeline();
-        return pipeline.context(CIPHER_ENCODER) != null ? CipherHandler.newVelocityHandler(channel) : null;
+        return isEncrypted(channel) ? CipherHandler.newVelocityHandler(channel) : null;
     }
 
     public static void initAfterLoginSuccess(ConnectedPlayer player, Continuation continuation, GeyserUtil geyserUtil) {

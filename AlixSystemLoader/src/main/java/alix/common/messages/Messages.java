@@ -4,6 +4,7 @@ import alix.common.AlixCommonMain;
 import alix.common.messages.file.MessagesFile;
 import alix.common.messages.file.extracted.ExtractedMessages;
 import alix.common.utils.formatter.AlixFormatter;
+import alix.common.utils.other.throwable.AlixError;
 
 import java.io.IOException;
 
@@ -69,7 +70,7 @@ public final class Messages {
             extractedMessages.load();
             file.save0(extractedMessages.getFormattedMessages());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new AlixError(e);
         }
         extractedMessages.getFile().delete();
         extractedMessages = null;

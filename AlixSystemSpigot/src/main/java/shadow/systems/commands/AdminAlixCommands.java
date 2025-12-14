@@ -29,7 +29,6 @@ import shadow.systems.login.autoin.premium.SpigotEncryption;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
-import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.Verifications;
 
@@ -425,12 +424,13 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the OS IpSet FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the OS beforehand.");
                     } else sendMessage(sender, "&cRemoved from AntiBot Statistics view!");
                     break;
-                case "connection-setup":
+                //Unnecessary since pre-join thread disconnect
+                /*case "connection-setup":
                 case "c-s":
                     long val = 500;
                     ReflectionUtils.setConnectionThrottle(val);
                     sendMessage(sender, "Set the connection-throttle to " + val + ".");
-                    break;
+                    break;*/
                 case "m-e":
                 case "messages-extract":
                     boolean success = Messages.extract();

@@ -37,9 +37,10 @@ final class LimboCommandImpl implements LimboCommand {
         if (argNames.length == 1)
             encodedNoId = CommandsWrapperConstructor.constructOneArg(aliases, argNames[0], supportAllChars, WrapperTransformer.DYNAMIC_NO_ID, ver);
         else
-            encodedNoId =  CommandsWrapperConstructor.constructTwoArg(aliases, argNames[0], argNames[1], supportAllChars, WrapperTransformer.DYNAMIC_NO_ID, ver);
+            encodedNoId = CommandsWrapperConstructor.constructTwoArg(aliases, argNames[0], argNames[1], supportAllChars, WrapperTransformer.DYNAMIC_NO_ID, ver);
 
         msg.writeBytes(encodedNoId, 0, encodedNoId.readableBytes());
+        encodedNoId.release();
     }
 
     @Override

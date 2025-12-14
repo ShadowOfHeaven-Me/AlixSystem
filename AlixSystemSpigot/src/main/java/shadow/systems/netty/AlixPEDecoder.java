@@ -4,9 +4,11 @@ import alix.common.antibot.firewall.FireWallManager;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.annotation.ScheduledForFix;
 import com.github.retrooper.packetevents.exception.PacketProcessException;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.github.retrooper.packetevents.injector.handlers.PacketEventsDecoder;
 import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
+import shadow.utils.main.AlixUtils;
 
 import java.net.InetSocketAddress;
 
@@ -24,13 +26,16 @@ public final class AlixPEDecoder extends PacketEventsDecoder {
     @Override
     @ScheduledForFix
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        if (this.user.getClientVersion().isPreRelease()) {
+        if (AlixUtils.isDebugEnabled) {
+            Main.logError("ERROR=" + cause.getMessage() + " is PPE=" + isPPE(cause)
+                    + " ch=" + ctx.channel() + " pipeline=" + ctx.channel().pipeline().names() + " ver=" + this.user.getClientVersion());
+            cause.printStackTrace();
+        }
+        ClientVersion ver;
+        if (this.user == null || (ver = this.user.getClientVersion()) == null || ver.isPreRelease()) {
             ctx.channel().close();
             return;
         }
-        Main.logError("ERROR: " + cause.getMessage());
-
-        //cause.printStackTrace();
         if (isPPE(cause)) {
             //TODO: UHHHHHHHH
             FireWallManager.addCauseException((InetSocketAddress) ctx.channel().remoteAddress(), cause);

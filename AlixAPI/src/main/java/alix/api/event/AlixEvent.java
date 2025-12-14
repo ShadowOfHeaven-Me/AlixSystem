@@ -32,12 +32,16 @@ public interface AlixEvent {
          **/
         ASYNC,
         /**
-         * Invoked async on a thread designed for blocking operations
+         * Invoked async on a thread designed for blocking operations (a virtual thread on java 21+)
          **/
         ASYNC_BLOCKING,
         /**
          * Invoked on one of netty's event loop threads
          **/
-        NETTY
+        NETTY;
+
+        public boolean isAsync() {
+            return this != SYNC;
+        }
     }
 }

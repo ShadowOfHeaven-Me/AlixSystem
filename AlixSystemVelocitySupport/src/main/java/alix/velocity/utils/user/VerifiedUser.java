@@ -5,6 +5,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.annotation.ScheduledForFix;
+import alix.velocity.server.AlixVelocityLimbo;
 import alix.velocity.systems.packets.VerifiedPacketProcessor;
 import alix.velocity.systems.packets.gui.AbstractAlixGUI;
 import com.github.retrooper.packetevents.PacketEvents;
@@ -37,7 +38,7 @@ public final class VerifiedUser implements AlixCommonUser {
         this.channel = (Channel) user.getChannel();
         this.version = Version.of(player.getProtocolVersion().getProtocol());
         this.verifiedPacketProcessor = new VerifiedPacketProcessor(this);
-        this.isEncrypted = this.data.getPremiumData().getStatus().isPremium();
+        this.isEncrypted = AlixVelocityLimbo.isEncrypted(this.channel);// this.data.getPremiumData().getStatus().isPremium();
     }
 
     public VerifiedPacketProcessor getDuplexProcessor() {

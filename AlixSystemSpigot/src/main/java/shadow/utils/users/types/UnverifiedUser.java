@@ -1,6 +1,5 @@
 package shadow.utils.users.types;
 
-import alix.api.event.AlixEvent;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
@@ -12,7 +11,8 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.other.annotation.OptimizationCandidate;
-import alix.spigot.api.events.auth.AuthReason;
+import alix.api.event.types.AuthReason;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.entity.Player;
@@ -80,7 +80,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     public String originalJoinMessage;
     //public Location originalSpawnEventLocation;
     //AntiBot values
-    public boolean keepAliveReceived, armSwingReceived;
+    public boolean keepAliveReceived;//, armSwingReceived;
     //public long armSwingSent, keepAliveSent;
 
     public UnverifiedUser(Player player, TemporaryUser tempUser) {
@@ -419,7 +419,8 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
                 AlixUtils.serverLog(this.originalJoinMessage);
                 ByteBuf constMsgBuf = OutMessagePacketConstructor.constructConst(this.originalJoinMessage);
                 for (AlixUser u : UserManager.users())
-                    if (u.isVerified() && u.silentContext() != this.silentContext() && u.silentContext() != null)
+                    if (u.isVerified() && u.silentContext() != this.silentContext() && u.silentContext() != null
+                            && u.retrooperUser().getEncoderState() == ConnectionState.PLAY)
                         u.writeAndFlushConstSilently(constMsgBuf);
 
                 this.writeAndFlushConstSilently(constMsgBuf);
@@ -445,7 +446,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.writeConstSilently(loginSuccessMessagePacket);//invoked here, since the this::initDoubleVer can prevent this method from being invoked
         //this.data.updateLastSuccessfulLoginTime();
         VerifiedUser verifiedUser = UserManager.addVerifiedUser(player, data, this.getIPAddress(), retrooperUser, this.silentContext());//invoked before onSuccessfulVerification to remove UnverifiedUser from UserManager, to indicate that he's verified
-        AlixEventInvoker.callOnAuth(AuthReason.MANUAL_LOGIN, verifiedUser, AlixEvent.ThreadSource.ASYNC);
+        AlixEventInvoker.callOnAuthInferThread(AuthReason.MANUAL_LOGIN, verifiedUser);
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
         //AlixScheduler.runLaterAsync(() -> ReflectionUtils.resetLoginEffectPackets(this), 1, TimeUnit.SECONDS);
@@ -494,7 +495,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         VerifiedUser verifiedUser = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext());
         PersistentUserData data = verifiedUser.getData();
 
-        AlixEventInvoker.callOnAuth(AuthReason.MANUAL_REGISTER, verifiedUser, AlixEvent.ThreadSource.ASYNC);
+        AlixEventInvoker.callOnAuthInferThread(AuthReason.MANUAL_REGISTER, verifiedUser);
         //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
 

@@ -1,6 +1,6 @@
 package alix.common.antibot.firewall;
 
-import alix.common.utils.other.throwable.AlixException;
+import alix.common.utils.other.throwable.AlixError;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -17,7 +17,7 @@ public enum FireWallType {
     public static boolean isIPv4FastLookUpEnabled() {
         //AlixCommonMain.logError("TYPE CHECK INVOKED");
         FireWallType type = USED.get();
-        if (type == null) throw new AlixException("FireWall Type not defined!");
+        if (type == null) throw new AlixError("FireWall Type not defined!");
         return type == FAST_UNSAFE_EPOLL;
     }
 }

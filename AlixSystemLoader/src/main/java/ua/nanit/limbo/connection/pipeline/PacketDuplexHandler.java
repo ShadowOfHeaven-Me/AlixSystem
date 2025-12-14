@@ -40,7 +40,6 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private CipherHandler cipher;
     private CompressionHandler compression;
     private State.PacketRegistry encoderMappings, decoderMappings;
-    private Version version;
 
     public PacketDuplexHandler(Channel channel, LimboServer server, ClientConnection connection) {
         this.channel = channel;
@@ -51,8 +50,6 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         var geyserUtil = this.server.getIntegration().geyserUtil();
         this.isGeyser = geyserUtil.isBedrock(channel);
         this.passPayloads = this.isGeyser && geyserUtil.isFloodgatePresent();
-        updateVersion(Version.getMin());
-        updateState(State.HANDSHAKING);
     }
 
     @Override
@@ -64,7 +61,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         //Log.error("VALID BUF - " + buf);
 
         //PacketDecoder
-        Packet packet = PacketDecoder.decode(buf, this.decoderMappings, this.version, this.connection);
+        Packet packet = PacketDecoder.decode(buf, this.decoderMappings, this.version(), this.connection);
         buf.release();
         if (packet == null) return;
 
@@ -78,7 +75,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
             //ByteBuf pluginMessageBuf = BufUtils.pooledBuffer();
             //var wrapper = new WrapperConfigClientPluginMessage(pluginMessage.wrapper().getChannelName(), pluginMessage.wrapper().getData());
-            //WrapperUtils.writeWithID(wrapper, pluginMessageBuf, this.version.getRetrooperVersion());
+            //WrapperUtils.writeWithID(wrapper, pluginMessageBuf, this.version().getRetrooperVersion());
 
             //this.channel.pipeline().context(PacketEvents.DECODER_NAME).fireChannelRead(pluginMessageBuf);
             //getBefore(channel, this.channel.pipeline().context(PacketEvents.DECODER_NAME)).fireChannelRead(pluginMessageBuf);
@@ -121,7 +118,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         Log.error("OUT: " + packet.getClass().getSimpleName());
 
         //PacketEncoder
-        ByteMessage byteMessage = PacketEncoder.encode(packet, this.encoderMappings, this.version);
+        ByteMessage byteMessage = PacketEncoder.encode(packet, this.encoderMappings, this.version());
         if (byteMessage == null) return;
 
         //VarIntLengthEncoder
@@ -162,7 +159,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     public boolean tryEnableCompression(boolean sendPacket, boolean forceful) {
         //compression didn't exist before 1.8
-        boolean canEnable = COMPRESSION_ENABLED && !this.disableCompression() && this.version.moreOrEqual(Version.V1_8);
+        boolean canEnable = COMPRESSION_ENABLED && !this.disableCompression() && this.version().moreOrEqual(Version.V1_8);
         if (canEnable || forceful) {
             if (!canEnable) {
                 Log.warning("Forcefully enabling compression, even tho player " + this.connection.getUsername()
@@ -173,7 +170,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
                         "\nFloodgateNoCompression=" + floodgateNoCompression +
                         "\nisGeyser=" + isGeyser +
                         "\ngeyser player=" + NanoLimbo.INTEGRATION.geyserUtil().getBedrockPlayer(this.channel) +
-                        "\nVERSION=" + this.version);
+                        "\nVERSION=" + this.version());
             }
 
             this.enableCompression(sendPacket);
@@ -295,12 +292,12 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         ByteBuf buf;
         State state;
         if (packet instanceof PacketSnapshot snapshot) {
-            if (this.disableCompression()) buf = snapshot.getEncodedNoCompression(this.version);
-            else buf = snapshot.getEncoded(this.version);
+            if (this.disableCompression()) buf = snapshot.getEncodedNoCompression(this.version());
+            else buf = snapshot.getEncoded(this.version());
 
             state = snapshot.state;
         } else {
-            buf = encodeToRaw0(packet, this.encoderMappings, this.version, this.compression, true);
+            buf = encodeToRaw0(packet, this.encoderMappings, this.version(), this.compression, true);
             state = State.getState(packet);
         }
 
@@ -316,7 +313,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         ChannelOutboundBuffer outboundBuffer = this.channel.unsafe().outboundBuffer();
 
         /*if (NanoLimbo.debugPackets && false)
-            PacketUtils.validateOutCopy(out, this.cipher, this.compression, this.encoderMappings, this.version);*/
+            PacketUtils.validateOutCopy(out, this.cipher, this.compression, this.encoderMappings, this.version());*/
 
         if (outboundBuffer != null) outboundBuffer.addMessage(out, out.readableBytes(), promise);
         else out.release();
@@ -344,17 +341,17 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         return promise;
     }
 
-    public void updateVersion(Version version) {
-        this.version = version;
-    }
-
     public void updateState(State state) {
-        this.encoderMappings = state.clientBound.getRegistry(version);
-        this.decoderMappings = state.serverBound.getRegistry(version);
+        this.encoderMappings = state.clientBound.getRegistry(this.version());
+        this.decoderMappings = state.serverBound.getRegistry(this.version());
     }
 
     public void updateEncoderState(State state) {
-        this.encoderMappings = state.clientBound.getRegistry(version);
+        this.encoderMappings = state.clientBound.getRegistry(this.version());
+    }
+
+    private Version version() {
+        return this.connection.getClientVersion();
     }
 
     public void setCipher(CipherHandler cipher) {

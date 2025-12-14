@@ -79,7 +79,6 @@ public final class OfflineExecutors extends UniversalExecutors {
                 Main.logInfo("Late overriding of player's " + name + " premium uuid " + uuid + " with non-premium uuid " + nonPremiumUUID);
             } else
                 Main.logWarning("Player " + name + " could not have his uuid late set to non-premium, despite config 'premium-uuid: true' & a non-premium status! Report this as an error immediately!");
-
         }
     }
 
@@ -87,6 +86,7 @@ public final class OfflineExecutors extends UniversalExecutors {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLogin(AsyncPlayerPreLoginEvent e) {
         //Main.logInfo("ASYNC PRE LOGIN EVENT");
+        if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
         String name = e.getName();
         String ip = e.getAddress().getHostAddress();
 
@@ -106,7 +106,6 @@ public final class OfflineExecutors extends UniversalExecutors {
         //This logic was moved to AlixChannelHandler
         //if (antibotService) ConnectionThreadManager.onJoinAttempt(name, e.getAddress());
 
-        if (e.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
         /*if (Bukkit.getMaxPlayers() <= UserManager.userCount()) {//we have to perform this check due to semi-virtualization problems - the server does not really know how many players there currently are on the server
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_FULL, this.serverIsFull);
             return;
@@ -275,7 +274,7 @@ public final class OfflineExecutors extends UniversalExecutors {
     public void onTeleport(PlayerTeleportEvent event) {
         Location from = event.getFrom();
         Location to = event.getTo();
-        if (event.isCancelled() && event.getCause() == MethodProvider.ASYNC_TP_CAUSE && from.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {//ensure the tp back from verification happens at all cost
+        if (event.isCancelled() && event.getCause() == MethodProvider.ASYNC_TP_CAUSE && from.getWorld().equals(AlixWorld.CAPTCHA_WORLD) && !to.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) {//ensure the tp back from verification happens at all cost
             event.setCancelled(false);//look at me, saying how uncancelling an event is bad writing, and then doing it myself
             return;
         }
@@ -292,7 +291,7 @@ public final class OfflineExecutors extends UniversalExecutors {
     public void onDamage(EntityDamageEvent event) {
         if (event.isCancelled() || !(event.getEntity() instanceof Player player)) return;
 
-        if (Verifications.has(player.getUniqueId()))
+        if (Verifications.has(player))
             event.setCancelled(true);
     }
     //During verification executors - end
@@ -307,6 +306,7 @@ public final class OfflineExecutors extends UniversalExecutors {
     public void onCommand(PlayerCommandPreprocessEvent e) {
         if (!e.isCancelled() && isOperatorCommandRestricted)
             super.onOperatorCommandCheck(e, e.getMessage().substring(1));
+
         if (!e.isCancelled() && Verifications.has(e.getPlayer())) {
             e.setCancelled(true);
             Main.logWarning("Player " + e.getPlayer().getName() + " tried executing command while unverified - cancelling! Report this if this is a security error!");

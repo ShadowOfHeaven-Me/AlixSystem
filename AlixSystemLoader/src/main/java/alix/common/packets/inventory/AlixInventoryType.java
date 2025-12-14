@@ -4,7 +4,7 @@ import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import static com.github.retrooper.packetevents.protocol.player.ClientVersion.V_1_20_3;
 
@@ -20,9 +20,9 @@ public enum AlixInventoryType {
     CRAFTER_3X3(7),//added in 1.20.3
     ANVIL(ver -> ver.isNewerThan(V_1_20_3) ? 8 : 7);
 
-    private final Function<ClientVersion, Integer> func;
+    private final ToIntFunction<ClientVersion> func;
 
-    AlixInventoryType(Function<ClientVersion, Integer> func) {
+    AlixInventoryType(ToIntFunction<ClientVersion> func) {
         this.func = func;
     }
 
@@ -31,11 +31,11 @@ public enum AlixInventoryType {
     }
 
     public int getId(ClientVersion version) {
-        return this.func.apply(version);
+        return this.func.applyAsInt(version);
     }
 
     public int geServerVersionId() {
-        return this.func.apply(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
+        return this.func.applyAsInt(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
     }
 
     public int size() {

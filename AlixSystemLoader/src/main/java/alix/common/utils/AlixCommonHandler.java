@@ -125,7 +125,7 @@ public final class AlixCommonHandler {
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:
-                return ip ? BukkitBanList.IP : BukkitBanList.NAME;
+                return BukkitBanList.get(ip);
             default:
                 throw new AssertionError();
         }

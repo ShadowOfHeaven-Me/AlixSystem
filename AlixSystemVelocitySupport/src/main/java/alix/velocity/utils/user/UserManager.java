@@ -37,6 +37,8 @@ public final class UserManager {
 
             channel.closeFuture().addListener(f -> {
                 CONNECTED_USERS.remove(username);
+                /*AlixCommonMain.logError("INFORMATIVE ERROR");
+                new AlixException().printStackTrace();*/
             });
             //try to account for the above statement already executing
             return channel.isOpen() ? channel : null;

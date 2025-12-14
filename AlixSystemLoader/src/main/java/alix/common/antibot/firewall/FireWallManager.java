@@ -101,8 +101,7 @@ public final class FireWallManager {
                 int builtIn = map.size();
                 file.load();
                 int total = map.size();
-                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Built-in blacklisted IPs: " + builtIn + " Blacklisted by this server: " + (total - builtIn) + " Total: " + total);
-                //if(isOsFireWallInUse) osFireWall.blacklist("");
+                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Built-in blacklisted IPs: " + builtIn + ", Blacklisted by this server: " + (total - builtIn) + ", Total: " + total);
             } catch (Throwable e) {
                 e.printStackTrace();
             }

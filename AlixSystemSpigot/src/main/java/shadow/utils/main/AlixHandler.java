@@ -1,6 +1,5 @@
 package shadow.utils.main;
 
-import alix.api.event.AlixEvent;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
@@ -8,7 +7,7 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
-import alix.spigot.api.events.auth.AuthReason;
+import alix.api.event.types.AuthReason;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
@@ -386,7 +385,7 @@ public final class AlixHandler {
             //Main.debug("SENT");
         });
 
-        AlixEventInvoker.callOnAuth(authReason, vUser, AlixEvent.ThreadSource.SYNC);
+        AlixEventInvoker.callOnAuthInferThread(authReason, vUser);
     }
 
     //returns true if the virtual player is unverified (currently disabled)

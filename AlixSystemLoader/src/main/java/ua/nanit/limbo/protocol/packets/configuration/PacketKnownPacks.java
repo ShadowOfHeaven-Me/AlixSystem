@@ -8,6 +8,8 @@ import java.util.List;
 
 public class PacketKnownPacks implements PacketOut {
 
+    //WrapperConfigServerSelectKnownPacks
+
     @Override
     public void encode(ByteMessage msg, Version version) {
         List<String> versions = version.getDisplayNames();

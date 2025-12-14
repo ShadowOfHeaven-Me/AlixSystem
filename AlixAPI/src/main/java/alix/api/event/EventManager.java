@@ -27,7 +27,7 @@ public final class EventManager {
      **/
     public void registerListener(EventListener listener) {
         boolean modified = this.registerNoRecalculation(listener);
-        if (modified) this.recalculateListeners();
+        if (modified) this.recalculateListeners(1);
     }
 
     /**
@@ -35,11 +35,16 @@ public final class EventManager {
      **/
     public void registerListeners(EventListener... listeners) {
         boolean modified = false;
+        int added = 0;
 
-        for (EventListener listener : listeners)
-            modified |= this.registerNoRecalculation(listener);
+        for (EventListener listener : listeners) {
+            boolean success = this.registerNoRecalculation(listener);
+            modified |= success;
+            if (success)
+                added++;
+        }
 
-        if (modified) this.recalculateListeners();
+        if (modified) this.recalculateListeners(listeners.length);
     }
 
     /**
@@ -47,11 +52,16 @@ public final class EventManager {
      **/
     public void registerListeners(Iterable<EventListener> listeners) {
         boolean modified = false;
+        int added = 0;
 
-        for (EventListener listener : listeners)
-            modified |= this.registerNoRecalculation(listener);
+        for (EventListener listener : listeners) {
+            boolean success = this.registerNoRecalculation(listener);
+            modified |= success;
+            if (success)
+                added++;
+        }
 
-        if (modified) this.recalculateListeners();
+        if (modified) this.recalculateListeners(added);
     }
 
     /**
@@ -59,7 +69,7 @@ public final class EventManager {
      **/
     public void unregisterListener(EventListener listener) {
         boolean modified = this.unregisterNoRecalculation(listener);
-        if (modified) this.recalculateListeners();
+        if (modified) this.recalculateListeners(-1);
     }
 
     /**
@@ -67,11 +77,16 @@ public final class EventManager {
      **/
     public void unregisterListeners(EventListener... listeners) {
         boolean modified = false;
+        int removed = 0;
 
-        for (EventListener listener : listeners)
-            modified |= this.unregisterNoRecalculation(listener);
+        for (EventListener listener : listeners) {
+            boolean success = this.unregisterNoRecalculation(listener);
+            modified |= success;
+            if (success)
+                removed++;
+        }
 
-        if (modified) this.recalculateListeners();
+        if (modified) this.recalculateListeners(removed);
     }
 
     /**
@@ -79,11 +94,16 @@ public final class EventManager {
      **/
     public void unregisterListeners(Iterable<EventListener> listeners) {
         boolean modified = false;
+        int removed = 0;
 
-        for (EventListener listener : listeners)
-            modified |= this.unregisterNoRecalculation(listener);
+        for (EventListener listener : listeners) {
+            boolean success = this.unregisterNoRecalculation(listener);
+            modified |= success;
+            if (success)
+                removed++;
+        }
 
-        if (modified) this.recalculateListeners();
+        if (modified) this.recalculateListeners(removed);
     }
 
     /**
@@ -108,9 +128,9 @@ public final class EventManager {
         return set != null && set.remove(listener);
     }
 
-    private void recalculateListeners() {
+    private void recalculateListeners(int delta) {
         synchronized (this) {
-            List<EventListener> list = new ArrayList<>(listeners.length + 1);//just a decent estimate for size
+            List<EventListener> list = new ArrayList<>(listeners.length + delta);//just a decent estimate for size
 
             for (ListenerPriority priority : ListenerPriority.values()) {
                 Set<EventListener> set = this.map.get(priority);
@@ -126,8 +146,9 @@ public final class EventManager {
     }
 
     @ApiStatus.Internal
-    public static void callOnAuth(UserAuthenticateEvent event) {
+    public static <T extends UserAuthenticateEvent> T callOnAuth(T event) {
         AlixAPI.getAPI().getEventManager().callEvent(event, EventListener::onAuth);
+        return event;
     }
 
     @ApiStatus.Internal

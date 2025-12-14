@@ -73,7 +73,7 @@ public final class PersistentUserData implements AlixUserData {
     }
 
     public static PersistentUserData createFromPremiumInfo(String name, InetAddress ip, PremiumData premiumData) {
-        //By creating a password we ensure the account cannot be stolen
+        //By creating a password we ensure the account cannot be stolen (in case of status reset)
         PersistentUserData data = new PersistentUserData(name, ip, Password.createRandom());
         data.setLoginType(LoginType.COMMAND);
         data.setPremiumData(premiumData);

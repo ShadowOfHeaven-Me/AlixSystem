@@ -593,7 +593,7 @@ public class PacketBlocker implements PacketProcessor {
     }
 
     @NotNull
-    public VirtualFallPhase getFallPhase() {
+    public final VirtualFallPhase getFallPhase() {
         return virtualFallPhase;
     }
 

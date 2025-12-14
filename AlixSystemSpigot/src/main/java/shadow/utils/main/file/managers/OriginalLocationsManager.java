@@ -35,7 +35,8 @@ public final class OriginalLocationsManager {
     }
 
     public static void add(Player player, @NotNull Location originalLocation) {
-        if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) return;
+        if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD))
+            return;
         file.getMap().put(player.getUniqueId(), originalLocation);
         //if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) throw new AlixException(":>");
     }

@@ -5,6 +5,8 @@ import alix.common.antibot.captcha.ColorGenerator;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
@@ -133,7 +135,7 @@ public final class ImageRenderer {
             throw new AlixException("INVALID: WIDTH " + image.getWidth() + " HEIGHT " + image.getHeight());
 
         int side = image.getWidth();
-        int entityId = QR_ENTITY_ID_START;
+        int entityId = QR_ENTITY_ID_START + AlixUtils.getRandom(100_000, 1_000_000);
 
         int offset = (side % 128) >> 1;
 
@@ -169,7 +171,7 @@ public final class ImageRenderer {
             int y = entry.getKey() - (x << 12);
             //Main.logError("XXXX " + x + " Y " + y);
 
-            ItemStack item = SpigotConversionUtil.fromBukkitItemStack(MapCaptcha.newCaptchaMapItem(mapId));
+            ItemStack item = SpigotConversionUtil.fromBukkitItemStack(MapCaptcha.newMapItem(mapId));
 
             entityId++;
 
@@ -177,9 +179,15 @@ public final class ImageRenderer {
             WrapperPlayServerSpawnEntity entity = new WrapperPlayServerSpawnEntity(entityId, Optional.of(UUID.randomUUID()), EntityTypes.ITEM_FRAME,
                     SpigotConversionUtil.fromBukkitLocation(GoogleAuth.QR_CODE_SHOW_LOC.asModifiableCopy().subtract(x, y, 0)).getPosition(), 0, 0, 0,
                     BlockFace.NORTH.getFaceValue(), Optional.of(Vector3d.zero()));
-            //https://wiki.vg/Entity_metadata#Item_Frame
+            //https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Item_Frame
+            //https://github.com/Tofaa2/EntityLib/blob/master/api/src/main/java/me/tofaa/entitylib/meta/other/ItemFrameMeta.java
+
+            //https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata?action=history
+            //apparently somewhere about at 1.21.6 it seems to have been changed
+            int index = PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_21_6) ? 9 : 8;
+
             WrapperPlayServerEntityMetadata metadata = new WrapperPlayServerEntityMetadata(entityId,
-                    Collections.singletonList(new EntityData(8, EntityDataTypes.ITEMSTACK, item)));
+                    Collections.singletonList(new EntityData(index, EntityDataTypes.ITEMSTACK, item)));
 
             list.add(NettyUtils.createBuffer(entity));
             list.add(NettyUtils.createBuffer(metadata));

@@ -40,9 +40,7 @@ public final class LimboCountdown {//shows xp countdown and kicks out
 
     void tick() {
         if (this.connection.getEncoderState() != State.PLAY) {
-            if(--this.index == 0) {
-                this.connection.closeTimedOut();
-            }
+            if(--this.index == 0) this.connection.closeTimedOut();
             return;
         }
         if (this.index != 0) {

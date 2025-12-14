@@ -37,6 +37,14 @@ public final class AlixException extends RuntimeException {
         t.printStackTrace();
     }
 
+    public static AlixException noException(String message) {
+        return new AlixException(message, (Void) null);
+    }
+
+    private AlixException(String message, Void ignoredNoException) {
+        super(message);
+    }
+
     public static void isTrue(boolean b, String message) {
         if (!b) throw new AlixException(message);
     }

@@ -1,13 +1,11 @@
 package ua.nanit.limbo.connection.captcha;
 
-import com.github.retrooper.packetevents.protocol.player.InteractionHand;
 import com.github.retrooper.packetevents.protocol.world.Location;
 import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.client.*;
 import io.netty.util.concurrent.ScheduledFuture;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.captcha.arm.ArmAnimations;
 import ua.nanit.limbo.connection.captcha.held.HeldItemSlots;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
@@ -62,6 +60,18 @@ final class CaptchaStateImpl {
 
     private boolean isAwaitingTransaction, hasReceivedTransaction;
 
+    //true if sent
+    private boolean writeTransaction(boolean initial) {
+        if (this.version().moreOrEqual(Version.V1_17)) {
+            this.write(initial ? PacketPings.INITIAL : PacketPings.SECONDARY);
+            return true;
+        } else if (this.version().moreOrEqual(Version.V1_8)) {
+            this.write(initial ? Transactions.INITIAL : Transactions.SECONDARY);
+            return true;
+        }
+        return false;
+    }
+
     void sendInitial0() {
         this.write(PacketSnapshots.PLAYER_ABILITIES_FALL);
         if (this.version().moreOrEqual(Version.V1_20_5)) {
@@ -71,13 +81,8 @@ final class CaptchaStateImpl {
             this.cookieResponse |= IS_AWAITING_COOKIE_RESPONSE;
         }
 
-        if (this.version().moreOrEqual(Version.V1_17)) {
-            this.write(PacketPings.INITIAL_PING);
-            this.isAwaitingTransaction = true;
-        } else if (this.version().moreOrEqual(Version.V1_8)) {
-            this.write(Transactions.VALID);
-            this.isAwaitingTransaction = true;
-        }
+        this.isAwaitingTransaction = this.writeTransaction(true);
+
         this.write(KeepAlives.INITIAL_KEEP_ALIVE);
         if (this.version().moreOrEqual(Version.V1_20_2)) {
             //this.write(ChunkBatches.BATCH_START);
@@ -190,13 +195,22 @@ final class CaptchaStateImpl {
     private static final int BLOCK_Y = 60;
     static final Vector3i BLOCK_POS = new Vector3i(0, BLOCK_Y, 0);
 
+    private boolean isAwaitingSecondaryTransaction;
+
     private void handleTransaction0(int id) {
-        this.failIf(id != 1);
+        this.failIf(id == 1 && this.isAwaitingSecondaryTransaction);
+        this.failIf(id == 2 && !this.isAwaitingSecondaryTransaction);
+        this.failIf(id != 1 && id != 2);
         this.failIf(this.keepAlivesReceived != 2);
 
         this.failIf(this.isAwaitingCookieResponse() && !this.hasReceivedBothCookieResponses());
 
         this.hasReceivedTransaction = true;
+
+        if (this.isAwaitingSecondaryTransaction) {
+            this.cancelTask();
+            this.connection.verify();
+        }
         /*int blockY = 60;//AlixMathUtils.roundUp(predictedNextY);
         Vector3i pos = new Vector3i(0, blockY, 0);*/
 
@@ -207,7 +221,10 @@ final class CaptchaStateImpl {
     }
 
     private void cancelTask() {
-        if (this.disconnectTask != null) this.disconnectTask.cancel(false);
+        if (this.disconnectTask != null) {
+            this.disconnectTask.cancel(false);
+            this.disconnectTask = null;
+        }
     }
 
     private void scheduleDisconnectTask(long delay, TimeUnit unit) {
@@ -225,7 +242,11 @@ final class CaptchaStateImpl {
             };
         } else task = this::disconnectTimedOut0;
 
-        this.disconnectTask = this.connection.getChannel().eventLoop().schedule(task, delay, unit);
+        this.disconnectTask = this.schedule(task, delay, unit);
+    }
+
+    private ScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
+        return this.connection.getChannel().eventLoop().schedule(task, delay, unit);
     }
 
     private void disconnectTimedOut0() {
@@ -286,19 +307,6 @@ final class CaptchaStateImpl {
         this.disconnectTask = this.connection.getChannel().eventLoop().schedule(() -> this.close(TIMED_OUT), 3, TimeUnit.SECONDS);*/
     }
 
-    private boolean awaitingArmAnimation;
-
-    void handle(WrapperPlayClientAnimation packet) {
-        if (!this.awaitingArmAnimation) return;
-
-        this.failIf(packet.getHand() != InteractionHand.MAIN_HAND);
-
-        this.cancelTask();
-        this.awaitingArmAnimation = false;
-        ////Log.error("ALL CHECKS PASSED IN: " + (System.currentTimeMillis() - this.keepAliveSentTime));
-        this.connection.verify();
-    }
-
     /*//https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/verification/FallbackProtocolHandler.java#L49
     void handle(PacketPlayInTransaction packet) {
         WrapperPlayClientWindowConfirmation transaction = packet.wrapper();
@@ -336,15 +344,42 @@ final class CaptchaStateImpl {
             this.cancelTask();
             this.awaitingHeldSlot = false;
 
-            this.scheduleKickTask();
-            this.writeAndFlush(ArmAnimations.SELF_SWING);
-            this.awaitingArmAnimation = true;
+            this.isMovementDisabledAck = true;
+
+            //simulate time passage, let at least one client tick pass, to try get bots to fail
+            this.schedule(() -> {
+                boolean written = this.writeTransaction(false);
+                if (written) {
+                    this.scheduleKickTask();
+                    this.isAwaitingSecondaryTransaction = true;
+                    this.duplexHandler.flush();
+                } else {
+                    //not possible on pre-1.8
+                    this.connection.verify();
+                }
+            }, 100, TimeUnit.MILLISECONDS);
+//            this.writeAndFlush(ArmAnimations.SELF_SWING);
+//
+//            this.awaitingArmAnimation = true;
         }
+    }
+
+    //private boolean awaitingArmAnimation;
+
+    void handle(WrapperPlayClientAnimation packet) {
+        /*if (!this.awaitingArmAnimation) return;
+
+        this.failIf(packet.getHand() != InteractionHand.MAIN_HAND);
+
+        this.cancelTask();
+        this.awaitingArmAnimation = false;
+        ////Log.error("ALL CHECKS PASSED IN: " + (System.currentTimeMillis() - this.keepAliveSentTime));
+        this.connection.verify();*/
     }
 
     private long lastKeepAliveSentTime;
     private double deltaY, lastDeltaY, expectedYCollision;
-    private boolean isFalling, isCheckingCollision, checkedCollision;
+    private boolean isFalling, isCheckingCollision, checkedCollision, isMovementDisabledAck;
 
     private void startFalling() {
         this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
@@ -352,6 +387,8 @@ final class CaptchaStateImpl {
     }
 
     void handle(WrapperPlayClientPlayerFlying flying) {
+        this.failIf(this.isMovementDisabledAck);
+
         Location loc = flying.getLocation();
 
         if (flying.hasRotationChanged()) {
@@ -407,8 +444,12 @@ final class CaptchaStateImpl {
                 //this.writeAndFlush(new PacketPlayOutTransaction().setTransactionId(0));
                 //this.isAwaitingTransaction = true;
 
-                //https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/verification/FallbackProtocolHandler.java#L146
+                //disable movement sending
+                this.write(Entities.SAME_ID);
+                //provoke movement send
+                this.write(CaptchaBlock.AIR);
 
+                //https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/verification/FallbackProtocolHandler.java#L146
                 //should be ignored by the client
                 this.write(HeldItemSlots.INVALID);
                 //should be responded to

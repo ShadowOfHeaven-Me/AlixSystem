@@ -59,6 +59,7 @@ public final class DimensionRegistry {
     private final CompoundBinaryTag codec_1_21_6;
     private final CompoundBinaryTag codec_1_21_7;
     private final CompoundBinaryTag codec_1_21_9;
+    private final CompoundBinaryTag codec_1_21_11;
     //private final CompoundBinaryTag oldCodec;
     private final CompoundBinaryTag tags_1_20_5;
     private final CompoundBinaryTag tags_1_21;
@@ -68,6 +69,7 @@ public final class DimensionRegistry {
     private final CompoundBinaryTag tags_1_21_6;
     private final CompoundBinaryTag tags_1_21_7;
     private final CompoundBinaryTag tags_1_21_9;
+    private final CompoundBinaryTag tags_1_21_11;
 
     public DimensionRegistry(LimboServer server, String def) throws IOException {
         this.server = server;
@@ -88,6 +90,7 @@ public final class DimensionRegistry {
         codec_1_21_6 = readNbtFile("codec_1_21_6");
         codec_1_21_7 = readNbtFile("codec_1_21_7");
         codec_1_21_9 = readNbtFile("codec_1_21_9");
+        codec_1_21_11 = readNbtFile("codec_1_21_11");
 
         tags_1_20_5 = readNbtFile("tags_1_20_5");
         tags_1_21 = readNbtFile("tags_1_21");
@@ -97,6 +100,7 @@ public final class DimensionRegistry {
         tags_1_21_6 = readNbtFile("tags_1_21_6");
         tags_1_21_7 = readNbtFile("tags_1_21_7");
         tags_1_21_9 = readNbtFile("tags_1_21_9");
+        tags_1_21_11 = readNbtFile("tags_1_21_11");
 
         defaultDimension_1_16 = getLegacyDimension(def);
         defaultDimension_1_16_2 = getModernDimension(def, codec_1_16_2);
@@ -154,6 +158,14 @@ public final class DimensionRegistry {
     /*public CompoundBinaryTag getOldCodec() {
         return oldCodec;
     }*/
+
+    public CompoundBinaryTag getCodec_1_21_11() {
+        return codec_1_21_11;
+    }
+
+    public CompoundBinaryTag getTags_1_21_11() {
+        return tags_1_21_11;
+    }
 
     public Dimension getDefaultDimension_1_16() {
         return defaultDimension_1_16;

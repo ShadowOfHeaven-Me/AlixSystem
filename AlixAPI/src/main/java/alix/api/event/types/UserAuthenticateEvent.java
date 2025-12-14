@@ -1,12 +1,9 @@
 package alix.api.event.types;
 
-import alix.api.user.AlixCommonUser;
+import alix.api.event.AlixEvent;
 
-import java.util.concurrent.ExecutorService;
+public interface UserAuthenticateEvent extends AlixEvent {
 
-public class UserAuthenticateEvent extends AbstractAlixEvent {
+    AuthReason getAuthReason();
 
-    public UserAuthenticateEvent(AlixCommonUser user, ExecutorService executor, ThreadSource source) {
-        super(user, executor, source);
-    }
 }

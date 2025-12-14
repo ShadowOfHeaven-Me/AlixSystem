@@ -1,6 +1,7 @@
 package shadow.utils.users;
 
 import org.bukkit.entity.Player;
+import shadow.utils.main.AlixUtils;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 import shadow.utils.users.types.UnverifiedUser;
@@ -18,12 +19,11 @@ public final class Verifications {
     }
 
     public static boolean has(Player p) {
-        return p != null && has(p.getUniqueId());
-    }
+        if (p == null)
+            return false;
 
-    public static boolean has(UUID uuid) {
-        AlixUser user = UserManager.get(uuid);
-        return user != null && !user.isVerified();
+        AlixUser user = UserManager.get(p.getUniqueId());
+        return user == null && !AlixUtils.isFakePlayer(p) || !user.isVerified();
     }
 
     public static boolean remove(Player p) {

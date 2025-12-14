@@ -87,6 +87,10 @@ public enum CaptchaBlock {
         return FULL_LEN;
     }
 
+    public static final PacketSnapshot AIR = PacketSnapshot.of(new PacketPlayOutBlockUpdate()
+            .setType(StateTypes.AIR)
+            .setPosition(CaptchaStateImpl.BLOCK_POS));
+
     public double getHeight(Version version) {
         return this.heightFunction.apply(version);
     }
