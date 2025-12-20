@@ -1,8 +1,11 @@
 # AlixSystem
 
-This is the source code of the spigot/velocity antibot & authentication plugin called AlixSystem, the link to which can be found here: https://www.spigotmc.org/resources/alixsystem.109144/
+This is the source code of the spigot/velocity antibot & authentication plugin called AlixSystem, the link to which can be found on:
+* [spigot](https://www.spigotmc.org/resources/alixsystem.109144/)
+* [modrinth](https://modrinth.com/plugin/alixsystem)
+* [builtbybit](https://builtbybit.com/resources/alixvelocity.61304/)
 
-This documentation refers to the latest build
+This documentation refers to 3.7.3 spigot & 1.2.1 velocity
 
 ## How it works
 
