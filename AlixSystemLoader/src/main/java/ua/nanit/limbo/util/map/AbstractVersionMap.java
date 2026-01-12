@@ -3,10 +3,8 @@ package ua.nanit.limbo.util.map;
 import alix.common.utils.other.throwable.AlixError;
 import ua.nanit.limbo.protocol.registry.Version;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.lang.reflect.Array;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -24,6 +22,17 @@ public abstract class AbstractVersionMap<T> {
     abstract void setElement(Object[] data, int i, T val);
 
     abstract T getElement(Object[] data, int i);
+
+    void fill(T elem) {
+        Arrays.fill(this.data, elem);
+    }
+
+    public <R> R[] values(Class<R> component, Function<T, R> transformer) {
+        R[] arr = (R[]) Array.newInstance(component, this.data.length);
+        for (int i = 0; i < this.data.length; i++)
+            arr[i] = transformer.apply(this.getElement(this.data, i));
+        return arr;
+    }
 
     public Collection<T> valuesSnapshot() {
         List<T> list = new ArrayList<>(this.data.length);

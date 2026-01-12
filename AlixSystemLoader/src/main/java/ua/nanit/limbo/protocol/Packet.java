@@ -18,6 +18,7 @@
 package ua.nanit.limbo.protocol;
 
 import alix.common.utils.other.throwable.AlixError;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
@@ -42,8 +43,8 @@ public interface Packet {
         return false;
     }
 
-    default int packetId(Version version) {
-        throw new AlixError("packetId(...) is unsupported on " + this.getClass().getSimpleName());
+    default PacketWrapper<?> packetWrapper(Version version) {
+        throw new AlixError("packetWrapper(...) is unsupported on " + this.getClass().getSimpleName());
     }
 
     @Target(ElementType.METHOD)

@@ -51,9 +51,10 @@ public final class PacketUtils {
 
     public static void decode(ByteBuf buf, CipherHandler cipher, CompressionHandler compress, State.PacketRegistry mappings, Version version) throws Exception {
         //We cannot decrypt our own packets
-        ByteBuf decrypted = CipherHandler.decrypt(buf, cipher);
-        Log.error("DECRYPT BYTES:");
-        PacketUtils.debugBytes(decrypted);
+        //ByteBuf decrypted = CipherHandler.decrypt(buf, cipher);
+        ByteBuf decrypted = buf;
+        if(cipher != null) throw new AlixError("CANNOT DECRYPT SELF");
+        //PacketUtils.debugBytes(decrypted);
 
         int packetLen = FastNettyUtils.readVarInt(decrypted);
         ByteBuf decompressed = CompressionHandler.decompress(decrypted, compress);
@@ -64,7 +65,7 @@ public final class PacketUtils {
 
         //the outgoing packet does not have a decode method impl
         if (decompressed.writerIndex() > 0 && decompressed.readerIndex() == 0) {
-            var wrapperClazz = State.getWrapperClazz(packet);
+            var wrapperClazz = State.getWrapperClasses(packet).get(version);
             //ignore MultiWrappers (PacketPlayOutMessage)
             if (wrapperClazz != null) {
                 var wrapper = WrapperUtils.alloc(decompressed, version.getRetrooperVersion(), wrapperClazz);

@@ -224,7 +224,7 @@ public enum State {
         return packet instanceof PacketSnapshot snapshot ? snapshot.state : ProtocolMappings.clazzToState.get(packet.getClass());
     }
 
-    public static Class<? extends PacketWrapper<?>> getWrapperClazz(Packet packet) {
+    public static VersionMap<Class<? extends PacketWrapper<?>>> getWrapperClasses(Packet packet) {
         return ProtocolMappings.clazzToWrapper.get(packet.getClass());
     }
 
@@ -264,7 +264,7 @@ public enum State {
     public static final class ProtocolMappings<T extends Packet> {
 
         private static final Map<Class<? extends Packet>, State> clazzToState = new IdentityHashMap<>();
-        private static final Map<Class<? extends Packet>, Class<? extends PacketWrapper<?>>> clazzToWrapper = new IdentityHashMap<>();
+        private static final Map<Class<? extends Packet>, VersionMap<Class<? extends PacketWrapper<?>>>> clazzToWrapper = new IdentityHashMap<>();
         //No need to use ConcurrentVersionMap here
         private final VersionMap<PacketRegistry> registry = new VersionMap<>();
         private final State state;
@@ -285,21 +285,37 @@ public enum State {
                 throw new AlixError("Packet clazz duplicate! - " + clazz.getSimpleName());
         }
 
-        private static void register0(Supplier<? extends Packet> packet, State state, PacketTypeCommon type) {
+        private static void register0(Supplier<? extends Packet> packet, State state, VersionMap<Class<? extends PacketWrapper<?>>> arr) {
             Class<? extends Packet> clazz = packet.get().getClass();
             registerAndEnsureNoDuplicate(clazz, state);
 
-            if (type != null)
-                clazzToWrapper.put(clazz, type.getWrapperClass());
+            clazzToWrapper.put(clazz, arr);
+        }
+
+        private static void register0(Supplier<? extends Packet> packet, State state, PacketTypeCommon type) {
+            /*Class<? extends PacketWrapper<?>>[] arr = new Class[types.length];
+            for (int i = 0; i < arr.length; i++)
+                arr[i] = types[i].getWrapperClass();*/
+
+            register0(packet, state, VersionMap.filledWith(type.getWrapperClass()));
             /*if (PacketIn.class.isAssignableFrom(clazz))
                 HandleMask.register(clazz);*/
         }
 
         //private static final Set<PacketTypeCommon> packets = new HashSet<>();
 
-        private void register0(Supplier<T> packet, PacketTypeCommon type, ToIntFunction<Version> idFunc) {
+        private void register0(Supplier<T> packet, ToIntFunction<Version> idFunc, VersionMap<Class<? extends PacketWrapper<?>>> arr) {
+            register0(packet, this.state, arr);
+
+            this.register1(packet, idFunc);
+        }
+
+        private void register0(Supplier<T> packet, ToIntFunction<Version> idFunc, PacketTypeCommon type) {
             register0(packet, this.state, type);
 
+            this.register1(packet, idFunc);
+        }
+        private void register1(Supplier<T> packet, ToIntFunction<Version> idFunc) {
             for (Version ver : Version.values()) {
                 if (!ver.isSupported()) continue;
 
@@ -313,12 +329,26 @@ public enum State {
 
         private void registerMultiWrapper(Supplier<T> packet) {
             var inst = packet.get();
-            this.register0(packet, null, inst::packetId);
+            VersionMap<PacketWrapper<?>> map = new VersionMap<>();
+            VersionMap<Class<? extends PacketWrapper<?>>> classes = new VersionMap<>();
+            for (Version version : Version.values()) {
+                if (!version.isSupported()) continue;
+
+                PacketWrapper<?> wrapper = inst.packetWrapper(version);
+                map.put(version, wrapper);
+                classes.put(version, (Class<? extends PacketWrapper<?>>) wrapper.getClass());//wtf java
+            }
+
+            this.register0(
+                    packet,
+                    v -> map.get(v).getNativePacketId(),
+                    classes
+            );
         }
 
         //Gotta love packetevents ;]
         private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
-            this.register0(packet, type, ver -> type.getId(ver.getClientVersion()));
+            this.register0(packet, ver -> type.getId(ver.getClientVersion()), type);
         }
 
         /*private void register(Supplier<T> packet, Mapping... mappings) {
