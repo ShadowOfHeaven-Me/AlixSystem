@@ -1,7 +1,9 @@
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "8.3.2"
-    id("xyz.kyngs.libby.plugin").version("1.2.1")
+    id("com.gradleup.shadow") version "9.3.0"
+    //for now disabled
+    //id("xyz.kyngs.libby.plugin").version("1.2.1")
+
     //id("com.guardsquare.proguard-gradle") version "7.6.1"         // ProGuard plugin
     //id("io.papermc.paperweight.userdev") version "2.0.0-beta.14"
 }
@@ -55,7 +57,10 @@ repositories {
 dependencies {
     // https://mvnrepository.com/artifact/com.guardsquare/proguard-gradle
     //runtimeOnly("com.guardsquare:proguard-gradle:7.6.1")
+
+
     compileOnly("com.alessiodp.libby:libby-velocity:2.0.0-SNAPSHOT")
+
     if (isUber) {
         compileOnly(project(":AlixSystemLoader"))
         implementation(project(":AlixSystemSpigot"))

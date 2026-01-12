@@ -92,7 +92,13 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 return;
             switch (loginEvent.getPacketType()) {
                 case LOGIN_START: {
-                    var key = ClientPublicKey.createKey(new WrapperLoginClientLoginStart(event).getSignatureData().orElse(null));
+                    var wrapper = new WrapperLoginClientLoginStart(event);
+
+                    //set these prematurely for identification
+                    user.getProfile().setName(wrapper.getUsername());
+                    user.getProfile().setUUID(wrapper.getPlayerUUID().orElse(null));
+
+                    var key = ClientPublicKey.createKey(wrapper.getSignatureData().orElse(null));
                     if (key != null) publicKeys.put(channel, key);
                     return;
                 }
@@ -174,6 +180,10 @@ public final class PacketEventListener extends PacketListenerAbstract {
             }
         });
 
+        InetSocketAddress address = user.getAddress();
+        String packetUsername = encryptionData.packetUsername();
+        String serverUsername = encryptionData.serverUsername();
+
         if (!PremiumVerifier.verifyNonce(packet, encryptionData.publicKey(), expectedToken, user.getClientVersion().toServerVersion())) {
             if (!encryptionData.shouldAuthenticate()) {
                 //wtf do we do now
@@ -181,7 +191,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 return;
             }
 
-            this.onInvalidAuth(user, continuation, invalidNonce);
+            this.onInvalidAuth(user, continuation, invalidNonce, serverUsername);
             return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
         }
         if (!encryptionData.shouldAuthenticate()) {
@@ -192,9 +202,6 @@ public final class PacketEventListener extends PacketListenerAbstract {
         //Verify session
 
         String serverId = EncryptionUtil.getServerIdHashString("", loginKey, keyPair.getPublic());
-        String packetUsername = encryptionData.packetUsername();
-        String serverUsername = encryptionData.serverUsername();
-        InetSocketAddress address = user.getAddress();
 
         try {
             //make sure to remove the name char prefix (currently disabled)
@@ -214,14 +221,14 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 //Main.logInfo("CONTINUATION TRUE");
                 //receiveFakeStartPacket(packetUsername, encryptionData.publicKey(), user.getChannel(), encryptionData.uuid());
             } else {
-                this.onInvalidAuth(user, continuation, invalidSession);
+                this.onInvalidAuth(user, continuation, invalidSession, serverUsername);
             }
         } catch (IOException e) {
                         /*if (e instanceof SocketTimeoutException) {
                             Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
                         }*/
             //todo: see if this correct
-            this.onInvalidAuth(user, continuation, cannotVerifySession);
+            this.onInvalidAuth(user, continuation, cannotVerifySession, serverUsername);
         }
     }
 
@@ -229,8 +236,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
             assumeNonPremiumOnFailedAuth = config.getBoolean("assume-non-premium-if-auth-failed");
     //assignPremiumUUID = config.getBoolean("premium-uuid");
 
-    private void onInvalidAuth(User user, Continuation continuation, PacketSnapshot invalidReason) {
-        String name = user.getName();
+    private void onInvalidAuth(User user, Continuation continuation, PacketSnapshot invalidReason, String name) {
         PersistentUserData data = UserFileManager.get(name);
         boolean registered = PersistentUserData.isRegistered(data);
 
