@@ -3,7 +3,6 @@ package alix.common.utils.other;
 import alix.common.reflection.CommonReflection;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
-import io.netty.util.internal.PlatformDependent;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
@@ -11,8 +10,16 @@ import java.lang.reflect.Modifier;
 
 public final class AlixUnsafe {
 
-    private static final boolean hasUnsafe = PlatformDependent.hasUnsafe();
-    private static final Unsafe unsafe = hasUnsafe ? (Unsafe) CommonReflection.getFieldResult(Unsafe.class, "theUnsafe", null) : null;
+    private static final Unsafe unsafe = tryGetUnsafe0();
+    private static final boolean hasUnsafe = unsafe != null;
+
+    private static Unsafe tryGetUnsafe0() {
+        try {
+            return (Unsafe) CommonReflection.getFieldResult(Unsafe.class, "theUnsafe", null);
+        } catch (Throwable e) {
+            return null;
+        }
+    }
 
     public static Unsafe getUnsafe() {
         return unsafe;

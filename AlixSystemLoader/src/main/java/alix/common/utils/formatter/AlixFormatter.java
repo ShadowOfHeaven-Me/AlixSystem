@@ -18,7 +18,9 @@ public final class AlixFormatter {
     }
 
     public static String appendPrefix(String m) {
-        return appendPrefix ? messagePrefix + m : m;
+        return appendPrefix
+                && !m.startsWith(messagePrefix)//quick-fix for my own mistakes
+                ? messagePrefix + m : m;
     }
 
     public static String colorize(String m) {

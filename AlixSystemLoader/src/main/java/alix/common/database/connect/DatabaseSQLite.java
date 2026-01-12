@@ -1,20 +1,20 @@
 package alix.common.database.connect;
 
-import alix.common.database.file.DatabaseConfig;
+import alix.common.database.file.DatabaseConfigInstance;
 
 final class DatabaseSQLite extends AbstractDatabaseConnector {
 
     //Source code: https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/database/connector/AuthenticSQLiteDatabaseConnector.java#L21
 
-    DatabaseSQLite() {
+    DatabaseSQLite(DatabaseConfigInstance config) {
         hikariConfig.setPoolName("AlixSystem SQLite Pool");
         hikariConfig.setDriverClassName("org.sqlite.JDBC");
-        hikariConfig.setMaxLifetime(DatabaseConfig.MAX_LIFETIME);
+        hikariConfig.setMaxLifetime(config.MAX_LIFETIME);
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-        hikariConfig.setJdbcUrl("jdbc:sqlite:" + DatabaseConfig.SQLITE_FILE.getAbsolutePath().replace("\\", "/"));
+        hikariConfig.setJdbcUrl("jdbc:sqlite:" + config.SQLITE_FILE.getAbsolutePath().replace("\\", "/"));
     }
 
     @Override

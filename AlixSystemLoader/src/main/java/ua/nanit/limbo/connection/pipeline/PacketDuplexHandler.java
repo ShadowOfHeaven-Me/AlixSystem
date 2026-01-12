@@ -301,8 +301,10 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
             state = State.getState(packet);
         }
 
-        if (this.connection.getEncoderState() != state)
-            throw new AlixError("co tu się kurwa odpierdala - " + packet + " encoder=" + this.connection.getEncoderState() + " packet=" + state);
+        var encoderState = this.connection.getEncoderState();
+        if (encoderState != state
+                && encoderState != State.HANDSHAKING)//exempt handshaking state
+            throw new AlixError("co tu się kurwa odpierdala - " + packet + " encoder=" + encoderState + " packet=" + state);
 
         //Log.error("OUT BUF: " + Arrays.toString(new ByteMessage(buf).toByteArray()));
 

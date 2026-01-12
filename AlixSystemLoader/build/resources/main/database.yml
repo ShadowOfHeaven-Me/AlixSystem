@@ -1,12 +1,35 @@
 #------------------------------------------------#
-#                    GENERAL                     #
+#                   MIGRATION                    #
 #------------------------------------------------#
 
 #This section is used for migration from other plugins
-# set the parameters below to
 
 #The table name of this database (For instance, "alix")
-table-name:
+migrate-table-name:
+#The user of this database (For instance, "root")
+migrate-username:
+#Connection parameters
+migrate-password:
+migrate-host:
+migrate-port:
+# Path to the SQLite file, assuming the starting position in the "plugins" folder
+migrate-sqlite-path: "AuthMe/authme.db"
+
+#The maximum lifetime of a database connection (in seconds)
+migrate-max-lifetime: 60
+
+#------------------------------------------------#
+#                 EXTERNAL SYNC                  #
+#------------------------------------------------#
+
+#Defines whether alix should store some of its users.yml data into the database, whose connection parameters are given below
+# A copy of the data will still be kept locally
+external-sync: false
+#Defines the database connector type to use. Available:
+# MySQL - supports all external SQL databases (for example MariaDB, PostgreSQL)
+# SQLite - stores data in a locally-defined file, SQL-style
+database-type: MySQL
+
 #The user of this database (For instance, "root")
 username:
 #Connection parameters
@@ -14,7 +37,7 @@ password:
 host:
 port:
 # Path to the SQLite file, assuming the starting position in the "plugins" folder
-sqlite-path: "AuthMe/authme.db"
+sqlite-path: "AlixSystem/sqlite.db"
 
 #The maximum lifetime of a database connection (in seconds)
 max-lifetime: 60

@@ -6,11 +6,16 @@ import java.util.function.Supplier;
 
 public enum MigrateType {
 
-    AUTH_ME(DatabaseConnector.SQLite(), AuthMeSQLMigrateProvider::new, "SELECT * FROM %s");
+    AUTH_ME_SQLITE(DatabaseConnector.SQLite(true), AuthMeSQLMigrateProvider::new),
+    AUTH_ME_MYSQL(DatabaseConnector.mySQL(true), AuthMeSQLMigrateProvider::new);
 
     private final Supplier<DatabaseConnector> connector;
     private final Supplier<MigrateProvider> migrateProvider;
     private final String query;
+
+    MigrateType(Supplier<DatabaseConnector> connector, Supplier<MigrateProvider> migrateProvider) {
+        this(connector, migrateProvider, "SELECT * FROM %s");
+    }
 
     MigrateType(Supplier<DatabaseConnector> connector, Supplier<MigrateProvider> migrateProvider, String query) {
         this.connector = connector;

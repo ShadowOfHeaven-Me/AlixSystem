@@ -1,9 +1,10 @@
 package alix.common.database.connect;
 
+import alix.common.database.ThrowableConsumer;
 import alix.common.database.ThrowableFunction;
+import alix.common.database.file.DatabaseConfig;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.function.Supplier;
 
 public interface DatabaseConnector {
@@ -14,7 +15,10 @@ public interface DatabaseConnector {
 
     Connection obtainInterface();
 
-    <V> V runQuery(ThrowableFunction<V, Connection, SQLException> function);
+    @SuppressWarnings("UnusedReturnValue")
+    <V> V getQuery(ThrowableFunction<V, Connection, Exception> function);
+
+    void query(ThrowableConsumer<Connection, Exception> function);
 
     /*default PreparedStatement query(String query) {
         return this.runQuery(connection -> connection.prepareStatement(query));
@@ -27,11 +31,11 @@ public interface DatabaseConnector {
 
     DatabaseType getType();
 
-    static Supplier<DatabaseConnector> SQLite() {
-        return AbstractDatabaseConnector.supply(DatabaseSQLite.class);
+    static Supplier<DatabaseConnector> SQLite(boolean migrate) {
+        return () -> new DatabaseSQLite(DatabaseConfig.config(migrate));
     }
 
-    static Supplier<DatabaseConnector> mySQL() {
-        return AbstractDatabaseConnector.supply(DatabaseMySQL.class);
+    static Supplier<DatabaseConnector> mySQL(boolean migrate) {
+        return () -> new DatabaseMySQL(DatabaseConfig.config(migrate));
     }
 }

@@ -1,5 +1,6 @@
 package shadow.systems.commands.tab;
 
+import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumStatus;
@@ -40,6 +41,8 @@ public final class CommandTabCompleterAS implements TabCompleter {
                     case "rp":
                     case "resetpassword":
                     case "user":
+                    case "cp":
+                    case "changepassword":
                         List<String> l = new ArrayList<>(UserFileManager.getAllData().size());
                         for (PersistentUserData d : UserFileManager.getAllData()) l.add(d.getName());
                         return l;
@@ -53,6 +56,10 @@ public final class CommandTabCompleterAS implements TabCompleter {
                     case "migrate": {
                         String arg3 = args[2].toUpperCase();
                         return Arrays.stream(MigrateType.values()).map(Enum::name).filter(n -> n.startsWith(arg3)).toList();
+                    }
+                    case "cp":
+                    case "changepassword": {
+                        return List.of(); //Arrays.stream(LoginType.values()).map(Enum::name).toList();
                     }
                     case "fs":
                     case "forcestatus":
@@ -72,13 +79,18 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         }
                         return l;
                 }
-
             case 4:
                 switch (args[0].toLowerCase()) {
                     case "fs":
-                    case "forcestatus":
+                    case "forcestatus": {
                         String arg4 = args[3].toUpperCase();
                         return Arrays.stream(PremiumStatus.values()).map(Enum::name).filter(n -> n.startsWith(arg4)).toList();
+                    }
+                    case "cp":
+                    case "changepassword": {
+                        String arg4 = args[3].toUpperCase();
+                        return Arrays.stream(LoginType.values()).map(Enum::name).filter(n -> n.startsWith(arg4)).toList();
+                    }
                 }
         }
         return null;
@@ -88,7 +100,7 @@ public final class CommandTabCompleterAS implements TabCompleter {
         List<String> list = Arrays.asList("resetstatus","rs",
                 "user", "abstats", "rp", "resetpassword", "valueof", "constants", "frd", "fullyremovedata",
                 "info", "calculate", "average", "randommath", "help", "helpmath", "bypasslimit", "bypasslimit-remove", "bl", "bl-r",
-                "forcestatus", "fs");// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
+                "forcestatus", "fs","cp","changepassword");// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
         list = new ArrayList<>(list);
         //if (ServerPingManager.isRegistered()) list.add("pings");
         Collections.sort(list);

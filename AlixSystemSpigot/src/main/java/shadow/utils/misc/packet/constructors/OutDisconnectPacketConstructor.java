@@ -1,5 +1,6 @@
 package shadow.utils.misc.packet.constructors;
 
+import com.github.retrooper.packetevents.wrapper.configuration.server.WrapperConfigServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import io.netty.buffer.ByteBuf;
@@ -37,33 +38,25 @@ public final class OutDisconnectPacketConstructor {
     }*/
 
     public static ByteBuf constructDynamicAtLoginPhase(String message) {
-        try {
-            return NettyUtils.createBuffer(new WrapperLoginServerDisconnect(Component.text(message)), false);
-            //Object chatComponent = ReflectionUtils.constructTextComponents(message)[0];
-            //return loginPhasePacketConstructor.newInstance(chatComponent);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return NettyUtils.createBuffer(new WrapperLoginServerDisconnect(Component.text(message)), false);
+
     }
 
     public static ByteBuf constructConstAtLoginPhase(String message) {
-        try {
-            return NettyUtils.constBuffer(new WrapperLoginServerDisconnect(Component.text(message)));
-            //Object chatComponent = ReflectionUtils.constructTextComponents(message)[0];
-            //return loginPhasePacketConstructor.newInstance(chatComponent);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return NettyUtils.constBuffer(new WrapperLoginServerDisconnect(Component.text(message)));
+
     }
 
-    public static ByteBuf constructConstAtPlayPhase(String message) {
-        try {
-            return NettyUtils.constBuffer(new WrapperPlayServerDisconnect(Component.text(message)));
-            //Object chatComponent = ReflectionUtils.constructTextComponents(message)[0];
-            //return playPhasePacketConstructor.newInstance(chatComponent);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public static ByteBuf dynamicAtConfig(String message) {
+        return NettyUtils.createBuffer(new WrapperConfigServerDisconnect(Component.text(message)), false);
+    }
+
+    public static ByteBuf dynamicAtPlay(String message) {
+        return NettyUtils.createBuffer(new WrapperPlayServerDisconnect(Component.text(message)), false);
+    }
+
+    public static ByteBuf constAtPlay(String message) {
+        return NettyUtils.constBuffer(new WrapperPlayServerDisconnect(Component.text(message)));
     }
 
     private OutDisconnectPacketConstructor() {

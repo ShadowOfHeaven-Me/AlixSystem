@@ -83,6 +83,7 @@ public final class PacketHandshake implements PacketIn {
 
     @Override
     public void decode(ByteMessage msg, Version version) {
+        //WrapperHandshakingClientHandshake
         /*try {
             this.version = Version.of(msg.readVarInt());
         } catch (IllegalArgumentException e) {

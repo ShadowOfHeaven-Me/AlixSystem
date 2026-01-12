@@ -143,7 +143,7 @@ final class AuthReflection {
 
             //some plugins could've replaced the Channel field, but it's likely
             //that they hadn't replaced the channel's voidPromise() method - use identity comparison on that
-            //do not use Channel#id cuz ProtocolLib is AIDS
+            //do not use Channel#id cuz ProtocolLib is AIDS (and doesn't implement it)
             if (managerChannel.voidPromise() == channel.voidPromise()) {
                 callback.accept(manager);
                 return;

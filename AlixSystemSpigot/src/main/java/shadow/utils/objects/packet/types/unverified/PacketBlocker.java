@@ -55,7 +55,7 @@ public class PacketBlocker implements PacketProcessor {
             WAIT_PACKETS_THRESHOLD = 5;//(byte) (WAIT_PACKETS_INCREASE + 5);*/
     //public static final Class<?> commandPacketClass;
     //public static final Method getStringFromCommandPacketMethod;
-    private static final ByteBuf movementForbiddenCaptchaKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("movement-forbidden-captcha")), packetLimitReachedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("packet-limit-reached-verification"));//,
+    private static final ByteBuf movementForbiddenCaptchaKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("movement-forbidden-captcha")), packetLimitReachedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("packet-limit-reached-verification"));//,
     //protected static final PacketAffirmator affirmator = AlixHandler.createPacketAffirmatorImpl();
     //private static final PingCheckFactory factory = AlixHandler.createPingCheckFactoryImpl();
     private static final int maxMovementPackets = 120 + AlixUtils.maxLoginTime + (AlixUtils.requireCaptchaVerification ? AlixUtils.maxCaptchaTime : 0);//It's not used whenever captcha verification is disabled, but whatever, it can stay this way for now
@@ -569,7 +569,7 @@ public class PacketBlocker implements PacketProcessor {
 
     //long t;
 
-    private static final ByteBuf invalidProtocolError = OutDisconnectPacketConstructor.constructConstAtPlayPhase("§cInvalid Protocol [Alix]");
+    private static final ByteBuf invalidProtocolError = OutDisconnectPacketConstructor.constAtPlay("§cInvalid Protocol [Alix]");
 
     //we execute it async because the password hashing
     //algorithms could be somewhat heavy

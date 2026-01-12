@@ -18,10 +18,13 @@ final class CompressionHandlerImpl implements CompressionHandler {
     private static final ThreadLocal<CompressionHandlerImpl> CACHE = new ThreadLocal<>();
     private final ByteBufAllocator alloc;
     private final CompressionImpl impl;
+    //private final CompressionSupplier selfSupplier;
 
     private CompressionHandlerImpl(ByteBufAllocator alloc, CompressionLevel level) {
         this.alloc = alloc;
         this.impl = CompressUtil.newImpl(alloc, level);
+
+        //this.selfSupplier = CompressionSupplier.supply0(this);
         handlers.offerLast(this);
         //channel.closeFuture().addListener(f -> this.impl.release0());
     }
@@ -92,4 +95,9 @@ final class CompressionHandlerImpl implements CompressionHandler {
         NettySafety.validateUserInputBufAlloc(length);
         return this.impl.decompress0(in, length);
     }
+
+    /*@Override
+    public CompressionSupplier selfSupplier() {
+        return this.selfSupplier;
+    }*/
 }

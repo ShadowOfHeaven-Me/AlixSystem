@@ -1,14 +1,14 @@
 package shadow.utils.objects.savable.data.gui.builders;
 
-import alix.common.data.LoginType;
+import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.scheduler.AlixScheduler;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.buffered.AnvilPacketSuppliers;
-import alix.common.packets.inventory.AlixInventoryType;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
+import shadow.utils.objects.savable.data.gui.GuiType;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.bases.AnvilBuilderBase;
 import shadow.utils.objects.savable.data.gui.virtual.EmptyVirtualInventory;
@@ -74,8 +74,8 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
     }
 
     @Override
-    public LoginType getType() {
-        return LoginType.ANVIL;
+    public GuiType getType() {
+        return GuiType.ANVIL;
     }
 
     @NotNull

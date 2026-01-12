@@ -10,6 +10,8 @@ public interface CompressionHandler {
 
     ByteBuf decompress(ByteBuf in) throws Exception;
 
+    //CompressionSupplier selfSupplier();
+
     static ByteBuf decompress(ByteBuf buf, CompressionHandler compress) throws Exception {
         return compress != null ? compress.decompress(buf) : buf;
     }

@@ -60,7 +60,7 @@ public final class LimboBedrockGUI implements LimboGUI {
 
     private void register0(String password, boolean autoLogin) {
         this.connection.getChannel().eventLoop().execute(() -> {
-            var data = this.loginState.registerIfValid(password, LoginType.BEDROCK_VER);
+            var data = this.loginState.registerIfValid(password, LoginType.COMMAND);//basically same as command
             if (data != null) {
                 //valid password
                 data.getLoginParams().setIpAutoLogin(autoLogin);

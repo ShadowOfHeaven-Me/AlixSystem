@@ -109,11 +109,11 @@ public final class LoginParams {
         this.extraPassword = extraPassword;
     }
 
-    public LoginType getLoginType() {
+    LoginType getLoginType() {
         return loginType;
     }
 
-    public void setLoginType(LoginType loginType) {
+    void setLoginType(LoginType loginType) {
         this.loginType = loginType;
     }
 

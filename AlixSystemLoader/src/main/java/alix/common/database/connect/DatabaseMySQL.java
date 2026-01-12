@@ -1,6 +1,11 @@
 package alix.common.database.connect;
 
 import alix.common.database.file.DatabaseConfig;
+import alix.common.database.file.DatabaseConfigInstance;
+import lombok.SneakyThrows;
+import org.mariadb.jdbc.Driver;
+
+import java.lang.invoke.MethodHandles;
 
 final class DatabaseMySQL extends AbstractDatabaseConnector {
 
@@ -8,24 +13,28 @@ final class DatabaseMySQL extends AbstractDatabaseConnector {
 
     private static final String JDBC_URL = "jdbc:mariadb://%host%:%port%/%database%?autoReconnect=true&zeroDateTimeBehavior=convertToNull";
 
-    DatabaseMySQL() {
+    @SneakyThrows
+    DatabaseMySQL(DatabaseConfigInstance config) {
         hikariConfig.setPoolName("Alix MySQL Pool");
         //Is this fine?
-        hikariConfig.setDriverClassName("mariadb.jdbc.Driver");
+        //AlixCommonMain.logError("shii=" + Thread.currentThread().getContextClassLoader() + ", " + BukkitAlixMain.class.getClassLoader());
+        //Thread.currentThread().setContextClassLoader(AlixCommonMain.MAIN_CLASS_INSTANCE.getClass().getClassLoader());
+        MethodHandles.lookup().ensureInitialized(Driver.class);
+        hikariConfig.setDriverClassName("org.mariadb.jdbc.Driver");
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        hikariConfig.setUsername(DatabaseConfig.USERNAME);
-        hikariConfig.setPassword(DatabaseConfig.PASSWORD);
+        hikariConfig.setUsername(config.USERNAME);
+        hikariConfig.setPassword(config.PASSWORD);
         hikariConfig.setJdbcUrl(JDBC_URL
-                .replace("%host%", DatabaseConfig.HOST)
+                .replace("%host%", config.HOST)
                 .replace("%port%", String.valueOf(DatabaseConfig.getPort(this.getType())))
-                .replace("%database%", DatabaseConfig.TABLE_NAME));
-        hikariConfig.setMaxLifetime(DatabaseConfig.MAX_LIFETIME);
+                .replace("%database%", config.isMigrate() ? config.TABLE_NAME() : "alix"));
+        hikariConfig.setMaxLifetime(config.MAX_LIFETIME);
     }
 
     @Override
     public DatabaseType getType() {
-        return DatabaseType.MY_SQL;
+        return DatabaseType.MYSQL;
     }
 }

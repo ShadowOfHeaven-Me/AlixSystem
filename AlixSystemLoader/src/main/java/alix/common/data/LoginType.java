@@ -9,10 +9,7 @@ public enum LoginType {
 
     COMMAND,
     PIN,
-    ANVIL,
-    //Additional, not used
-    AUTH_2FA,
-    BEDROCK_VER;
+    ANVIL;
 
     public static LoginType from(String t, boolean config) {
         return from(t, config, true);

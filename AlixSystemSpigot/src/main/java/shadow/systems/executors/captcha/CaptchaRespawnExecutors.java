@@ -15,6 +15,7 @@ public final class CaptchaRespawnExecutors implements Listener {
         //if (forceRespawn) Main.pm.registerEvents(new ImmediateRespawnExecutors(), Main.plugin);
     }
 
+    //Moved to OfflineExecutors
 /*    @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent e) {
         if (Verifications.has(e.getPlayer())) e.setRespawnLocation(AlixWorld.TELEPORT_LOCATION);

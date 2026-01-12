@@ -12,13 +12,14 @@ import alix.common.utils.other.throwable.AlixError;
 import java.util.Arrays;
 
 import static alix.common.data.security.password.hashing.Hashing.CONFIG_HASH;
+import static alix.common.data.security.password.hashing.Hashing.SECURE_RANDOM;
 import static alix.common.data.security.password.matcher.PasswordMatchers.*;
 import static alix.common.utils.AlixCommonUtils.generationChars;
 
 public final class Password {
 
     public static final int MAX_PASSWORD_LEN = 30;
-    private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars), Hashing.SECURE_RANDOM);
+    private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars), SECURE_RANDOM);
     private final String hashedPassword;
     private final HashingAlgorithm hashing;
     private final String salt;
@@ -59,6 +60,10 @@ public final class Password {
         return this.hashedPassword.equals(hashedPassword);
     }*/
 
+    public byte getMatcherId() {
+        return this.matcher.matcherId();
+    }
+
     public byte getHashId() {
         return this.hashing.hashId();
     }
@@ -93,7 +98,7 @@ public final class Password {
     }*/
 
     public static Password createRandom() {
-        int length = 8 + Hashing.SECURE_RANDOM.nextInt(8);//min char length + 3 + (0-8) because 2^n results in a faster generation
+        int length = 8 + SECURE_RANDOM.nextInt(8);//min char length + 3 + (0-8) because 2^n results in a faster generation
 
         return fromUnhashed(new String(RANDOM_CHAR_ITERATOR.next(length)));
     }

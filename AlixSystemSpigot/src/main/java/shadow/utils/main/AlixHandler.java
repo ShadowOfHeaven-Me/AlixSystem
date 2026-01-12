@@ -1,5 +1,6 @@
 package shadow.utils.main;
 
+import alix.api.event.types.AuthReason;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
@@ -7,7 +8,8 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
-import alix.api.event.types.AuthReason;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
+import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
@@ -37,6 +39,7 @@ import shadow.utils.command.managers.ChatManager;
 import shadow.utils.main.api.AlixEventInvoker;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutEntityPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutGameStatePacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
@@ -74,6 +77,36 @@ public final class AlixHandler {
     //public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
     public static final Channel SERVER_CHANNEL = getServerChannelFuture().channel();
     public static final boolean isEpollTransport = SERVER_CHANNEL.getClass() == EpollServerSocketChannel.class;
+
+    public static void safeKick(Player player, String msg) {
+        Channel channel = (Channel) ProtocolManager.CHANNELS.get(player.getUniqueId());
+
+        boolean kicked = false;
+
+        try {
+            if (channel != null) {
+                //var ctx = NettyUtils.getSilentContext(channel);
+                var encoder = ProtocolManager.USERS.get(channel.pipeline()).getEncoderState();
+                var disconnectBuf = encoder == ConnectionState.PLAY ? OutDisconnectPacketConstructor.dynamicAtPlay(msg) : OutDisconnectPacketConstructor.dynamicAtConfig(msg);
+                NettyUtils.closeAfterDynamicSend(channel, disconnectBuf);
+            } else {
+                player.kickPlayer(msg);
+            }
+            kicked = true;
+        } finally {
+            if (!kicked) {
+                boolean isOnline = channel != null ? channel.isOpen() : player.isOnline(); //Bukkit.getPlayer(player.getUniqueId()) != null;
+                if (isOnline) {
+                    if (channel == null)
+                        Main.logWarning("SAFE KICK OF PLAYER " + player.getName() + " FAILED, NO OTHER DISCONNECT OPTION FOUND - ALIX WILL TRY TO BLOCK THE COMMANDS OF THE PLAYER AS A FAIL-SAFE. REPORT THIS IMMEDIATELY!");
+                    else {
+                        Main.logWarning("Terminating connection of the player " + player.getName() + " abruptly");
+                        channel.close();
+                    }
+                }
+            }
+        }
+    }
 
     public static void resetBlindness(UnverifiedUser user) {
         if (!user.blindnessSent) return;
@@ -135,12 +168,14 @@ public final class AlixHandler {
     jump boost = 8
     */
     public static final int KEEP_ALIVE_ID = 2137;
-    private static final ByteBuf ANTIBOT_KEEP_ALIVE = NettyUtils.constBuffer(new WrapperPlayServerKeepAlive(KEEP_ALIVE_ID));
 
-    private static final int spectateEntityId = 420_096;
-    private static final ByteBuf SPAWN_ENTITY = OutEntityPacketConstructor.constSpawn(spectateEntityId, EntityTypes.ARMOR_STAND, AlixWorld.TELEPORT_LOCATION);
-    private static final ByteBuf SPAWN_ENTITY_INVIS = OutEntityPacketConstructor.constData(spectateEntityId, new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20));
-    private static final ByteBuf SPECTATE_ENTITY = NettyUtils.constBuffer(new WrapperPlayServerCamera(spectateEntityId));
+    private static final class LazyLoad {
+        private static final ByteBuf ANTIBOT_KEEP_ALIVE = NettyUtils.constBuffer(new WrapperPlayServerKeepAlive(KEEP_ALIVE_ID));
+        private static final int spectateEntityId = 420_096;
+        private static final ByteBuf SPAWN_ENTITY = OutEntityPacketConstructor.constSpawn(spectateEntityId, EntityTypes.ARMOR_STAND, AlixWorld.TELEPORT_LOCATION);
+        private static final ByteBuf SPAWN_ENTITY_INVIS = OutEntityPacketConstructor.constData(spectateEntityId, new EntityData(0, EntityDataTypes.BYTE, (byte) 0x20));
+        private static final ByteBuf SPECTATE_ENTITY = NettyUtils.constBuffer(new WrapperPlayServerCamera(spectateEntityId));
+    }
 
     //private static final ByteBuf SPECTATE_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(5)));//default: fovModifier = 0.1f, flySpeed = 0.05f
     private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, true, false, false, 0.0f, getScope(1)));//default: flySpeed = 0.05f, fovModifier = 0.1f
@@ -157,9 +192,9 @@ public final class AlixHandler {
 
             if (CaptchaVisualType.hasPositionLock()) {
                 user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
-                user.writeConstSilently(SPAWN_ENTITY);
-                user.writeConstSilently(SPAWN_ENTITY_INVIS);
-                user.writeConstSilently(SPECTATE_ENTITY);
+                user.writeConstSilently(LazyLoad.SPAWN_ENTITY);
+                user.writeConstSilently(LazyLoad.SPAWN_ENTITY_INVIS);
+                user.writeConstSilently(LazyLoad.SPECTATE_ENTITY);
             } else user.writeConstSilently(OutGameStatePacketConstructor.ADVENTURE_GAMEMODE_PACKET);
             //user.writeConstSilently(AlixHandler.ANTIBOT_KEEP_ALIVE);
             user.writeAndFlushConstSilently(PLAYER_ABILITIES_PACKET);
@@ -168,7 +203,7 @@ public final class AlixHandler {
             //user.keepAliveSent = System.currentTimeMillis();
 
             user.getChannel().eventLoop().schedule(() -> {
-                if (user.getChannel().isOpen()) user.writeAndFlushConstSilently(ANTIBOT_KEEP_ALIVE);
+                if (user.getChannel().isOpen()) user.writeAndFlushConstSilently(LazyLoad.ANTIBOT_KEEP_ALIVE);
             }, 200, TimeUnit.MILLISECONDS);//being really generous with the amount of time here
 
             //Main.debug("SENT ARM SWING AND KEEP ALIVE");

@@ -34,4 +34,9 @@ public final class GlobalCompressionHandler implements CompressionHandler {
             return this.compress.decompress(in);
         }
     }
+
+    /*@Override
+    public CompressionSupplier selfSupplier() {
+        return CompressionSupplier.GLOBAL;
+    }*/
 }

@@ -1,8 +1,9 @@
 plugins {//java-library
     id("java")
     id("java-library")
-    id("com.gradleup.shadow") version "8.3.2"
+    id("com.gradleup.shadow") version "9.3.0"
     id("de.eldoria.plugin-yml.bukkit") version "0.8.0"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.14"
 }
 
 group = "AlixSystemSpigot"
@@ -70,8 +71,12 @@ repositories {
     maven("https://repo.codemc.io/repository/maven-releases/")
     maven("https://repo.codemc.io/repository/maven-snapshots/")
     //paper
-    maven("https://repo.papermc.io/repository/maven-public/")
+    maven {
+        name = "papermc"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
 }
+//się wypierdala czasami bez tego
 tasks.register("prepareKotlinBuildScriptModel") {}
 dependencies {
     compileOnly("com.google.code.gson:gson:2.9.0")
@@ -107,10 +112,11 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
-    compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
-    compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.21.4-R0.1-SNAPSHOT")
+    //compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
+    //compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
 
-    compileOnly("io.papermc.paper:paper-api:1.20.2-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
 }
 
 configurations.all {
@@ -127,7 +133,9 @@ configurations.all {
         into("/") // Place the file in the root of the JAR
     }
 }*/
-
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
 tasks.test {
     useJUnitPlatform()
 }

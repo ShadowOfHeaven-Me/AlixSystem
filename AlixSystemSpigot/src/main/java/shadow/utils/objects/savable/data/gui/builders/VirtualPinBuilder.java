@@ -1,6 +1,5 @@
 package shadow.utils.objects.savable.data.gui.builders;
 
-import alix.common.data.LoginType;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import io.netty.buffer.ByteBuf;
@@ -10,6 +9,7 @@ import shadow.systems.commands.CommandManager;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
+import shadow.utils.objects.savable.data.gui.GuiType;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.virtual.CachingVirtualInventory;
 import shadow.utils.objects.savable.data.gui.virtual.VirtualInventory;
@@ -91,8 +91,8 @@ public final class VirtualPinBuilder implements AlixJavaVerificationGui {
     }
 
     @Override
-    public LoginType getType() {
-        return LoginType.PIN;
+    public GuiType getType() {
+        return GuiType.PIN;
     }
 
     private void resetPin0() {

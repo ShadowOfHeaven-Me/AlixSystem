@@ -1,33 +1,41 @@
 package shadow.systems.virtualization.manager;
 
+import alix.common.environment.ServerEnvironment;
+import alix.common.utils.AlixCommonUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 import shadow.Main;
 
 final class UserSafeExecutors implements Listener {
 
     private final JoinEventManager.JoinEventExecutor joinEventExecutor;
     private final QuitEventManager.QuitEventExecutor quitEventExecutor;
-    private final SpawnLocEventManager.SpawnEventExecutor spawnEventExecutor;
 
     UserSafeExecutors() {
         this.joinEventExecutor = new JoinEventManager.JoinEventExecutor();
         this.quitEventExecutor = new QuitEventManager.QuitEventExecutor();
-        this.spawnEventExecutor = new SpawnLocEventManager.SpawnEventExecutor();
     }
 
     static void register() {
-        Bukkit.getPluginManager().registerEvents(new UserSafeExecutors(), Main.plugin);
-    }
+        boolean paper = ServerEnvironment.isPaper() && AlixCommonUtils.isValidClass("io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent");
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    void onSpawn(PlayerSpawnLocationEvent event) {
-        this.spawnEventExecutor.onInvocation(event);
+        Listener spawnLocExec;
+
+        if(paper) {
+            spawnLocExec = new AsyncSpawnLocEvent();
+            Main.logInfo("Initiating Paper's AsyncInitialLocation support");
+        } else {
+            spawnLocExec = new SyncSpawnLocEvent();
+            Main.logInfo("Using Spigot SyncInitialLocation");
+        }
+
+        var pm = Bukkit.getPluginManager();
+        pm.registerEvents(new UserSafeExecutors(), Main.plugin);
+        pm.registerEvents(spawnLocExec, Main.plugin);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

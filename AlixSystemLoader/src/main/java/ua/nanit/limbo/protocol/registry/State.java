@@ -25,10 +25,7 @@ import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.protocol.HandleMask;
-import ua.nanit.limbo.protocol.Packet;
-import ua.nanit.limbo.protocol.PacketIn;
-import ua.nanit.limbo.protocol.PacketOut;
+import ua.nanit.limbo.protocol.*;
 import ua.nanit.limbo.protocol.packets.configuration.*;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.*;
@@ -224,7 +221,7 @@ public enum State {
 
     public static State getState(Packet packet) {
         //Log.error("getState: " + packet + " STATE: " + ProtocolMappings.clazzToState.get(packet));
-        return ProtocolMappings.clazzToState.get(packet.getClass());
+        return packet instanceof PacketSnapshot snapshot ? snapshot.state : ProtocolMappings.clazzToState.get(packet.getClass());
     }
 
     public static Class<? extends PacketWrapper<?>> getWrapperClazz(Packet packet) {

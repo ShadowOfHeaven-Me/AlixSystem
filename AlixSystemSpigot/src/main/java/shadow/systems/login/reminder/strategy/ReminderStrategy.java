@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class ReminderStrategy implements Runnable {
 
     private static final long TICK_DELAY = 1000 / BufferedPackets.EXPERIENCE_UPDATES_PER_SECOND;
-    private static final ByteBuf timeOutError = OutDisconnectPacketConstructor.constructConstAtPlayPhase("§cTimed Out Fall [Alix]");
+    private static final ByteBuf timeOutError = OutDisconnectPacketConstructor.constAtPlay("§cTimed Out Fall [Alix]");
     final UnverifiedUser user;
 
     ReminderStrategy(UnverifiedUser user) {

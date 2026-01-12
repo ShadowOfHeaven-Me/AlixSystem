@@ -91,7 +91,7 @@ public final class ReCaptchaConsumer extends AbstractCaptchaConsumer<ReCaptcha> 
         }*/
     }
 
-    private static final ByteBuf captchaFailedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-fail-kick"));
+    private static final ByteBuf captchaFailedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("captcha-fail-kick"));
     private static final ByteBuf captchaFailedMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-fail-chat"));
 
     private static final double dist = SpigotConversionUtil.fromBukkitLocation(ReCaptcha.HEAD_LOC).getPosition().distance(PLAYER_HEAD_POS);

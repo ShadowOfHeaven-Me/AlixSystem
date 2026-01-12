@@ -1,6 +1,5 @@
 package shadow.utils.objects.savable.data.gui.bedrock;
 
-import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.messages.Messages;
@@ -11,6 +10,7 @@ import org.geysermc.floodgate.api.player.FloodgatePlayer;
 import org.jetbrains.annotations.NotNull;
 import shadow.systems.commands.CommandManager;
 import shadow.utils.objects.savable.data.gui.AlixBedrockVerificationGui;
+import shadow.utils.objects.savable.data.gui.GuiType;
 import shadow.utils.users.types.UnverifiedUser;
 
 import static shadow.systems.commands.CommandManager.registerPasswordsDoNotMatchMessagePacket;
@@ -116,7 +116,7 @@ public final class VerificationBedrockGUI implements AlixBedrockVerificationGui 
 
     @Override
     @NotNull
-    public LoginType getType() {
-        return LoginType.BEDROCK_VER;
+    public GuiType getType() {
+        return GuiType.BEDROCK_VER;
     }
 }

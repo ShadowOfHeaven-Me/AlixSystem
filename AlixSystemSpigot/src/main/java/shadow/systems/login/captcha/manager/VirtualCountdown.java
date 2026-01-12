@@ -11,11 +11,11 @@ import shadow.utils.users.types.UnverifiedUser;
 public final class VirtualCountdown {//shows xp countdown and kicks out
 
     private static final ByteBuf
-            captchaTimePassedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("captcha-time-passed")),
-            registerTimePassedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("register-time-passed")),
-            loginTimePassedKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("login-time-passed"));
+            captchaTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("captcha-time-passed")),
+            registerTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("register-time-passed")),
+            loginTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("login-time-passed"));
 
-    private static final ByteBuf timeOutError = OutDisconnectPacketConstructor.constructConstAtPlayPhase("§cTimed Out No Packet [Alix]");
+    private static final ByteBuf timeOutError = OutDisconnectPacketConstructor.constAtPlay("§cTimed Out No Packet [Alix]");
     //private final ChannelHandlerContext ctx;
     private final UnverifiedUser user;
     private ByteBuf[] packets;

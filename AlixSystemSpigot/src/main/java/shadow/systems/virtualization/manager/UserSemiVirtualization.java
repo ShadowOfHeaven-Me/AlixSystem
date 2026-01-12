@@ -32,6 +32,7 @@ public final class UserSemiVirtualization {
     private static final QuitEventManager quitEventManager;*/
     private static final VirtualEventManager[] listeners;
 
+    //unsafeMode = true is deprecated
     private static final boolean unsafeMode = false;
 
     /*private static final List ENTITY_PLAYER_LIST;

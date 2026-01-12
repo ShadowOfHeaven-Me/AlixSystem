@@ -1,9 +1,9 @@
 package io.netty.channel.unix;
 
+import alix.common.AlixCommonMain;
 import alix.common.utils.other.annotation.RemotelyInvoked;
+import alix.common.utils.other.throwable.AlixError;
 import lombok.SneakyThrows;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -15,7 +15,7 @@ final class AlixSocketAccessBridge {
 
     static {
         try {
-            Plugin plugin = Bukkit.getPluginManager().getPlugin("AlixSystem");
+            var plugin = AlixCommonMain.MAIN_CLASS_INSTANCE; //Bukkit.getPluginManager().getPlugin("AlixSystem");
             //ClassLoader cl = (ClassLoader) plugin.getClass().getMethod("getJarInJarLoader").invoke(plugin);
             ClassLoader cl = plugin.getClass().getClassLoader();
 
@@ -48,6 +48,6 @@ final class AlixSocketAccessBridge {
     @SneakyThrows
     static void nativeClose(int fd) {
         int res = (int) CLOSE.invokeExact(fd);
-        if (res < 0) throw new Error("Close returned " + res);
+        if (res < 0) throw new AlixError("Close returned " + res);
     }
 }

@@ -1,9 +1,9 @@
 package shadow.utils.objects.savable.data.gui.builders.auth;
 
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
-import alix.common.data.LoginType;
 import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.messages.Messages;
+import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.utils.other.keys.secret.MapSecretKey;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -12,8 +12,8 @@ import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.misc.methods.MethodProvider;
-import alix.common.packets.inventory.AlixInventoryType;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
+import shadow.utils.objects.savable.data.gui.GuiType;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.objects.savable.data.gui.virtual.CachingVirtualInventory;
 import shadow.utils.objects.savable.data.gui.virtual.VirtualInventory;
@@ -218,8 +218,8 @@ public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
 
     @Override
     @NotNull
-    public LoginType getType() {
-        return LoginType.AUTH_2FA;
+    public GuiType getType() {
+        return GuiType.AUTH_2FA;
     }
 
     @Override

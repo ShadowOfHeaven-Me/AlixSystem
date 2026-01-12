@@ -1,2 +1,4 @@
 Manifest-Version: 1.0
+paperweight-mappings-namespace: mojang
+Multi-Release: true
 

@@ -364,6 +364,7 @@ public final class ReflectionUtils {
             method.setAccessible(true);
             method.invoke(s);
         } catch (Exception e) {
+            e.printStackTrace();
             //throw new InternalError(e);
         }
     }

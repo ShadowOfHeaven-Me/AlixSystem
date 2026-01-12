@@ -2,8 +2,10 @@ package shadow.utils.world;
 
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.util.Vector3i;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import shadow.Main;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
 import shadow.utils.world.generator.AlixWorldGenerator;
 import shadow.utils.world.location.ConstLocation;
@@ -34,7 +36,7 @@ public final class AlixWorld {
         this.prepareSpawnCube();
     }
 
-    private void prepareSpawnCube() {
+    private void fillAir() {
         for (int x = -1; x <= 1; x++) {
             for (int y = 1; y <= 4; y++) {
                 for (int z = -1; z <= 1; z++) {
@@ -46,7 +48,10 @@ public final class AlixWorld {
                 }
             }
         }
+    }
 
+    private void prepareSpawnCube() {
+        this.fillAir();
         this.world.getBlockAt(0, 1, 0).setType(Material.BARRIER);
 
         //this.world.getBlockAt(0, 2, 0).setType(Material.COBWEB);
@@ -58,12 +63,22 @@ public final class AlixWorld {
         } catch (Exception ignored) {//the method doesn't exist on lower versions
             return;
         }
-
         int min = Math.max(CAPTCHA_WORLD.getViewDistance(), 2);//view distance is custom on paper
-
-        for (int i = -min; i <= min; i++)
+        /*for (int i = -min; i <= min; i++)
             for (int j = -min; j <= min; j++)
-                this.world.setChunkForceLoaded(i, j, true);
+                this.world.setChunkForceLoaded(i, j, false);*/
+
+        int unloaded = 0;
+        for (Chunk chunk : this.world.getForceLoadedChunks()) {
+            if (chunk.getX() < -min || chunk.getZ() < -min || chunk.getX() > min || chunk.getZ() > min) {
+                chunk.setForceLoaded(false);
+                unloaded++;
+            }
+        }
+
+        if(unloaded > 0) Main.logInfo("Unloaded " + unloaded + " previously unnecessarily force-loaded chunks");
+
+        //this.world.setChunkForceLoaded(0, 0, true);
     }
 
     public static boolean preload() {

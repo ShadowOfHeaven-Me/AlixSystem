@@ -25,7 +25,7 @@ public final class AlixYamlConfig {
     public String get(String path, @NotNull String def) {
         String val = this.file.values.get(path);
         if (val == null)
-            AlixCommonMain.logWarning("Config " + path + " param not found");
+            AlixCommonMain.logWarning("Config '" + path + "' param not found");
         return val != null ? val.trim() : def;
     }
 
@@ -41,7 +41,7 @@ public final class AlixYamlConfig {
     }
 
     private static String removeQuotations(String str) {
-        if (str.isEmpty()) return str;
+        if (str.length() <= 1) return str;
         char first = str.charAt(0);
         if (first == '"') {
             char last = str.charAt(str.length() - 1);

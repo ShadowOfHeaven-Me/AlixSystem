@@ -10,6 +10,7 @@ import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.world.AlixWorld;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public final class OriginalLocationsManager {
@@ -26,7 +27,11 @@ public final class OriginalLocationsManager {
     }
 
     public static Location getOriginalLocation(Player player) {
-        Location originalLoc = file.getMap().get(player.getUniqueId());//no longer removing the saved location due to various issues
+        return getOriginalLocation(player.getUniqueId());
+    }
+
+    public static Location getOriginalLocation(UUID uuid) {
+        Location originalLoc = file.getMap().get(uuid);//no longer removing the saved location due to various issues
         return originalLoc != null && !originalLoc.getWorld().equals(AlixWorld.CAPTCHA_WORLD) ? originalLoc : SpawnFileManager.getSpawnLocation();//default to the spawn location if none was found (or it was in the captcha world)
     }
 
@@ -35,9 +40,13 @@ public final class OriginalLocationsManager {
     }
 
     public static void add(Player player, @NotNull Location originalLocation) {
+        add(player.getUniqueId(), originalLocation);
+    }
+
+    public static void add(UUID uuid, @NotNull Location originalLocation) {
         if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD))
             return;
-        file.getMap().put(player.getUniqueId(), originalLocation);
+        file.getMap().put(uuid, originalLocation);
         //if (originalLocation.getWorld().equals(AlixWorld.CAPTCHA_WORLD)) throw new AlixException(":>");
     }
 

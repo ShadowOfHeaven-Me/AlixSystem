@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     id("java")
     id("java-library")
-    id("com.gradleup.shadow") version "8.3.2"
+    id("com.gradleup.shadow") version "9.3.0"
 }
 
 group = "AlixSystemLoader"
@@ -31,10 +31,15 @@ repositories {
     //maven("https://oss.sonatype.org/content/repositories/snapshots")
 
 }
+/*tasks.shadowJar {
+    val prefix = "alix.libs"
+    relocate("org.mariadb", "$prefix.org.mariadb")
+}*/
 tasks.register("prepareKotlinBuildScriptModel") {}
 dependencies {
-    implementation("com.zaxxer:HikariCP:5.0.1")
-    implementation("org.mariadb.jdbc:mariadb-java-client:3.0.7")
+    //later see https://github.com/kyngs/LibreLogin/blob/master/Plugin/build.gradle.kts
+    implementation("com.zaxxer:HikariCP:6.2.1")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
     implementation("at.favre.lib:bcrypt:0.10.2")
     implementation("net.kyori:adventure-text-minimessage:4.16.0")
 

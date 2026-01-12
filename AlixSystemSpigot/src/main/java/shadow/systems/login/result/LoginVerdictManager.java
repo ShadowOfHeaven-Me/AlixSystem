@@ -6,12 +6,14 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import shadow.Main;
+import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
 
 import java.net.InetAddress;
+import java.util.UUID;
 
 public final class LoginVerdictManager {
 
@@ -59,15 +61,24 @@ public final class LoginVerdictManager {
         return user instanceof TemporaryUser ? (TemporaryUser) user : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
     }*/
 
-    //private static final ByteBuf noTempUserErr = OutDisconnectKickPacketConstructor.constructConstAtPlayPhase("§cSomething went wrong! (TempUser not assigned)");
+    //private static final String noTempUserMsg = "§cSomething went wrong! (User not assigned)";
+    //private static final ByteBuf noTempUserErr_Cfg = OutDisconnectPacketConstructor.dynamicAtConfig(noTempUserMsg);
+    //private static final ByteBuf noTempUserErr_Play = OutDisconnectPacketConstructor.constAtPlay(noTempUserMsg);
 
-    public static TemporaryUser get(Player p) {
+    public static TemporaryUser get(UUID uuid) {
+        AlixUser user = UserManager.get(uuid);
+        return user instanceof TemporaryUser temp ? temp : null;
+    }
+
+    public static TemporaryUser getExisting(Player p) {
         AlixUser user = UserManager.get(p.getUniqueId());
-        TemporaryUser temp = user instanceof TemporaryUser ? (TemporaryUser) user : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
+        TemporaryUser temp = user instanceof TemporaryUser tem ? tem : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
 
         if (user == null) {
-            p.kickPlayer("§cSomething went wrong! (TempUser not assigned)");//cannot use MethodProvider.kickAsync, because AlixUser is null
-            Main.logWarning("No Temporary User was found for the player " + p.getName() + " - disconnecting him for safety! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
+            //Cannot use Player::kickPlayer cuz Paper aids
+            //Cannot use MethodProvider.kickAsync, because AlixUser is null
+            Main.logWarning("No Alix User was found for the player " + p.getName() + " - disconnecting him for safety! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
+            AlixHandler.safeKick(p,"§cSomething went wrong! (User not assigned)");
         }
 
         return temp;
@@ -77,7 +88,7 @@ public final class LoginVerdictManager {
         return getExistingTempUser(p).getLoginInfo();
     }*/
 
-    private static TemporaryUser ensureExists(TemporaryUser user) {
+    /*private static TemporaryUser ensureExists(TemporaryUser user) {
         if (user == null) {
             //Why did I add this line previously
             //What was I smoking?
@@ -85,7 +96,7 @@ public final class LoginVerdictManager {
             throw new RuntimeException("No Temporary User was found for the player " + user.retrooperUser().getName() + "! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
         }
         return user;
-    }
+    }*/
 
     private LoginVerdictManager() {
     }

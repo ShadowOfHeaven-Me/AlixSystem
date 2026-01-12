@@ -32,17 +32,24 @@ public final class AlixWorldGenerator extends WorldCreator {
     private static void init(World world) {
         world.setTime(20_000);
         //world.setFullTime(18000);
-        world.setAmbientSpawnLimit(-1);
-        world.setAnimalSpawnLimit(-1);
-        world.setWaterAnimalSpawnLimit(-1);
-        world.setMonsterSpawnLimit(-1);
-        world.setTicksPerAnimalSpawns(-1);
-        world.setTicksPerMonsterSpawns(-1);
+        world.setAmbientSpawnLimit(0);
+        world.setAnimalSpawnLimit(0);
+        world.setWaterAnimalSpawnLimit(0);
+        world.setMonsterSpawnLimit(0);
+        world.setWaterUndergroundCreatureSpawnLimit(0);
+
+        world.setTicksPerAmbientSpawns(0);
+        world.setTicksPerAnimalSpawns(0);
+        world.setTicksPerWaterAmbientSpawns(0);
+        world.setTicksPerMonsterSpawns(0);
+        world.setTicksPerWaterUndergroundCreatureSpawns(0);
+
         world.setPVP(false);
         world.setAutoSave(false);
         //world.getViewDistance()
         world.setSpawnFlags(false, false);
         world.setDifficulty(Difficulty.EASY);
+
 
         if (invokeIfPresent(getMethodOrNull(World.class, "setViewDistance", int.class), world, 2)) {
             Main.logInfo("Optimizing chunk rendering in the verification world thanks to the Paper environment");
@@ -63,8 +70,8 @@ public final class AlixWorldGenerator extends WorldCreator {
     }
 
     private static void initGameRulesModern(World world) {
-        world.setGameRule(GameRule.RANDOM_TICK_SPEED, -1);
-        world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, -1);
+        world.setGameRule(GameRule.RANDOM_TICK_SPEED, 0);
+        world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, 0);
         world.setGameRule(GameRule.SPAWN_RADIUS, 0);
         world.setGameRule(GameRule.DO_TILE_DROPS, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);

@@ -180,6 +180,48 @@ public final class AdminAlixCommands implements CommandExecutor {
                         });
                         break;
                     }
+                    case "cp":
+                    case "changepassword": {
+                        if (l == 2) {
+                            sendMessage(sender, "Specify the player's password!");
+                            return false;
+                        }
+                        PersistentUserData data = UserFileManager.get(arg2);
+
+                        if (data == null) {
+                            sendMessage(sender, playerDataNotFound.format(arg2));
+                            return false;
+                        }
+
+                        String password = args[2];
+                        LoginType type;
+                        if (l >= 3) {
+                            String arg4 = args[3];
+                            try {
+                                type = LoginType.from(arg4.toUpperCase(), false, false);
+                            } catch (Exception e) {
+                                sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg4);
+                                return false;
+                            }
+                        } else type = data.getLoginType();
+
+                        var invalidityReason = AlixUtils.getPasswordInvalidityReason(password, type);
+                        if (invalidityReason != null) {
+                            sender.sendMessage(invalidityReason);
+                            return false;
+                        }
+
+                        data.setPassword(password);
+                        data.setLoginType(type);
+                        String passFormatted = "*".repeat(password.length() - 3) + password.substring(password.length() - 3);
+                        sendMessage(sender, "Successfully changed player " + data.getName() + " password to " + passFormatted + " with login type " + type);
+
+                        if (data.getLoginParams().getExtraLoginType() != null) {
+                            sendMessage(sender, "&eAdditionally setting the player's extra login type to NONE to avoid issues.");
+                            data.getLoginParams().setExtraLoginType(null);
+                        }
+                        return true;
+                    }
                     case "rp":
                     case "resetpassword": {
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -195,12 +237,12 @@ public final class AdminAlixCommands implements CommandExecutor {
                         if (p != null) p.kickPlayer(passwordResetMessage);
 
                         if (l > 2) {
-                            String arg3 = args[2].toUpperCase();
+                            String arg3 = args[2];
 
                             LoginType type;
 
                             try {
-                                type = LoginType.from(arg3, false, false);
+                                type = LoginType.from(arg3.toUpperCase(), false, false);
                             } catch (Exception e) {
                                 sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg3);
                                 return false;
@@ -383,8 +425,8 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list." +
                             " Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.");
                     sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
-                    sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
-                    sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                    sendMessage(sender, "&c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                    sendMessage(sender, "&c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.");
                     sendMessage(sender, "&c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium");
 
                     sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.");

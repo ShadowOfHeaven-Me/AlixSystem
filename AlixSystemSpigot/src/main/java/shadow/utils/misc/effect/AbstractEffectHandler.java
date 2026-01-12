@@ -1,7 +1,7 @@
 package shadow.utils.misc.effect;
 
+import alix.common.utils.other.AlixUnsafe;
 import com.google.common.base.Function;
-import io.netty.util.internal.PlatformDependent;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.users.types.UnverifiedUser;
@@ -18,8 +18,16 @@ abstract class AbstractEffectHandler implements PotionEffectHandler {
         private static final Function<UnverifiedUser, PotionEffectHandler> FUNC;
 
         static {
-            Function<UnverifiedUser, PotionEffectHandler> func;
+            FUNC = AlixUnsafe.hasUnsafe() ? unsafeFunc0() : apiFunc0();
+        }
 
+        private static Function<UnverifiedUser, PotionEffectHandler> apiFunc0() {
+            Main.logInfo("Using APIEffectHandler for potion effect management");
+            return APIEffectHandler::new;//use the slower handler using the spigot API as fallback
+        }
+
+        private static Function<UnverifiedUser, PotionEffectHandler> unsafeFunc0() {
+            Function<UnverifiedUser, PotionEffectHandler> func;
             try {
                 UnsafeEffectHandler.init();//check if it's available
                 func = UnsafeEffectHandler::new;//use the faster handler if possible
@@ -27,13 +35,16 @@ abstract class AbstractEffectHandler implements PotionEffectHandler {
             } catch (Throwable e) {
                 func = APIEffectHandler::new;//use the slower handler using the spigot API as fallback
                 Main.logInfo("Using the unoptimized APIEffectHandler for potion effect management");
+
                 if (AlixUtils.isDebugEnabled) {
-                    Main.logInfo("Send this to the developer: " + PlatformDependent.hasUnsafe());
+                    Main.logInfo("Send this to the developer: " + AlixUnsafe.hasUnsafe());
                     e.printStackTrace();
-                } else Main.logInfo("If you wish to use the faster implementation, enable 'debug' in config.yml, and contact the developer");
+                } else
+                    Main.logInfo("If you wish to use the faster implementation, enable 'debug' in config.yml, and contact the developer");
             }
-            FUNC = func;
+            return func;
         }
+
 
         static void init() {
         }

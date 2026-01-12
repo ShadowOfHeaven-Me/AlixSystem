@@ -9,8 +9,10 @@ import alix.common.data.loc.AlixLocationList;
 import alix.common.data.loc.provider.LocationListProvider;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
+import alix.common.database.DatabaseUpdater;
 import alix.common.utils.file.SaveUtils;
 import org.jetbrains.annotations.NotNull;
+import ua.nanit.limbo.util.UUIDUtil;
 
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -19,10 +21,13 @@ import java.util.UUID;
 public final class PersistentUserData implements AlixUserData {
 
     private static final LocationListProvider homesProvider = LocationListProvider.createImpl();
-    private static final int CURRENT_DATA_LENGTH = 10;
+    private static final DatabaseUpdater database = DatabaseUpdater.INSTANCE;
+    private static final int CURRENT_DATA_LENGTH = 11;
     private final AlixLocationList homes;
     private final String name;
+    private final UUID uuid;
     private final LoginParams loginParams;
+    private final long createdAt;
     @NotNull
     private volatile PremiumData premiumData;
     @NotNull
@@ -33,6 +38,7 @@ public final class PersistentUserData implements AlixUserData {
     private PersistentUserData(String[] splitData) {
         //splitData = ensureSplitDataCorrectness(splitData);
         this.name = splitData[0];
+        this.uuid = this._uuid();
         this.loginParams = new LoginParams(splitData[1]);
         this.ip = IPUtils.fromAddress(splitData[2]);
         this.homes = homesProvider.fromSavable(splitData[3]);
@@ -42,18 +48,34 @@ public final class PersistentUserData implements AlixUserData {
         this.loginParams.initAuthSettings(splitData[7]);
         this.lastSuccessfulLogin = Long.parseLong(splitData[8]);
         this.premiumData = PremiumData.fromSavable(splitData[9]);
+        this.createdAt = Long.parseLong(splitData[10]);
         UserFileManager.putData(this);
         GeoIPTracker.addIP(this.ip);//Add it here, as it was loaded
     }
 
     private PersistentUserData(String name, InetAddress ip, Password password) {
         this.name = name;
+        this.uuid = this._uuid();
         this.ip = ip;
         this.loginParams = new LoginParams(password);
         this.homes = homesProvider.newList();
         this.premiumData = PremiumData.UNKNOWN;
+        this.createdAt = System.currentTimeMillis();
         UserFileManager.putData(this);
         //The GeoIPTracker add should not be invoked
+    }
+
+    public void saveToDatabase() {
+        database.insertUser(this.name, this.uuid, this.createdAt);
+        var password = this.loginParams.getPassword();
+        if (password.isSet())
+            database.addPasswordAndLink(this.name, password);
+        else
+            database.clearPasswordPointer(this.name);
+    }
+
+    private UUID _uuid() {
+        return UUIDUtil.getOfflineModeUuid(this.name);
     }
 
     public static PremiumData getPremiumData(PersistentUserData data) {
@@ -154,10 +176,12 @@ public final class PersistentUserData implements AlixUserData {
 
     public void setLastSuccessfulLogin(long lastSuccessfulLogin) {
         this.lastSuccessfulLogin = lastSuccessfulLogin;
+
+        database.updateLastSuccessfulLoginByName(this.name, lastSuccessfulLogin);
     }
 
     public void updateLastSuccessfulLoginTime() {
-        this.lastSuccessfulLogin = System.currentTimeMillis();
+        this.setLastSuccessfulLogin(System.currentTimeMillis());
     }
 
     public LoginType getLoginType() {
@@ -173,11 +197,13 @@ public final class PersistentUserData implements AlixUserData {
     }
 
     public void setPassword(String password) {
-        this.loginParams.setPassword(Password.fromUnhashed(password));
+        this.setPassword(Password.fromUnhashed(password));
     }
 
     public void setPassword(Password password) {
         this.loginParams.setPassword(password);
+
+        database.updatePasswordByOwner(this.name, password);
     }
 
     public void setPremiumData(@NotNull PremiumData premiumData) {
@@ -190,12 +216,16 @@ public final class PersistentUserData implements AlixUserData {
         this.loginParams.setExtraLoginType(null);
         this.loginParams.setAuthSettings(AuthSetting.PASSWORD);
         this.loginParams.setHasProvenAuthAccess(false);
+
+        database.clearPasswordPointer(this.name);
         //nieeee
         //this.premiumData = PremiumData.UNKNOWN;//is this right?
     }
 
     public PersistentUserData setIP(InetAddress ip) {
         this.ip = ip;
+
+        database.updateIpByName(this.name, ip.getHostAddress());
         return this;
     }
 

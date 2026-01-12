@@ -59,7 +59,7 @@ public final class MethodProvider {
         NettyUtils.closeAfterConstSend(user.silentContext(), disconnectPacket);
     }
 
-    public static final PlayerTeleportEvent.TeleportCause ASYNC_TP_CAUSE = PlayerTeleportEvent.TeleportCause.SPECTATE;
+    public static final PlayerTeleportEvent.TeleportCause ASYNC_TP_CAUSE = PlayerTeleportEvent.TeleportCause.END_PORTAL;
 
     @AlixIntrinsified(method = "Player#teleport")
     public static CompletableFuture<Boolean> teleportAsync(Entity entity, Location loc) {

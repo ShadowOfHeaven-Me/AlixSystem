@@ -1399,7 +1399,7 @@ public final class CommandManager {
         sendMessage(sender, incorrectCaptcha);
     }*/
 
-    private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(incorrectCaptcha);
+    private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectPacketConstructor.constAtPlay(incorrectCaptcha);
     public static final ByteBuf
             incorrectCaptchaMessagePacket = OutMessagePacketConstructor.constructConst(incorrectCaptcha),
             captchaCompleteMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.getWithPrefix("captcha-complete-register-password-repeat") : Messages.getWithPrefix("captcha-complete"));
@@ -1454,7 +1454,7 @@ public final class CommandManager {
         }
     }
 
-    public static final ByteBuf incorrectPasswordKickPacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.getWithPrefix("incorrect-password"));
+    public static final ByteBuf incorrectPasswordKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.getWithPrefix("incorrect-password"));
     public static final ByteBuf
             incorrectPasswordMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("incorrect-password")),
             captchaReminderMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-reminder-command")),

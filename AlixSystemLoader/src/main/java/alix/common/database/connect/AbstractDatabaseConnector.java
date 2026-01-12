@@ -1,5 +1,6 @@
 package alix.common.database.connect;
 
+import alix.common.database.ThrowableConsumer;
 import alix.common.database.ThrowableFunction;
 import alix.common.utils.other.throwable.AlixException;
 import com.zaxxer.hikari.HikariConfig;
@@ -7,11 +8,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 abstract class AbstractDatabaseConnector implements DatabaseConnector {
 
@@ -20,28 +17,34 @@ abstract class AbstractDatabaseConnector implements DatabaseConnector {
     private volatile boolean connected;
 
     @Override
-    public <V> V runQuery(ThrowableFunction<V, Connection, SQLException> function) throws IllegalStateException {
-        try {
-            try (var connection = obtainInterface()) {
-                return function.apply(connection);
-            }
+    public <V> V getQuery(ThrowableFunction<V, Connection, Exception> function) throws IllegalStateException {
+        try (var connection = this.obtainInterface()) {
+            return function.apply(connection);
         } catch (SQLTransientConnectionException e) {
             throw new AlixException(e, "Lost connection to the database");
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new AlixException(e);
         }
     }
 
-    private static final Map<Class<? extends DatabaseConnector>, DatabaseConnector> CONNECTORS = new ConcurrentHashMap<>(4, 1.0f);
+    @Override
+    public void query(ThrowableConsumer<Connection, Exception> function) {
+        this.getQuery(connection -> {
+            function.apply(connection);
+            return null;
+        });
+    }
+
+    /*private static final Map<Class<? extends DatabaseConnector>, DatabaseConnector> CONNECTORS = new ConcurrentHashMap<>(4, 1.0f);
 
     @SneakyThrows
     private static <T extends DatabaseConnector> T newInstance(Class<T> clazz) {
         return clazz.getDeclaredConstructor().newInstance();
     }
 
-    static <T extends DatabaseConnector> Supplier<DatabaseConnector> supply(Class<T> clazz) {
-        return () -> CONNECTORS.computeIfAbsent(clazz, AbstractDatabaseConnector::newInstance);
-    }
+    static <T extends DatabaseConnector> Supplier<DatabaseConnector> supply(Class<T> clazz, Supplier<T> supplier) {
+        return () -> CONNECTORS.computeIfAbsent(clazz, supplier);
+    }*/
 
     @SneakyThrows
     @Override

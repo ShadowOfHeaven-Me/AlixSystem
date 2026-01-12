@@ -1,6 +1,5 @@
 package io.netty.channel.unix;
 
-import alix.common.utils.other.AlixUnsafe;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import org.objectweb.asm.*;
 
@@ -60,8 +59,8 @@ public final class AlixFastUnsafeEpoll {
             }, 0);
             try (InputStream in = AlixFastUnsafeEpoll.class.getClassLoader().getResourceAsStream("io/netty/channel/unix/AlixSocketAccessBridge.class")) {
                 MethodHandles.Lookup l = MethodHandles.privateLookupIn(Socket.class, MethodHandles.lookup());
-                //l.ensureInitialized()
-                AlixUnsafe.getUnsafe().ensureClassInitialized(l.defineClass(in.readAllBytes()));
+                l.ensureInitialized(l.defineClass(in.readAllBytes()));
+                //AlixUnsafe.getUnsafe().ensureClassInitialized(l.defineClass(in.readAllBytes()));
             }
             instrumentation.redefineClasses(new ClassDefinition(Socket.class, cw.toByteArray()));
         } catch (LinkageError ignored) {

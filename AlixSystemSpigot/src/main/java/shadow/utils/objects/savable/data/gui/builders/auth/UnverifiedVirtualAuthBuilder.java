@@ -11,7 +11,7 @@ import shadow.utils.users.types.UnverifiedUser;
 
 public final class UnverifiedVirtualAuthBuilder extends VirtualAuthBuilder {
 
-    private static final ByteBuf kickInvalidCodeMessagePacket = OutDisconnectPacketConstructor.constructConstAtPlayPhase(Messages.get("google-auth-invalid-code"));
+    private static final ByteBuf kickInvalidCodeMessagePacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("google-auth-invalid-code"));
     private static final ByteBuf invalidCodeMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("google-auth-invalid-code-chat-message"));
 
     private static final int maxInputAttempts = Main.config.getInt("max-auth-app-attempts");

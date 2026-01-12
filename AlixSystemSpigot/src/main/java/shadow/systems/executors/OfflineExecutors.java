@@ -23,6 +23,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import shadow.Main;
@@ -286,6 +287,15 @@ public final class OfflineExecutors extends UniversalExecutors {
         }
     }
 
+    //Hunger during verification fix
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onFoodChange(FoodLevelChangeEvent event) {
+        if (event.isCancelled() || !(event.getEntity() instanceof Player player)) return;
+
+        if (Verifications.has(player))
+            event.setCancelled(true);
+    }
+
     //Damage during verification fix
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDamage(EntityDamageEvent event) {
@@ -302,12 +312,14 @@ public final class OfflineExecutors extends UniversalExecutors {
         //AlixHandler.handleVirtualPlayerQuit(e.getPlayer(), e);
     }*/
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onCommand(PlayerCommandPreprocessEvent e) {
-        if (!e.isCancelled() && isOperatorCommandRestricted)
+        if (e.isCancelled()) return;
+
+        if (isOperatorCommandRestricted)
             super.onOperatorCommandCheck(e, e.getMessage().substring(1));
 
-        if (!e.isCancelled() && Verifications.has(e.getPlayer())) {
+        if (Verifications.has(e.getPlayer())) {
             e.setCancelled(true);
             Main.logWarning("Player " + e.getPlayer().getName() + " tried executing command while unverified - cancelling! Report this if this is a security error!");
         }

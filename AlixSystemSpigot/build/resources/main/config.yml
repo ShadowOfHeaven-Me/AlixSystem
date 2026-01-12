@@ -107,11 +107,12 @@ max-login-attempts: 2
 max-auth-app-attempts: 2
 #Defines the way the passwords set by the users will be hashed in by default
 # 0 - No hash, not recommended in case of password leaks
-# 1 - Mixes character's code point, very fast but possibly repeatable, stored in a 32-bit integer
-# 2 - Uses uuid's bit generation & MD5 hashing, takes more computing time, stored in a 64-bit integer
-# 3 - Uses uuid's bit generation & SHA-256 hashing, most secure of all the options, stored in a 64-bit integer
+# 1 - Mixes characters' code points, very fast but possibly repeatable, stored in a 32-bit integer
+# 2 - Uses uuid's bit generation & MD5 hashing, not recommended due to MD5 deprecation, stored in a 64-bit integer
+# 3 - Uses uuid's bit generation & SHA-256 hashing, stored in a 64-bit integer
 # 4 - Uses SHA-256, always saved into a 64 character-long hex
 # 5 - Uses SHA-512, always saved into a 64 character-long hex
+# 6 - Uses BCrypt, Version 2A
 password-hash-type: 3
 #Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure their ip autologin preference, right after registering
 auto-ip-autologin-ask: true
@@ -138,11 +139,12 @@ require-premium-when-no-suggestion: true
 #Defines whether, if the joining user is unregistered and joining with a nickname of a premium player,
 # and the client does not disconnect by itself, but fails at authorization, he should be assumed to be a non-premium
 # player of that nickname (will disallow the actual owner of the premium account from joining)
+# or, if set to false, the server should disconnect the connecting player (essentially keeping the account for the actual premium owner of that account)
 assume-non-premium-if-auth-failed: true
 #Defines whether a non-premium, server-client connection should be encrypted - helps mitigate MITM attacks, but slightly increases CPU usage
 # always - All client connections will always be requested to encrypt their connection (some pre-1.20.5 cracked clients might disconnect because of this)
 # safe - Only 1.20.5+ client connections will be encrypted (no risk of disconnecting)
-# never - Will never try to enable encryption (Beyond side effects of checking the client's premium status)
+# never - Will never try to enable encryption (Except for side effects of checking the client's premium status)
 encrypt-connection: safe
 #Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register

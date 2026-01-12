@@ -80,9 +80,11 @@ public final class PacketHandler {
     private void handleLogin1(ClientConnection conn) {
         //conn.ensureFirst();
         conn.getFrameDecoder().releaseCollected();
-        if (!conn.getDuplexHandler().tryEnableCompression(true, false) && NanoLimbo.debugMode) {
+
+        boolean success = conn.getDuplexHandler().tryEnableCompression(true, false);
+        if (!success && NanoLimbo.debugMode)
             Log.warning("COMPRESS NOT ENABLED");
-        }
+
 
         /*if (server.getConfig().getInfoForwarding().isModern()) {
             int loginId = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);

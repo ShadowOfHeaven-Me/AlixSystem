@@ -23,9 +23,6 @@ public final class MigrateManager {
     }
 
     public static void migrate(MigrateType type) {
-        migrateWith0(type.getConnector(), type.getMigrateProvider(), type.getQuery().formatted(DatabaseConfig.TABLE_NAME));
-    }
-
-    public static void init() {
+        migrateWith0(type.getConnector(), type.getMigrateProvider(), type.getQuery().formatted(DatabaseConfig.MIGRATE.TABLE_NAME()));
     }
 }

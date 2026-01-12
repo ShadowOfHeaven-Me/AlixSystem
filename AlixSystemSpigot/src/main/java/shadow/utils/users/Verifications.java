@@ -23,7 +23,8 @@ public final class Verifications {
             return false;
 
         AlixUser user = UserManager.get(p.getUniqueId());
-        return user == null && !AlixUtils.isFakePlayer(p) || !user.isVerified();
+        return user == null //uhhhhhhh
+                && !AlixUtils.isFakePlayer(p) || !user.isVerified();
     }
 
     public static boolean remove(Player p) {
@@ -31,10 +32,10 @@ public final class Verifications {
     }
 
     public static UnverifiedUser get(Player p) {
-        return get(p.getUniqueId());
+        return get0(p.getUniqueId());
     }
 
-    public static UnverifiedUser get(UUID uuid) {
+    private static UnverifiedUser get0(UUID uuid) {
         return UserManager.get(uuid) instanceof UnverifiedUser unv ? unv : null;
     }
 

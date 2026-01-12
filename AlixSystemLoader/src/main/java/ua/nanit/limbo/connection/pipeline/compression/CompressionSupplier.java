@@ -26,7 +26,7 @@ public interface CompressionSupplier {
         return !COMPRESSION_ENABLED || version.lessOrEqual(Version.V1_7_6) || !State.isCompressible(state, packet.getClass());
     }
 
-    private static CompressionSupplier supply0(CompressionHandler handler) {
+    static CompressionSupplier supply0(CompressionHandler handler) {
         return (p, v, s) -> handler;
     }
 }
