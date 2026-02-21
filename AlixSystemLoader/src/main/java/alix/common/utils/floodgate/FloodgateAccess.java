@@ -16,7 +16,6 @@ final class FloodgateAccess {
 
     //public static final String PLAYER_PREFIX = FloodgateApi.getInstance().getPlayerPrefix();
     private static final AttributeKey<FloodgatePlayer> floodgate_player = AttributeKey.valueOf("floodgate-player");
-    private static final Class<?> CHANNEL_WRAPPER_CLAZZ = CommonReflection.forName("org.geysermc.geyser.network.netty.ChannelWrapper");
 
     @Nullable
     public static FloodgatePlayer getBedrockPlayer(Player player) {
@@ -58,10 +57,19 @@ final class FloodgateAccess {
         return pl != null && pl.isLinked();
     }
 
-    public static boolean isBedrock(Channel channel) {
-        return channel.getClass() == CHANNEL_WRAPPER_CLAZZ;// || getBedrockPlayer(channel) != null;
+    public static boolean hasFloodgatePlayerAttr(Channel channel) {
+        return getBedrockPlayer(channel) != null;
         //channel.hasAttr(floodgate_player);
-        // channel.getClass() == CHANNEL_WRAPPER_CLAZZ;
+    }
+
+    public static boolean isGeyserWrapperClazz(Channel channel) {
+        return channel.getClass() == LazyLoad.CHANNEL_WRAPPER_CLAZZ;// || getBedrockPlayer(channel) != null;
+        //channel.hasAttr(floodgate_player);
+    }
+
+    private static final class LazyLoad {
+
+        private static final Class<?> CHANNEL_WRAPPER_CLAZZ = CommonReflection.forName("org.geysermc.geyser.network.netty.ChannelWrapper");
     }
 
     /*public static String getName(Channel channel, String name) {

@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvider, AlixMain {
 
     public static BukkitAlixMain instance;
+    public static Thread mainServerThread;
     //private static final String JAR_NAME = "AlixSystem.jar";
     private static final String BOOTSTRAP_CLASS = "shadow.Main";
     private final LoaderBootstrap bootstrap;
@@ -104,6 +105,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
 
     @Override
     public void onLoad() {
+        mainServerThread = Thread.currentThread();
         //CommonReflection.set(CommonReflection.getFieldAccessibleByType(JavaPlugin.class, Logger.class), this, this.logger);
         this.bootstrap.onLoad();
     }

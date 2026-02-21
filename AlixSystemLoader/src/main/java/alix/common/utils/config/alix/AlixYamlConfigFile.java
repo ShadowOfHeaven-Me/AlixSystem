@@ -5,12 +5,15 @@ import alix.common.utils.file.AlixFileManager;
 import lombok.SneakyThrows;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 final class AlixYamlConfigFile extends AlixFileManager {
 
     final Map<String, String> values = new HashMap<>();
+    final Map<String, List<String>> lists = new HashMap<>();
     private int linesRead;
 
     AlixYamlConfigFile(File file) {
@@ -31,9 +34,29 @@ final class AlixYamlConfigFile extends AlixFileManager {
         String[] a = line.split(":", 2);
 
         if (a.length == 1) {
-            AlixCommonMain.logError("Line number " + this.linesRead + ", '" + line + "' contains no ':' separator symbol!");
+            String[] list = line.split("- ", 2);
+
+            if (list.length == 1 || this.mostRecentKey == null) {
+                AlixCommonMain.logError("Line number " + this.linesRead + ", '" + line + "' contains no ':' separator symbol!");
+                return;
+            }
+            this.lists.computeIfAbsent(this.mostRecentKey, k -> new ArrayList<>()).add(list[1].trim());
             return;
         }
-        this.values.put(a[0], a[1]);
+
+        String key = a[0];
+        String value = a[1];
+        /*if (value.trim().startsWith(" - ")) {
+            String list = value.split(" - ", 2)[1].trim();
+            this.lists.computeIfAbsent(key, k -> new ArrayList<>()).add(list);
+            return;
+        }*/
+
+        this.mostRecentKey = key;
+
+        this.values.put(key, value);
     }
+
+    private String mostRecentKey;
+
 }

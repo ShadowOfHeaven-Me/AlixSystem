@@ -1,7 +1,7 @@
 package ua.nanit.limbo.commands;
 
 import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.registry.Version;
 
 import java.util.List;

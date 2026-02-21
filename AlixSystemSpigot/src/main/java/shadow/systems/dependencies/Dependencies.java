@@ -29,7 +29,7 @@ public final class Dependencies {
         isSkinsRestorerPresent = pm.isPluginEnabled("SkinsRestorer");
         isAnyViaPresent = pm.getPlugin("ViaVersion") != null || pm.getPlugin("ViaBackwards") != null || pm.getPlugin("ViaRewind") != null;
         isFloodgatePresent = pm.isPluginEnabled("floodgate");
-        util = new GeyserUtil(isFloodgatePresent);
+        util = new GeyserUtil(pm.isPluginEnabled("Geyser-Spigot"), isFloodgatePresent);
     }
 
     //public static final String FLOODGATE_PREFIX = isFloodgatePresent ? util.PLAYER_PREFIX : null;

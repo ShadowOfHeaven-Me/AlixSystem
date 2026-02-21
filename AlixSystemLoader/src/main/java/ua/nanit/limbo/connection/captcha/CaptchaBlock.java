@@ -8,7 +8,7 @@ import com.github.retrooper.packetevents.protocol.world.states.type.StateType;
 import com.github.retrooper.packetevents.protocol.world.states.type.StateTypes;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.blocks.PacketPlayOutBlockUpdate;
 import ua.nanit.limbo.protocol.registry.Version;
 

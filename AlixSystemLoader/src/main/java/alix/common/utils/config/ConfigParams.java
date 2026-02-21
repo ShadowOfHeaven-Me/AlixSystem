@@ -5,7 +5,8 @@ import alix.common.data.LoginType;
 public final class ConfigParams {
 
     public static final int maximumTotalAccounts, maxLoginTime;
-    public static final boolean isDebugEnabled, isCaptchaMap, playerIPAutoLogin, forcefullyDisableAutoLogin, hasMaxLoginTime;
+    public static final boolean isDebugEnabled, isCaptchaMap, playerIPAutoLogin, forcefullyDisableAutoLogin, hasMaxLoginTime,
+            requireRegisterFromAll, loadBuiltInIps;
     public static final LoginType defaultLoginType;
 
     static {
@@ -17,6 +18,8 @@ public final class ConfigParams {
         playerIPAutoLogin = config.getBoolean("auto-login") && !forcefullyDisableAutoLogin;
         defaultLoginType = LoginType.from(config.getString("password-type").toUpperCase(), true);
         maxLoginTime = config.getInt("max-login-time");
+        requireRegisterFromAll = config.getBoolean("require-register-from-all");
+        loadBuiltInIps = config.getBoolean("load-builtin-ips");
         hasMaxLoginTime = maxLoginTime > 0;
 
         /*String loginType = config.getString("password-type").toLowerCase();

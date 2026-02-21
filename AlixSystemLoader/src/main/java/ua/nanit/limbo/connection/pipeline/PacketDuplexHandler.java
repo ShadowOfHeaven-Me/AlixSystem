@@ -1,23 +1,30 @@
 package ua.nanit.limbo.connection.pipeline;
 
-import alix.common.utils.netty.NettySafety;
+import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import lombok.SneakyThrows;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
-import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
+import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.connection.pipeline.flush.FlushBatcher;
 import ua.nanit.limbo.protocol.*;
+import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.shadow.KeepAlivePacket;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 
@@ -25,7 +32,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static ua.nanit.limbo.connection.pipeline.compression.CompressionHandler.COMPRESSION_ENABLED;
-import static ua.nanit.limbo.protocol.PacketSnapshot.floodgateNoCompression;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshot.floodgateNoCompression;
 
 public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
@@ -35,7 +42,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private final ClientConnection connection;
     private final FlushBatcher flushBatcher;
     private final ChannelPromise voidPromise;
-    public final boolean isGeyser, passPayloads;
+    public final boolean isGeyser;
+    public final boolean passPayloads;
+    public boolean disableCompression;
     public boolean disablePacketWriting;
     private CipherHandler cipher;
     private CompressionHandler compression;
@@ -50,6 +59,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         var geyserUtil = this.server.getIntegration().geyserUtil();
         this.isGeyser = geyserUtil.isBedrock(channel);
         this.passPayloads = this.isGeyser && geyserUtil.isFloodgatePresent();
+        this.disableCompression = this._disableCompression0();
     }
 
     @Override
@@ -65,6 +75,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         buf.release();
         if (packet == null) return;
 
+        this.lastIn = packet.getClass();
         if (NanoLimbo.debugPackets)
             Log.error("LIMBO IN: " + packet);
 
@@ -137,17 +148,26 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         Log.error("HANDLER ADDED: " + ctx.pipeline().names());
     }*/
 
+    private Class<?> lastIn, lastOut;
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         //cause instanceof SocketException ||
-        if (cause instanceof IOException) return;
+        try {
+            if (cause instanceof IOException) return;
 
-        this.connection.closeInvalidPacket();
-        if (NanoLimbo.suppress(cause)) return;
+            Class lastOut = this.lastOut;
 
-        Log.error("Error in pipeline", cause);
-        UnsafeCloseFuture.unsafeClose(ctx.channel());
+            this.connection.closeInvalidPacket();
+            if (NanoLimbo.suppress(cause)) return;
+
+            Log.error("Error in pipeline, encoder state=" + this.connection.getEncoderState() + " decoder state=" + this.connection.getDecoderState()
+                      + " lastIn=" + this.lastIn + " lastOut=" + lastOut + " isGeyser=" + this.isGeyser + " disableCompression=" + this.disableCompression
+                      + " cipher=" + (this.cipher != null), cause);
+            UnsafeCloseFuture.unsafeClose(ctx.channel());
+        } catch (Exception e) {
+            AlixCommonUtils.logException(e);
+        }
         //this.connection.sendPacketAndClose(new PacketConfigDisconnect("§cInternal limbo error"));
     }
 
@@ -159,20 +179,23 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     public boolean tryEnableCompression(boolean sendPacket, boolean forceful) {
         //compression didn't exist before 1.8
-        boolean canEnable = COMPRESSION_ENABLED && !this.disableCompression() && this.version().moreOrEqual(Version.V1_8);
+        boolean canEnable = COMPRESSION_ENABLED && !this.disableCompression && this.version().moreOrEqual(Version.V1_8);
         if (canEnable || forceful) {
             if (!canEnable) {
                 Log.warning("Forcefully enabling compression, even tho player " + this.connection.getUsername()
-                        + " should not have it enabled! DEBUG: " +
-                        "\nCOMPRESSION_ENABLED=" + COMPRESSION_ENABLED +
-                        "\nCOMPRESS THRESHOLD=" + NanoLimbo.INTEGRATION.getCompressionThreshold() +
-                        "\nthis.disableCompression()=" + this.disableCompression() +
-                        "\nFloodgateNoCompression=" + floodgateNoCompression +
-                        "\nisGeyser=" + isGeyser +
-                        "\ngeyser player=" + NanoLimbo.INTEGRATION.geyserUtil().getBedrockPlayer(this.channel) +
-                        "\nVERSION=" + this.version());
+                            + " should not have it enabled! DEBUG: " +
+                            "\nCOMPRESSION_ENABLED=" + COMPRESSION_ENABLED +
+                            "\nCOMPRESS THRESHOLD=" + NanoLimbo.INTEGRATION.getCompressionThreshold() +
+                            "\nthis._disableCompression0()=" + this._disableCompression0() +
+                            "\nthis.disableCompression=" + this.disableCompression +
+                            "\nFloodgateNoCompression=" + floodgateNoCompression +
+                            "\nisGeyser=" + isGeyser +
+                            "\ngeyser player=" + NanoLimbo.INTEGRATION.geyserUtil().getBedrockPlayer(this.channel) +
+                            "\nVERSION=" + this.version());
             }
 
+            //WE MUST ENABLE
+            this.disableCompression = false;
             this.enableCompression(sendPacket);
             return true;
         }
@@ -192,7 +215,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     private ByteBuf tryEncrypt(ByteBuf buf) {
         try {
-            return this.cipher != null ? this.cipher.encrypt(buf) : buf;
+            return CipherHandler.encrypt(buf, this.cipher);
         } catch (Exception e) {
             throw new AlixError(e);
         }
@@ -257,7 +280,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         return VarIntLengthEncoder.encode(maybeCompressed, pooled);
     }
 
-    public boolean disableCompression() {
+    private boolean _disableCompression0() {
         return this.isGeyser && floodgateNoCompression;
     }
 
@@ -291,37 +314,50 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private void write0(PacketOut packet, ChannelPromise promise) {
         ByteBuf buf;
         State state;
+        Class<?> clazz;
         if (packet instanceof PacketSnapshot snapshot) {
-            if (this.disableCompression()) buf = snapshot.getEncodedNoCompression(this.version());
-            else buf = snapshot.getEncoded(this.version());
+            if (this.disableCompression) buf = snapshot.getEncodedNoCompression(this.version(), this.channel);
+            else buf = snapshot.getEncoded(this.version(), this.channel);
 
             state = snapshot.state;
+            clazz = snapshot.packet.getClass();
         } else {
             buf = encodeToRaw0(packet, this.encoderMappings, this.version(), this.compression, true);
             state = State.getState(packet);
+            clazz = packet.getClass();
+            if (NanoLimbo.debugRawEncodes)
+                new Exception("encodeToRaw0").printStackTrace();
         }
+        this.lastOut = clazz;
 
         var encoderState = this.connection.getEncoderState();
         if (encoderState != state
-                && encoderState != State.HANDSHAKING)//exempt handshaking state
+            && encoderState != State.HANDSHAKING)//exempt handshaking state
             throw new AlixError("co tu się kurwa odpierdala - " + packet + " encoder=" + encoderState + " packet=" + state);
 
         //Log.error("OUT BUF: " + Arrays.toString(new ByteMessage(buf).toByteArray()));
 
         //Log.error("PRE TO ENCRYPT BYTES:");
         //PacketUtils.debugBytes(buf);
+        if (NanoLimbo.validateWrites)
+            PacketUtils.validateOut(buf, null, this.compression, this.encoderMappings, this.version());
 
         ByteBuf out = this.tryEncrypt(buf);
-        ChannelOutboundBuffer outboundBuffer = this.channel.unsafe().outboundBuffer();
+        //ChannelOutboundBuffer outboundBuffer = this.channel.unsafe().outboundBuffer();
 
         /*if (NanoLimbo.debugPackets && false)
             PacketUtils.validateOutCopy(out, this.cipher, this.compression, this.encoderMappings, this.version());*/
 
-        if (outboundBuffer != null) outboundBuffer.addMessage(out, out.readableBytes(), promise);
-        else out.release();
+        if (NanoLimbo.validateWrites && out.refCnt() == 0)
+            Log.warning("cnt=" + out.refCnt());
+
+        this.channel.unsafe().write(out, promise);
+        /*if (outboundBuffer != null) outboundBuffer.addMessage(out, out.readableBytes(), promise);
+        else out.release();*/
     }
 
-    public static ChannelPromise write0(Channel channel, PacketSnapshot packet, Version version, ChannelPromise promise) {
+    @SneakyThrows
+    public static ChannelPromise write0(Channel channel, PacketSnapshot packet, CipherHandler cipher, Version version, ChannelPromise promise) {
         if (!channel.eventLoop().inEventLoop()) {
             channel.close();
             throw new AlixError("write0 not in EventLoop");
@@ -331,14 +367,23 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
             throw new AlixError("debugCipher: " + channel.pipeline().names());
         }
 
-        if (NanoLimbo.debugPackets) Log.error("write0 - " + packet.getPacket());
-
         boolean noCompression = floodgateNoCompression && NanoLimbo.INTEGRATION.geyserUtil().isBedrock(channel);
-        ByteBuf buf = noCompression ? packet.getEncoded(version) : packet.getEncodedNoCompression(version);
-        ChannelOutboundBuffer outboundBuffer = channel.unsafe().outboundBuffer();
+        ByteBuf buf = noCompression ? packet.getEncodedNoCompression(version, channel) : packet.getEncoded(version, channel);
 
-        if (outboundBuffer != null) outboundBuffer.addMessage(buf, buf.readableBytes(), promise);
-        //else buf.release();
+        if (NanoLimbo.debugPackets) {
+            Log.error("write0 - " + packet.getPacket() + " COMPRESS=" + (!noCompression));
+        }
+
+        if (NanoLimbo.validateWrites)
+            PacketUtils.validateOut(buf, null, noCompression ? null : GlobalCompressionHandler.INSTANCE, packet.state.clientBound.getRegistry(version), version);
+
+        //ChannelOutboundBuffer outboundBuffer = channel.unsafe().outboundBuffer();
+
+        ByteBuf out = CipherHandler.encrypt(buf, cipher);
+
+        channel.unsafe().write(out, promise);
+        /*if (outboundBuffer != null) outboundBuffer.addMessage(out, out.readableBytes(), promise);
+        else out.release();*/
 
         return promise;
     }
@@ -374,7 +419,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     //prevent the events from being passed onto the other handlers
 
     private boolean passRegistration() {
-        return this.connection.getVerifyState() instanceof LoginState;
+        return this.connection.getVerifyState().isLoginState();
     }
 
     @Override

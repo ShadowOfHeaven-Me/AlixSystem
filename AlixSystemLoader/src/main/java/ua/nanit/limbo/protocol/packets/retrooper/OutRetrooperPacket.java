@@ -12,4 +12,9 @@ public abstract class OutRetrooperPacket<T extends PacketWrapper> extends Retroo
     protected OutRetrooperPacket(Class<T> wrapperClazz) {
         super(wrapperClazz);
     }
+
+
+    /*public <R extends OutRetrooperPacket<T>> R copy() {
+        this.getClass().getConstructor().newInstance();
+    }*/
 }

@@ -20,14 +20,18 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public final class UserManager {
 
-    private static final Map<UUID, AlixUser> USERS = new MapMaker()
+    private static final Map<UUID, AlixUser> USERS = new ConcurrentHashMap<>
+            (Bukkit.getMaxPlayers() << 1);//always use more buckets to lessen the chance of a hash collision
+
+    /*new MapMaker()
             .initialCapacity(Bukkit.getMaxPlayers() << 1)//always use more buckets to lessen the chance of a hash collision
             //.weakValues()//auto clean-up for failed logins
-            .makeMap();
+            .makeMap();*/
 
     //the default size of 16 will do, since the joining players are only stored here since connection till login start
     private static final Map<String, User> CONNECTING_USERS = new MapMaker().weakValues().makeMap();

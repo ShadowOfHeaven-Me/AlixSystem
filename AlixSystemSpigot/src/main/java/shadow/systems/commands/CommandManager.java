@@ -1545,6 +1545,7 @@ public final class CommandManager {
 
             switch (a.length) {
                 case 1:
+                    //todo: reconsider
                     tryRegisterIfValid(user, a[0]);//tolerate single password input, even if repeat is explicitly enabled in config
                     return;
                 case 2:

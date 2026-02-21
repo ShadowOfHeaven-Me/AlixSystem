@@ -25,4 +25,8 @@ public final class PacketPlayerAbilities extends OutRetrooperPacket<WrapperPlayS
     public PacketPlayerAbilities() {
         super(WrapperPlayServerPlayerAbilities.class);
     }
+
+    public PacketPlayerAbilities(WrapperPlayServerPlayerAbilities wrapper) {
+        super(wrapper);
+    }
 }

@@ -17,7 +17,8 @@ final class FloodgateHelper {
         if (!Dependencies.isBedrock(channel)) return true;
 
         // kick the player, if necessary
-        String kickMessage = channel.hasAttr(kickMessageAttribute) ? channel.attr(kickMessageAttribute).get() : "<No kick message>";
+        //Not sure if this is correct
+        String kickMessage = channel.hasAttr(kickMessageAttribute) ? channel.attr(kickMessageAttribute).get() : null;// "<No kick message>";
         if (kickMessage != null) {
             MethodProvider.kickAsyncLoginDynamic(channel, kickMessage);
             return false;

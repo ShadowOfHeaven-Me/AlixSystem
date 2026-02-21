@@ -1,7 +1,7 @@
 package ua.nanit.limbo.server.data;
 
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.PacketTitleLegacy;
 import ua.nanit.limbo.protocol.packets.play.PacketTitleSetSubTitle;
 import ua.nanit.limbo.protocol.packets.play.PacketTitleSetTitle;

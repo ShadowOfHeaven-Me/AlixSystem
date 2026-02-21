@@ -25,6 +25,8 @@ max-total-accounts: 1
 anti-vpn: true
 #Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join-during-high-traffic' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
 antibot-service: true
+#Defines whether Alix should load its built-in "bad ips" file into the fast-blocking Firewall system. Setting this to false can save a bit of RAM
+load-builtin-ips: true
 #Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
 validate-name: true
 
@@ -146,7 +148,7 @@ assume-non-premium-if-auth-failed: true
 # safe - Only 1.20.5+ client connections will be encrypted (no risk of disconnecting)
 # never - Will never try to enable encryption (Except for side effects of checking the client's premium status)
 encrypt-connection: safe
-#Defines the commands invoked after a successful register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
+#Defines the commands invoked after a successful, manual register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
 #An example would be
 #- say 3333 %name% -p"
@@ -155,8 +157,10 @@ after-register-commands:
 after-login-commands:
 #Works exactly like the parameters above but invoked on an automatic register (premium register)
 after-auto-register-commands:
-#Works exactly like the parameters above but invoked on an automatic login (premium login or ip auto-login)
+#Works exactly like the parameters above but invoked on an automatic login (premium login or ip auto-login!)
 after-auto-login-commands:
+#Works exactly like the parameters above but invoked on a premium register/login
+after-any-premium-join-commands:
 
 
 #----------------------------------------------#

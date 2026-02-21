@@ -9,7 +9,7 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryItems;
@@ -79,8 +79,7 @@ public final class LimboPinBuilder implements LimboGUI {
     }
 
     private void spoofAllItems() {
-        if (this.spoofWithSnapshot) this.duplexHandler.writeAndFlush(invItemsPacket);
-        else this.duplexHandler.writeAndFlush(new PacketPlayOutInventoryItems(this.items));
+        this.duplexHandler.writeAndFlush(this.spoofWithSnapshot ? invItemsPacket : new PacketPlayOutInventoryItems(this.items));
     }
 
     private void setItem(int i, ItemStack item) {

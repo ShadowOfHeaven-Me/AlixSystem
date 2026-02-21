@@ -217,7 +217,8 @@ not-logged-in-reminder: &cPlease type /login <password>
 online-player-list: Online Player List ({0} Currently Online)
 packet-limit-reached-verification: &c[AntiBot] You've sent too many total packets!
 password-changed: &aSuccessfully changed your password!
-password-invalid-character-invalid: Invalid character: '{0}'!
+password-invalid-character: Invalid character '{1}' at "{0}&c{1}&7{2}" <- HERE
+password-invalid-character-blank: Invalid character '{1}' (Blank) at "{0}&c{1}&7{2}" <- HERE
 password-invalid-gui: &cINVALID PASSWORD
 password-invalid-too-long: Too long!
 password-invalid-too-short: Too short!
@@ -238,7 +239,7 @@ ping-before-join: &cYou must first add this server to you server list and refres
 ping-check-failed: &cYou've failed the ping check, try joining later with a better connection!
 player-already-online: This player is already online!
 player-already-op: &cERROR: Player {0} is already an operator.
-player-data-not-found: &cPlayer {0} is not in the AlixSystem's User Library!
+player-data-not-found: &cPlayer {0} is not in the AlixSystem User Library!
 player-feed: Player {0} has been fed!
 player-healed: Player {0} has been healed!
 player-not-banned: &cERROR: Player named {0} is not banned!

@@ -1,7 +1,7 @@
 package ua.nanit.limbo.connection.login.packets;
 
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetExperience;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.xp.PacketPlayOutExperience;
 
 import static alix.common.utils.config.ConfigParams.maxLoginTime;

@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.connection;
 
+import alix.common.data.fingerprinting.FingerprintManager;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -24,6 +25,7 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.captcha.blocks.BlockPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
@@ -31,8 +33,8 @@ import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.protocol.PacketIn;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.PacketSnapshot;
-import ua.nanit.limbo.protocol.PacketSnapshots;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
@@ -87,6 +89,13 @@ public class ClientConnection {
         updateState(State.HANDSHAKING);
 
         this.verifyState = state.apply(this);
+
+        if (NanoLimbo.debugAllDisconnects) {
+            Log.warning("CONNECT AT=" + channel);
+            channel.closeFuture().addListener(f -> {
+                new Exception("DISCONNECT AT=").printStackTrace();
+            });
+        }
     }
 
     public void verify() {
@@ -105,9 +114,13 @@ public class ClientConnection {
         //Log.info("Brotha you got verified");
 
         if (useTransfer && this.clientVersion.moreOrEqual(Version.V1_20_5)) {
-
             String host = this.handshakePacket.getExtractedHost(); //this.server.getIntegration().getServerIP();
             int port = this.handshakePacket.getPort(); //this.server.getIntegration().getPort();
+
+            //this.writeAndFlushPacket(PacketPlayOutSpawnEntity.of(1, UUID.randomUUID(), EntityTypes.ALLAY, new Vector3d(0, 64, 2)));
+
+            //this.writeAndFlushPacket(new PacketPlayOutTransfer().setHost(host).setPort(port));
+            //this.flush();
 
             this.sendPacketAndClose(new PacketPlayOutTransfer().setHost(host).setPort(port));
         } else this.sendPacketAndClose(REJOIN);
@@ -267,7 +280,7 @@ public class ClientConnection {
         server.getConnections().addConnection(this);
 
         // Preparing for configuration mode
-        if (clientVersion.moreOrEqual(Version.V1_20_2)) {
+        if (this.hasConfigPhase()) {
             updateEncoderState(State.CONFIGURATION);
             return;
         }
@@ -329,8 +342,22 @@ public class ClientConnection {
             if (!this.duplexHandler.isGeyser) {
                 //Why do 1.8 clients duplicate this singular block onto the neighbouring, not sent chunks?
                 writePacket(BlockPackets.DECOY);//sent before the chunk - should be ignored by the client
-                writePacket(PacketSnapshots.MIDDLE_CHUNK);
+
+                writePackets(PacketSnapshots.PACKETS_EMPTY_CHUNKS);
+
+//                if (this.verifyState.isLoginState())
+//                    this.writePackets(PacketSnapshots.PACKETS_EMPTY_CHUNKS);//help get out of "loading terrain..."
+//                else
+//                    this.writePacket(PacketSnapshots.MIDDLE_CHUNK);//the automatic responses provided by the client at PLAY state can still happen
+
+                //writePacket(PacketSnapshots.MIDDLE_CHUNK);
             }
+            //could help prevent being stuck in the "loading terrain..." screen
+            //src: https://minecraft.wiki/w/Java_Edition_protocol/FAQ#%E2%80%A6my_player_isn't_spawning!
+            //Probably changed from 'info' to 'update_info' in 1.19.3: https://mappings.dev/history/5249a7b578.html
+            if (clientVersion.moreOrEqual(Version.V1_19_3))
+                writePacket(PacketSnapshots.PACKET_INFO_UPDATE);
+
             //if (clientVersion.moreOrEqual(Version.V1_9))
             //if (clientVersion.moreOrEqual(Version.V1_9)) writePacket(new PacketUnloadChunk());
             //writePacket(new PacketPlayOutBlockUpdate().setPosition(new Vector3i(0, 62, 0)).setType(StateTypes.DIRT));
@@ -394,6 +421,24 @@ public class ClientConnection {
             writePacket(PacketSnapshots.PACKET_REGISTRY_DATA);
         }
 
+        if (NanoLimbo.enableFingerprinting) {
+            //this.writeAndFlushPacket(FingerprintManager.NOT_LOADED_HIDER);
+            this.writeAndFlushPacket(FingerprintManager.INVALID_URLS[0]);
+            return;
+        }
+
+        /*if (this.verifyState.isLoginState() && this.clientVersion.moreOrEqual(Version.V1_21_6)) {
+            this.writeAndFlushPacket(PacketConfigOutShowDialog.of("hałasssssss"));
+            return;
+        }*/
+
+        this.finishConfig();
+    }
+
+    public boolean finishedConfig;
+
+    public void finishConfig() {
+        this.finishedConfig = true;
         writeAndFlushPacket(PacketSnapshots.PACKET_FINISH_CONFIGURATION);
     }
 

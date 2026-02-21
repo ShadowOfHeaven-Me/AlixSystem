@@ -3,6 +3,8 @@ package ua.nanit.limbo.connection.pipeline.flush;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.ScheduledFuture;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.server.Log;
 
 import java.util.concurrent.TimeUnit;
 
@@ -19,7 +21,15 @@ final class FlushBatcherImpl implements FlushBatcher {
     }
 
     private void flush0() {
-        FlushBatcher.flush0(this.channel);
+        if (!this.channel.isOpen())
+            return;
+
+        try {
+            FlushBatcher.flush0(this.channel);
+        } catch (Exception ex) {//during some packet writing at disconnect? I don fuckin know
+            if (NanoLimbo.debugMode)
+                Log.error("err during flush=", ex);
+        }
         this.flushTask = null;
     }
 

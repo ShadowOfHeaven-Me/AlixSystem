@@ -14,7 +14,7 @@ import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionSupplier;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.protocol.Packet;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Log;
@@ -38,22 +38,23 @@ public final class PacketUtils {
     }
 
     @SneakyThrows
-    public static void validateOutCopy(ByteBuf out, CipherHandler cipher, CompressionHandler compress, State.PacketRegistry mappings, Version version) {
+    public static void validateOut(ByteBuf out, CipherHandler cipher, CompressionHandler compress, State.PacketRegistry mappings, Version version) {
         if (out.readerIndex() != 0)
             throw new AlixError();
 
         if (NanoLimbo.debugBytes)
             debugBytes(out);
 
-        ByteBuf copy = out.copy();
-        decode(copy, cipher, compress, mappings, version);
+        //ByteBuf copy = out.copy();
+        decode(out.copy(), cipher, compress, mappings, version);
+        //out.readerIndex(0);
     }
 
     public static void decode(ByteBuf buf, CipherHandler cipher, CompressionHandler compress, State.PacketRegistry mappings, Version version) throws Exception {
         //We cannot decrypt our own packets
         //ByteBuf decrypted = CipherHandler.decrypt(buf, cipher);
         ByteBuf decrypted = buf;
-        if(cipher != null) throw new AlixError("CANNOT DECRYPT SELF");
+        if (cipher != null) throw new AlixError("CANNOT DECRYPT SELF");
         //PacketUtils.debugBytes(decrypted);
 
         int packetLen = FastNettyUtils.readVarInt(decrypted);
@@ -66,7 +67,7 @@ public final class PacketUtils {
         //the outgoing packet does not have a decode method impl
         if (decompressed.writerIndex() > 0 && decompressed.readerIndex() == 0) {
             var wrapperClazz = State.getWrapperClasses(packet).get(version);
-            //ignore MultiWrappers (PacketPlayOutMessage)
+            //ignore if none?
             if (wrapperClazz != null) {
                 var wrapper = WrapperUtils.alloc(decompressed, version.getRetrooperVersion(), wrapperClazz);
                 wrapper.read();
@@ -75,17 +76,17 @@ public final class PacketUtils {
         decompressed.release();
     }
 
-    public static void write(Channel channel, Version version, PacketSnapshot packet) {
-        PacketDuplexHandler.write0(channel, packet, version, channel.voidPromise());
+    public static void write(Channel channel, Version version, PacketSnapshot packet, CipherHandler cipher) {
+        PacketDuplexHandler.write0(channel, packet, cipher, version, channel.voidPromise());
     }
 
-    public static void writeAndFlush(Channel channel, Version version, PacketSnapshot packet) {
-        write(channel, version, packet);
+    public static void writeAndFlush(Channel channel, Version version, PacketSnapshot packet, CipherHandler cipher) {
+        write(channel, version, packet, cipher);
         channel.flush();
     }
 
-    public static void closeWith(Channel channel, Version version, PacketSnapshot packet) {
-        PacketDuplexHandler.write0(channel, packet, version, channel.newPromise()).addListener(UnsafeCloseFuture.INSTANCE);
+    public static void closeWith(Channel channel, Version version, PacketSnapshot packet, CipherHandler cipher) {
+        PacketDuplexHandler.write0(channel, packet, cipher, version, channel.newPromise()).addListener(UnsafeCloseFuture.INSTANCE);
     }
 
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, CompressionHandler handler, boolean pooled) {

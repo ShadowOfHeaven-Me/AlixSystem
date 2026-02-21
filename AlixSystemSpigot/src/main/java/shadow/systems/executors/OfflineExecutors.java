@@ -37,7 +37,6 @@ import shadow.utils.users.UserManager;
 import shadow.utils.users.Verifications;
 import shadow.utils.world.AlixWorld;
 import shadow.utils.world.AlixWorldHolder;
-import ua.nanit.limbo.util.UUIDUtil;
 
 import static shadow.utils.main.AlixUtils.*;
 
@@ -58,9 +57,9 @@ public final class OfflineExecutors extends UniversalExecutors {
             return;
 
         var uuid = e.getUniqueId();
-        boolean isPremium = VerifiedCache.isPremium(data, name, user);
+        //boolean isPremium = VerifiedCache.isPremium(data, name, user);
 
-        if (uuid.version() == 3 && isPremium) {
+        if (uuid.version() == 3 && VerifiedCache.isPremium(data, name, user)) {
             if (canOverride) {
                 var premiumUUID = data.getPremiumData().premiumUUID();
                 PaperReflection.override(e, premiumUUID);
@@ -68,11 +67,12 @@ public final class OfflineExecutors extends UniversalExecutors {
                 Main.logInfo("Late overriding of player's " + name + " non-premium uuid " + uuid + " with premium uuid " + premiumUUID);
             } else
                 Main.logWarning("Player " + name + " could not have his uuid late set to premium, despite config 'premium-uuid: true' & premium status! Report this as an error immediately!");
-            return;
+            //return;
         }
 
         //hmmm
-        if (uuid.version() == 4 && !isPremium) {
+        //disabled, for now
+        /*if (uuid.version() == 4 && !isPremium) {
             if (canOverride) {
                 var nonPremiumUUID = UUIDUtil.getOfflineModeUuid(name);
                 PaperReflection.override(e, nonPremiumUUID);
@@ -80,7 +80,7 @@ public final class OfflineExecutors extends UniversalExecutors {
                 Main.logInfo("Late overriding of player's " + name + " premium uuid " + uuid + " with non-premium uuid " + nonPremiumUUID);
             } else
                 Main.logWarning("Player " + name + " could not have his uuid late set to non-premium, despite config 'premium-uuid: true' & a non-premium status! Report this as an error immediately!");
-        }
+        }*/
     }
 
     //per https://github.com/LuckPerms/LuckPerms/blob/65c42b9b09be6510992c29b2f29b67bffb740232/bukkit/src/main/java/me/lucko/luckperms/bukkit/listeners/BukkitConnectionListener.java#L88
@@ -142,8 +142,7 @@ public final class OfflineExecutors extends UniversalExecutors {
 
             if (data.getPremiumData().getStatus().isPremium() && !__noPremiumAuthButKeepIdentity && VerifiedCache.removeAndCheckIfEquals(name, user))
                 LoginVerdictManager.addOnline(user, ip, data, false, e);
-            else
-                LoginVerdictManager.addOffline(user, ip, data, e);
+            else LoginVerdictManager.addOffline(user, ip, data, e);
             return;
         }
 

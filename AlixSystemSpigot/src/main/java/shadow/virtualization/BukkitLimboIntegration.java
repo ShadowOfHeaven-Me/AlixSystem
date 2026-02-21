@@ -22,7 +22,7 @@ import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.integration.PreLoginResult;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;

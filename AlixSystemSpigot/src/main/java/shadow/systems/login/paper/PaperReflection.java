@@ -6,7 +6,6 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-@SuppressWarnings("JavaReflectionMemberAccess")
 public final class PaperReflection {
 
     private static final Method getPlayerProfile, setId;

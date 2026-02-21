@@ -4,6 +4,8 @@ import alix.common.commands.file.CommandsFileManager;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
+import alix.common.data.premium.PremiumDataCache;
+import alix.common.data.premium.VerifiedCache;
 import alix.common.data.security.password.Password;
 import alix.common.login.LoginVerdict;
 import alix.common.login.LoginVerification;
@@ -19,7 +21,6 @@ import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.commands.LimboCommand;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
-import ua.nanit.limbo.connection.captcha.KeepAlives;
 import ua.nanit.limbo.connection.captcha.blocks.BlockPackets;
 import ua.nanit.limbo.connection.login.countdown.LimboCountdown;
 import ua.nanit.limbo.connection.login.gui.*;
@@ -27,8 +28,8 @@ import ua.nanit.limbo.connection.login.gui.bedrock.LimboBedrockGUI;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.PacketSnapshot;
-import ua.nanit.limbo.protocol.PacketSnapshots;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
 import ua.nanit.limbo.protocol.packets.play.config.PacketPlayInReconfigureAck;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInClickSlot;
@@ -42,8 +43,8 @@ import java.util.function.Consumer;
 
 import static alix.common.utils.config.ConfigProvider.config;
 import static ua.nanit.limbo.connection.login.gui.LimboPinBuilder.maxLoginAttempts;
-import static ua.nanit.limbo.protocol.PacketSnapshots.LOGIN_TITLE;
-import static ua.nanit.limbo.protocol.PacketSnapshots.REGISTER_TITLE;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.LOGIN_TITLE;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.REGISTER_TITLE;
 
 public final class LoginState implements VerifyState {
 
@@ -92,8 +93,12 @@ public final class LoginState implements VerifyState {
 
     private PersistentUserData register0(String password) {
         if (this.data != null) this.data.setPassword(password);
-        else this.data = PersistentUserData.createDefault(this.connection.getUsername(),
-                this.connection.getAddress().getAddress(), Password.fromUnhashed(password));
+        else {
+            this.data = PersistentUserData.createDefault(this.connection.getUsername(),
+                    this.connection.getAddress().getAddress(), Password.fromUnhashed(password));
+            if (VerifiedCache.getAndCheckIfEquals(this.connection.getUsername(), this.connection.getChannel()))
+                this.data.setPremiumData(PremiumDataCache.getOrUnknown(this.connection.getUsername()));
+        }
 
         this.logIn();
         return this.data;
@@ -251,7 +256,6 @@ public final class LoginState implements VerifyState {
 
     private boolean initDoubleVer() {
         if (data.getLoginParams().isDoubleVerificationEnabled() && loginVerification.isPhase1()) {
-
             var extraLoginType = data.getLoginParams().getExtraLoginType();
             var isSecondaryGui = extraLoginType != LoginType.COMMAND;
 
@@ -285,7 +289,7 @@ public final class LoginState implements VerifyState {
     @Override
     public void sendInitial() {
         this.write(PacketSnapshots.PLAYER_ABILITIES_FLY);
-        if (this.duplexHandler.isGeyser) this.write(BlockPackets.DECOY);
+        if (this.duplexHandler.isGeyser) this.write(BlockPackets.DECOY);//so the mf doesn't fall into the void
         //this.write(new PacketPlayerPositionAndLook(0.5, 64, 0.5, INITIAL_YAW, 0, 2));
         //this.write(new PacketPlayerPositionAndLook(0.5, 64, 0.5, 0, 0, 2));
 
@@ -318,6 +322,7 @@ public final class LoginState implements VerifyState {
 
     private void handleRegisterCommand(String[] args) {
         switch (args.length) {
+            //todo: reconsider
             case 1: {//accept single inputs, even if repeat is explicitly enabled
                 String password = args[0];
                 this.registerIfValid(password, LoginType.COMMAND);
@@ -385,18 +390,18 @@ public final class LoginState implements VerifyState {
         if (this.gui != null) this.gui.onCloseAttempt();
     }
 
-    private long lastKeepAliveSentTime;
+    //private long lastKeepAliveSentTime;
     private float lastYaw = 0;
 
     @Override
     public void handle(FlyingPacket packet) {
-        long now = System.currentTimeMillis();
+        /*long now = System.currentTimeMillis();
         long lastKeepAliveSent = now - lastKeepAliveSentTime;
 
-        if (lastKeepAliveSent >= 15000) {
+        if (lastKeepAliveSent >= 10000) {
             this.writeAndFlush(KeepAlives.KEEP_ALIVE_PREVENT_TIMEOUT);
             this.lastKeepAliveSentTime = now;
-        }
+        }*/
 
         var wrapper = packet.wrapper();
 

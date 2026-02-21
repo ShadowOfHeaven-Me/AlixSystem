@@ -4,7 +4,7 @@ import alix.common.data.LoginType;
 import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryOpen;
 
 public enum AnvilBuilderGoal {

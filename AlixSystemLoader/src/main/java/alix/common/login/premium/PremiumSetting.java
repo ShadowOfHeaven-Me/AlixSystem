@@ -32,7 +32,7 @@ public enum PremiumSetting {
                 return false;
             case UNKNOWN:
                 if (!PremiumSetting.requirePremium(data, uuid, clientPublicKey, version)) return false;
-                PremiumData newData = PremiumUtils.getOrRequestData(data, name);
+                PremiumData newData = PremiumUtils.getOrRequestAndCacheData(data, name);//getOrRequestData
 
                 data.setPremiumData(newData);
                 return newData.getStatus().isPremium();

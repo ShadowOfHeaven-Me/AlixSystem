@@ -4,7 +4,8 @@ import alix.common.login.skull.SkullTextures;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import io.netty.channel.Channel;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryItems;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -45,6 +46,7 @@ public abstract class AbstractAnvilBuilder<T extends AbstractAnvilBuilder> {
     private final AnvilBuilderGoal goal;
     private final boolean indicateInvalid;
     private final Consumer<T> flush;
+    private final CipherHandler cipher;
 
     protected AbstractAnvilBuilder(Channel channel, Version version, AnvilBuilderGoal goal, Consumer<T> flush) {
         this.channel = channel;
@@ -56,6 +58,7 @@ public abstract class AbstractAnvilBuilder<T extends AbstractAnvilBuilder> {
         this.invalidItems = goal.isUserVerified() ? itemsInvalidWithCancelPacket : itemsInvalidWithLeavePacket;
         this.openInv = goal.getInvOpen();
         this.flush = flush;
+        this.cipher = CipherHandler.encryptionFor(this.channel);
     }
 
     protected String input = "";
@@ -68,7 +71,12 @@ public abstract class AbstractAnvilBuilder<T extends AbstractAnvilBuilder> {
     }
 
     private void write(PacketSnapshot packet) {
-        PacketUtils.write(this.channel, this.version, packet);
+        /*if (true) {
+            Log.error("CIPHER= " + this.cipher);
+            return;
+        }*/
+        //Log.error("CIPHER= " + this.cipher);
+        PacketUtils.write(this.channel, this.version, packet, this.cipher);
     }
 
     public void updateText(String input) {

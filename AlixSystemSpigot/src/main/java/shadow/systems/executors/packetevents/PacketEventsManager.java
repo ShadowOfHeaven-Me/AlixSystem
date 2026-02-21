@@ -38,7 +38,7 @@ public final class PacketEventsManager {
 
     private static final class GeneralListener extends PacketListenerAbstract {
 
-        private static final boolean debugPackets = NanoLimbo.debugPackets;
+        private static final boolean debugPackets = NanoLimbo.debugServerPackets;
         private static final boolean onlineMode = Bukkit.getServer().getOnlineMode();
         private final PremiumAuthenticator premiumAuthenticator = new PremiumAuthenticator();
 

@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public abstract class AbstractVersionMap<T> {
+abstract class AbstractVersionMap<T> implements VersionMap<T> {
 
     private static final int LENGTH = Version.values().length;
     private final Object[] data;
@@ -34,6 +34,7 @@ public abstract class AbstractVersionMap<T> {
         return arr;
     }
 
+    @Override
     public Collection<T> valuesSnapshot() {
         List<T> list = new ArrayList<>(this.data.length);
         for (int i = 0; i < this.data.length; i++)
@@ -41,6 +42,7 @@ public abstract class AbstractVersionMap<T> {
         return list;
     }
 
+    @Override
     public final void forEach(Consumer<T> consumer) {
         for (int i = 0; i < this.data.length; i++) {
             T elem = this.getElement(this.data, i);
@@ -57,6 +59,7 @@ public abstract class AbstractVersionMap<T> {
         }
     }
 
+    @Override
     public final void put(Version version, T value) {
         //Objects.requireNonNull(version);
         Objects.requireNonNull(value);
@@ -67,21 +70,25 @@ public abstract class AbstractVersionMap<T> {
         if (!this.containsKey(version)) this.put(version, value);
     }
 
+    @Override
     public final T computeIfAbsent(Version version, Function<Version, T> function) {
         T value = this.get(version);
         if (value == null) this.put(version, value = function.apply(version));
         return value;
     }
 
+    @Override
     public final boolean containsKey(Version version) {
         return this.get(version) != null;
     }
 
+    @Override
     public final T get(Version version) {
         //Objects.requireNonNull(version);
         return this.getElement(this.data, version.ordinal());
     }
 
+    @Override
     public final T getOrDefault(Version version, T def) {
         T val = this.get(version);
         return val != null ? val : def;

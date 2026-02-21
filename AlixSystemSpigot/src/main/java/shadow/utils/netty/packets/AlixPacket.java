@@ -34,9 +34,9 @@ public interface AlixPacket {
         return new ConstAlixPacket(bufs);
     }
 
-    static AlixPacket constRawFromConst(ByteBuf... bufs) {
+    /*static AlixPacket constRawFromConst(ByteBuf... bufs) {
         return new ConstRawAlixPacket(bufs);
-    }
+    }*/
     /*static AlixPacket constant(PacketWrapper<?>... packetWrappers) {
         return new ConstantAlixPackets(packetWrappers);
     }

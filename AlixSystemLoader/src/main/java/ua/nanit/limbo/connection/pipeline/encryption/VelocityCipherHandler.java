@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 
 final class VelocityCipherHandler implements CipherHandler {
 
+    static final String CIPHER_ENCODER_NAME = "cipher-encoder";
     private static final Field ENCODE_CIPHER;
     private static final Field DECODE_CIPHER;
 
@@ -38,7 +39,7 @@ final class VelocityCipherHandler implements CipherHandler {
     VelocityCipherHandler(Channel channel) {
         var pipeline = channel.pipeline();
 
-        var encoderCtx = pipeline.context("cipher-encoder");
+        var encoderCtx = pipeline.context(CIPHER_ENCODER_NAME);
         var decoderCtx = pipeline.context("cipher-decoder");
 
         var encoder = (MessageToMessageEncoder<ByteBuf>) encoderCtx.handler();

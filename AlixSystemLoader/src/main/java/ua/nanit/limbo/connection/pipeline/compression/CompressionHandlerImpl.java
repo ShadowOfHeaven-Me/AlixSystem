@@ -4,7 +4,7 @@ import alix.common.utils.collections.queue.AlixQueue;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
-import alix.common.utils.netty.NettySafety;
+import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;

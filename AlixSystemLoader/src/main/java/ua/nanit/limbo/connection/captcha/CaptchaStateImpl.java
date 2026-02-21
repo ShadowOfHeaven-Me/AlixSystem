@@ -9,16 +9,16 @@ import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.captcha.held.HeldItemSlots;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.PacketSnapshot;
-import ua.nanit.limbo.protocol.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.server.Log;
 
 import java.util.concurrent.TimeUnit;
 
-import static ua.nanit.limbo.protocol.PacketSnapshots.TELEPORT_VALID_Y;
-import static ua.nanit.limbo.protocol.PacketSnapshots.TELEPORT_Y;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.TELEPORT_VALID_Y;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.TELEPORT_Y;
 
 final class CaptchaStateImpl {
 
@@ -291,7 +291,7 @@ final class CaptchaStateImpl {
         this.cancelTask();
         long delay = System.currentTimeMillis() - this.keepAliveSentTime;//the delay for both ways in millis
         //max wait time - network two-way delay + 150 millis for client ticks + 500 millis in back-up
-        long maxWaitTime = Math.min(delay + 150 + 500, 4000);
+        long maxWaitTime = 10_000;//Math.min(delay + 150 + 500, 4000);
         this.scheduleDisconnectTask(maxWaitTime, TimeUnit.MILLISECONDS);
         this.sent = System.currentTimeMillis();
         //Log.error("delay: " + delay + " maxWaitTime: " + maxWaitTime);
@@ -337,7 +337,7 @@ final class CaptchaStateImpl {
     void handle(WrapperPlayClientHeldItemChange packet) {
         int slot = packet.getSlot();
         this.failIf(slot == this.currentSlot//the player cannot send duplicate item selects
-                || slot < 0 || slot > 8);
+                    || slot < 0 || slot > 8);
         this.currentSlot = slot;
 
         if (this.awaitingHeldSlot && slot == HeldItemSlots.VALID_SLOT) {
@@ -414,20 +414,31 @@ final class CaptchaStateImpl {
         //and is spawned on X = Z = VALID_XZ
         this.failIf(!this.checkedCollision && (this.x != PacketSnapshots.VALID_XZ || this.z != PacketSnapshots.VALID_XZ));
 
-        this.failIf(!flying.hasPositionChanged() && this.isFalling/*|| flying.hasPositionChanged() && !this.isFalling*/);
-        int startFallingTick = version().moreOrEqual(Version.V1_9) ? 3 : 2;
+        //this.failIf(!flying.hasPositionChanged() && this.isFalling/*|| flying.hasPositionChanged() && !this.isFalling*/);
+        //int startFallingTick = version().moreOrEqual(Version.V1_9) ? 3 : 2;
 
-        //we received 4 or more (this packet included)
-        if (!NanoLimbo.allowFreeMovement && this.movementsReceived >= startFallingTick && !flying.isOnGround()) {
-            double predictedDeltaY = (this.lastDeltaY - 0.08) * 0.98;
-            double diff = this.deltaY - predictedDeltaY;
+        this.movementsReceived++;
+        if (!NanoLimbo.allowFreeMovement) {
+            //can't really go up (after the teleports)
+            this.failIf(this.deltaY > 0 && this.movementsReceived >= 3);
+            //we received 5 or more (this packet included) and the client still hasn't started falling. Hmmm
+            this.failIf(this.deltaY == 0 && this.movementsReceived >= 5);
 
-            if (NanoLimbo.debugMode)
-                Log.error("DELTA Y: %s PREDICTED: %s DIFF: %s", deltaY, predictedDeltaY, diff);
+            if (
+                //humour the client, if it wants to delay sending the actual movement packets
+                    this.deltaY < 0 /*&& this.movementsReceived >= startFallingTick*/
+                    && this.movementsReceived > 2//skip the two first teleport packet responses
+                    && !flying.isOnGround()) {
+                double predictedDeltaY = (this.lastDeltaY - 0.08) * 0.98;
+                double diff = this.deltaY - predictedDeltaY;
 
-            //a fair maximum deviation
-            //todo
-            this.failIf(Math.abs(diff) > 1.0E-5);
+                if (NanoLimbo.debugMode)
+                    Log.error("DELTA Y: %s PREDICTED: %s DIFF: %s", deltaY, predictedDeltaY, diff);
+
+                //a fair maximum deviation
+                //todo
+                this.failIf(Math.abs(diff) > 1.0E-5);
+            }
         }
 
         if (this.isCheckingCollision) {
@@ -477,7 +488,6 @@ final class CaptchaStateImpl {
             return;
         }
 
-        this.movementsReceived++;
         switch (this.movementsReceived) {
             case 1: {
                 this.failIf(!flying.hasRotationChanged());
@@ -537,8 +547,10 @@ final class CaptchaStateImpl {
         //this.duplexHandler.writeAndFlushPacket(new PacketPlayOutKeepAlive().setId(ThreadLocalRandom.current().nextInt()));
     }
 
+    private static final long TIMEOUT_SEC = 10;
+
     private void scheduleKickTask() {
-        this.scheduleDisconnectTask(4, TimeUnit.SECONDS);
+        this.scheduleDisconnectTask(TIMEOUT_SEC, TimeUnit.SECONDS);
     }
 
     private void failIf(boolean flag) {

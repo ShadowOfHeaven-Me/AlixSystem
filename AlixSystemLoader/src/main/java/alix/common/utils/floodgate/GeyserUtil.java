@@ -9,9 +9,10 @@ import java.util.UUID;
 
 public final class GeyserUtil {
 
-    private final boolean isFloodgatePresent;
+    private final boolean isGeyserPresent, isFloodgatePresent;
 
-    public GeyserUtil(boolean isFloodgatePresent) {
+    public GeyserUtil(boolean isGeyserPresent, boolean isFloodgatePresent) {
+        this.isGeyserPresent = isGeyserPresent;
         this.isFloodgatePresent = isFloodgatePresent;
     }
 
@@ -56,6 +57,6 @@ public final class GeyserUtil {
 
     public boolean isBedrock(@NotNull Channel channel) {
         //AlixCommonMain.logInfo("isFloodgatePresent && FloodgateAccess.isBedrock(channel)=" + (isFloodgatePresent && FloodgateAccess.isBedrock(channel)));
-        return isFloodgatePresent && FloodgateAccess.isBedrock(channel);
+        return isGeyserPresent && FloodgateAccess.isGeyserWrapperClazz(channel) || isFloodgatePresent && FloodgateAccess.hasFloodgatePlayerAttr(channel);
     }
 }

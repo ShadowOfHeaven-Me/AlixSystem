@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ua.nanit.limbo.protocol;
+package ua.nanit.limbo.protocol.snapshot;
 
 import alix.common.utils.collections.queue.AlixQueue;
 import alix.common.utils.collections.queue.ConcurrentAlixDeque;
@@ -23,21 +23,25 @@ import alix.common.utils.netty.BufUtils;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionSupplier;
-import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
+import ua.nanit.limbo.protocol.ByteMessage;
+import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Log;
+import ua.nanit.limbo.util.map.ConcurrentVersionMap;
+import ua.nanit.limbo.util.map.DefaultVersionMap;
 import ua.nanit.limbo.util.map.VersionMap;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * PacketSnapshot encodes a packet to byte array for each MC version.
@@ -48,10 +52,13 @@ public final class PacketSnapshot implements PacketOut {
     //private static final CompressionHandler COMPRESSION = GlobalCompressionHandler.INSTANCE;
     static final AlixQueue<PacketSnapshot> snapshots = new ConcurrentAlixDeque<>();
     public static final boolean floodgateNoCompression = NanoLimbo.INTEGRATION.isFloodgateNoCompressionPresent();
-    private final PacketOut packet;
+    public final PacketOut packet;
     public final State state;
     //private final Map<Version, ByteBuf> cache = new ConcurrentHashMap<>();
     private final VersionMap<ByteBuf> encodings;
+
+    //Runtime encoding:
+    private final Map<ByteBuf, Version> encoded;
 
     //Floodgate no compression support
     //private final AbstractVersionMap<ByteBuf> noCompressionEncodings;
@@ -63,7 +70,12 @@ public final class PacketSnapshot implements PacketOut {
     private PacketSnapshot(PacketOut packet) {
         this.packet = packet;
         this.state = State.getState(packet);
-        this.encodings = NanoLimbo.usePacketSnapshots ? encode0(packet, state, CompressionSupplier.GLOBAL) : null;
+        this.encodings = NanoLimbo.usePacketSnapshots ?
+                NanoLimbo.pregenerateSnapshots ? encode0(packet, state, CompressionSupplier.GLOBAL) : new ConcurrentVersionMap<>()
+                : null;
+
+        this.encoded = NanoLimbo.pregenerateSnapshots ? null : new ConcurrentHashMap<>(8);
+
         //encode(packet, CompressionSupplier.NULL_SUPPLIER)
         /*if (CompressionHandler.COMPRESSION_ENABLED)
             this.noCompressionEncodings = floodgateNoCompression ? new ConcurrentVersionMap<>() : null;
@@ -84,21 +96,29 @@ public final class PacketSnapshot implements PacketOut {
         });
     }
 
-    private ByteBuf getEnsureNotNull(Version version) {
-        //terrible performance, but this should only be used in debugging anyway
+    private static CompressionSupplier compress(Channel channel) {
+        return channel.eventLoop().inEventLoop() ? CompressionSupplier.supply(CompressionHandler.getHandler(channel)) : CompressionSupplier.GLOBAL;
+    }
+
+    private ByteBuf getEnsureNotNull(Version version, Channel channel) {
         if (!NanoLimbo.usePacketSnapshots)
-            return this.encodePacket(version, GlobalCompressionHandler.INSTANCE, true);
+            return this.encodePacket(version, compress(channel).getHandlerFor(this.packet, version, this.state), true);
 
         var buf = this.encodings.get(version);
+
+        //runtime encoding is enabled
         if (buf == null)
-            throw new AlixError("NULL ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
+            buf = encode0(this.encodings, this.encoded, version, this.packet, this.state, compress(channel));
+
+        if (buf == EMPTY)
+            throw new AlixError("NO ENCODING: VER: " + version + " PACKET: " + packet.getClass().getSimpleName());
         return buf;
     }
 
-    public ByteBuf getEncoded(Version version) {
+    public ByteBuf getEncoded(Version version, Channel channel) {
         if (NanoLimbo.debugSnapshots) Log.error("PACKET: " + this.packet + " version=" + version);
 
-        return this.getEnsureNotNull(version.getEncodingSafe());
+        return this.getEnsureNotNull(version.getEncodingSafe(), channel);
     }
 
     private ByteBuf encodePacket(Version version, CompressionHandler handler, boolean pooled) {
@@ -106,8 +126,8 @@ public final class PacketSnapshot implements PacketOut {
         return PacketDuplexHandler.encodeToRaw0(packet, mappings, version, handler, pooled);
     }
 
-    public ByteBuf getEncodedNoCompression(Version version) {
-        return CompressionHandler.COMPRESSION_ENABLED ? this.encodePacket(version, null, true) : this.getEncoded(version);
+    public ByteBuf getEncodedNoCompression(Version version, Channel channel) {
+        return CompressionHandler.COMPRESSION_ENABLED ? this.encodePacket(version, null, true) : this.getEncoded(version, channel);
         //ByteBuf encoding = this.noCompressionEncodings.computeIfAbsent(version, this::createEncodedNoCompression);
         //return this.ensureNotNull(encoding, version);
     }
@@ -147,34 +167,50 @@ public final class PacketSnapshot implements PacketOut {
 
     @SneakyThrows
     private static VersionMap<ByteBuf> encode0(PacketOut packet, State state, CompressionSupplier compressionSupplier) {
-        VersionMap<ByteBuf> encodings = new VersionMap<>();
+        VersionMap<ByteBuf> encodings = new DefaultVersionMap<>();
         Map<ByteBuf, Version> encoded = new HashMap<>();
 
         for (Version version : Version.values()) {
-            if (version.isUndefined()) continue;
+            encode0(encodings, encoded, version, packet, state, compressionSupplier);
+        }
+        return encodings;
+    }
 
-            State.PacketRegistry mappings = state.clientBound.getRegistry(version);
+    private static final ByteBuf EMPTY = Unpooled.EMPTY_BUFFER;
+
+    @NotNull
+    private static ByteBuf encode0(VersionMap<ByteBuf> encodings, Map<ByteBuf, Version> encoded, Version version, PacketOut packet, State state, CompressionSupplier compressionSupplier) {
+        if (version.isUndefined()) {
+            encodings.put(version, EMPTY);
+            return EMPTY;
+        }
+
+        State.PacketRegistry mappings = state.clientBound.getRegistry(version);
                 /*if ((mappings == null || !mappings.hasPacket(packet.getClass())) && packet.getClass() == PacketPlayOutTransaction.class) {
                     Log.error("State: %s mappings %s hasPacket %s version %s", state, mappings, mappings.hasPacket(packet.getClass()), version);
                 }*/
-            if (mappings == null || !mappings.hasPacket(packet.getClass())) continue;
-
-            CompressionHandler compression = compressionSupplier.getHandlerFor(packet, version, state);
-
-            //Consider: Use a pooled buf for faster allocation, and later copy into an unpooled
-            ByteBuf buf = PacketDuplexHandler.encodeToRaw0(packet, mappings, version, compression, false);
-            Version alreadyCached = encoded.get(buf);
-
-            if (alreadyCached != null) {
-                encodings.put(version, encodings.get(alreadyCached));
-                buf.release();
-            } else {
-                encoded.put(buf, version);
-                encodings.put(version, BufUtils.constBuffer(buf));
-            }
-
+        if (mappings == null || !mappings.hasPacket(packet.getClass())) {
+            encodings.put(version, EMPTY);
+            return EMPTY;
         }
-        return encodings;
+
+        CompressionHandler compression = compressionSupplier.getHandlerFor(packet, version, state);
+
+        //Consider: Use a pooled buf for faster allocation, and later copy into an unpooled
+        ByteBuf buf = PacketDuplexHandler.encodeToRaw0(packet, mappings, version, compression, false);
+        Version alreadyCached = encoded.get(buf);
+
+        if (alreadyCached != null) {
+            var cached = encodings.get(alreadyCached);
+            encodings.put(version, cached);
+            buf.release();
+            return cached;
+        } else {
+            var constBuf = BufUtils.constBuffer(buf);
+            encoded.put(buf, version);
+            encodings.put(version, constBuf);
+            return constBuf;
+        }
     }
 
     public Collection<ByteBuf> buffers() {
@@ -236,7 +272,15 @@ public final class PacketSnapshot implements PacketOut {
         return this;
     }
 
+    private static final Set<PacketOut> SNAPSHOTS = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    private static PacketOut validate(PacketOut packet) {
+        if (!SNAPSHOTS.add(packet))
+            throw new AlixError("Cannot snapshot the same packet twice! - " + packet.getClass());
+        return packet;
+    }
+
     public static PacketSnapshot of(PacketOut packet) {
-        return packet instanceof PacketSnapshot snapshot ? snapshot : new PacketSnapshot(packet);
+        return packet instanceof PacketSnapshot snapshot ? snapshot : new PacketSnapshot(validate(packet));
     }
 }

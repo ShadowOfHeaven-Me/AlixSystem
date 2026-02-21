@@ -27,6 +27,8 @@ import io.netty.util.collection.IntObjectMap;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.*;
 import ua.nanit.limbo.protocol.packets.configuration.*;
+import ua.nanit.limbo.protocol.packets.configuration.resourcepack.PacketConfigInResourcePackResponse;
+import ua.nanit.limbo.protocol.packets.configuration.resourcepack.PacketConfigOutResourcePack;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.*;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
@@ -46,12 +48,14 @@ import ua.nanit.limbo.protocol.packets.play.config.PacketPlayOutReconfigure;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieRequest;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieStore;
+import ua.nanit.limbo.protocol.packets.play.dialog.PacketConfigOutShowDialog;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutEntityMetadata;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutSpawnEntity;
 import ua.nanit.limbo.protocol.packets.play.explosion.PacketPlayOutExplosion;
 import ua.nanit.limbo.protocol.packets.play.held.PacketPlayInHeldSlot;
 import ua.nanit.limbo.protocol.packets.play.held.PacketPlayOutHeldSlot;
+import ua.nanit.limbo.protocol.packets.play.info.PacketPlayOutInfoUpdate;
 import ua.nanit.limbo.protocol.packets.play.inventory.*;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInConfigKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketInPlayKeepAlive;
@@ -77,7 +81,8 @@ import ua.nanit.limbo.protocol.packets.play.xp.PacketPlayOutExperience;
 import ua.nanit.limbo.protocol.packets.status.PacketInStatusPing;
 import ua.nanit.limbo.protocol.packets.status.PacketOutStatusPing;
 import ua.nanit.limbo.protocol.packets.status.PacketStatusRequest;
-import ua.nanit.limbo.util.map.VersionMap;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.util.map.DefaultVersionMap;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -120,9 +125,12 @@ public enum State {
             clientBound.registerRetrooper(PacketKnownPacks::new, PacketType.Configuration.Server.SELECT_KNOWN_PACKS);
             clientBound.registerRetrooper(PacketUpdateTags::new, PacketType.Configuration.Server.UPDATE_TAGS);
             clientBound.registerRetrooper(PacketRegistryData::new, PacketType.Configuration.Server.REGISTRY_DATA);
+            clientBound.registerRetrooper(PacketConfigOutResourcePack::new, PacketType.Configuration.Server.RESOURCE_PACK_SEND);
+            clientBound.registerRetrooper(PacketConfigOutShowDialog::new, PacketType.Configuration.Server.SHOW_DIALOG);
 
             serverBound.registerRetrooper(() -> PacketInFinishConfiguration.INSTANCE, PacketType.Configuration.Client.CONFIGURATION_END_ACK);
             serverBound.registerRetrooper(PacketInConfigKeepAlive::new, PacketType.Configuration.Client.KEEP_ALIVE);
+            serverBound.registerRetrooper(PacketConfigInResourcePackResponse::new, PacketType.Configuration.Client.RESOURCE_PACK_STATUS);
         }
     },
     PLAY {
@@ -193,6 +201,7 @@ public enum State {
             clientBound.registerRetrooper(PacketPlayerPositionAndLook::new, PacketType.Play.Server.PLAYER_POSITION_AND_LOOK);
             clientBound.registerMultiWrapper(PacketPlayOutMessage::new);
             clientBound.registerRetrooper(PacketPlayerInfo::new, PacketType.Play.Server.PLAYER_INFO);
+            clientBound.registerRetrooper(PacketPlayOutInfoUpdate::new, PacketType.Play.Server.PLAYER_INFO_UPDATE);
             clientBound.registerRetrooper(PacketTitleLegacy::new, PacketType.Play.Server.TITLE);
             clientBound.registerRetrooper(PacketTitleSetTitle::new, PacketType.Play.Server.SET_TITLE_TEXT);
             clientBound.registerRetrooper(PacketTitleSetSubTitle::new, PacketType.Play.Server.SET_TITLE_SUBTITLE);
@@ -224,7 +233,7 @@ public enum State {
         return packet instanceof PacketSnapshot snapshot ? snapshot.state : ProtocolMappings.clazzToState.get(packet.getClass());
     }
 
-    public static VersionMap<Class<? extends PacketWrapper<?>>> getWrapperClasses(Packet packet) {
+    public static DefaultVersionMap<Class<? extends PacketWrapper<?>>> getWrapperClasses(Packet packet) {
         return ProtocolMappings.clazzToWrapper.get(packet.getClass());
     }
 
@@ -264,9 +273,9 @@ public enum State {
     public static final class ProtocolMappings<T extends Packet> {
 
         private static final Map<Class<? extends Packet>, State> clazzToState = new IdentityHashMap<>();
-        private static final Map<Class<? extends Packet>, VersionMap<Class<? extends PacketWrapper<?>>>> clazzToWrapper = new IdentityHashMap<>();
+        private static final Map<Class<? extends Packet>, DefaultVersionMap<Class<? extends PacketWrapper<?>>>> clazzToWrapper = new IdentityHashMap<>();
         //No need to use ConcurrentVersionMap here
-        private final VersionMap<PacketRegistry> registry = new VersionMap<>();
+        private final DefaultVersionMap<PacketRegistry> registry = new DefaultVersionMap<>();
         private final State state;
 
         private ProtocolMappings(State state) {
@@ -285,7 +294,7 @@ public enum State {
                 throw new AlixError("Packet clazz duplicate! - " + clazz.getSimpleName());
         }
 
-        private static void register0(Supplier<? extends Packet> packet, State state, VersionMap<Class<? extends PacketWrapper<?>>> arr) {
+        private static void register0(Supplier<? extends Packet> packet, State state, DefaultVersionMap<Class<? extends PacketWrapper<?>>> arr) {
             Class<? extends Packet> clazz = packet.get().getClass();
             registerAndEnsureNoDuplicate(clazz, state);
 
@@ -297,14 +306,14 @@ public enum State {
             for (int i = 0; i < arr.length; i++)
                 arr[i] = types[i].getWrapperClass();*/
 
-            register0(packet, state, VersionMap.filledWith(type.getWrapperClass()));
+            register0(packet, state, DefaultVersionMap.filledWith(type.getWrapperClass()));
             /*if (PacketIn.class.isAssignableFrom(clazz))
                 HandleMask.register(clazz);*/
         }
 
         //private static final Set<PacketTypeCommon> packets = new HashSet<>();
 
-        private void register0(Supplier<T> packet, ToIntFunction<Version> idFunc, VersionMap<Class<? extends PacketWrapper<?>>> arr) {
+        private void register0(Supplier<T> packet, ToIntFunction<Version> idFunc, DefaultVersionMap<Class<? extends PacketWrapper<?>>> arr) {
             register0(packet, this.state, arr);
 
             this.register1(packet, idFunc);
@@ -329,8 +338,8 @@ public enum State {
 
         private void registerMultiWrapper(Supplier<T> packet) {
             var inst = packet.get();
-            VersionMap<PacketWrapper<?>> map = new VersionMap<>();
-            VersionMap<Class<? extends PacketWrapper<?>>> classes = new VersionMap<>();
+            DefaultVersionMap<PacketWrapper<?>> map = new DefaultVersionMap<>();
+            DefaultVersionMap<Class<? extends PacketWrapper<?>>> classes = new DefaultVersionMap<>();
             for (Version version : Version.values()) {
                 if (!version.isSupported()) continue;
 

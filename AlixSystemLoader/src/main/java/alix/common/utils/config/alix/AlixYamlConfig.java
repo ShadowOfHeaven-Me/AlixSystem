@@ -6,6 +6,8 @@ import alix.common.utils.file.AlixFileManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 public final class AlixYamlConfig {
@@ -24,8 +26,16 @@ public final class AlixYamlConfig {
     @NotNull
     public String get(String path, @NotNull String def) {
         String val = this.file.values.get(path);
-        if (val == null)
-            AlixCommonMain.logWarning("Config '" + path + "' param not found");
+        if (val == null) {
+            List<String> list = this.file.lists.get(path);
+            //can't really have an empty list here, but whatever
+            if (list == null || list.isEmpty())
+                AlixCommonMain.logWarning("Config '" + path + "' param not found");
+            else {
+                val = list.get(0);
+                AlixCommonMain.logWarning("Config '" + path + "' param has a list-like structure " + list + ", using " + path + "=" + val);
+            }
+        }
         return val != null ? val.trim() : def;
     }
 
@@ -33,9 +43,33 @@ public final class AlixYamlConfig {
         return this.get(path, "");
     }
 
+    @NotNull
+    public <T> List<T> getList(String path, Function<String, T> transformer) {
+        List<String> list = this.file.lists.get(path);
+        if (list == null || list.isEmpty()) {//again, can't be empty
+            String val = this.file.values.get(path);
+
+            if (val == null)
+                AlixCommonMain.logWarning("Config '" + path + "' param not found");
+            else {
+                //tolerate
+                list = List.of(val);
+            }
+        }
+        List<T> transformed = new ArrayList<>(list.size());
+        for (String s : list)
+            transformed.add(transformer.apply(s));
+        return transformed;
+    }
+
+    public List<String> getStringList(String path) {
+        return this.getList(path, AlixYamlConfig::removeQuotations);
+    }
+
     public String getString(String path, String def) {
         return removeQuotations(this.get(path, def));
     }
+
     public String getString(String path) {
         return this.getString(path, "");
     }

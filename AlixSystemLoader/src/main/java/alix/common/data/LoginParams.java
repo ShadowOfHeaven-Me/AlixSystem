@@ -84,7 +84,7 @@ public final class LoginParams {
     }
 
     public boolean getIpAutoLogin() {
-        return ipAutoLogin == null ? ConfigParams.playerIPAutoLogin : ipAutoLogin;//default to config it not set manually by the user
+        return ipAutoLogin == null ? ConfigParams.playerIPAutoLogin : ipAutoLogin;//default to config if not set manually by the user
     }
 
     public void setIpAutoLogin(boolean ipAutoLogin) {

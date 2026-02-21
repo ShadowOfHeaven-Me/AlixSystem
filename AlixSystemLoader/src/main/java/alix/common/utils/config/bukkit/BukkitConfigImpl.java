@@ -4,6 +4,8 @@ import alix.loaders.bukkit.BukkitAlixMain;
 import alix.common.utils.config.ConfigProvider;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.util.List;
+
 public final class BukkitConfigImpl implements ConfigProvider {
 
     private final YamlConfiguration config = (YamlConfiguration) BukkitAlixMain.instance.getConfig();
@@ -31,5 +33,10 @@ public final class BukkitConfigImpl implements ConfigProvider {
     @Override
     public String getString(String s) {
         return config.getString(s);
+    }
+
+    @Override
+    public List<String> getStringList(String s) {
+        return this.config.getStringList(s);
     }
 }

@@ -1,27 +1,25 @@
 package ua.nanit.limbo.util.map;
 
-import alix.common.utils.other.annotation.OptimizationCandidate;
+import ua.nanit.limbo.protocol.registry.Version;
 
-public final class VersionMap<T> extends AbstractVersionMap<T> {
+import java.util.Collection;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-    //An alternative to an EnumMap
-    public VersionMap() {
-    }
+public interface VersionMap<T> {
 
-    @Override
-    void setElement(Object[] data, int i, T val) {
-        data[i] = val;
-    }
+    void put(Version version, T value);
 
-    @Override
-    T getElement(Object[] data, int i) {
-        return (T) data[i];
-    }
+    T computeIfAbsent(Version version, Function<Version, T> function);
 
-    @OptimizationCandidate
-    public static <T> VersionMap<T> filledWith(T entry) {
-        VersionMap<T> map = new VersionMap<>();
-        map.fill(entry);
-        return map;
-    }
+    boolean containsKey(Version version);
+
+    T get(Version version);
+
+    T getOrDefault(Version version, T def);
+
+    void forEach(Consumer<T> consumer);
+
+    Collection<T> valuesSnapshot();
+
 }

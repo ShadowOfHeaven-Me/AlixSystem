@@ -4,6 +4,8 @@ import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.config.alix.AlixYamlConfig;
 import alix.common.utils.file.AlixFileManager;
 
+import java.util.List;
+
 public final class VelocityConfigImpl implements ConfigProvider {
 
     private final AlixYamlConfig config = new AlixYamlConfig(AlixFileManager.getOrCreatePluginFile("config.yml", AlixFileManager.FileType.CONFIG));
@@ -31,5 +33,10 @@ public final class VelocityConfigImpl implements ConfigProvider {
     @Override
     public String getString(String s) {
         return this.config.getString(s);
+    }
+
+    @Override
+    public List<String> getStringList(String s) {
+        return this.config.getStringList(s);
     }
 }

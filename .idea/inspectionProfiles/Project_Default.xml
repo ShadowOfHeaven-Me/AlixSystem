@@ -41,6 +41,7 @@
           <option value="http://0.0.0.0" />
           <option value="http://127.0.0.1" />
           <option value="http://activemq.apache.org/schema/" />
+          <option value="http://atlas.oraxen.com" />
           <option value="http://cxf.apache.org/schemas/" />
           <option value="http://ip-api.com" />
           <option value="http://java.sun.com/" />

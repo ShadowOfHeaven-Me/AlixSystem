@@ -17,8 +17,8 @@ public final class PacketPlayInChat extends InRetrooperPacket<WrapperPlayClientC
 
     @Override
     public boolean isSkippable(ClientConnection conn) {
-        return conn.getClientVersion().moreOrEqual(Version.V1_19) || !(conn.getVerifyState() instanceof LoginState)
-                || ((LoginState) conn.getVerifyState()).gui != null;
+        return conn.getClientVersion().moreOrEqual(Version.V1_19) || !(conn.getVerifyState().isLoginState())
+               || ((LoginState) conn.getVerifyState()).gui != null;
     }
 
     @Override

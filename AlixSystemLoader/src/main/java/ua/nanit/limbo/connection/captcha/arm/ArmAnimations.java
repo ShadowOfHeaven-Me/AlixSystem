@@ -1,8 +1,8 @@
 package ua.nanit.limbo.connection.captcha.arm;
 
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityAnimation;
-import ua.nanit.limbo.protocol.PacketSnapshot;
-import ua.nanit.limbo.protocol.PacketSnapshots;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayOutAnimation;
 
 public final class ArmAnimations {

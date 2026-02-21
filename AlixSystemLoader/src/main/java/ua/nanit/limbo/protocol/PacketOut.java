@@ -18,6 +18,7 @@
 package ua.nanit.limbo.protocol;
 
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 
 public interface PacketOut extends Packet {
 

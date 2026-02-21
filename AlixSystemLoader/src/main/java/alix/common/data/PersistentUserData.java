@@ -63,15 +63,15 @@ public final class PersistentUserData implements AlixUserData {
         this.createdAt = System.currentTimeMillis();
         UserFileManager.putData(this);
         //The GeoIPTracker add should not be invoked
+
+        this.saveToDatabase();
     }
 
     public void saveToDatabase() {
-        database.insertUser(this.name, this.uuid, this.createdAt);
-        var password = this.loginParams.getPassword();
-        if (password.isSet())
-            database.addPasswordAndLink(this.name, password);
-        else
-            database.clearPasswordPointer(this.name);
+        database.insertUser(this.name, this.uuid, this.createdAt, this.getPassword());
+        //this.setPasswordDatabase(password, this.getPassword());
+
+        database.setPremiumData(this.name, this.premiumData);
     }
 
     private UUID _uuid() {
@@ -201,13 +201,19 @@ public final class PersistentUserData implements AlixUserData {
     }
 
     public void setPassword(Password password) {
-        this.loginParams.setPassword(password);
+        this.setPasswordDatabase(password, this.getPassword());
 
-        database.updatePasswordByOwner(this.name, password);
+        this.loginParams.setPassword(password);
+    }
+
+    private void setPasswordDatabase(Password newPass, Password oldPass) {
+        database.setPassword(this.name, newPass, oldPass);
     }
 
     public void setPremiumData(@NotNull PremiumData premiumData) {
         this.premiumData = premiumData;
+
+        database.setPremiumData(this.name, premiumData);
     }
 
     public void resetPasswords() {

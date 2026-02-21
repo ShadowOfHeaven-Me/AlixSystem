@@ -18,7 +18,7 @@ import static alix.common.utils.AlixCommonUtils.generationChars;
 
 public final class Password {
 
-    public static final int MAX_PASSWORD_LEN = 30;
+    public static final int MAX_PASSWORD_LEN = 50;
     private static final SecureRandomCharIterator RANDOM_CHAR_ITERATOR = new SecureRandomCharIterator(AlixCommonUtils.shuffle(generationChars), SECURE_RANDOM);
     private final String hashedPassword;
     private final HashingAlgorithm hashing;
@@ -69,7 +69,7 @@ public final class Password {
     }
 
     public boolean isHashed() {
-        return hashing.hashId() != 0;
+        return hashing.isHashing();
     }
 
     public String getHashedPassword() {
@@ -139,6 +139,15 @@ public final class Password {
         input.readFully(passBytes);
         return fromHashed(new String(passBytes, StandardCharsets.UTF_8), hashId);
     }*/
+
+    public static Password commonHash(String str) {
+        var algo = Hashing.SHA256_MIGRATE;
+
+        String salt = Hashing.generateSalt();
+        String hashed = Hashing.hashSaltFirst(algo, str, salt);
+
+        return new Password(hashed, algo, salt, ALIX_FORMAT);
+    }
 
     public static Password fromBCryptMigrated(String bcryptStr) {
         return new Password(bcryptStr, Hashing.BCRYPT, "", BCRYPT_FORMAT);

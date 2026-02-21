@@ -29,7 +29,7 @@ import java.util.List;
 public enum Version {
 
     UNDEFINED(-1, List.of("UNDEFINED")),
-    //Remove 1.7.2-1.7.5 support, since packetevents only supports client versions from 1.7.6+
+    //Remove 1.7.2-1.7.5 support, since packetevents only supports client versions from 1.7.6+ (no longer true, 1.7.2 support is now present)
     //V1_7_2(4),
     // 1.7.2-1.7.5 has same protocol numbers
     V1_7_6(5, List.of("1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10")),

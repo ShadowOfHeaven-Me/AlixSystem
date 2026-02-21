@@ -3,9 +3,6 @@ package alix.common.database.connect;
 import alix.common.database.file.DatabaseConfig;
 import alix.common.database.file.DatabaseConfigInstance;
 import lombok.SneakyThrows;
-import org.mariadb.jdbc.Driver;
-
-import java.lang.invoke.MethodHandles;
 
 final class DatabaseMySQL extends AbstractDatabaseConnector {
 
@@ -19,7 +16,11 @@ final class DatabaseMySQL extends AbstractDatabaseConnector {
         //Is this fine?
         //AlixCommonMain.logError("shii=" + Thread.currentThread().getContextClassLoader() + ", " + BukkitAlixMain.class.getClassLoader());
         //Thread.currentThread().setContextClassLoader(AlixCommonMain.MAIN_CLASS_INSTANCE.getClass().getClassLoader());
-        MethodHandles.lookup().ensureInitialized(Driver.class);
+        //MethodHandles.lookup().ensureInitialized(Driver.class);
+
+        //var cl = BukkitAlixMain.class.getClassLoader();
+        //AlixCommonMain.logError("shii=" + Thread.currentThread().getContextClassLoader() + ", cl=" + cl + ", " + BukkitAlixMain.mainServerThread + ", " + BukkitAlixMain.mainServerThread.getContextClassLoader());
+        //Thread.currentThread().setContextClassLoader(cl);
         hikariConfig.setDriverClassName("org.mariadb.jdbc.Driver");
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
@@ -29,9 +30,16 @@ final class DatabaseMySQL extends AbstractDatabaseConnector {
         hikariConfig.setJdbcUrl(JDBC_URL
                 .replace("%host%", config.HOST)
                 .replace("%port%", String.valueOf(DatabaseConfig.getPort(this.getType())))
-                .replace("%database%", config.isMigrate() ? config.TABLE_NAME() : "alix"));
+                .replace("%database%", config.USER));
         hikariConfig.setMaxLifetime(config.MAX_LIFETIME);
     }
+
+    /*@Override
+    public void connect() {
+        //AlixCommonMain.logError("LOADER=" + Driver.class.getClassLoader() + " CCXCL=" + Thread.currentThread().getContextClassLoader());
+        //Thread.currentThread().setContextClassLoader(Driver.class.getClassLoader());
+        super.connect();
+    }*/
 
     @Override
     public DatabaseType getType() {

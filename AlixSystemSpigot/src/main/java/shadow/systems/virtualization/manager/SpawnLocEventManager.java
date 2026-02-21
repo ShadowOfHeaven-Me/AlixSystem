@@ -66,6 +66,7 @@ final class SpawnLocEventManager extends VirtualEventManager {
             setLocation.accept(newLoc);
     }
 
+    @SuppressWarnings("removal")
     static final class SpawnEventExecutor extends VirtualEventExecutor<PlayerSpawnLocationEvent> {
 
         SpawnEventExecutor() {

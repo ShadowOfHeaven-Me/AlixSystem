@@ -1,5 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
     id("java")
     id("java-library")
@@ -26,20 +24,26 @@ repositories {
     //paper
     maven("https://repo.papermc.io/repository/maven-public/")
     //geyser/floodgate
-    maven("https://repo.opencollab.dev/main/")
+    maven("https://repo.opencollab.dev/main")
+    /*maven {
+        name = "opencollabRepositoryMain"
+        url = uri("https://repo.opencollab.dev/main")
+    }*/
     //bungeecord
     //maven("https://oss.sonatype.org/content/repositories/snapshots")
 
 }
 /*tasks.shadowJar {
     val prefix = "alix.libs"
-    relocate("org.mariadb", "$prefix.org.mariadb")
+    relocate("org.mariadb.jdbc", "$prefix.org.mariadb.jdbc")
 }*/
+
 tasks.register("prepareKotlinBuildScriptModel") {}
 dependencies {
     //later see https://github.com/kyngs/LibreLogin/blob/master/Plugin/build.gradle.kts
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
+    implementation("org.postgresql:postgresql:42.7.8")
     implementation("at.favre.lib:bcrypt:0.10.2")
     implementation("net.kyori:adventure-text-minimessage:4.16.0")
 
@@ -60,7 +64,9 @@ dependencies {
 
 
     //compileOnlyApi("org.geysermc.geyser:api:2.4.2-SNAPSHOT")
-    compileOnlyApi("org.geysermc.floodgate:api:2.2.3-SNAPSHOT")
+
+    compileOnlyApi("org.geysermc.geyser:api:2.9.0-SNAPSHOT")
+    compileOnlyApi("org.geysermc.floodgate:api:2.2.4-SNAPSHOT")
 
     // https://mvnrepository.com/artifact/com.google.zxing/core
     api("com.google.zxing:core:3.4.0")// https://mvnrepository.com/artifact/com.google.zxing/javase

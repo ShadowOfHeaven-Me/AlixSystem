@@ -4,6 +4,7 @@ pluginManagement {
             url = uri("https://repo.kyngs.xyz/gradle-plugins")
         }
         maven("https://repo.papermc.io/repository/maven-public/")
+        maven("https://repo.opencollab.dev/main")
         gradlePluginPortal()
     }
 }

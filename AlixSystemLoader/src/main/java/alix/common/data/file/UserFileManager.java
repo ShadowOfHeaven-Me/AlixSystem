@@ -55,7 +55,7 @@ public final class UserFileManager {
 
     public static void putData(PersistentUserData data) {
         map.put(data.getName(), data);
-        data.saveToDatabase();
+        //data.saveToDatabase();
     }
 
     public static Collection<PersistentUserData> getAllData() {

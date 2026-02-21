@@ -18,6 +18,8 @@ public final class Hashing {
     public static final HashingAlgorithm CONFIG_HASH;
     public static final byte CONFIG_HASH_ID;
 
+    public static final HashingAlgorithm UUID_SHA256_ALIX;
+
     public static final HashingAlgorithm SHA256_MIGRATE;
     public static final HashingAlgorithm SHA512_MIGRATE;
     public static final HashingAlgorithm BCRYPT;
@@ -216,11 +218,12 @@ public final class Hashing {
     }
 
     static {
+        UUID_SHA256_ALIX = new Hash3();
         SHA256_MIGRATE = new Hash4();
         SHA512_MIGRATE = new Hash5();
         BCRYPT = new Hash6();
 
-        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), new Hash3(), SHA256_MIGRATE, SHA512_MIGRATE, BCRYPT};
+        hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), UUID_SHA256_ALIX, SHA256_MIGRATE, SHA512_MIGRATE, BCRYPT};
 
         byte def = 3;
         int i = ConfigProvider.config.getInt("password-hash-type", def);

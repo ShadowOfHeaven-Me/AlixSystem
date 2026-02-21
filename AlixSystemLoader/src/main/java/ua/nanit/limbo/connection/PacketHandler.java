@@ -21,7 +21,7 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.integration.PreLoginResult;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.configuration.PacketInFinishConfiguration;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.PacketConfigDisconnect;
@@ -237,6 +237,8 @@ public final class PacketHandler {
     }
 
     public void handle(ClientConnection conn, PacketInFinishConfiguration packet) {
+        /*if (!conn.finishedConfig)
+            throw NettySafety.INVALID_STATE;*/
         conn.spawnPlayer();
     }
 }

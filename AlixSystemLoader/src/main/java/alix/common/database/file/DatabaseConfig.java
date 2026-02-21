@@ -25,7 +25,7 @@ public final class DatabaseConfig {
     public static int getPort(DatabaseType type) {
         int def = switch (type) {
             case MYSQL -> 3306;
-            case POSTGRES -> 5432;
+            case POSTGRESQL -> 5432;
             case SQLITE -> -1;
         };
 

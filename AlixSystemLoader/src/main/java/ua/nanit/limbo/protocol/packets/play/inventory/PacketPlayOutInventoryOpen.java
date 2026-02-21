@@ -6,7 +6,7 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
 import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 import ua.nanit.limbo.protocol.registry.Version;
 

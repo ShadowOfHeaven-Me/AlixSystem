@@ -10,6 +10,7 @@ public final class ServerPingListener implements Listener {
     @EventHandler
     public void onServerPing(ServerListPingEvent event) {
         //if (AlixUtils.antibotService) ConnectionThreadManager.onConnection(event.getAddress());
-        if (ServerPingManager.isRegistered()) ServerPingManager.add0(event.getAddress().getHostAddress());
+        /*if (ServerPingManager.isRegistered()) */
+        ServerPingManager.add0(event.getAddress().getHostAddress());
     }
 }

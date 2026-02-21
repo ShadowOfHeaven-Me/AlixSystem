@@ -52,7 +52,7 @@ public final class AlixUtils {
     public static final SimpleDateFormat dateFormatter, timeFormatter;
     //public static final String[] invalidNicknamesStart;
     //public static final Language pluginLanguage;
-    public static final ExecutableCommandList registerCommandList, loginCommandList, autoLoginCommandList, autoRegisterCommandList;
+    public static final ExecutableCommandList registerCommandList, loginCommandList, autoLoginCommandList, autoRegisterCommandList, premiumJoinCommands;
     public static final String operatorCommandPassword, chatFormat;//, banFormat;
     public static final CaptchaType captchaVerificationType;
     public static final CaptchaVisualType captchaVerificationVisualType;
@@ -180,6 +180,7 @@ public final class AlixUtils {
         loginCommandList = new ExecutableCommandList(config.getStringList("after-login-commands"));
         autoRegisterCommandList = new ExecutableCommandList(config.getStringList("after-auto-register-commands"));
         autoLoginCommandList = new ExecutableCommandList(config.getStringList("after-auto-login-commands"));
+        premiumJoinCommands = new ExecutableCommandList(config.getStringList("after-any-premium-join-commands"));
         forcefullyDisableIpAutoLogin = config.getBoolean("forcefully-disable-auto-login");
         captchaVerificationCaseSensitive = config.getBoolean("captcha-case-sensitive");
         //verificationReminderDelay = config.getLong("verification-reminder-message-delay");
@@ -457,7 +458,7 @@ public final class AlixUtils {
     }
 
     public static String unslashify(String a) {
-        return a.charAt(0) == '/' ? a.substring(1) : a;
+        return AlixCommonUtils.unslashify(a);
     }
 
     public static String getAllUntilCharFoundCharIncluded(String a, char b) {

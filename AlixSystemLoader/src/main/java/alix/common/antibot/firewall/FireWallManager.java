@@ -4,8 +4,10 @@ import alix.common.AlixCommonMain;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
+import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.other.throwable.AlixException;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -96,16 +98,28 @@ public final class FireWallManager {
 
     public static void init() {
         AlixScheduler.async(() -> {
-            try (InputStream is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
-                AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), new FireWallEntry(null)), false);
-                int builtIn = map.size();
-                file.load();
-                int total = map.size();
-                AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Built-in blacklisted IPs: " + builtIn + ", Blacklisted by this server: " + (total - builtIn) + ", Total: " + total);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
+            if (ConfigParams.loadBuiltInIps) loadWithBuiltIn0();
+            else loadWithoutBuiltIn0();
         });
+    }
+
+    @SneakyThrows
+    private static void loadWithoutBuiltIn0() {
+        file.load();
+        int total = map.size();
+        AlixCommonMain.logInfo("Partially loaded the FireWall DataBase (built-in loading disabled). Total: " + total);
+    }
+
+    private static void loadWithBuiltIn0() {
+        try (InputStream is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
+            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), new FireWallEntry(null)), false);
+            int builtIn = map.size();
+            file.load();
+            int total = map.size();
+            AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Loaded built-in blacklisted IPs: " + builtIn + ", Blacklisted by this server: " + (total - builtIn) + ", Total: " + total);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     private FireWallManager() {

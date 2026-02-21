@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection.pipeline.compression;
 
+import alix.common.utils.other.annotation.OptimizationCandidate;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -14,6 +15,8 @@ public interface CompressionSupplier {
     CompressionSupplier GLOBAL = GlobalCompressionHandler::getCompressionFor;
     CompressionSupplier NULL_SUPPLIER = supply0(null);
 
+    //cache in order to generate less trash
+    @OptimizationCandidate
     static CompressionSupplier supply(CompressionHandler handler) {
         return handler == null ? NULL_SUPPLIER : supplyAccountDisabled(handler);
     }

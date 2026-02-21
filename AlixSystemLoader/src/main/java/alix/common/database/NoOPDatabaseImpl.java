@@ -1,33 +1,29 @@
 package alix.common.database;
 
+import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
+import alix.common.database.connect.DatabaseType;
 
 import java.util.UUID;
-import java.util.function.LongConsumer;
 
 final class NoOPDatabaseImpl implements DatabaseUpdater {
+    @Override
+    public void connect() {
+
+    }
+
     @Override
     public void createTablesSync() {
 
     }
 
     @Override
-    public void insertUser(String name, UUID uuid, long createdAt) {
-
-    }
-
-    @Override
-    public void addPassword(String ownerName, String hashedPassword, byte hashId, String salt, byte matcherId, LongConsumer onSuccess) {
+    public void insertUser(String name, UUID uuid, long createdAt, Password password) {
 
     }
 
     @Override
     public void addPasswordAndLink(String ownerName, Password password) {
-
-    }
-
-    @Override
-    public void setPasswordPointer(String name, Long passwordId) {
 
     }
 
@@ -47,12 +43,22 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
-    public void updatePasswordById(long passwordId, String hashedPassword, byte hashId, String salt, byte matcherId) {
+    public void updatePasswordByOwner(String ownerName, Password password) {
 
     }
 
     @Override
-    public void updatePasswordByOwner(String ownerName, Password password) {
+    public void setPremiumData(String name, PremiumData data) {
 
+    }
+
+    @Override
+    public void setPassword(String name, Password newPass, Password oldPass) {
+
+    }
+
+    @Override
+    public DatabaseType getType() {
+        return null;
     }
 }

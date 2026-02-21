@@ -5,7 +5,7 @@ import alix.common.utils.netty.WrapperTransformer;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import io.netty.buffer.ByteBuf;
 import ua.nanit.limbo.protocol.ByteMessage;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.PacketOutCommands;
 import ua.nanit.limbo.protocol.registry.Version;
 

@@ -43,6 +43,7 @@ public final class MessagesFile extends AlixFileManager {
         return map;
     }
 
+    //todo: maybe user #trim()?
     private static String removeFrontSpace(String message) {//often made by accident
         return message.charAt(0) == ' ' ? message.substring(1) : message;
     }

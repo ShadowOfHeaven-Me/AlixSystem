@@ -18,7 +18,7 @@
 package ua.nanit.limbo.connection.pipeline;
 
 import alix.common.utils.netty.BufUtils;
-import alix.common.utils.netty.NettySafety;
+import alix.common.utils.netty.safety.NettySafety;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -152,6 +152,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         //From ByteToMessageDecoder
         if (this.cumulation == null) this.cumulation = in;
         else {
+            //TODO: Add a safety mechanism to prevent invalid packets from overflowing the buffer
             this.cumulation = this.cumulator.cumulate(BufUtils.POOLED, this.cumulation, in);
         }
 
@@ -191,12 +192,12 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         in.readerIndex(packetStart);
         in.markReaderIndex();
 
-        int readableBytes = in.readableBytes();
-        if (readableBytes == 0) return null;//I don't think this can ever be true here
+        if (!in.isReadable()) return null;//I don't think this can ever be true here
 
         int len = readVarIntPacketLength(in);
         //NettySafety.validateUserInputBufAlloc(len);
-        if (len < 0) throw NettySafety.INVALID_PACKET_LEN;
+        //uhh, is it possible for this to be the result of fragmentation?
+        if (len <= 0) throw NettySafety.INVALID_PACKET_LEN;
 
         //readVarInt() returns 0 for partial VarInts with a continuation bit, and for actual VarInts read as a 0
         if (len == 0) {
@@ -205,7 +206,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         }
 
         //the packet is said to be larger than what we've cumulated (hehe) so far
-        if (len > readableBytes) {
+        if (len > in.readableBytes()) {
             in.resetReaderIndex();
             return null;
         }

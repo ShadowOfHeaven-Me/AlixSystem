@@ -1,10 +1,10 @@
 package alix.common.utils.netty;
 
-import alix.common.utils.AlixCommonHandler;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.*;
+import io.netty.util.IllegalReferenceCountException;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ public final class BufUtils {
 
     public static final ByteBufAllocator POOLED = PooledByteBufAllocator.DEFAULT;
     public static final ByteBufAllocator UNPOOLED = UnpooledByteBufAllocator.DEFAULT; //new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
-    private static final boolean PREFER_DIRECT = AlixCommonHandler.preferDirectBufs();
+    private static final boolean PREFER_DIRECT = true;//AlixCommonHandler.preferDirectBufs();
     //private static final boolean NO_CLEANER = PlatformDependent.hasDirectBufferNoCleanerConstructor();
 
 /*    static {
@@ -55,19 +55,47 @@ public final class BufUtils {
         return createBuffer0(wrapper, unpooled ? unpooledBuffer() : pooledBuffer());
     }
 
-    @SuppressWarnings("UnstableApiUsage")
+    public static void safeRelease(ByteBuf buf) {
+        int cnt;
+        if (buf == null || (cnt = buf.refCnt()) == 0)
+            return;//lessen try-catch overhead by checking this first
+
+        try {
+            //uhhh not thread-safe
+            buf.release(cnt);
+        } catch (IllegalReferenceCountException ignored) {
+        }
+    }
+
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static ByteBuf createBuffer0(PacketWrapper<?> wrapper, ByteBuf emptyByteBuf) {
-        if (wrapper.buffer != null)
+        if (wrapper.buffer != null) {
             throw new AlixException("Incorrect invocation of BufUtils.createBuffer0 - buffer exists");
 
-        int packetId = wrapper.getPacketTypeData().getNativePacketId();
-        if (packetId < 0) throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in server version "
-                + PacketEvents.getAPI().getServerManager().getVersion() + "! Contact the developer and show him this error! " +
-                "Otherwise Alix will not work as intended!");
+            //probably the cheapest option to avoid conflicts somewhat safely
+            /*var copy = WrapperUtils.allocEmpty(wrapper.getClass());
+            copy.copy(wrapper);
+            wrapper = copy;*/
+        }
 
-        wrapper.buffer = emptyByteBuf;
+        int packetId = wrapper.getNativePacketId();
+        if (packetId < 0)
+            throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in server version "
+                                    + PacketEvents.getAPI().getServerManager().getVersion() + "! Contact the developer and show him this error! " +
+                                    "Otherwise Alix will not work as intended!");
+
+        /*wrapper.buffer = emptyByteBuf;
         wrapper.writeVarInt(packetId);
-        wrapper.write();
+        wrapper.write();*/
+        //otherwise it's unsafe, could cause pretty inconsistent errors randomly
+        synchronized (wrapper) {
+            //safeRelease((ByteBuf) wrapper.buffer);
+
+            wrapper.buffer = emptyByteBuf;
+            wrapper.writeVarInt(packetId);
+            wrapper.write();
+            wrapper.buffer = null;
+        }
 
         return emptyByteBuf;//(ByteBuf) wrapper.buffer;
     }

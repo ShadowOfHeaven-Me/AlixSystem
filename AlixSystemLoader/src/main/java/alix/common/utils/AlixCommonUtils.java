@@ -5,7 +5,6 @@ import alix.common.data.LoginType;
 import alix.common.data.security.password.Password;
 import alix.common.messages.Messages;
 import alix.common.utils.collections.RandomCharIterator;
-import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.formatter.AlixFormatter;
 import io.netty.channel.Channel;
 
@@ -33,7 +32,8 @@ public final class AlixCommonUtils {
         private static final String
                 tooLongMessage = Messages.getWithPrefix("password-invalid-too-long"),
                 tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
-                invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character-invalid"),
+                invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character"),
+                invalidCharacterBlankMessage = Messages.getWithPrefix("password-invalid-character-blank"),
                 pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
     }
 
@@ -80,29 +80,49 @@ public final class AlixCommonUtils {
 
     public static boolean isPIN(String password) {
         if (password.length() != 4) return false;
-        char[] c = password.toCharArray();
-        for (char d : c)
+        for (int i = 0; i < 4; i++) {
+            char d = password.charAt(i);
             if (d < 48 || d > 57) return false;
+        }
         return true;
+    }
+
+    public static String unslashify(String a) {
+        return !a.isEmpty() && a.charAt(0) == '/' ? a.substring(1) : a;
     }
 
     public static String getInvalidityReason(String text, boolean canBeShort) {
         int l = text.length();
         if (l > Password.MAX_PASSWORD_LEN) return DoNotThrow.tooLongMessage;
         if (!canBeShort && l < 5) return DoNotThrow.tooShortMessage;
-        char[] b = text.toCharArray();
-        for (char c : b) {
+        for (int i = 0; i < l; i++) {
+            char c = text.charAt(i);
             switch (c) {
                 case '*':
                 case ':':
                 case ';':
-                    return AlixFormatter.format(DoNotThrow.invalidCharacterMessage, c);
+                case '|':
+                    return AlixFormatter.format(DoNotThrow.invalidCharacterMessage, invalidityFeedback(text, i));
                 default:
-                    if (c < 35 || c > AlixFileManager.HIGHEST_CHAR || c > 90 && !Character.isLetter(c))
-                        return AlixFormatter.format(DoNotThrow.invalidCharacterMessage, c);
+                    if (c <= 32 || Character.isWhitespace(c))// || c > AlixFileManager.HIGHEST_CHAR)//c > 90 && !Character.isLetter(c)
+                        return AlixFormatter.format(DoNotThrow.invalidCharacterBlankMessage, invalidityFeedback(text, i));
             }
         }
         return null; //The given text is valid
+    }
+
+    private static Object[] invalidityFeedback(String text, int invalidAt) {
+        int mentionLen = 3;
+        int startIdx = Math.max(invalidAt - mentionLen, 0);
+        String start = (startIdx != 0 ? "..." : "") + text.substring(startIdx, invalidAt);
+
+        int len = text.length();
+
+        //+1 since it's exclusive
+        int endIdx = Math.min(invalidAt + mentionLen + 1, len);
+        String end = text.substring(invalidAt + 1, endIdx) + (endIdx != len ? "..." : "") ;
+
+        return new String[]{start, String.valueOf(text.charAt(invalidAt)), end};
     }
 
     public static boolean isValidClass(String clazzPath) {

@@ -15,8 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ua.nanit.limbo.protocol;
+package ua.nanit.limbo.protocol.snapshot;
 
+import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import net.kyori.adventure.nbt.BinaryTag;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.kyori.adventure.nbt.ListBinaryTag;
@@ -31,19 +34,18 @@ import ua.nanit.limbo.protocol.packets.login.PacketOutSetCompression;
 import ua.nanit.limbo.protocol.packets.play.*;
 import ua.nanit.limbo.protocol.packets.play.chunk.PacketEmptyChunkData;
 import ua.nanit.limbo.protocol.packets.play.config.PacketPlayOutReconfigure;
+import ua.nanit.limbo.protocol.packets.play.info.PacketPlayOutInfoUpdate;
 import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayOutPluginMessage;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 import ua.nanit.limbo.util.NbtMessageUtil;
-import ua.nanit.limbo.util.map.VersionMap;
+import ua.nanit.limbo.util.map.DefaultVersionMap;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
-import static ua.nanit.limbo.protocol.PacketSnapshot.snapshots;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshot.snapshots;
 
 public final class PacketSnapshots {
 
@@ -51,6 +53,7 @@ public final class PacketSnapshots {
     public static final PacketSnapshot RECONFIGURE = PacketSnapshot.of(new PacketPlayOutReconfigure());
     public static final int PLAYER_ENTITY_ID = 0;
     public static final UUID PLAYER_UUID = new UUID(0, 0);
+    public static final String PLAYER_NAME = "Sex";//...it is imperative we use this exact phrase
     public static final PacketSnapshot PACKET_LOGIN_SUCCESS;
     public static final PacketSnapshot PACKET_JOIN_GAME;
     public static final PacketSnapshot PACKET_SPAWN_POSITION;
@@ -83,6 +86,7 @@ public final class PacketSnapshots {
     public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, EMPTY_TITLE;
 
     public static final PacketSnapshot PACKET_REGISTRY_DATA;
+    public static final PacketSnapshot PACKET_INFO_UPDATE;
     //public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA;
 
     public static final PacketSnapshot PACKET_KNOWN_PACKS;
@@ -103,14 +107,14 @@ public final class PacketSnapshots {
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_7;
     public static final List<PacketSnapshot> PACKETS_REGISTRY_DATA_1_21_9;*/
 
-    public static final VersionMap<PacketSnapshot> UPDATE_TAGS = new VersionMap<>();
-    public static final VersionMap<List<PacketSnapshot>> REGISTRY_DATA = new VersionMap<>();
+    public static final DefaultVersionMap<PacketSnapshot> UPDATE_TAGS = new DefaultVersionMap<>();
+    public static final DefaultVersionMap<List<PacketSnapshot>> REGISTRY_DATA = new DefaultVersionMap<>();
 
     public static final PacketSnapshot PACKET_FINISH_CONFIGURATION;
 
     public static final PacketSnapshot MIDDLE_CHUNK = PacketSnapshot.of(new PacketEmptyChunkData());
     //public static final PacketSnapshot UNLOAD_CHUNK = PacketSnapshot.of(new PacketUnloadChunk());
-    //public static final List<PacketSnapshot> PACKETS_EMPTY_CHUNKS = new ArrayList<>();
+    public static final List<PacketSnapshot> PACKETS_EMPTY_CHUNKS;
     public static final PacketSnapshot PACKET_START_WAITING_CHUNKS;
 
     private PacketSnapshots() {
@@ -155,14 +159,16 @@ public final class PacketSnapshots {
         joinGame.setDimensionRegistry(registry);
         PACKET_JOIN_GAME = PacketSnapshot.of(joinGame);
 
-        PacketPlayerAbilities abilities = new PacketPlayerAbilities();
-        abilities.wrapper().setFlySpeed(NanoLimbo.allowFreeMovement ? 0.05F : 0.0F);
-        abilities.wrapper().setFlying(NanoLimbo.allowFreeMovement);//todo
-        abilities.wrapper().setFOVModifier(0.1F);
+        PacketPlayerAbilities fallAbilities = new PacketPlayerAbilities();
+        fallAbilities.wrapper().setFlySpeed(NanoLimbo.allowFreeMovement ? 0.05F : 0.0F);
+        fallAbilities.wrapper().setFlying(NanoLimbo.allowFreeMovement);//todo
+        fallAbilities.wrapper().setFOVModifier(0.1F);
 
-        PLAYER_ABILITIES_FALL = PacketSnapshot.of(abilities);
-        abilities.wrapper().setFlying(true);
-        PLAYER_ABILITIES_FLY = PacketSnapshot.of(abilities);
+        PLAYER_ABILITIES_FALL = PacketSnapshot.of(fallAbilities);
+
+        var flyingAbilities = fallAbilities.wrapperCopy();
+        flyingAbilities.setFlying(true);
+        PLAYER_ABILITIES_FLY = PacketSnapshot.of(new PacketPlayerAbilities(flyingAbilities));
 
         PacketSpawnPosition packetSpawnPosition = new PacketSpawnPosition(0, 400, 0);
 
@@ -174,8 +180,14 @@ public final class PacketSnapshots {
         info.setGameMode(server.getConfig().getGameMode());
         info.setUuid(UUID.randomUUID());
 
+        PACKET_INFO_UPDATE = PacketSnapshot.of(PacketPlayOutInfoUpdate.of(EnumSet.of(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_GAME_MODE),
+                Collections.singletonList(
+                        new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(
+                                new UserProfile(PacketSnapshots.PLAYER_UUID, PacketSnapshots.PLAYER_NAME), false, 0,
+                                GameMode.SPECTATOR, null, null, 0, true))));
+
         //float validYaw = 0;
-        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername("Sex").setUUID(PLAYER_UUID));
+        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername(PLAYER_NAME).setUUID(PLAYER_UUID));
         //PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
         PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0.1f, 0, TELEPORT_VALID_ID));
         PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
@@ -290,7 +302,7 @@ public final class PacketSnapshots {
         var PACKETS_REGISTRY_DATA_1_21_9 = createRegistryData(server, registry.getCodec_1_21_9());
         var PACKETS_REGISTRY_DATA_1_21_11 = createRegistryData(server, registry.getCodec_1_21_11());
 
-        PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(new PacketOutFinishConfiguration());
+        PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(PacketOutFinishConfiguration.INSTANCE);
 
         PacketGameEvent packetGameEvent = new PacketGameEvent();
         packetGameEvent.setType((byte) 13); // Waiting for chunks type
@@ -318,16 +330,16 @@ public final class PacketSnapshots {
         REGISTRY_DATA.put(Version.V1_21_9, PACKETS_REGISTRY_DATA_1_21_9);
         REGISTRY_DATA.put(Version.V1_21_11, PACKETS_REGISTRY_DATA_1_21_11);
 
-        /*int chunkXOffset = (int) 0 >> 4; // Default x position is 0
+        int chunkXOffset = (int) 0 >> 4; // Default x position is 0
         int chunkZOffset = (int) 0 >> 4; // Default z position is 0
-        int chunkEdgeSize = 1;//1; // TODO Make configurable?*/
+        int chunkEdgeSize = 1;//1; // TODO Make configurable?
 
-        /*List<PacketSnapshot> emptyChunks = new ArrayList<>();
+        List<PacketSnapshot> emptyChunks = new ArrayList<>();
         // Make multiple chunks for edges
         for (int chunkX = chunkXOffset - chunkEdgeSize; chunkX <= chunkXOffset + chunkEdgeSize; ++chunkX) {
             for (int chunkZ = chunkZOffset - chunkEdgeSize; chunkZ <= chunkZOffset + chunkEdgeSize; ++chunkZ) {
                 if (chunkX == 0 && chunkZ == 0) {
-                    PACKETS_EMPTY_CHUNKS.add(MIDDLE_CHUNK);
+                    emptyChunks.add(MIDDLE_CHUNK);
                     continue;
                 }
                 PacketEmptyChunkData packetEmptyChunk = new PacketEmptyChunkData();
@@ -337,7 +349,8 @@ public final class PacketSnapshots {
                 emptyChunks.add(PacketSnapshot.of(packetEmptyChunk));
             }
         }
-        PACKETS_EMPTY_CHUNKS.addAll(emptyChunks);*/
+        PACKETS_EMPTY_CHUNKS = List.of(emptyChunks.toArray(new PacketSnapshot[0]));
+
         //Log.error("CHUNKS LEN: " + PACKETS_EMPTY_CHUNKS);
     }
 

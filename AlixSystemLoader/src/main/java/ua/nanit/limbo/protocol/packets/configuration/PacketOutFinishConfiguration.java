@@ -11,4 +11,7 @@ public class PacketOutFinishConfiguration implements PacketOut {
     @Override
     public void encode(ByteMessage msg, Version version) {
     }
+
+    private PacketOutFinishConfiguration() {
+    }
 }

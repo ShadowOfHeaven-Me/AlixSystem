@@ -133,7 +133,6 @@ public final class Main implements LoaderBootstrap {
         UserSemiVirtualization.init();
         Dependencies.initAdditional();
         if (AlixWorld.preload()) logConsoleInfo("Successfully pre-loaded the verification world");
-        FileManager.loadFiles();//load all the classes before enabling the ability to join
         AlixScheduler.sync(() -> AlixScheduler.async(() -> this.setUp(preStartUpExecutors)));//sync in order to have the message sent after start-up, and async to not cause any slowdowns on the main thread
         if (Bukkit.getServer().getOnlineMode())
             AlixScheduler.sync(() -> Main.logError("Online mode is enabled! Alix is now mainly an offline mode plugin! Bear that in mind!"));
@@ -237,6 +236,7 @@ public final class Main implements LoaderBootstrap {
             logWarning("As of version 3.5.0, Alix no longer needs FastLogin! Premium verification has been built into it!");
 
         //PcapManager.init();
+        FileManager.loadFiles();//load all the classes before enabling the ability to join
         HandlerList.unregisterAll(preStartUpExecutors);
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");
     }

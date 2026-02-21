@@ -8,6 +8,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.login.prelogin.PreLoginVerdict;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonHandler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -454,11 +455,15 @@ public final class AlixChannelHandler {
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             //cause.printStackTrace();
             //Main.logError("ERROR1: " + cause.getMessage());
-            if (cause instanceof DecoderException) {
-                //UNSAFE.putObject(cause, CAUSE_OFFSET, cause); //A PacketEvents error printing prevention - sets the cause of the exception to itself (which means that no other exception caused this one), which removes the PacketProcessException as the cause
-                FireWallManager.addCauseException((InetSocketAddress) ctx.channel().remoteAddress(), cause);
-                ctx.channel().close();
-                return;
+            try {
+                if (cause instanceof DecoderException) {
+                    //UNSAFE.putObject(cause, CAUSE_OFFSET, cause); //A PacketEvents error printing prevention - sets the cause of the exception to itself (which means that no other exception caused this one), which removes the PacketProcessException as the cause
+                    FireWallManager.addCauseException((InetSocketAddress) ctx.channel().remoteAddress(), cause);
+                    ctx.channel().close();
+                    return;
+                }
+            } catch (Exception e) {
+                AlixCommonUtils.logException(e);
             }
             super.exceptionCaught(ctx, cause);
         }

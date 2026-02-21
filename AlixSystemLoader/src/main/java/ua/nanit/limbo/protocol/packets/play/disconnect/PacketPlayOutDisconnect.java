@@ -2,7 +2,7 @@ package ua.nanit.limbo.protocol.packets.play.disconnect;
 
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisconnect;
 import net.kyori.adventure.text.Component;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
 public final class PacketPlayOutDisconnect extends OutRetrooperPacket<WrapperPlayServerDisconnect> {
@@ -17,7 +17,7 @@ public final class PacketPlayOutDisconnect extends OutRetrooperPacket<WrapperPla
     }
 
     public static PacketSnapshot error(String reason) {
-        return new PacketPlayOutDisconnect().setReason("§c" + reason).toSnapshot();
+        return snapshot("§c" + reason);
     }
 
     public static PacketSnapshot snapshot(String reason) {

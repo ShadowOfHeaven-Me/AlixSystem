@@ -1,12 +1,17 @@
 package alix.common.database;
 
+import alix.common.AlixCommonMain;
+import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
 import alix.common.database.connect.DatabaseConnector;
+import alix.common.database.connect.DatabaseType;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.other.throwable.AlixException;
+import lombok.SneakyThrows;
 
 import java.sql.*;
 import java.util.UUID;
-import java.util.function.LongConsumer;
 
 import static alix.common.database.QueryConstants.*;
 
@@ -16,6 +21,10 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     DatabaseUpdaterImpl(DatabaseConnector database) {
         this.database = database;
+    }
+
+    @Override
+    public void connect() {
         this.database.connect();
     }
 
@@ -23,11 +32,30 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     public void createTablesSync() {
         this.query(conn -> {
             try (var st = conn.createStatement()) {
-                st.execute(CREATE_USERS_SQL);
-                st.execute(CREATE_PASSWORDS_SQL);
+                st.execute(CREATE_USERS_SQL());
+                //AlixCommonMain.logError(CREATE_PASSWORDS_SQL());
+                st.execute(CREATE_PASSWORDS_SQL());
+                st.execute(CREATE_PREMIUM_DATA_SQL());
                 // Try to add FK once. Some DBs may throw if already added; ignore that case.
                 try {
-                    st.execute(ADD_FK_USERS_PASSWORD);
+                    DatabaseMetaData md = conn.getMetaData();
+                    boolean fkExists = false;
+// NOTE: getImportedKeys parameters are (catalog, schema, table)
+                    try (ResultSet rs = md.getImportedKeys(conn.getCatalog(), null, "alix_users")) {
+                        while (rs.next()) {
+                            String fkColumn = rs.getString("FKCOLUMN_NAME");   // column in alix_users
+                            String pkTable  = rs.getString("PKTABLE_NAME");    // referenced table
+                            // You can also read FK_NAME if you want: rs.getString("FK_NAME")
+                            if ("password_id".equalsIgnoreCase(fkColumn)
+                                && "alix_passwords".equalsIgnoreCase(pkTable)) {
+                                fkExists = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!fkExists) {
+                        st.execute(ADD_FK_USERS_PASSWORD);
+                    }
                 } catch (SQLException e) {
                     // If constraint already exists, ignore. Otherwise rethrow.
                     // Postgres duplicate_object is SQLState 42710; but we just ignore any
@@ -42,42 +70,127 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
-    @Override
-    public void insertUser(String name, UUID uuid, long createdAt) {
+    void addPremiumData(String name, String premiumUuid) {
         this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_USER_SQL)) {
+            try (PreparedStatement ps = connection.prepareStatement(INSERT_PREMIUM_DATA_SQL, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, premiumUuid);
+                ps.executeUpdate();
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        long id = rs.getLong(1);
+                        this.setPremiumPointerToId0(connection, name, id);
+                    } else {
+                        throw new AlixException("Inserting premium_data did not return generated id");
+                    }
+                }
+            }
+        });
+    }
+
+    @SneakyThrows
+    void setPremiumPointerToId0(Connection connection, String name, long premiumDataId) {
+        try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_PREMIUM_POINTER_BY_NAME_SQL)) {
+            ps.setLong(1, premiumDataId);
+            ps.setString(2, name);
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
+    public void setPremiumData(String name, PremiumData data) {
+        if (data.getStatus().isPremium()) {
+            this.addPremiumData(name, data.premiumUUID().toString());
+            return;
+        }
+        this.queryAsync(connection -> {
+            this.setPremiumPointerToId0(connection, name, data.getStatus().isNonPremium() ? -1 : 0);
+        });
+    }
+
+    void setPassword0(Connection connection, String name, Password newPass, Password oldPass) throws SQLException {
+        //password reset
+        if (!newPass.isSet()) {
+            this.clearPasswordPointer0(connection, name);
+            return;
+        }
+
+        //first-time/password reset register
+        if (!oldPass.isSet()) {
+            this.addPasswordAndLink0(connection, name, newPass);
+            return;
+        }
+
+        //just a password change
+        this.updatePasswordByOwner0(connection, name, newPass);
+    }
+
+    @Override
+    public void setPassword(String name, Password newPass, Password oldPass) {
+        this.queryAsync(connection -> {
+            this.setPassword0(connection, name, newPass, oldPass);
+        });
+    }
+
+    @Override
+    public void insertUser(String name, UUID uuid, long createdAt, Password password) {
+        this.queryAsync(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(INSERT_USER_SQL())) {
                 ps.setString(1, name);
                 ps.setObject(2, uuid); // driver may accept UUID; otherwise use uuid.toString()
                 ps.setLong(3, createdAt);
                 ps.executeUpdate();
             }
+            this.setPassword0(connection, name, password,
+                    Password.empty()//it's fine to call addPasswordAndLink0 even if a linked password exists
+            );
         });
     }
 
-    /**
-     * Insert a password row and invoke onSuccess with the generated id.
-     * If you don't care about the generated id, pass a no-op LongConsumer.
-     */
-    @Override
-    public void addPassword(String ownerName, String hashedPassword, byte hashId, String salt, byte matcherId, LongConsumer onSuccess) {
-        this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_PASSWORD_SQL, Statement.RETURN_GENERATED_KEYS)) {
+    private void addPasswordAndLink0(Connection connection, String ownerName, Password password) throws SQLException {
+        boolean origAuto = connection.getAutoCommit();
+        try {
+            connection.setAutoCommit(false);
+            long pwdId;
+            // insert password
+            try (PreparedStatement ps = connection.prepareStatement(INSERT_PASSWORD_SQL(), Statement.RETURN_GENERATED_KEYS)) {
                 ps.setString(1, ownerName);
-                ps.setString(2, hashedPassword);
-                ps.setShort(3, (short) (hashId & 0xFF));
-                ps.setString(4, salt);
-                ps.setShort(5, (short) (matcherId & 0xFF));
+                ps.setString(2, password.getHashedPassword());
+                ps.setShort(3, (short) (password.getHashId() & 0xFF));
+                ps.setString(4, password.getSalt());
+                ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
                 ps.executeUpdate();
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
-                        long id = rs.getLong(1);
-                        if (onSuccess != null) onSuccess.accept(id);
+                        pwdId = rs.getLong(1);
                     } else {
-                        throw new SQLException("Insert password did not return generated id");
+                        throw new AlixException("Insert password did not return generated id");
                     }
                 }
             }
-        });
+            // update user pointer
+            try (PreparedStatement ps2 = connection.prepareStatement(UPDATE_USERS_PASSWORD_ID_BY_NAME_SQL)) {
+                ps2.setLong(1, pwdId);
+                ps2.setString(2, ownerName);
+                int updated = ps2.executeUpdate();
+                if (updated == 0) {
+                    connection.rollback();
+                    throw new AlixException("User not found for ownerName: " + ownerName);
+                }
+            }
+            connection.commit();
+            //if (onSuccess != null) onSuccess.accept(pwdId);
+        } catch (AlixException e) {
+            try {
+                connection.rollback();
+            } catch (Exception ignore) {
+            }
+            throw e;
+        } finally {
+            try {
+                connection.setAutoCommit(origAuto);
+            } catch (Exception ignore) {
+            }
+        }
     }
 
     /**
@@ -87,68 +200,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     @Override
     public void addPasswordAndLink(String ownerName, Password password) {
         this.queryAsync(connection -> {
-            boolean origAuto = connection.getAutoCommit();
-            try {
-                connection.setAutoCommit(false);
-                long pwdId;
-                // insert password
-                try (PreparedStatement ps = connection.prepareStatement(INSERT_PASSWORD_SQL, Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setString(1, ownerName);
-                    ps.setString(2, password.getHashedPassword());
-                    ps.setShort(3, (short) (password.getHashId() & 0xFF));
-                    ps.setString(4, password.getSalt());
-                    ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
-                    ps.executeUpdate();
-                    try (ResultSet rs = ps.getGeneratedKeys()) {
-                        if (rs.next()) {
-                            pwdId = rs.getLong(1);
-                        } else {
-                            throw new SQLException("Insert password did not return generated id");
-                        }
-                    }
-                }
-                // update user pointer
-                try (PreparedStatement ps2 = connection.prepareStatement(UPDATE_USERS_PASSWORD_ID_BY_NAME_SQL)) {
-                    ps2.setLong(1, pwdId);
-                    ps2.setString(2, ownerName);
-                    int updated = ps2.executeUpdate();
-                    if (updated == 0) {
-                        connection.rollback();
-                        throw new SQLException("User not found for ownerName: " + ownerName);
-                    }
-                }
-                connection.commit();
-                //if (onSuccess != null) onSuccess.accept(pwdId);
-            } catch (SQLException e) {
-                try {
-                    connection.rollback();
-                } catch (Exception ignore) {
-                }
-                throw e;
-            } finally {
-                try {
-                    connection.setAutoCommit(origAuto);
-                } catch (Exception ignore) {
-                }
-            }
-        });
-    }
-
-    /**
-     * Link an existing password id to a user, or clear it if passwordId == null.
-     */
-    @Override
-    public void setPasswordPointer(String name, Long passwordId) {
-        if (passwordId == null) {
-            clearPasswordPointer(name);
-            return;
-        }
-        this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_PASSWORD_ID_BY_NAME_SQL)) {
-                ps.setLong(1, passwordId);
-                ps.setString(2, name);
-                ps.executeUpdate();
-            }
+            this.addPasswordAndLink0(connection, ownerName, password);
         });
     }
 
@@ -158,11 +210,15 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     @Override
     public void clearPasswordPointer(String name) {
         this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(CLEAR_USERS_PASSWORD_ID_BY_NAME_SQL)) {
-                ps.setString(1, name);
-                ps.executeUpdate();
-            }
+            this.clearPasswordPointer0(connection, name);
         });
+    }
+
+    void clearPasswordPointer0(Connection connection, String name) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(CLEAR_USERS_PASSWORD_ID_BY_NAME_SQL)) {
+            ps.setString(1, name);
+            ps.executeUpdate();
+        }
     }
 
     /**
@@ -193,21 +249,18 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
-    /**
-     * Replace a password row by password id.
-     */
-    @Override
-    public void updatePasswordById(long passwordId, String hashedPassword, byte hashId, String salt, byte matcherId) {
-        this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPDATE_PASSWORD_BY_ID_SQL)) {
-                ps.setString(1, hashedPassword);
-                ps.setShort(2, (short) (hashId & 0xFF));
-                ps.setString(3, salt);
-                ps.setShort(4, (short) (matcherId & 0xFF));
-                ps.setLong(5, passwordId);
-                ps.executeUpdate();
+    void updatePasswordByOwner0(Connection connection, String ownerName, Password password) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(UPDATE_PASSWORD_BY_OWNER_SQL())) {
+            ps.setString(1, ownerName);
+            ps.setString(2, password.getHashedPassword());
+            ps.setShort(3, (short) (password.getHashId() & 0xFF));
+            ps.setString(4, password.getSalt());
+            ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                throw new AlixException("No password row found for owner: " + ownerName);
             }
-        });
+        }
     }
 
     /**
@@ -216,18 +269,23 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     @Override
     public void updatePasswordByOwner(String ownerName, Password password) {
         this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPDATE_PASSWORD_BY_OWNER_SQL)) {
-                ps.setString(1, password.getHashedPassword());
-                ps.setShort(2, (short) (password.getHashId() & 0xFF));
-                ps.setString(3, password.getSalt());
-                ps.setShort(4, (short) (password.getMatcherId() & 0xFF));
-                ps.setString(5, ownerName);
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_PASSWORD_BY_OWNER_SQL())) {
+                ps.setString(1, ownerName);
+                ps.setString(2, password.getHashedPassword());
+                ps.setShort(3, (short) (password.getHashId() & 0xFF));
+                ps.setString(4, password.getSalt());
+                ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
                 int rows = ps.executeUpdate();
                 if (rows == 0) {
-                    throw new SQLException("No password row found for owner: " + ownerName);
+                    throw new AlixException("No password row found for owner: " + ownerName);
                 }
             }
         });
+    }
+
+    @Override
+    public DatabaseType getType() {
+        return this.database.getType();
     }
 
     void queryAsync(String query) {
@@ -238,12 +296,40 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
+    private static final class AutoErrorReport implements ThrowableConsumer<Connection, Exception> {
+
+        final ThrowableConsumer<Connection, Exception> delegate;
+
+        private AutoErrorReport(ThrowableConsumer<Connection, Exception> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void apply(Connection obj) {
+            try {
+                this.delegate.apply(obj);
+            } catch (Throwable t) {
+                StackTraceElement[] stackTrace = t.getStackTrace();
+                for (int i = 0; i < stackTrace.length; i++) {
+                    var frame = stackTrace[i];
+                    if (frame.getClassName().equals(this.getClass().getName())) {
+                        var errAt = stackTrace[i - 1];
+                        int line = errAt.getLineNumber();
+                        AlixCommonMain.logError("Error at line=" + line + ", type=" + DatabaseUpdater.INSTANCE.getType() + ", in=" + errAt.getMethodName());
+                        break;
+                    }
+                }
+                AlixCommonUtils.logException(t);
+            }
+        }
+    }
+
     void queryAsync(ThrowableConsumer<Connection, Exception> func) {
         this.async(() -> this.query(func));
     }
 
     void query(ThrowableConsumer<Connection, Exception> func) {
-        this.database.query(func);
+        this.database.query(new AutoErrorReport(func));
     }
 
     void async(Runnable r) {

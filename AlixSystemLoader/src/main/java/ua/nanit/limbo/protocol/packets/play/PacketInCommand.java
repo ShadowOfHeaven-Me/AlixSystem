@@ -16,7 +16,7 @@ public final class PacketInCommand extends InRetrooperPacket<WrapperPlayClientCh
 
     @Override
     public boolean isSkippable(ClientConnection conn) {
-        return !(conn.getVerifyState() instanceof LoginState);
+        return !(conn.getVerifyState().isLoginState());
     }
 
     @Override

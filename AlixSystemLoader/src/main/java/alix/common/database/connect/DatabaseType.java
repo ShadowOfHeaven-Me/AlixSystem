@@ -9,12 +9,13 @@ public enum DatabaseType {
 
     MYSQL,
     SQLITE,
-    POSTGRES;
+    POSTGRESQL;
 
     public DatabaseConnector getConnector(boolean migrate) {
         Function<DatabaseConfigInstance, DatabaseConnector> func = (switch (this) {
             case SQLITE -> DatabaseSQLite::new;
-            case MYSQL, POSTGRES -> DatabaseMySQL::new;
+            case MYSQL -> DatabaseMySQL::new;
+            case POSTGRESQL -> DatabasePostgreSQL::new;
         });
         return func.apply(DatabaseConfig.config(migrate));
     }

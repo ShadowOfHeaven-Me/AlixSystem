@@ -1,7 +1,6 @@
 package alix.common.packets.inventory;
 
 import alix.common.utils.other.throwable.AlixException;
-import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 
 import java.util.function.ToIntFunction;
@@ -34,10 +33,6 @@ public enum AlixInventoryType {
         return this.func.applyAsInt(version);
     }
 
-    public int geServerVersionId() {
-        return this.func.applyAsInt(PacketEvents.getAPI().getServerManager().getVersion().toClientVersion());
-    }
-
     public int size() {
         return size(this);
     }
@@ -49,8 +44,8 @@ public enum AlixInventoryType {
     }
 
     public static int size(AlixInventoryType type) {
-        int id = type.geServerVersionId();
-        if (id <= 5) return (id + 1) * 9;
+        int ord = type.ordinal();
+        if (ord <= GENERIC_9X6.ordinal()) return (ord + 1) * 9;
         switch (type) {
             case GENERIC_3X3:
             case CRAFTER_3X3:

@@ -25,7 +25,7 @@ import ua.nanit.limbo.connection.PacketHandler;
 import ua.nanit.limbo.connection.captcha.CaptchaBlock;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.integration.LimboIntegration;
-import ua.nanit.limbo.protocol.PacketSnapshots;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.world.DimensionRegistry;
 
 import java.io.IOException;

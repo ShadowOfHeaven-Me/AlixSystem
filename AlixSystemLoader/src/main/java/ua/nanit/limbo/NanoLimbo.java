@@ -17,9 +17,11 @@
 
 package ua.nanit.limbo;
 
+import alix.common.AlixCommonMain;
+import alix.common.utils.other.annotation.DebugOnly;
 import alix.common.utils.other.throwable.AlixError;
-import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.integration.LimboIntegration;
+import ua.nanit.limbo.protocol.snapshot.SnapshotEncodeStrategy;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 
@@ -34,18 +36,31 @@ public final class NanoLimbo {
         return debugMode != val;
     }
 
-    public static final boolean suppressInvalidPackets = of(true);
-    public static final boolean debugCipher = of(false);//of(false, false);
+    public static final SnapshotEncodeStrategy STRATEGY = SnapshotEncodeStrategy.RUNTIME_CACHE;
+    //@DebugOnly
+    public static final boolean suppressInvalidPackets = true;//of(true);
+    public static final boolean debugCipher = false;//of(false);
     //@DebugOnly
     public static final boolean debugPackets = of(false);
+    public static final boolean debugServerPackets = false;//of(false);
+    public static final boolean debugRawEncodes = false;//of(false);
     public static final boolean debugBytes = false;//of(false);
-    public static final boolean debugFrames = false;//(false);
-    public static final boolean debugSnapshots = of(false);
-    public static final boolean usePacketSnapshots = true;
+    public static final boolean debugFrames = false;
+    public static final boolean debugSnapshots = false;//of(false);
+    public static final boolean usePacketSnapshots = STRATEGY != SnapshotEncodeStrategy.NO_CACHE;
+    //@DebugOnly
+    public static final boolean pregenerateSnapshots = STRATEGY == SnapshotEncodeStrategy.PREGENERATE;//true
     public static final boolean allowFreeMovement = false;
+    //@DebugOnly
     public static final boolean performChecks = true;
     //@DebugOnly
-    public static final boolean logPos = of(false);
+    public static final boolean debugAllDisconnects = false;//of(false);
+    //@DebugOnly
+    public static final boolean validateWrites = of(false);
+    //@DebugOnly
+    public static final boolean enableFingerprinting = false;
+    //@DebugOnly
+    public static final boolean logPos = false;//of(false);
     public static final boolean removeTimeout = true;
     public static final boolean centerSpawn = false;
     public static final boolean printCaptchaFailed = of(false);
@@ -55,12 +70,22 @@ public final class NanoLimbo {
     public static LimboServer LIMBO;
     public static LimboIntegration INTEGRATION;
 
+    private static void verifyNotDebug0() throws IllegalAccessException {
+        for (var f : NanoLimbo.class.getDeclaredFields()) {
+            if (debugMode || f.isAnnotationPresent(DebugOnly.class)) {
+                AlixCommonMain.logWarning("Debug Mode is enabled, per " + f.getName() + "=" + f.get(null) + " annotated as DebugOnly! Contact the developer if you weren't expecting debug to be enabled!");
+                return;
+            }
+        }
+    }
+
     public static LimboServer load(LimboIntegration integration) {
         try {
+            verifyNotDebug0();
             return new LimboServer(integration);
         } catch (Exception e) {
             Log.error("Cannot start virtual server: ", e);
-            throw new AlixException(e);
+            throw new AlixError(e);
         }
     }
 

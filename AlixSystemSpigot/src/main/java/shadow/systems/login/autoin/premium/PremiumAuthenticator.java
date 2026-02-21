@@ -144,6 +144,8 @@ public final class PremiumAuthenticator {
             String serverUsername = data.serverUsername();
             InetSocketAddress address = user.getAddress();
 
+            //Main.debug("data.shouldAuthenticate()=" + data.shouldAuthenticate());
+
             if (!data.shouldAuthenticate()) {
                 receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
                 return;
@@ -160,6 +162,7 @@ public final class PremiumAuthenticator {
                     if (this.assignPremiumUUID)
                         this.setPremiumUUID(networkManager, data.uuid());
 
+                    //Main.debug("VerifiedCache.verify=" + user.getName());
                     VerifiedCache.verify(serverUsername, user);
                     receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
                 } else {
@@ -265,6 +268,7 @@ public final class PremiumAuthenticator {
             return;
         }
 
+        //Main.debug("performPremiumCheck=" + performPremiumCheck);
         if (performPremiumCheck || EncryptionSetting.enableEncryption(user.getClientVersion())) {
             try {
                 //should never happen

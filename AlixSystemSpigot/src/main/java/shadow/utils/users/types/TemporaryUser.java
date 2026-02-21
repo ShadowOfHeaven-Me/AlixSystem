@@ -4,7 +4,6 @@ import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import shadow.systems.login.result.LoginInfo;
-import shadow.utils.netty.unsafe.ByteBufHarvester;
 import shadow.utils.objects.packet.EmptyProcessor;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.TemporaryUnverifiedProcessor;
@@ -13,14 +12,14 @@ public final class TemporaryUser implements AlixUser {
 
     private final User user;
     private final LoginInfo loginInfo;
-    private final ByteBufHarvester bufHarvester;
+    //private final ByteBufHarvester bufHarvester;
     private final TemporaryUnverifiedProcessor unverifiedProcessor;
     //private final TemporaryProcessor processor = new TemporaryProcessor();
 
     public TemporaryUser(User user, LoginInfo loginInfo) {
         this.user = user;
         this.loginInfo = loginInfo;
-        this.bufHarvester = ByteBufHarvester.newHarvesterFor(this.getChannel());
+        //this.bufHarvester = ByteBufHarvester.newHarvesterFor(this.getChannel());
         this.unverifiedProcessor = this.isVerified() ? null : new TemporaryUnverifiedProcessor();
     }
 
@@ -60,8 +59,8 @@ public final class TemporaryUser implements AlixUser {
         //throw new AlixException("silentContext() should not be invoked on a TemporaryUser");
     }
 
-    @Override
+    /*@Override
     public ByteBufHarvester bufHarvester() {
         return this.bufHarvester;
-    }
+    }*/
 }

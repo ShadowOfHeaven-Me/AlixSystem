@@ -1,7 +1,7 @@
 package ua.nanit.limbo.protocol.packets.shadow;
 
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketOutConfigKeepAlive;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketPlayOutKeepAlive;
 

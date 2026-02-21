@@ -1,6 +1,6 @@
 package ua.nanit.limbo.connection.captcha;
 
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.keepalive.PacketPlayOutKeepAlive;
 
 public final class KeepAlives {

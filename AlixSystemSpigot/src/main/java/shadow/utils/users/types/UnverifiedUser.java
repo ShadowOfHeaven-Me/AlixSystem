@@ -1,9 +1,12 @@
 package shadow.utils.users.types;
 
+import alix.api.event.types.AuthReason;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.premium.PremiumDataCache;
+import alix.common.data.premium.VerifiedCache;
 import alix.common.login.LoginVerification;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
@@ -11,7 +14,6 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.futures.AlixFuture;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.other.annotation.OptimizationCandidate;
-import alix.api.event.types.AuthReason;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
@@ -33,7 +35,6 @@ import shadow.utils.misc.effect.PotionEffectHandler;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.netty.NettyUtils;
-import shadow.utils.netty.unsafe.ByteBufHarvester;
 import shadow.utils.objects.packet.PacketProcessor;
 import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
@@ -46,6 +47,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static shadow.utils.main.AlixUtils.premiumJoinCommands;
 import static shadow.utils.main.AlixUtils.requireCaptchaVerification;
 
 public final class UnverifiedUser extends AbstractAlixCtxUser {
@@ -54,7 +56,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     private final Player player;
     private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
     private final User retrooperUser;
-    public final ByteBufHarvester bufHarvester;
+    //public final ByteBufHarvester bufHarvester;
     //A captcha future that is very likely to be already finished, but we do not have the certainty that it is.
     //It is also very likely to be completed if generated at runtime for a user before access. Even if
     //accessed before completion, the captcha generation takes less than 35 ms (for a map captcha) and has already been started before
@@ -91,7 +93,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.strAddress = tempUser.getLoginInfo().getTextIP();
         this.address = tempUser.getLoginInfo().getIP();
         this.retrooperUser = tempUser.retrooperUser();
-        this.bufHarvester = tempUser.bufHarvester();
+        //this.bufHarvester = tempUser.bufHarvester();
 
         //potion effect saving
         this.potionEffectHandler = PotionEffectHandler.newHandlerFor(this);
@@ -118,7 +120,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
 
         this.joinedRegistered = registered;
         this.hasCompletedCaptcha = this.isBedrock || hasAccount || !requireCaptchaVerification//is a bedrock player, has an account or captcha is disabled
-                || LimboIntegration.hasCompletedCaptcha(tempUser.getChannel(), player.getName());//passed the check in the virtual limbo server
+                                   || LimboIntegration.hasCompletedCaptcha(tempUser.getChannel(), player.getName());//passed the check in the virtual limbo server
         this.captchaInitialized = !hasCompletedCaptcha;//the captcha (will be) initialized if the user is required to complete it
 
         this.loginType = hasAccount ? data.getLoginType() : ConfigParams.defaultLoginType;
@@ -420,7 +422,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
                 ByteBuf constMsgBuf = OutMessagePacketConstructor.constructConst(this.originalJoinMessage);
                 for (AlixUser u : UserManager.users())
                     if (u.isVerified() && u.silentContext() != this.silentContext() && u.silentContext() != null
-                            && u.retrooperUser().getEncoderState() == ConnectionState.PLAY)
+                        && u.retrooperUser().getEncoderState() == ConnectionState.PLAY)
                         u.writeAndFlushConstSilently(constMsgBuf);
 
                 this.writeAndFlushConstSilently(constMsgBuf);
@@ -499,8 +501,16 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
 
-        if (data.getPremiumData().getStatus().isUnknown())
-            data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
+        if (data.getPremiumData().getStatus().isUnknown()) {
+            boolean premium = VerifiedCache.getAndCheckIfEquals(this.getName(), this.retrooperUser);
+            if (premium)
+                data.setPremiumData(PremiumDataCache.getOrUnknown(this.getName()));
+            else
+                data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
+        }
+
+        if (data.getPremiumData().getStatus().isPremium())
+            premiumJoinCommands.invoke(this.player);
 
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
@@ -547,8 +557,8 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         return false;
     }
 
-    @Override
+    /*@Override
     public ByteBufHarvester bufHarvester() {
         return this.bufHarvester;
-    }
+    }*/
 }

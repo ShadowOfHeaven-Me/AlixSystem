@@ -1,5 +1,6 @@
 package alix.common.utils.netty;
 
+import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
 

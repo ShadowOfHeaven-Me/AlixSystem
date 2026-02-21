@@ -6,7 +6,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.*;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayInAnimation;
 import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayInChunkBatchAck;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;

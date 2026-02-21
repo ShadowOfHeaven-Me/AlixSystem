@@ -9,6 +9,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.PremiumStatus;
+import alix.common.database.DatabaseUpdater;
 import alix.common.database.migrate.MigrateManager;
 import alix.common.database.migrate.MigrateType;
 import alix.common.login.premium.PremiumUtils;
@@ -195,7 +196,7 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                         String password = args[2];
                         LoginType type;
-                        if (l >= 3) {
+                        if (l >= 4) {
                             String arg4 = args[3];
                             try {
                                 type = LoginType.from(arg4.toUpperCase(), false, false);
@@ -428,7 +429,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, "&c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.");
                     sendMessage(sender, "&c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.");
                     sendMessage(sender, "&c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium");
-
+                    sendMessage(sender, "&c/as fs/forcestatus <player> &7- Forcefully sets the player's premium status (if can safely be done)");
                     sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.");
                     if (isOperatorCommandRestricted) {
                         sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
@@ -451,6 +452,16 @@ public final class AdminAlixCommands implements CommandExecutor {
                     //sendMessage(sender, "&c/as incognitooff &7- Gives you back your original name");//, and skin.");
 
                     break;
+                case "save_all_to_db": {
+                    sendMessage(sender, "All user data sync with the connected database has been initiated and should complete soon enough");
+                    UserFileManager.getAllData().forEach(PersistentUserData::saveToDatabase);
+                    return true;
+                }
+                case "testdb": {
+                    DatabaseUpdater.INSTANCE.testDatabase();
+                    sendMessage(sender, "sex tested, check this shit out");
+                    return true;
+                }
                 case "__reset_all_premium_passwords": {
                     UserFileManager.getAllData().stream()
                             .filter(data -> data.getPremiumData().getStatus().isPremium())
@@ -484,7 +495,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                 case "messages-merge":
                     boolean succeeded = Messages.merge();
                     if (!succeeded) {
-                        sendMessage(sender, "The extraction file already does not exists! Extract the messages first, before trying to merging them.");
+                        sendMessage(sender, "The extraction file already does not exists! Extract the messages first, before trying to merge them.");
                     } else
                         sendMessage(sender, "The messages have been successfully merged into one file! You need to restart your server, for this change to take effect");
                     break;

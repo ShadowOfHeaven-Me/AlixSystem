@@ -1,3 +1,4 @@
+/*
 package shadow.utils.netty.packets;
 
 import alix.common.utils.netty.BufTransformer;
@@ -46,4 +47,4 @@ final class ConstRawAlixPacket extends AbstractAlixPacket {
         if (this.ctxCache == null) return;
         super.release0();
     }
-}
+}*/

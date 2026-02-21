@@ -21,7 +21,7 @@ import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryItems;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryOpen;

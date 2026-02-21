@@ -19,7 +19,7 @@ package ua.nanit.limbo.protocol.packets.login.disconnect;
 
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerDisconnect;
 import net.kyori.adventure.text.Component;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
 public class PacketLoginDisconnect extends OutRetrooperPacket<WrapperLoginServerDisconnect> {

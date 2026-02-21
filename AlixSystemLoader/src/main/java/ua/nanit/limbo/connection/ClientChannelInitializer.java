@@ -60,14 +60,15 @@ public final class ClientChannelInitializer {
             connection.updateVersion(clientVersion);
             connection.updateState(connection.hasConfigPhase() ? State.CONFIGURATION : State.PLAY);
             connection.getGameProfile().setUsername(name);
-            connection.getVerifyState().setData(UserFileManager.get(name), authAction, geyserUtil);
 
             PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
-            VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
+            VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();;
 
             var cipher = cipherSupplier.getHandlerFor(connection);
             connection.setCipher(cipher);
             frameDecoder.stopResendCollection();
+
+            connection.getVerifyState().setData(UserFileManager.get(name), authAction, geyserUtil);
 
             pipeline.addFirst(duplexHandlerName, duplexHandler);
             pipeline.addFirst(frameDecoderName, frameDecoder);

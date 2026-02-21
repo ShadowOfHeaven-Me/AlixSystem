@@ -2,8 +2,8 @@ package ua.nanit.limbo.connection.captcha;
 
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
 import com.github.retrooper.packetevents.util.Vector3d;
-import ua.nanit.limbo.protocol.PacketSnapshot;
-import ua.nanit.limbo.protocol.PacketSnapshots;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutSpawnEntity;
 
 public final class Entities {

@@ -31,7 +31,7 @@ public interface AlixUser extends AbstractSpigotUser {
 
     ChannelHandlerContext silentContext();
 
-    ByteBufHarvester bufHarvester();
+    //ByteBufHarvester bufHarvester();
 
     //does not account for TemporaryUser
     default boolean isAssignable(AlixUser user) {

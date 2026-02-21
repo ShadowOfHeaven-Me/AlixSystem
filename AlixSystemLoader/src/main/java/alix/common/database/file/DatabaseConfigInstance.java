@@ -9,6 +9,7 @@ import static alix.common.database.file.DatabaseConfig.config;
 public final class DatabaseConfigInstance {
 
     public final String USERNAME = getString("username", "root");
+    public final String USER = getString("user","");
     public final String PASSWORD = getString("password", "");
     public final String HOST = getString("host", "127.0.0.1");
     private final String SQLITE_PATH = getString("sqlite-path", "AuthMe/authme.db");
@@ -19,10 +20,6 @@ public final class DatabaseConfigInstance {
     public DatabaseConfigInstance(boolean migrate) {
         this.migrate = migrate;
         //WrapperConfigServerShowDialog
-
-        if (migrate && !SQLITE_FILE.exists()) {
-            AlixCommonMain.logWarning("Migrate SQLITE_FILE of the path \"" + SQLITE_FILE + "\" does not exist!");
-        }
     }
 
     public boolean isMigrate() {
@@ -30,6 +27,9 @@ public final class DatabaseConfigInstance {
     }
 
     public String TABLE_NAME() {
+        if (this.migrate && !SQLITE_FILE.exists()) {
+            AlixCommonMain.logWarning("Migrate SQLITE_FILE of the path \"" + SQLITE_FILE + "\" does not exist!");
+        }
         return getString("table-name", "");
     }
 

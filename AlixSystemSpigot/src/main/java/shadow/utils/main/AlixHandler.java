@@ -7,6 +7,7 @@ import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
@@ -79,8 +80,11 @@ public final class AlixHandler {
     public static final boolean isEpollTransport = SERVER_CHANNEL.getClass() == EpollServerSocketChannel.class;
 
     public static void safeKick(Player player, String msg) {
-        Channel channel = (Channel) ProtocolManager.CHANNELS.get(player.getUniqueId());
+        safeKick0(player, AlixFormatter.translateColors(msg));
+    }
 
+    private static void safeKick0(Player player, String msg) {
+        Channel channel = (Channel) ProtocolManager.CHANNELS.get(player.getUniqueId());
         boolean kicked = false;
 
         try {
@@ -90,7 +94,23 @@ public final class AlixHandler {
                 var disconnectBuf = encoder == ConnectionState.PLAY ? OutDisconnectPacketConstructor.dynamicAtPlay(msg) : OutDisconnectPacketConstructor.dynamicAtConfig(msg);
                 NettyUtils.closeAfterDynamicSend(channel, disconnectBuf);
             } else {
-                player.kickPlayer(msg);
+                Runnable r = () -> player.kickPlayer(msg);
+                if (Thread.currentThread() == Main.mainServerThread) r.run();
+                else AlixScheduler.sync(() -> {
+                    try {
+                        r.run();
+                    } catch (Exception e) {
+                        AlixCommonUtils.logException(e);
+                        if (channel != null && channel.isOpen() || player.isOnline()) {
+                            if (channel != null) {
+                                Main.logWarning("Commencing abrupt disconnect of " + player.getName());
+                                channel.close();
+                            } else {
+                                Main.logError("COULD NOT DISCONNECT PLAYER " + player.getName());
+                            }
+                        }
+                    }
+                });
             }
             kicked = true;
         } finally {
@@ -330,7 +350,7 @@ public final class AlixHandler {
                 pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
                 Main.logError("drftgyhjuik");
             }*/
-        if (AlixUtils.antibotService || ServerPingManager.isRegistered())
+        if (ServerPingManager.isRegistered())
             pm.registerEvents(new ServerPingListener(), Main.plugin);
         /*            if (requireCaptchaVerification) {
          *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
@@ -395,10 +415,12 @@ public final class AlixHandler {
                 return Verifications.add(p, user);
             case REGISTER_PREMIUM:
                 autoRegisterCommandList.invoke(p);
+                premiumJoinCommands.invoke(p);
                 addVerifiedUser0(p, user, autoRegisterPremiumMessageBuffer, AuthReason.PREMIUM_AUTO_REGISTER);
                 return null;
             case LOGIN_PREMIUM:
                 autoLoginCommandList.invoke(p);
+                premiumJoinCommands.invoke(p);
                 addVerifiedUser0(p, user, autoLoginPremiumMessageBuffer, AuthReason.PREMIUM_AUTO_LOGIN);
                 return null;
             case IP_AUTO_LOGIN:

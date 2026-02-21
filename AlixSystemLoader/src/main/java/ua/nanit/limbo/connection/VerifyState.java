@@ -2,6 +2,7 @@ package ua.nanit.limbo.connection;
 
 import alix.common.data.PersistentUserData;
 import alix.common.utils.floodgate.GeyserUtil;
+import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayInAnimation;
 import ua.nanit.limbo.protocol.packets.play.batch.PacketPlayInChunkBatchAck;
 import ua.nanit.limbo.protocol.packets.play.config.PacketPlayInReconfigureAck;
@@ -22,6 +23,10 @@ import java.util.function.Consumer;
 public interface VerifyState {
 
     void sendInitial();
+
+    default boolean isLoginState() {
+        return this instanceof LoginState;
+    }
 
     default void setData(PersistentUserData data, Consumer<ClientConnection> authAction, GeyserUtil geyserUti) {
     }

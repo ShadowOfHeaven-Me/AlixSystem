@@ -3,9 +3,10 @@ package ua.nanit.limbo.connection.login.countdown;
 import alix.common.messages.Messages;
 import io.netty.util.concurrent.ScheduledFuture;
 import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.captcha.KeepAlives;
 import ua.nanit.limbo.connection.login.packets.ExperiencePackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.registry.State;
 
@@ -38,13 +39,26 @@ public final class LimboCountdown {//shows xp countdown and kicks out
         this.task.cancel(false);
     }
 
+    private long lastKeepAliveSentTime;
+
+    private void keepAlive() {
+        long now = System.currentTimeMillis();
+        long lastKeepAliveSent = now - lastKeepAliveSentTime;
+
+        if (lastKeepAliveSent >= 10_000) {
+            this.lastKeepAliveSentTime = now;
+            this.duplexHandler.writeAndFlush(KeepAlives.KEEP_ALIVE_PREVENT_TIMEOUT);
+        }
+    }
+
     void tick() {
         if (this.connection.getEncoderState() != State.PLAY) {
-            if(--this.index == 0) this.connection.closeTimedOut();
+            if (--this.index == 0) this.connection.closeTimedOut();
             return;
         }
         if (this.index != 0) {
             //if (!this.connection.isInPlayPhase()) return;
+            this.keepAlive();
             this.duplexHandler.writeAndFlush(this.packets[--this.index]);
             return;
         }

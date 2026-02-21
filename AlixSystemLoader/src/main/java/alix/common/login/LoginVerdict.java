@@ -21,6 +21,13 @@ public enum LoginVerdict {
         return isAutoLogin;
     }
 
+    public final boolean isPremium() {
+        return (switch (this) {
+            case REGISTER_PREMIUM, LOGIN_PREMIUM -> true;
+            default -> false;
+        });
+    }
+
     public final String readableName() {
         return readableName;
     }

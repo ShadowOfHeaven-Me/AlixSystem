@@ -32,6 +32,12 @@ abstract class RetrooperPacket<T extends PacketWrapper> implements Packet {
         return wrapper;
     }
 
+    public final T wrapperCopy() {
+        T copy = WrapperUtils.allocEmpty((Class<T>) this.wrapper.getClass());
+        copy.copy(this.wrapper);
+        return copy;
+    }
+
     @Override
     public final String toString() {
         return this.getClass().getSimpleName();

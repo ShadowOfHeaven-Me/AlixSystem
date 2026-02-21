@@ -39,18 +39,25 @@ tasks.shadowJar {
         "io.github.retrooper.packetevents",
         "com.github.retrooper.packetevents",
         "net.kyori.adventure.api",
-        "net.kyori.adventure.nbt"
+        "net.kyori.adventure.nbt"//,
+        //"org.mariadb.jdbc"
     )
 
     for (s in list) {
         relocate(s, "$prefix.$s")
     }
+    mergeServiceFiles()
 
     /*relocate("io.github.retrooper.packetevents", "$prefix.io.github.retrooper.packetevents")
     relocate("com.github.retrooper.packetevents", "$prefix.com.github.retrooper.packetevents")
     relocate("net.kyori:adventure-api", "$prefix.net.kyori:adventure-api")
     relocate("net.kyori:adventure-nbt", "$prefix.net.kyori:adventure-nbt")*/
-    minimize()
+
+
+    minimize {
+        exclude(dependency("org.mariadb.jdbc:mariadb-java-client:.*"))
+        exclude(dependency("org.postgresql:postgresql:.*"))
+    }
 }
 
 /*tasks.build {
@@ -75,6 +82,8 @@ repositories {
         name = "papermc"
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
+    //geyser/floodgate
+    maven ("https://repo.opencollab.dev/main")
 }
 //się wypierdala czasami bez tego
 tasks.register("prepareKotlinBuildScriptModel") {}
@@ -87,6 +96,9 @@ dependencies {
         //exclude("net.kyori", "adventure-api")
         //exclude("net.kyori", "adventure-nbt")
     }
+
+    /*compileOnly("org.geysermc.geyser:api:2.9.0-SNAPSHOT")
+    compileOnly("org.geysermc.floodgate:api:2.2.4-SNAPSHOT")*/
 
     implementation("net.kyori:adventure-api:4.19.0")
     implementation("net.kyori:adventure-nbt:4.19.0")
