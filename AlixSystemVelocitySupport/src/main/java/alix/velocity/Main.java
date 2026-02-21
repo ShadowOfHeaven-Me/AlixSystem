@@ -25,6 +25,7 @@ import java.nio.file.Path;
 public final class Main implements LoaderBootstrap {
 
     public static final VelocityAlixMain PLUGIN = VelocityAlixMain.instance;
+    public static final VelocityServer SERVER = (VelocityServer) PLUGIN.getServer();
     public static Main INSTANCE;
     private final VelocityServer server;
     private final Logger logger;
@@ -46,7 +47,8 @@ public final class Main implements LoaderBootstrap {
     @Override
     public void onEnable() {
         //LibbyManager.loadDependencies(PLUGIN, this.logger, this.dataDirectory, this.server.getPluginManager());
-        this.util = new GeyserUtil(server.getPluginManager().getPlugin("floodgate").isPresent());
+        var pm = server.getPluginManager();
+        this.util = new GeyserUtil(pm.getPlugin("geyser").isPresent(), pm.getPlugin("floodgate").isPresent());
         //logInfo("floodgate present: " + this.util.isFloodgatePresent());
         //AlixServer.init();
         Messages.init();

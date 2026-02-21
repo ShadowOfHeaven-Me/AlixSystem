@@ -29,7 +29,10 @@ tasks.shadowJar {
     relocate("com.alessiodp.libby", "$prefix.com.alessiodp.libby")
 
     //if (!isUber)
-    minimize()
+    minimize {
+        exclude(dependency("org.mariadb.jdbc:mariadb-java-client:.*"))
+        exclude(dependency("org.postgresql:postgresql:.*"))
+    }
 }
 
 repositories {
@@ -47,11 +50,14 @@ repositories {
     maven("https://repo.codemc.io/repository/maven-releases/")
     maven("https://repo.codemc.io/repository/maven-snapshots/")
     //libby
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    //maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    maven { url = uri("https://repo.kyngs.xyz/public/") }
     maven {
         name = "papermc"
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
+    //geyser/floodgate
+    maven ("https://repo.opencollab.dev/main")
 }
 
 dependencies {
@@ -59,7 +65,8 @@ dependencies {
     //runtimeOnly("com.guardsquare:proguard-gradle:7.6.1")
 
 
-    compileOnly("com.alessiodp.libby:libby-velocity:2.0.0-SNAPSHOT")
+    //implementation("com.alessiodp.libby:libby-velocity:1.3.0")
+    //implementation("xyz.kyngs.libby:libby-velocity:1.6.0")
 
     if (isUber) {
         compileOnly(project(":AlixSystemLoader"))
@@ -81,9 +88,11 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.36")
 
     var srcDir = project.findProperty("velocity-sources-dir")
-    compileOnly(files("$srcDir\\Geyser-Velocity.jar"))
-    compileOnly(files("$srcDir\\floodgate-velocity.jar"))
+    //compileOnly(files("$srcDir\\Geyser-Velocity.jar"))
+    //compileOnly(files("$srcDir\\floodgate-velocity.jar"))
     compileOnly(files("$srcDir\\velocity-3.4.0-SNAPSHOT-469.jar"))
+    /*compileOnly("org.geysermc.geyser:api:2.9.0-SNAPSHOT")
+    compileOnly("org.geysermc.floodgate:api:2.2.4-SNAPSHOT")*/
 
 
     //implementation("com.velocitypowered:velocity:3.4.0-SNAPSHOT")

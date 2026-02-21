@@ -15,6 +15,7 @@ import alix.velocity.server.impl.VelocityLimboIntegration;
 import alix.velocity.systems.packets.gui.impl.AccountGUI;
 import alix.velocity.utils.user.UserManager;
 import alix.velocity.utils.user.VerifiedUser;
+import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -23,10 +24,7 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import io.netty.channel.Channel;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
-import ua.nanit.limbo.protocol.packets.PacketUtils;
-import ua.nanit.limbo.protocol.registry.Version;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
 import static com.mojang.brigadier.builder.LiteralArgumentBuilder.literal;
@@ -37,6 +35,7 @@ public final class CommandManager {
         register_Account(server);
         register_ChangePassword(server);
         AlixSystemCommand.register(server.getCommandManager());
+        register_Premium(server.getCommandManager());
         //register("alixsystem", new AlixSystemCommand());
     }
 
@@ -87,10 +86,11 @@ public final class CommandManager {
                     @OptimizationCandidate
                     String reason = AlixCommonUtils.getPasswordInvalidityReason(password, LoginType.ANVIL);
 
-                    Channel channel = user.getChannel();
+                    //Channel channel = user.getChannel();
                     if (reason != null) {
-                        Version version = user.getVersion();
-                        PacketUtils.write(channel, version, SoundPackets.VILLAGER_NO);
+                        //Version version = user.getVersion();
+                        //PacketUtils.write(channel, version, SoundPackets.VILLAGER_NO);
+                        user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));
                         player.sendRichMessage(reason);
                         return SINGLE_SUCCESS;
                     }

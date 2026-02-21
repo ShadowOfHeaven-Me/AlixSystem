@@ -2,6 +2,7 @@ package alix.velocity.utils.user;
 
 import alix.common.reflection.CommonReflection;
 import alix.velocity.Main;
+import alix.velocity.systems.commands.executable.ExecutableCommandList;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import io.netty.channel.Channel;
@@ -52,6 +53,11 @@ public final class UserManager {
         user.getChannel().closeFuture().addListener(f -> {
             USERS.remove(player.getUniqueId());
         });
+        ExecutableCommandList.executeFor(user);
+    }
+
+    public static boolean hasVerified(UUID uuid) {
+        return USERS.containsKey(uuid);
     }
 
     public static VerifiedUser getVerified(UUID uuid) {

@@ -13,13 +13,13 @@ import alix.common.login.premium.*;
 import alix.common.messages.Messages;
 import alix.common.reflection.CommonReflection;
 import alix.common.utils.AlixCache;
+import alix.common.utils.config.ConfigParams;
 import alix.common.utils.floodgate.GeyserUtil;
 import alix.velocity.server.AlixVelocityLimbo;
 import alix.velocity.systems.events.premium.EncryptionInfo;
 import alix.velocity.systems.packets.PacketEventListener;
 import alix.velocity.utils.user.UserManager;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
 import com.google.common.cache.Cache;
 import com.velocitypowered.api.event.Continuation;
@@ -35,9 +35,8 @@ import io.netty.channel.Channel;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import ua.nanit.limbo.connection.login.LoginInfo;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
-import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.registry.Version;
 
 import java.lang.reflect.Field;
@@ -77,9 +76,10 @@ public final class Events {
         boolean bedrockPremium = this.authorizeLinked && this.util.isLinked(channel);
 
         //*should* be safe
-        boolean premium = bedrockPremium || this.authorizePremium && data != null && data.getPremiumData().getStatus().isPremium()
-                && VerifiedCache.removeAndCheckIfEquals(player.getUsername(), ProtocolManager.USERS.get(channel.pipeline()));
-        if (premium) {
+        boolean premium = bedrockPremium || this.authorizePremium /*&& data != null && data.getPremiumData().getStatus().isPremium()*/
+                && VerifiedCache.getAndCheckIfEquals(player.getUsername(), channel);
+        boolean requirePremiumPass = ConfigParams.requireRegisterFromAll && data == null;
+        if (premium && !requirePremiumPass) {
             LoginInfo.set(channel, data != null, data != null ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
             UserManager.add(player);
             continuation.resume();
@@ -107,7 +107,7 @@ public final class Events {
     private static final Field delegate = CommonReflection.getDeclaredFieldAccessible(LoginInboundConnection.class, "delegate");
 
     public static final PacketSnapshot
-            alreadyConnectingPacket = PacketPlayOutDisconnect.snapshot(Messages.get("already-connected")),
+            alreadyConnectingPacket = PacketLoginDisconnect.snapshot(Messages.get("already-connected")),
             invalidNamePacket = PacketLoginDisconnect.snapshot(Messages.get("anti-bot-invalid-name-blocked")),
             preventFirstTimeJoinPacket = PacketLoginDisconnect.snapshot(ConnectionManager.preventFirstTimeJoinMessage),
             maxTotalAccountsPacket = PacketLoginDisconnect.snapshot(GeoIPTracker.maxAccountsReached),

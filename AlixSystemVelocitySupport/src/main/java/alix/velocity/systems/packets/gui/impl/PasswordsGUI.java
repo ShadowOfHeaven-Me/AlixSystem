@@ -14,8 +14,9 @@ import alix.velocity.systems.packets.gui.inv.InventoryGui;
 import alix.velocity.utils.user.VerifiedUser;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import ua.nanit.limbo.connection.login.packets.SoundPackets;
+import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import ua.nanit.limbo.connection.login.gui.LimboAuthBuilder;
+import ua.nanit.limbo.connection.login.packets.SoundPackets;
 
 import java.util.Arrays;
 
@@ -140,10 +141,11 @@ public final class PasswordsGUI extends AlixGUI {
         ItemStack i5 = SAVE_CHANGES;
         items[17] = new GUIItem(i5, event -> {
             if (changes.tryApply(this.user.user)) {
-                this.user.write(SoundPackets.PLAYER_LEVELUP);
+                //this.user.write(SoundPackets.PLAYER_LEVELUP);
+                this.user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_PLAYER_LEVELUP));
                 user.user.sendMessage(appliedChanges);
                 user.closeInventory();
-            } else this.user.writeAndFlush(SoundPackets.VILLAGER_NO);//the tryApply method will provide the text feedback
+            } else this.user.sendPacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));//this.user.writeAndFlush(SoundPackets.VILLAGER_NO);//the tryApply method will provide the text feedback
         });
 
         return items;

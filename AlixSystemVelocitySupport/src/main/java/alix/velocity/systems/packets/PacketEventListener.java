@@ -9,6 +9,7 @@ import alix.common.login.LoginVerdict;
 import alix.common.login.premium.*;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.config.ConfigParams;
 import alix.velocity.Main;
 import alix.velocity.server.AlixVelocityLimbo;
 import alix.velocity.systems.events.Events;
@@ -30,7 +31,8 @@ import com.velocitypowered.api.event.Continuation;
 import io.netty.channel.Channel;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.login.LoginInfo;
-import ua.nanit.limbo.protocol.PacketSnapshot;
+import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayOutPluginMessage;
@@ -60,7 +62,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
     cachedNameDoesNotMatch = PacketLoginDisconnect.snapshot("§cCached name does not match");*/
     public static final Map<Channel, ClientPublicKey> publicKeys = new ConcurrentHashMap<>();
     private static final KeyPair keyPair = PremiumVerifier.keyPair;
-    private static final boolean debugPackets = NanoLimbo.debugPackets;
+    private static final boolean debugPackets = NanoLimbo.debugServerPackets;
 
     @Override
     public void onPacketReceive(PacketReceiveEvent event) {
@@ -118,7 +120,6 @@ public final class PacketEventListener extends PacketListenerAbstract {
 
             switch (playEvent.getPacketType()) {
                 case CLICK_WINDOW: {
-
                     var gui = alixUser.gui;
                     if (gui == null) return;
 
@@ -210,10 +211,10 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 PremiumData premiumData = encryptionInfo.premiumData();
                 if (!premiumData.getStatus().isPremium()) premiumData = PremiumUtils.getPremiumData(packetUsername);
 
-                if (data == null)
+                if (data == null && !ConfigParams.requireRegisterFromAll)
                     PersistentUserData.createFromPremiumInfo(serverUsername, user.getAddress().getAddress(), premiumData);
 
-                boolean joinedRegistered = encryptionData != null;
+                boolean joinedRegistered = data != null;
                 LoginInfo.set(channel, joinedRegistered, joinedRegistered ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
 
                 VerifiedCache.verify(serverUsername, user);
@@ -254,7 +255,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
 
     private void disconnectWith(User user, PacketSnapshot packet) {
         Channel channel = (Channel) user.getChannel();
-        Runnable r = () -> PacketUtils.closeWith(channel, Version.of(user.getClientVersion().getProtocolVersion()), packet);
+        Runnable r = () -> PacketUtils.closeWith(channel, Version.of(user.getClientVersion().getProtocolVersion()), packet, CipherHandler.encryptionFor(channel));
 
         if (channel.eventLoop().inEventLoop()) r.run();
         else channel.eventLoop().execute(r);

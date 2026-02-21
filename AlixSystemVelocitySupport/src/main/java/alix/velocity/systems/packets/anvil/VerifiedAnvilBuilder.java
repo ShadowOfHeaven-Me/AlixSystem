@@ -4,6 +4,7 @@ import alix.velocity.systems.packets.gui.AbstractAlixGUI;
 import alix.velocity.systems.packets.gui.inv.AbstractInventory;
 import alix.velocity.utils.user.VerifiedUser;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
+import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import ua.nanit.limbo.connection.login.gui.AbstractAnvilBuilder;
 import ua.nanit.limbo.connection.login.gui.AnvilBuilderGoal;
@@ -33,10 +34,10 @@ public final class VerifiedAnvilBuilder extends AbstractAnvilBuilder<VerifiedAnv
             case 2:
                 if (isPasswordValid) this.onValidConfirmation.accept(this.input);
                 else {
-                    this.user.write(SoundPackets.VILLAGER_NO);
-                    if (this.invalidityReason != null) this.user.user.sendMessage(this.invalidityReason);
+                    //this.user.write(SoundPackets.VILLAGER_NO);
+                    this.user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));
+                    if (this.invalidityReason != null) this.user.sendMessage(this.invalidityReason);
                     else this.user.flush();
-                    //player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 }
         }
     }

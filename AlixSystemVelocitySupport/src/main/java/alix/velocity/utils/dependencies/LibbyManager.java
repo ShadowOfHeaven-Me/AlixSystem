@@ -1,8 +1,10 @@
+/*
 package alix.velocity.utils.dependencies;
 
 import alix.loaders.velocity.VelocityAlixMain;
 import com.alessiodp.libby.Library;
 import com.alessiodp.libby.VelocityLibraryManager;
+import com.nukkitx.natives.util.LibraryLoader;
 import com.velocitypowered.api.plugin.PluginManager;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -35,3 +37,4 @@ public final class LibbyManager {
         manager.loadLibrary(lib);
     }
 }
+*/

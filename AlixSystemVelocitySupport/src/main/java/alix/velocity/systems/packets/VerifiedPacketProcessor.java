@@ -28,7 +28,7 @@ public final class VerifiedPacketProcessor {
 
     private static final boolean ipAutoLoginAsk = config.getBoolean("ip-autologin-ask") && !ConfigParams.forcefullyDisableAutoLogin;
     private final VerifiedUser user;
-    private final LoginInfo info;
+    private final LoginInfo loginInfo;
     private CurrentAction currentAction;
 
     //Password setting
@@ -51,11 +51,11 @@ public final class VerifiedPacketProcessor {
         if (attr == null) {
             user.getPlayer().disconnect(Component.text("§cSomething went wrong."));
             //this.info = null;
-            throw new AlixException("No LoginInfo fpr player " + user.getName());
+            throw new AlixException("No LoginInfo for player " + user.getName());
         }
-        this.info = attr.get();
+        this.loginInfo = attr.get();
 
-        this.sentAutoLoginAsk = !ipAutoLoginAsk || info.joinedRegistered();
+        this.sentAutoLoginAsk = !ipAutoLoginAsk || loginInfo.joinedRegistered();
         this.currentAction = CurrentAction.NONE;
 
         this.logJoin();
@@ -68,10 +68,10 @@ public final class VerifiedPacketProcessor {
             loginSuccess = Messages.getWithPrefix("login-success");
 
     private String joinMessage() {
-        if (!info.verdict().isAutoLogin())
+        if (!loginInfo.verdict().isAutoLogin())
             return loginSuccess;
 
-        switch (info.verdict()) {
+        switch (loginInfo.verdict()) {
             case IP_AUTO_LOGIN:
                 return autoLoginMessage;
             case LOGIN_PREMIUM:
@@ -83,13 +83,17 @@ public final class VerifiedPacketProcessor {
         }
     }
 
+    public LoginInfo getLoginInfo() {
+        return loginInfo;
+    }
+
     private void logJoin() {
-        if (info.verdict().isAutoLogin()) {
-            Main.logInfo(joinVerified.format(this.user.getName(), this.user.getAddress().getHostAddress(), info.verdict().readableName()));
+        if (loginInfo.verdict().isAutoLogin()) {
+            Main.logInfo(joinVerified.format(this.user.getName(), this.user.getAddress().getHostAddress(), loginInfo.verdict().readableName()));
             return;
         }
 
-        AlixMessage msg = info.joinedRegistered() ? loginJoinMessage : registerJoinMessage;
+        AlixMessage msg = loginInfo.joinedRegistered() ? loginJoinMessage : registerJoinMessage;
         Main.logInfo(msg.format(this.user.getName(), this.user.getAddress()));
     }
 
