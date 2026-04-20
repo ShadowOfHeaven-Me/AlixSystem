@@ -18,7 +18,7 @@ public final class CryptoUtil {
 
         //algo = "BCrypt-" + algo.toUpperCase();
 
-        String password = algo + "$" + cost + "$" + salt + "$" + hash;
+        String password = "$" + algo + "$" + cost + "$" + salt + hash;
         return Password.fromBCryptMigrated(password);
     }
 
@@ -28,6 +28,8 @@ public final class CryptoUtil {
         String hashedPassword = split[1];*/
 
         return password.getHashedPassword();
+        /*var pass = password.getHashedPassword().split("\n");
+        return "$%s$%s$%s%s".formatted(pass[0], pass[1], pass[2], pass[3]);*/
         /*"$%s$%s$%s%s".formatted(
                 password.algo().replace("BCrypt-", "").toLowerCase(),
                 cost,
@@ -35,5 +37,4 @@ public final class CryptoUtil {
                 hashedPassword
         );*/
     }
-
 }

@@ -17,11 +17,12 @@
 
 package ua.nanit.limbo.connection;
 
+import alix.common.antibot.firewall.AlgorithmId;
+import alix.common.antibot.firewall.FireWallManager;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.integration.PreLoginResult;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.configuration.PacketInFinishConfiguration;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.PacketConfigDisconnect;
@@ -29,6 +30,7 @@ import ua.nanit.limbo.protocol.packets.login.PacketLoginAcknowledged;
 import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.status.PacketStatusRequest;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 
@@ -149,6 +151,12 @@ public final class PacketHandler {
 
     public void handle(ClientConnection conn, PacketLoginStart packet) {
         //Log.error("LOGIN START");
+        if (conn.sentLogin) {
+            var ip = conn.getAddress().getAddress();
+            FireWallManager.add(ip, AlgorithmId.G1, true);
+            return;
+        }
+        conn.sentLogin = true;
         conn.getFrameDecoder().stopResendCollection();
 
         if (server.getConnections().getCount() >= server.getConfig().getMaxPlayers()) {

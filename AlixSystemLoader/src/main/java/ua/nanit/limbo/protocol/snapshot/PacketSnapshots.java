@@ -246,16 +246,6 @@ public final class PacketSnapshots {
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();
         PACKET_KNOWN_PACKS = PacketSnapshot.of(packetKnownPacks);
 
-        var PACKET_UPDATE_TAGS_1_20_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_20_5()));
-        var PACKET_UPDATE_TAGS_1_21 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21()));
-        var PACKET_UPDATE_TAGS_1_21_2 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_2()));
-        var PACKET_UPDATE_TAGS_1_21_4 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_4()));
-        var PACKET_UPDATE_TAGS_1_21_5 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_5()));
-        var PACKET_UPDATE_TAGS_1_21_6 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_6()));
-        var PACKET_UPDATE_TAGS_1_21_7 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_7()));
-        var PACKET_UPDATE_TAGS_1_21_9 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_9()));
-        var PACKET_UPDATE_TAGS_1_21_11 = PacketSnapshot.of(new PacketUpdateTags(registry.getTags_1_21_11()));
-
         PacketRegistryData packetRegistryData = new PacketRegistryData();
         packetRegistryData.setDimensionRegistry(registry);
 
@@ -292,7 +282,7 @@ public final class PacketSnapshots {
 
         PACKETS_REGISTRY_DATA = packetRegistries;*/
 
-        var  PACKETS_REGISTRY_DATA_1_20_5 = createRegistryData(server, registry.getCodec_1_20_5());
+        var PACKETS_REGISTRY_DATA_1_20_5 = createRegistryData(server, registry.getCodec_1_20_5());
         var PACKETS_REGISTRY_DATA_1_21 = createRegistryData(server, registry.getCodec_1_21());
         var PACKETS_REGISTRY_DATA_1_21_2 = createRegistryData(server, registry.getCodec_1_21_2());
         var PACKETS_REGISTRY_DATA_1_21_4 = createRegistryData(server, registry.getCodec_1_21_4());
@@ -309,16 +299,16 @@ public final class PacketSnapshots {
         packetGameEvent.setValue(0);
         PACKET_START_WAITING_CHUNKS = PacketSnapshot.of(packetGameEvent);
 
-
-        UPDATE_TAGS.put(Version.V1_20_5, PACKET_UPDATE_TAGS_1_20_5);
-        UPDATE_TAGS.put(Version.V1_21,   PACKET_UPDATE_TAGS_1_21);
-        UPDATE_TAGS.put(Version.V1_21_2, PACKET_UPDATE_TAGS_1_21_2);
-        UPDATE_TAGS.put(Version.V1_21_4, PACKET_UPDATE_TAGS_1_21_4);
-        UPDATE_TAGS.put(Version.V1_21_5, PACKET_UPDATE_TAGS_1_21_5);
-        UPDATE_TAGS.put(Version.V1_21_6, PACKET_UPDATE_TAGS_1_21_6);
-        UPDATE_TAGS.put(Version.V1_21_7, PACKET_UPDATE_TAGS_1_21_7);
-        UPDATE_TAGS.put(Version.V1_21_9, PACKET_UPDATE_TAGS_1_21_9);
-        UPDATE_TAGS.put(Version.V1_21_11, PACKET_UPDATE_TAGS_1_21_11);
+        UPDATE_TAGS.put(Version.V1_20_5, createTags(registry.getTags_1_20_5()));
+        UPDATE_TAGS.put(Version.V1_21, createTags(registry.getTags_1_21()));
+        UPDATE_TAGS.put(Version.V1_21_2, createTags(registry.getTags_1_21_2()));
+        UPDATE_TAGS.put(Version.V1_21_4, createTags(registry.getTags_1_21_4()));
+        UPDATE_TAGS.put(Version.V1_21_5, createTags(registry.getTags_1_21_5()));
+        UPDATE_TAGS.put(Version.V1_21_6, createTags(registry.getTags_1_21_6()));
+        UPDATE_TAGS.put(Version.V1_21_7, createTags(registry.getTags_1_21_7()));
+        UPDATE_TAGS.put(Version.V1_21_9, createTags(registry.getTags_1_21_9()));
+        UPDATE_TAGS.put(Version.V1_21_11, createTags(registry.getTags_1_21_11()));
+        UPDATE_TAGS.put(Version.V26_1, createTags(registry.getTags_26_1()));
 
         REGISTRY_DATA.put(Version.V1_20_5, PACKETS_REGISTRY_DATA_1_20_5);
         REGISTRY_DATA.put(Version.V1_21,   PACKETS_REGISTRY_DATA_1_21);
@@ -329,6 +319,7 @@ public final class PacketSnapshots {
         REGISTRY_DATA.put(Version.V1_21_7, PACKETS_REGISTRY_DATA_1_21_7);
         REGISTRY_DATA.put(Version.V1_21_9, PACKETS_REGISTRY_DATA_1_21_9);
         REGISTRY_DATA.put(Version.V1_21_11, PACKETS_REGISTRY_DATA_1_21_11);
+        REGISTRY_DATA.put(Version.V26_1, createRegistryData(server, registry.getCodec_26_1()));
 
         int chunkXOffset = (int) 0 >> 4; // Default x position is 0
         int chunkZOffset = (int) 0 >> 4; // Default z position is 0
@@ -354,6 +345,9 @@ public final class PacketSnapshots {
         //Log.error("CHUNKS LEN: " + PACKETS_EMPTY_CHUNKS);
     }
 
+    private static PacketSnapshot createTags(CompoundBinaryTag tags) {
+        return PacketSnapshot.of(new PacketUpdateTags(tags));
+    }
 
     private static List<PacketSnapshot> createRegistryData(LimboServer server, CompoundBinaryTag dimensionTag) {
         List<PacketSnapshot> packetRegistries = new ArrayList<>();

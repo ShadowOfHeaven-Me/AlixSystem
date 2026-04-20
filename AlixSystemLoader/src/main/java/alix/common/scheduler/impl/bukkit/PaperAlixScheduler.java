@@ -34,6 +34,8 @@ public final class PaperAlixScheduler extends AbstractAlixScheduler {
 
     private final AlixTaskList executeNow = new AlixTaskList();
 
+    //rethink if this is actually well-made
+    @ScheduledForFix
     @AlixIntrinsified(method = "Bukkit.getScheduler")
     public PaperAlixScheduler() {
         Bukkit.getPluginManager().registerEvents(new PaperSyncTickEvent(), BukkitAlixMain.instance);

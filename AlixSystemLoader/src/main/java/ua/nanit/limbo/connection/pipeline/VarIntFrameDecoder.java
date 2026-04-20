@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.connection.pipeline;
 
+import alix.common.utils.netty.BufRelease;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.safety.NettySafety;
 import io.netty.buffer.ByteBuf;
@@ -67,7 +68,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
     }
 
     public void releaseCollected() {
-        this.forEachCollected(ByteBuf::release);
+        this.forEachCollected(BufRelease::safeDynamicRelease);
         /*this.forEachCollected(buf -> {
             int refCnt = buf.refCnt();
             if (refCnt != 0) buf.release(refCnt);
@@ -126,6 +127,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
         //safe release
         //if (cum.refCnt() != 0)
+
         //(no need now, since executed on event loop)
         cum.release();
     }
@@ -199,7 +201,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         //uhh, is it possible for this to be the result of fragmentation?
         if (len <= 0) throw NettySafety.INVALID_PACKET_LEN;
 
-        //readVarInt() returns 0 for partial VarInts with a continuation bit, and for actual VarInts read as a 0
+        //readVarIntPacketLength(...) returns 0 for partial VarInts with a continuation bit, and for actual VarInts read as a 0
         if (len == 0) {
             in.resetReaderIndex();
             return null;

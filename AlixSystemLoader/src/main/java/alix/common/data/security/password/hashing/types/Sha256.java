@@ -1,4 +1,4 @@
-package alix.common.data.security.types;
+package alix.common.data.security.password.hashing.types;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;

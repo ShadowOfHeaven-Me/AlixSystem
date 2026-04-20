@@ -76,7 +76,7 @@ dependencies {
     // https://mvnrepository.com/artifact/io.github.bivashy/velocity-native
     compileOnly("io.github.bivashy:velocity-native:3.3.0-410636a")
 
-    compileOnly("com.github.retrooper:packetevents-netty-common:${project.findProperty("packet-events-version")}")
+    compileOnly("com.github.retrooper:packetevents-api:${project.findProperty("packet-events-version")}")
     api(project(":AlixAPI"))
 
     compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")

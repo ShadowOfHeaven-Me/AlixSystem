@@ -1,3 +1,4 @@
+/*
 package alix.velocity.systems.filters;
 
 import alix.common.connection.filters.ConnectionFilter;
@@ -24,4 +25,4 @@ public final class ConnectionFilterAdapter implements VelocityConnectionFilter {
     public PreLoginEvent.PreLoginComponentResult getResult() {
         return this.result;
     }
-}
+}*/

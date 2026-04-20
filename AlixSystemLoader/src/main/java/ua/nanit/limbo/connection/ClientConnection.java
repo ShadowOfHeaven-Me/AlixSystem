@@ -68,6 +68,7 @@ public class ClientConnection {
 
     //Login/Captcha
     private final VerifyState verifyState;
+    public boolean sentLogin;
 
     //Transfer
     private PacketHandshake handshakePacket;
@@ -102,7 +103,12 @@ public class ClientConnection {
         if (!this.channel.isOpen())
             return;
 
-        Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress() + "] passed the antibot verification");
+        boolean transfer = useTransfer && this.clientVersion.moreOrEqual(Version.V1_20_5);
+        String host = this.handshakePacket.getExtractedHost(); //this.server.getIntegration().getServerIP();
+        int port = this.handshakePacket.getPort(); //this.server.getIntegration().getPort();
+        var extraInfo = transfer ? (", re-transferring to " + host + ":" + port) : "";
+        Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress()
+                 + "] passed the antibot verification" + extraInfo);
         if (!verifyTheDud) {
             Log.warning("VERIFICATION NOT PERFORMED - DISABLED");
             return;
@@ -113,10 +119,7 @@ public class ClientConnection {
         this.server.getIntegration().setHasCompletedCaptcha(this.address.getAddress(), this.gameProfile.getUsername());
         //Log.info("Brotha you got verified");
 
-        if (useTransfer && this.clientVersion.moreOrEqual(Version.V1_20_5)) {
-            String host = this.handshakePacket.getExtractedHost(); //this.server.getIntegration().getServerIP();
-            int port = this.handshakePacket.getPort(); //this.server.getIntegration().getPort();
-
+        if (transfer) {
             //this.writeAndFlushPacket(PacketPlayOutSpawnEntity.of(1, UUID.randomUUID(), EntityTypes.ALLAY, new Vector3d(0, 64, 2)));
 
             //this.writeAndFlushPacket(new PacketPlayOutTransfer().setHost(host).setPort(port));

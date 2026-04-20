@@ -4,6 +4,7 @@ import alix.common.data.security.password.Password;
 import alix.common.data.security.password.hashing.Hashing;
 import alix.common.data.security.password.hashing.HashingAlgorithm;
 import alix.common.database.migrate.util.CryptoUtil;
+import alix.common.utils.other.throwable.AlixError;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
 public final class PasswordMatchers {
@@ -26,10 +27,15 @@ public final class PasswordMatchers {
             HashingAlgorithm algorithm = password.getHashing();
             String salt = password.getSalt();
 
-            String hashedInput = Hashing.hashSaltFirst(algorithm, unhashedInput, salt);
+            String hashedInput = this.hash(unhashedInput, algorithm, salt);
             //AlixCommonMain.logError("hashedInput='" + hashedInput + "' hashedPassword='" + hashedPassword + "'");
 
             return hashedPassword.equals(hashedInput);
+        }
+
+        @Override
+        public String hash(String input, HashingAlgorithm algo, String salt) {
+            return Hashing.hashSaltFirst(algo, input, salt);
         }
 
         @Override
@@ -48,9 +54,16 @@ public final class PasswordMatchers {
             String salt = password.getSalt();
 
             //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/MessageDigestCryptoProvider.java#L63
-            String hashedInput = password.hasSalt() ? algorithm.hash(algorithm.hash(unhashedInput) + salt) : algorithm.hash(unhashedInput);
+            String hashedInput = this.hash(unhashedInput, algorithm, salt);
 
             return hashedPassword.equals(hashedInput);
+        }
+
+        @Override
+        public String hash(String input, HashingAlgorithm algo, String salt) {
+            //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/MessageDigestCryptoProvider.java#L63
+            //hash with salt, if has salt
+            return !salt.isEmpty() ? algo.hash(algo.hash(input) + salt) : algo.hash(input);
         }
 
         @Override
@@ -70,6 +83,14 @@ public final class PasswordMatchers {
             var raw = CryptoUtil.rawBcryptFromHashed(password).toCharArray();
 
             return VERIFIER.verify(unhashedInput.toCharArray(), raw).verified;
+        }
+
+        @Override
+        public String hash(String input, HashingAlgorithm algo, String salt) {
+            if (!algo.isBCrypt())
+                throw new AlixError("how tf");
+
+            return algo.hash(input);
         }
 
         @Override

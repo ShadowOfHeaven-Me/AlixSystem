@@ -1,5 +1,7 @@
 package alix.common.antibot.algorithms.connection;
 
+import alix.common.antibot.firewall.AlgorithmId;
+
 import java.net.InetAddress;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,7 +12,7 @@ public interface ConnectionAlgorithm {
 
     void onThreadRepeat();
 
-    String getAlgorithmID();
+    AlgorithmId getAlgorithmID();
 
     abstract class NameMap {
 

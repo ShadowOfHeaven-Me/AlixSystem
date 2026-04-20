@@ -1,18 +1,10 @@
 package alix.velocity.server.impl;
 
-import alix.common.data.PersistentUserData;
-import alix.common.data.file.UserFileManager;
-import alix.common.data.premium.PremiumData;
-import alix.common.login.premium.ClientPublicKey;
-import alix.common.login.premium.PremiumUtils;
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.AlixCommonHandler;
 import alix.common.utils.floodgate.GeyserUtil;
-import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.Main;
 import alix.velocity.server.impl.user.VelocityClientConnection;
-import alix.velocity.utils.user.UserManager;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
@@ -27,16 +19,11 @@ import org.jetbrains.annotations.NotNull;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.integration.LimboIntegration;
-import ua.nanit.limbo.integration.PreLoginResult;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
-import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
 import ua.nanit.limbo.server.LimboServer;
 
-import java.net.InetAddress;
 import java.util.UUID;
 import java.util.function.Function;
-
-import static alix.velocity.systems.events.Events.*;
 
 public final class VelocityLimboIntegration extends LimboIntegration<VelocityClientConnection> {
 
@@ -106,7 +93,7 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
         return channel.hasAttr(JOINED_UUID) ? channel.attr(JOINED_UUID).get() : null;
     }
 
-    @Override
+    /*@Override
     public PreLoginResult onLoginStart(VelocityClientConnection connection, PacketLoginStart packet, boolean[] recode) {
         var channel = connection.getChannel();
         InetAddress ip = connection.getAddress().getAddress();
@@ -166,7 +153,7 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
 
         //we cannot include `isPremium` here, because this would introduce a bypass
         return data != null || this.geyserUtil.isBedrock(channel) || (hasCompletedCaptcha != null ? hasCompletedCaptcha == Boolean.TRUE : hasCompletedCaptcha(channel, packetUsername)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
-    }
+    }*/
 
     @Override
     public GeyserUtil geyserUtil() {

@@ -1,7 +1,7 @@
 package alix.common.antibot.algorithms.connection.types;
 
-import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
+import alix.common.antibot.firewall.AlgorithmId;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static alix.common.antibot.firewall.AlgorithmId.B2;
+
 public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
     //private final String userMessage = Messages.get("anti-bot-fail-suspect-message","{0}", this.getAlgorithmID());
-    private static final String ALGORITHM_ID = "B2";
+    private static final AlgorithmId ALGORITHM_ID = B2;
     private final Map<InetAddress, NameMapImpl> ipMap = new ConcurrentHashMap<>();//<ip, Name to join attempt map>
 
     @Override
@@ -32,7 +34,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
     }
 
     @Override
-    public String getAlgorithmID() {
+    public AlgorithmId getAlgorithmID() {
         return ALGORITHM_ID;
     }
 
@@ -54,8 +56,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
             else this.vl.getAndAdd(2);
 
             if (this.vl.get() > 240) {
-                if (FireWallManager.add(ip, ALGORITHM_ID))
-                    AlixCommonMain.logInfo(consoleMessage.format(ip.getHostAddress()));
+                FireWallManager.add(ip, ALGORITHM_ID, true);
                 return true;
             }
             return false;

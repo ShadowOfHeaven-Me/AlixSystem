@@ -49,6 +49,7 @@ public final class Main implements LoaderBootstrap {
         //LibbyManager.loadDependencies(PLUGIN, this.logger, this.dataDirectory, this.server.getPluginManager());
         var pm = server.getPluginManager();
         this.util = new GeyserUtil(pm.getPlugin("geyser").isPresent(), pm.getPlugin("floodgate").isPresent());
+
         //logInfo("floodgate present: " + this.util.isFloodgatePresent());
         //AlixServer.init();
         Messages.init();

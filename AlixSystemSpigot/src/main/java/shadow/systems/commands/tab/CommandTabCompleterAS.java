@@ -86,6 +86,8 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         String arg4 = args[3].toUpperCase();
                         return Arrays.stream(PremiumStatus.values()).map(Enum::name).filter(n -> n.startsWith(arg4)).toList();
                     }
+                    case "rf":
+                    case "registerforcefully":
                     case "cp":
                     case "changepassword": {
                         String arg4 = args[3].toUpperCase();
@@ -100,7 +102,7 @@ public final class CommandTabCompleterAS implements TabCompleter {
         List<String> list = Arrays.asList("resetstatus","rs",
                 "user", "abstats", "rp", "resetpassword", "valueof", "constants", "frd", "fullyremovedata",
                 "info", "calculate", "average", "randommath", "help", "helpmath", "bypasslimit", "bypasslimit-remove", "bl", "bl-r",
-                "forcestatus", "fs","cp","changepassword");// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
+                "forcestatus", "fs","cp","changepassword", "rf", "registerforcefully" );// : Arrays.asList("gracz", "wartosc", "stale", "oblicz", "info", "srednia", "incognitooff", "losowerownanie", "pomoc");
         list = new ArrayList<>(list);
         //if (ServerPingManager.isRegistered()) list.add("pings");
         Collections.sort(list);

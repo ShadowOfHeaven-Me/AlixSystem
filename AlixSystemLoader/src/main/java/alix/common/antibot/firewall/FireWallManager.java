@@ -2,6 +2,8 @@ package alix.common.antibot.firewall;
 
 import alix.common.AlixCommonMain;
 import alix.common.antibot.ip.IPUtils;
+import alix.common.messages.AlixMessage;
+import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
 import alix.common.utils.config.ConfigParams;
@@ -35,8 +37,14 @@ public final class FireWallManager {
         add0(ip, new FireWallEntry("ex_ca: " + t.getMessage()));
     }
 
-    public static boolean add(InetAddress ip, String algorithmId) {
-        return add0(ip, new FireWallEntry(algorithmId)) == null;
+    private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message");
+
+    public static boolean add(InetAddress ip, AlgorithmId algorithmId, boolean log) {
+        boolean added = add0(ip, new FireWallEntry(algorithmId.name())) == null;
+        if (log && added)
+            AlixCommonMain.logInfo(consoleMessage.format(ip.getHostAddress(), algorithmId));
+
+        return added;
     }
 
     private static void osBlacklist0(String ip) {
@@ -50,8 +58,8 @@ public final class FireWallManager {
     static FireWallEntry add0(InetAddress ip, FireWallEntry entry) {
         if (isOsFireWallInUse) osBlacklist0(ip.getHostAddress());
         FireWallEntry previous = map.put(ip, entry);
-        if (intIpv4Set != null && previous == null && ip.getClass() == Inet4Address.class)
-            intIpv4Set.add(Integer.toUnsignedLong(IPUtils.ipv4Value((Inet4Address) ip)));
+        if (intIpv4Set != null && previous == null && ip instanceof Inet4Address ipv4)
+            intIpv4Set.add(Integer.toUnsignedLong(IPUtils.ipv4Value(ipv4)));
         return previous;
     }
 

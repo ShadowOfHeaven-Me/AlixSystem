@@ -8,6 +8,9 @@ import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.PersistentUserData;
+import alix.common.data.file.UserFileManager;
+import alix.common.data.premium.PremiumDataCache;
+import alix.common.data.premium.PremiumIdIndex;
 import alix.common.environment.ServerEnvironment;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.login.prelogin.PreLoginVerdict;
@@ -24,8 +27,10 @@ import alix.common.utils.multiengine.server.AbstractServer;
 import alix.common.utils.multiengine.server.BukkitServer;
 import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.velocity.VelocityAlixMain;
+import io.netty.channel.Channel;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -38,11 +43,19 @@ public final class AlixCommonHandler {
 
     static final class DoNotThrow {
         static final boolean antibotService = config.getBoolean("antibot-service", true);
+        static final boolean antiVpnIncludeBedrock = config.getBoolean("anti-vpn-include-bedrock", true);
         static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z0-9_]*");
         static final boolean validateName = config.getBoolean("validate-name");
     }
 
-    public static PreLoginVerdict getPreLoginVerdict(InetAddress address, String nameSent, String nameRefactored, PersistentUserData data, boolean deemedPremium) {
+    public static PreLoginVerdict getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data,
+                                                     boolean deemedPremium, boolean isBedrock) {
+        return getPreLoginVerdict0(((InetSocketAddress) channel.remoteAddress()).getAddress(), nameSent, nameRefactored, data,
+                deemedPremium, isBedrock);
+    }
+
+    private static PreLoginVerdict getPreLoginVerdict0(InetAddress address, String nameSent, String nameRefactored,
+                                                       PersistentUserData data, boolean deemedPremium, boolean isBedrock) {
         if (data == null && validateName && (nameSent.length() > 16 || nameSent.isEmpty() || !NAME_PATTERN.matcher(nameSent).matches())) {
             //FireWallManager.add(user.getAddress().getAddress(), "E1");
             //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
@@ -64,12 +77,23 @@ public final class AlixCommonHandler {
                 return PreLoginVerdict.DISALLOWED_PREVENT_FIRST_JOIN;
             }
 
-            if (GeoIPTracker.disallowJoin(address, nameRefactored)) {
+            boolean renamed = false;
+            if (deemedPremium && !UserFileManager.hasName(nameRefactored)) {
+                var premiumData = PremiumDataCache.getOrUnknown(nameSent);
+                var uuid = premiumData.premiumUUID();
+                //data is null, but the uuid of the player is already indexed here
+                //rename the player in the files
+                if (uuid != null && PremiumIdIndex.isIndexed(uuid)) {
+                    renamed = PersistentUserData.registerPremiumPlayerRename(nameRefactored, premiumData);
+                }
+            }
+
+            if (!renamed && GeoIPTracker.disallowJoin(address, nameRefactored)) {
                 //event.setCancelled(true);
                 return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
             }
 
-            if (AntiVPN.disallowJoin(address, nameRefactored)) {
+            if ((!isBedrock || isBedrock && antiVpnIncludeBedrock) && AntiVPN.disallowJoin(address, nameRefactored)) {
                 //event.setCancelled(true);
                 return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
             }

@@ -23,6 +23,8 @@ forget-connection-in: 60
 max-total-accounts: 1
 #Prevents unregistered players from logging in using a VPN (designed with the main purpose of preventing players bypassing the limit of 'max-total-accounts' by using VPNs, but may also work a bot counter-measurement)
 anti-vpn: true
+#Defines whether bedrock players should also be disallowed from registering when using a VPN
+anti-vpn-include-bedrock: true
 #Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join-during-high-traffic' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
 antibot-service: true
 #Defines whether Alix should load its built-in "bad ips" file into the fast-blocking Firewall system. Setting this to false can save a bit of RAM

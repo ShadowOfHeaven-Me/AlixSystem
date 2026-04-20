@@ -11,8 +11,7 @@ import alix.common.utils.other.throwable.AlixError;
 
 import java.util.Arrays;
 
-import static alix.common.data.security.password.hashing.Hashing.CONFIG_HASH;
-import static alix.common.data.security.password.hashing.Hashing.SECURE_RANDOM;
+import static alix.common.data.security.password.hashing.Hashing.*;
 import static alix.common.data.security.password.matcher.PasswordMatchers.*;
 import static alix.common.utils.AlixCommonUtils.generationChars;
 
@@ -81,6 +80,8 @@ public final class Password {
     }
 
     public String getSalt() {
+        /*if (this.hashing.isBCrypt())
+            throw new AlixError("getSalt() invoked on BCrypt password");*/
         return salt;
     }
 
@@ -161,16 +162,21 @@ public final class Password {
     }
 
     public static Password fromUnhashed(String unhashedPassword) {
-        if (!CONFIG_HASH.isHashing())
-            return new Password(unhashedPassword, CONFIG_HASH, "", ALIX_FORMAT);//do not generate salt when hashing is disabled
-
-        String salt = Hashing.generateSalt();
-        String hashed = Hashing.hashSaltFirst(CONFIG_HASH, unhashedPassword, salt);
-        return new Password(hashed, CONFIG_HASH, salt, ALIX_FORMAT);
+        return fromUnhashed0(unhashedPassword, CONFIG_HASH);
     }
 
-    public static Password readFromSaved(String savablePassword) {
-        String[] s = savablePassword.split(":");
+    private static Password fromUnhashed0(String unhashedPassword, HashingAlgorithm algo) {
+        PasswordMatcher matcher = algo.getMatcher();
+        if (!algo.isHashing())
+            return new Password(unhashedPassword, algo, "", matcher);//do not generate salt when hashing is disabled
+
+        String salt = algo.generateSalt() ? Hashing.generateSalt() : "";
+        String hashed = matcher.hash(unhashedPassword, algo, salt);
+        return new Password(hashed, algo, salt, matcher);
+    }
+
+    public static Password readFromSaved(String savedPassword) {
+        String[] s = savedPassword.split(":");
         String password = s[0];
 
         if (password.equals("null"))
@@ -186,7 +192,7 @@ public final class Password {
             case 4:
                 return new Password(password, Byte.parseByte(s[1]), s[2], Byte.parseByte(s[3]));
             default:
-                throw new AlixError("Invalid savable password: '" + savablePassword + "' for savable length " + s.length + " with savable parts " + Arrays.toString(s) + "!");
+                throw new AlixError("Invalid saved password: '" + savedPassword + "' for saved length " + s.length + " with saved parts " + Arrays.toString(s) + "!");
         }
     }
 }

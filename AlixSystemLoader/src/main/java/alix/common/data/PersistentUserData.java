@@ -2,12 +2,15 @@ package alix.common.data;
 
 import alix.api.user.data.AlixUserData;
 import alix.api.user.data.PremiumStatus;
+import alix.common.AlixCommonMain;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.connection.filters.GeoIPTracker;
+import alix.common.data.file.AllowListFileManager;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.AlixLocationList;
 import alix.common.data.loc.provider.LocationListProvider;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.premium.PremiumIdIndex;
 import alix.common.data.security.password.Password;
 import alix.common.database.DatabaseUpdater;
 import alix.common.utils.file.SaveUtils;
@@ -20,6 +23,7 @@ import java.util.UUID;
 
 public final class PersistentUserData implements AlixUserData {
 
+    public static final InetAddress UNKNOWN_IP = InetAddress.getLoopbackAddress();
     private static final LocationListProvider homesProvider = LocationListProvider.createImpl();
     private static final DatabaseUpdater database = DatabaseUpdater.INSTANCE;
     private static final int CURRENT_DATA_LENGTH = 11;
@@ -47,7 +51,7 @@ public final class PersistentUserData implements AlixUserData {
         this.loginParams.initSettings(splitData[6]);
         this.loginParams.initAuthSettings(splitData[7]);
         this.lastSuccessfulLogin = Long.parseLong(splitData[8]);
-        this.premiumData = PremiumData.fromSavable(splitData[9]);
+        this.setPremiumData0(PremiumData.fromSavable(splitData[9]));
         this.createdAt = Long.parseLong(splitData[10]);
         UserFileManager.putData(this);
         GeoIPTracker.addIP(this.ip);//Add it here, as it was loaded
@@ -76,6 +80,34 @@ public final class PersistentUserData implements AlixUserData {
 
     private UUID _uuid() {
         return UUIDUtil.getOfflineModeUuid(this.name);
+    }
+
+    public static boolean registerPremiumPlayerRename(String newName, PremiumData premiumData) {
+        var renamedPlayersData = UserFileManager.getAllData().stream()
+                .filter(data -> premiumData.premiumUUID().equals(data.getPremiumData().premiumUUID())).findAny().orElse(null);
+
+        if (renamedPlayersData == null)
+            return false;
+
+        AlixCommonMain.logInfo("Detected premium player's " + newName + " (Formerly " + renamedPlayersData.name + ") rename. Reassigning associated data");
+        if (AllowListFileManager.remove(renamedPlayersData.name)) {
+            AllowListFileManager.add(newName);
+        }
+        UserFileManager.remove(renamedPlayersData.name);
+        renamedData(newName, renamedPlayersData);
+        return true;
+    }
+
+    private static void renamedData(String newName, PersistentUserData old) {
+        var data = new PersistentUserData(newName, old.ip, old.getPassword());
+        data.setLastSuccessfulLogin(old.getLastSuccessfulLogin());
+        data.setLoginType(old.getLoginType());
+        data.setPremiumData(old.getPremiumData());
+
+        data.getLoginParams().setExtraLoginType(old.getLoginParams().getExtraLoginType());
+        data.getLoginParams().setAuthSettings(old.getLoginParams().getAuthSettings());
+        data.getLoginParams().setExtraPassword(old.getLoginParams().getExtraPassword());
+        data.getLoginParams().setHasProvenAuthAccess(old.getLoginParams().hasProvenAuthAccess());
     }
 
     public static PremiumData getPremiumData(PersistentUserData data) {
@@ -211,9 +243,16 @@ public final class PersistentUserData implements AlixUserData {
     }
 
     public void setPremiumData(@NotNull PremiumData premiumData) {
-        this.premiumData = premiumData;
+        this.setPremiumData0(premiumData);
 
         database.setPremiumData(this.name, premiumData);
+    }
+
+    private void setPremiumData0(@NotNull PremiumData premiumData) {
+        this.premiumData = premiumData;
+
+        if (premiumData.getStatus().isPremium())
+            PremiumIdIndex.index(premiumData.premiumUUID());
     }
 
     public void resetPasswords() {

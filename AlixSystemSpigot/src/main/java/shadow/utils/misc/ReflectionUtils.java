@@ -513,21 +513,34 @@ public final class ReflectionUtils {
             try {
                 return nms2WithThrowable(name);
             } catch (ClassNotFoundException ignored) {
-
             }
         }
         throw new ExceptionInInitializerError("The possible class names: " + Arrays.toString(possibleNames) + " were all not found!");
     }
 
     private static Class<?> nms2WithThrowable(String name) throws ClassNotFoundException {
-        if (protocolVersion) {
+        String[] splitName = name.split("\\.");
+        return forNames("net.minecraft." + name,
+                String.format("net.minecraft.server.%s", splitName[splitName.length - 1]),
+                String.format("net.minecraft.server.%s.%s", serverVerRegex, splitName[splitName.length - 1]));
+        /*if (protocolVersion) {
             return Class.forName("net.minecraft." + name);
         } else {
             String[] splitName = name.split("\\.");
             if (isServerVerRegexBlank)
                 return Class.forName(String.format("net.minecraft.server.%s", splitName[splitName.length - 1]));
             return Class.forName(String.format("net.minecraft.server.%s.%s", serverVerRegex, splitName[splitName.length - 1]));
+        }*/
+    }
+
+    public static Class<?> forNames(String... possibleNames) throws ClassNotFoundException {
+        for (String name : possibleNames) {
+            try {
+                return Class.forName(name);
+            } catch (ClassNotFoundException ignored) {
+            }
         }
+        throw new ClassNotFoundException("The possible class names: " + Arrays.toString(possibleNames) + " were all not found!");
     }
 
     public static Class<?> nms2(String name) {

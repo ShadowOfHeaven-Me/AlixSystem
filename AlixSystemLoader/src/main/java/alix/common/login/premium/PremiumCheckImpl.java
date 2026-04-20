@@ -3,6 +3,7 @@ package alix.common.login.premium;
 import alix.common.data.premium.PremiumData;
 import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.i18n.HttpsHandler;
+import alix.common.utils.other.annotation.ScheduledForFix;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +24,8 @@ final class PremiumCheckImpl {
     }
 
     @NotNull
+    //possible, but unlikely race condition - nextIndex() invoked twice on the same checks.current() obj
+    @ScheduledForFix
     PremiumData fetchPremiumData(String name) {
         PremiumData data;
         int looped = 0;

@@ -1,4 +1,4 @@
-package alix.common.data.security.types;
+package alix.common.data.security.password.hashing.types;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

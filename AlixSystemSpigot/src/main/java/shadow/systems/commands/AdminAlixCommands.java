@@ -9,6 +9,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.PremiumStatus;
+import alix.common.data.security.password.Password;
 import alix.common.database.DatabaseUpdater;
 import alix.common.database.migrate.MigrateManager;
 import alix.common.database.migrate.MigrateType;
@@ -181,6 +182,44 @@ public final class AdminAlixCommands implements CommandExecutor {
                         });
                         break;
                     }
+                    case "rf":
+                    case "registerforcefully": {
+                        if (UserFileManager.hasName(arg2)) {
+                            sendMessage(sender, "Player data of the user " + arg2 + " already exists!");
+                            return false;
+                        }
+
+                        if (l == 2) {
+                            sendMessage(sender, "Specify the player's password!");
+                            return false;
+                        }
+
+                        String password = args[2];
+                        LoginType type;
+                        if (l >= 4) {
+                            String arg4 = args[3];
+                            try {
+                                type = LoginType.from(arg4.toUpperCase(), false, false);
+                            } catch (Exception e) {
+                                sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg4);
+                                return false;
+                            }
+                        } else type = LoginType.COMMAND;
+
+                        var invalidityReason = AlixUtils.getPasswordInvalidityReason(password, type);
+                        if (invalidityReason != null) {
+                            sendMessage(sender, "&6Invalid password:");
+                            sender.sendMessage(invalidityReason);
+                            return false;
+                        }
+
+                        PersistentUserData data = PersistentUserData.createDefault(arg2, PersistentUserData.UNKNOWN_IP, Password.fromUnhashed(password));
+
+                        data.setLoginType(type);
+                        String passFormatted = "*".repeat(password.length() - 3) + password.substring(password.length() - 3);
+                        sendMessage(sender, "Successfully registered the player " + data.getName() + " with the password " + passFormatted + ", and login type " + type);
+                        return true;
+                    }
                     case "cp":
                     case "changepassword": {
                         if (l == 2) {
@@ -208,6 +247,7 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                         var invalidityReason = AlixUtils.getPasswordInvalidityReason(password, type);
                         if (invalidityReason != null) {
+                            sendMessage(sender, "&6Invalid password:");
                             sender.sendMessage(invalidityReason);
                             return false;
                         }
@@ -251,7 +291,7 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                             data.setLoginType(type);
                             sendMessage(sender, "Successfully reset the password of the player " + arg2
-                                    + " and set his password type to " + type + "!");
+                                                + " and set his password type to " + type + "!");
                         } else sendMessage(sender, "Successfully reset the password of the player " + arg2 + ".");
                     }
                     break;
@@ -407,35 +447,36 @@ public final class AdminAlixCommands implements CommandExecutor {
                 case "helpmath":
                     sendMessage(sender, "");
                     sendMessage(sender, "&c/as calc/calculate <mathematical operation> &7- " +
-                            "Returns what the given mathematical operation is equal to. " +
-                            "Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925");
+                                        "Returns what the given mathematical operation is equal to. " +
+                                        "Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925");
                     sendMessage(sender, "&c/as avg/average <numbers> &7- " +
-                            "Returns what the given numbers average is equal to. " +
-                            "Example: &c/as avg 4 + 67 - 9 + 14 returns 19.");
+                                        "Returns what the given numbers average is equal to. " +
+                                        "Example: &c/as avg 4 + 67 - 9 + 14 returns 19.");
                     sendMessage(sender, "&c/as valueof <number> &7- Returns a more readable version of a given number.");
                     sendMessage(sender, "&c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.");
                     sendMessage(sender, "&c/as randommath/rmath &7- Gives you random, already solved mathematical operation. " +
-                            "Example: &c" + AlixUtils.getRandomMathematicalOperation());
+                                        "Example: &c" + AlixUtils.getRandomMathematicalOperation());
                     sendMessage(sender, "");
                     break;
-                case "help"://fullyremovedata
-                    sendMessage(sender, "");//bypasslimit-remove
+                case "help":
+                    sendMessage(sender, "");
                     sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
                     sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
                     sendMessage(sender, "&c/as abstats &7- Enables or disables the ability to view the AntiBot Statistics.");
                     sendMessage(sender, "&c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list." +
-                            " Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.");
+                                        " Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.");
                     sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
                     sendMessage(sender, "&c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+                    sendMessage(sender, "&c/as rf/registerforcefully <name> <password> [login type] &7- Registers a player of the given username with the given password, and login type (COMMAND if not specified)");
                     sendMessage(sender, "&c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.");
                     sendMessage(sender, "&c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium");
-                    sendMessage(sender, "&c/as fs/forcestatus <player> &7- Forcefully sets the player's premium status (if can safely be done)");
+                    sendMessage(sender, "&c/as fs/forcestatus <player> <status> &7- Forcefully sets the player's premium status (if can safely be done)");
                     sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.");
                     if (isOperatorCommandRestricted) {
                         sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
-                                "by executing this command in console.");
+                                            "by executing this command in console.");
                         sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, " +
-                                "by executing this command in console.");
+                                            "by executing this command in console.");
                     }
                     sendMessage(sender, "&c/as helpmath &7- Lists alix commands related to math.");
                     sendMessage(sender, "");

@@ -5,7 +5,6 @@ import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.PersistentUserData;
-import alix.common.login.prelogin.PreLoginVerdict;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonHandler;
 import alix.common.utils.AlixCommonUtils;
@@ -21,6 +20,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import shadow.systems.dependencies.Dependencies;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
@@ -348,7 +348,7 @@ public final class AlixChannelHandler {
         removeFromTimeOut(channel);
         if (channel.pipeline().context(CHANNEL_MONITOR_NAME) != null) channel.pipeline().remove(CHANNEL_MONITOR_NAME);
 
-        switch (getPreLoginVerdict(channel, packetUsername, serverUsername, data, deemedPremium)) {
+        switch (AlixCommonHandler.getPreLoginVerdict(channel, packetUsername, serverUsername, data, deemedPremium, Dependencies.isBedrock(channel))) {
             case ALLOWED:
                 break;
             case DISALLOWED_INVALID_NAME:
@@ -378,10 +378,6 @@ public final class AlixChannelHandler {
         //Main.logError("NAME IN LOGIN START: " + serverUsername + " ATTR: " + channel.attr(floodgate_player) + " CHANNEL: " + channel.getClass().getName());
 
         return putConnecting(user, serverUsername);
-    }
-
-    public static PreLoginVerdict getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data, boolean deemedPremium) {
-        return AlixCommonHandler.getPreLoginVerdict(((InetSocketAddress) channel.remoteAddress()).getAddress(), nameSent, nameRefactored, data, deemedPremium);
     }
 
     public static boolean putConnecting(User user, String name) {

@@ -145,13 +145,13 @@ public final class PacketEventListener extends PacketListenerAbstract {
     private void onEncryptionResponse(WrapperLoginClientEncryptionResponse packet, User user, Channel channel) {
         byte[] sharedSecret = packet.getEncryptedSharedSecret();
         var encryptionInfo = Events.preLoginContinuations.get(channel);
-        var continuation = encryptionInfo.continuation();
 
         if (encryptionInfo == null) {
             //we weren't expecting this packet
             this.disconnectWith(user, illegalEncryptionState);
             return;
         }
+        var continuation = encryptionInfo.continuation();
 
         EncryptionData encryptionData = encryptionInfo.encryptionData();
         PersistentUserData data = encryptionInfo.data();

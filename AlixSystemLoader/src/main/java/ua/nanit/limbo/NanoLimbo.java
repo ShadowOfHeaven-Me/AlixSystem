@@ -29,6 +29,7 @@ public final class NanoLimbo {
 
     //https://github.com/Nan1t/NanoLimbo
 
+    //keep this val first, per verifyNotDebug0()
     public static final boolean debugMode = false;
 
     //debugMode ? !val : val

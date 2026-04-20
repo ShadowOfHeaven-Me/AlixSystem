@@ -45,16 +45,18 @@ public final class PacketHandshake implements PacketIn {
         return extractHost(this.host);
     }
 
-    //todo: verify this
+    //per: https://github.com/MinecraftForge/MinecraftForge/blob/478d8b3f181220c9be6911311ed2177d07febc08/src/main/java/net/minecraftforge/network/NetworkContext.java#L91
     //extra info can be sent from bedrock/forge players in the host name
     private static String extractHost(String host) {
-        for (int i = 0; i < host.length(); i++) {
+        int idx = host.indexOf('\0');
+        return idx != -1 ? host.substring(0, idx) : host;
+        /*for (int i = 0; i < host.length(); i++) {
             char c = host.charAt(i);
             //forge's delimiter is the null character
             if (c == '\0') return host.substring(0, i + 1);
             //if((c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' && c > 'Z') && c != '.')
         }
-        return host;
+        return host;*/
     }
 
     public int getPort() {

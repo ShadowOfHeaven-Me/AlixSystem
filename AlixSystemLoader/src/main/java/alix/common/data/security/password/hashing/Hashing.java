@@ -1,6 +1,6 @@
 package alix.common.data.security.password.hashing;
 
-import alix.common.data.security.types.Sha256;
+import alix.common.data.security.password.hashing.types.Sha256;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.other.throwable.AlixException;
 import at.favre.lib.crypto.bcrypt.BCrypt;
@@ -156,7 +156,7 @@ public final class Hashing {
             int cost = 10;
 
             //https://github.com/kyngs/LibreLogin/blob/5cae5bd01fa37e45ee1d529bfa5c8eb1dcdc5c58/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/BCrypt2ACryptoProvider.java#L16
-            return cost + "$" + HASHER.hashToString(cost, s.toCharArray());
+            return HASHER.hashToString(cost, s.toCharArray());
         }
 
         @Override
@@ -218,6 +218,7 @@ public final class Hashing {
     }
 
     static {
+        SECURE_RANDOM = new SecureRandom();
         UUID_SHA256_ALIX = new Hash3();
         SHA256_MIGRATE = new Hash4();
         SHA512_MIGRATE = new Hash5();
@@ -234,7 +235,6 @@ public final class Hashing {
 
         CONFIG_HASH_ID = b; //Set from the config
         CONFIG_HASH = ofHashId(CONFIG_HASH_ID);
-        SECURE_RANDOM = new SecureRandom();
     }
 
     public static void init() {

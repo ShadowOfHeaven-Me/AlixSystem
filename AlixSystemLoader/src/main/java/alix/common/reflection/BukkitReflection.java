@@ -105,7 +105,7 @@ public final class BukkitReflection {
             return Class.forName("net.minecraft." + name);
         } else {
             String[] splitName = name.split("\\.");
-            return Class.forName(String.format("net.minecraft.server.%s.%s", serverVerRegex, splitName[splitName.length - 1]));
+            return Class.forName(serverVerRegex == null ? "net.minecraft.server." + splitName[splitName.length - 1] : String.format("net.minecraft.server.%s.%s", serverVerRegex, splitName[splitName.length - 1]));
         }
     }
 }

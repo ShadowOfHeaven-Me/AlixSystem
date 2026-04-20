@@ -49,9 +49,10 @@ public final class AlixYamlConfig {
         if (list == null || list.isEmpty()) {//again, can't be empty
             String val = this.file.values.get(path);
 
-            if (val == null)
+            if (val == null) {
                 AlixCommonMain.logWarning("Config '" + path + "' param not found");
-            else {
+                list = List.of();
+            } else {
                 //tolerate
                 list = List.of(val);
             }

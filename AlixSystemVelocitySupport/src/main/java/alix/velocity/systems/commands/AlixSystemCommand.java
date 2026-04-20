@@ -364,7 +364,7 @@ public final class AlixSystemCommand {
                                     if (cached.getStatus().isKnown()) {
                                         if (cached.getStatus().isPremium()) {
                                             data.setPremiumData(cached);
-                                            sendMessage(sender, "The premium status of the player " + target + " has been set to " + cached.getStatus() + ".");
+                                            sendMessage(sender, "The premium status of the player " + target + " has been set to PREMIUM, via cached data. Premium uuid=" + cached.premiumUUID());
                                             return SINGLE_SUCCESS;
                                         }
                                         sendMessage(sender, "&cPlayer's " + target + " status was determined as NON_PREMIUM, and thus it cannot be set to PREMIUM.");
@@ -393,7 +393,7 @@ public final class AlixSystemCommand {
                                             return;
                                         }
                                         data.setPremiumData(newPremiumData);
-                                        sendMessage(sender, "The premium status of the player " + target + " has been set to PREMIUM, premium uuid=" + newPremiumData.premiumUUID());
+                                        sendMessage(sender, "The premium status of the player " + target + " has been set to PREMIUM, via API request. Premium uuid=" + newPremiumData.premiumUUID());
                                     });
 
                                     return SINGLE_SUCCESS;
@@ -413,9 +413,10 @@ public final class AlixSystemCommand {
             sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
             sendMessage(sender, "&c/as rp/resetpassword <player> &7- Resets the player's password.");
             sendMessage(sender, "&c/as rp/resetpassword <player> <login type> &7- Resets the player's password and changes their login type. Available login types: COMMAND, PIN & ANVIL.");
+            sendMessage(sender, "&c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.");
             sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data of the specified player. The data cannot be restored after this operation.");
             sendMessage(sender, "&c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium");
-            sendMessage(sender, "&c/as fs/forcestatus <player> &7- Forcefully sets the player's premium status (if can safely be done)");
+            sendMessage(sender, "&c/as fs/forcestatus <player> <status> &7- Forcefully sets the player's premium status (if can safely be done)");
             sendMessage(sender, "");
             return SINGLE_SUCCESS;
         });

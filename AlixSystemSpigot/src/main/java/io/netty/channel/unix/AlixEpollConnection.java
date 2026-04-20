@@ -19,7 +19,7 @@ public final class AlixEpollConnection {
     public static int handle(int serverFd, byte[] addr) {
         //long t1 = System.nanoTime();
         int res = AlixSocketAccessBridge.nativeAccept(serverFd, addr);//fd
-        if (res < 0) return Errors.ERRNO_EAGAIN_NEGATIVE;//just generally trying to avoid errors, not sure if this is a good idea
+        if (res < 0) return res;// return Errors.ERRNO_EAGAIN_NEGATIVE;//just generally trying to avoid errors, not sure if this is a good idea
         //first - length
 
         //last 4  - port

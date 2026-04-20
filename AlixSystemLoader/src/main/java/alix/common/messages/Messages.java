@@ -47,7 +47,7 @@ public final class Messages {
         String m = file.getMap().get(s);
         if (m == null)
             AlixCommonMain.logWarning("Message '" + s + "' was not found in the messages.properties file! Report this immediately!");
-        return m != null ? AlixFormatter.translateColors(m) : "§c<Message not found>!";
+        return m != null ? AlixFormatter.translateColors(m) : "§c<Message not found: '" + s + "'>!";
     }
 
     public static String get(String s, Object... toFormatWith) {

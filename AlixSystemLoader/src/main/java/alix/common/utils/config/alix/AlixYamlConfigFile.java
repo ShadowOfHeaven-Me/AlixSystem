@@ -53,7 +53,6 @@ final class AlixYamlConfigFile extends AlixFileManager {
         }*/
 
         this.mostRecentKey = key;
-
         this.values.put(key, value);
     }
 
