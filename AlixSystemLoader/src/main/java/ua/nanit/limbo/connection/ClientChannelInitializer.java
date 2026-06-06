@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.connection;
 
+import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.utils.floodgate.GeyserUtil;
 import io.netty.channel.Channel;
@@ -24,13 +25,12 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import ua.nanit.limbo.NanoLimbo;
-import ua.nanit.limbo.connection.captcha.CaptchaState;
-import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.connection.pipeline.compression.ClientCompressSupply;
 import ua.nanit.limbo.connection.pipeline.encryption.EncryptionSupplier;
 import ua.nanit.limbo.handlers.DummyHandler;
+import ua.nanit.limbo.integration.StateSupplier;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
@@ -51,9 +51,15 @@ public final class ClientChannelInitializer {
         //this.channelInitImpl = new ChannelInitImpl(silentServerContext);
     }
 
+    public void initAfterLimboLogin(ClientConnection connection, PersistentUserData data, Consumer<ClientConnection> authAction, GeyserUtil geyserUtil) {
+        connection.getVerifyState().setData(data, authAction, geyserUtil);
+    }
+
     public void initAfterLoginSuccess(Channel channel, Version clientVersion, String name, ClientCompressSupply compress, EncryptionSupplier cipherSupplier, Consumer<ClientConnection> authAction, GeyserUtil geyserUtil) {
         ChannelPipeline pipeline = channel.pipeline();
-        ClientConnection connection = this.server.getIntegration().newConnection(channel, server, LoginState::new);
+        ClientConnection connection = this.server.getIntegration().newConnection(channel, server);
+
+        connection.setVerifyState(StateSupplier.LOGIN);
 
         Runnable r = () -> {
             //Ensure thread locality by setting fields on the client's netty thread
@@ -62,7 +68,7 @@ public final class ClientChannelInitializer {
             connection.getGameProfile().setUsername(name);
 
             PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
-            VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();;
+            VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
 
             var cipher = cipherSupplier.getHandlerFor(connection);
             connection.setCipher(cipher);
@@ -102,7 +108,7 @@ public final class ClientChannelInitializer {
     public void initChannel(Channel channel) {
         ChannelPipeline pipeline = channel.pipeline();
 
-        ClientConnection connection = this.server.getIntegration().newConnection(channel, server, CaptchaState::new);
+        ClientConnection connection = this.server.getIntegration().newConnection(channel, server);
         PacketDuplexHandler duplexHandler = connection.getDuplexHandler();
         VarIntFrameDecoder frameDecoder = connection.getFrameDecoder();
 

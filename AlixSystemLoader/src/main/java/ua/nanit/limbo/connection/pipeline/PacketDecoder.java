@@ -62,19 +62,16 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
         Packet packet = factory.newPacket();
         ByteMessage msg = new ByteMessage(buf);
         //if (packet != null) {
-        if (Log.isDebug())
-            Log.debug("Received packet %s[0x%s] (%d bytes)", packet.toString(), Integer.toHexString(packetId), msg.readableBytes());
+        /*if (Log.isDebug())
+            Log.debug("Received packet %s[0x%s] (%d bytes)", packet.toString(), Integer.toHexString(packetId), msg.readableBytes());*/
         try {
             packet.decode(msg, version);
         } catch (Exception e) {
-            connection.closeInvalidPacket();
+            if (connection != null)
+                connection.closeInvalidPacket();
             if (NanoLimbo.suppress(e)) return null;
 
-            if (Log.isDebug()) {
-                Log.warning("Cannot decode %s, per %s packet 0x%s", packet.getClass().getSimpleName(), e, Integer.toHexString(packetId));
-            } else {
-                Log.warning("Cannot decode %s packet 0x%s: %s", packet.getClass().getSimpleName(), Integer.toHexString(packetId), e.getMessage());
-            }
+            Log.error("Cannot decode %s packet 0x%s: %s", e, packet.getClass().getSimpleName(), Integer.toHexString(packetId), e.getMessage());
             return null;
         }
 

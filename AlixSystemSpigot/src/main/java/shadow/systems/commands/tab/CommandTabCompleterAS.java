@@ -34,6 +34,8 @@ public final class CommandTabCompleterAS implements TabCompleter {
                     case "migrate": {
                         return Arrays.stream(MigrateType.values()).map(Enum::name).toList();
                     }
+                    case "fs":
+                    case "forcestatus":
                     case "rs":
                     case "resetstatus":
                     case "frd":
@@ -62,7 +64,10 @@ public final class CommandTabCompleterAS implements TabCompleter {
                         return List.of(); //Arrays.stream(LoginType.values()).map(Enum::name).toList();
                     }
                     case "fs":
-                    case "forcestatus":
+                    case "forcestatus": {
+                        String arg4 = args[3].toUpperCase();
+                        return Arrays.stream(PremiumStatus.values()).map(Enum::name).filter(n -> n.startsWith(arg4)).toList();
+                    }
                     case "rs":
                     case "resetstatus":
                     case "frd":
@@ -81,11 +86,6 @@ public final class CommandTabCompleterAS implements TabCompleter {
                 }
             case 4:
                 switch (args[0].toLowerCase()) {
-                    case "fs":
-                    case "forcestatus": {
-                        String arg4 = args[3].toUpperCase();
-                        return Arrays.stream(PremiumStatus.values()).map(Enum::name).filter(n -> n.startsWith(arg4)).toList();
-                    }
                     case "rf":
                     case "registerforcefully":
                     case "cp":

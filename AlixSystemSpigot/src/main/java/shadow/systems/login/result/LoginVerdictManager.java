@@ -11,6 +11,7 @@ import shadow.utils.main.AlixUtils;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
 import shadow.utils.users.types.TemporaryUser;
+import shadow.virtualization.BukkitLimboIntegration;
 
 import java.net.InetAddress;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public final class LoginVerdictManager {
 
     private static final boolean isSessionExpiryEnabled = AlixUtils.autoLoginExpiry > 0;
 
-    private static LoginVerdict getVerdict(InetAddress ip, PersistentUserData data) {
+    public static LoginVerdict getVerdict(InetAddress ip, PersistentUserData data) {
         if (data == null)//not registered - no data
             return LoginVerdict.DISALLOWED_NO_DATA;
 
@@ -47,23 +48,17 @@ public final class LoginVerdictManager {
         if (!AlixUtils.forcefullyDisableIpAutoLogin && isSessionNotExpired(data) && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip))//ip auto login
             return LoginVerdict.IP_AUTO_LOGIN;
 
+        if (BukkitLimboIntegration.hasVerifiedInLimbo(data.getName(), ip))
+            return LoginVerdict.ALLOWED_LIMBO_LOGIN_OCCURRED;
+
         return LoginVerdict.DISALLOWED_LOGIN_REQUIRED; //not logged in
     }
 
     private static boolean isSessionNotExpired(PersistentUserData data) {
         //Main.logError("SES " + sessionExpireEnabled + " LAST SUCC " + data.getLastSuccessfulLogin() + " EXPIRY " + AlixUtils.autoLoginExpiry + " TIME: " + System.currentTimeMillis());
         return !isSessionExpiryEnabled ||
-                data.getLastSuccessfulLogin() + AlixUtils.autoLoginExpiry > System.currentTimeMillis();//sessionExpireEnabled must be true here
+               data.getLastSuccessfulLogin() + AlixUtils.autoLoginExpiry > System.currentTimeMillis();//sessionExpireEnabled must be true here
     }
-
-/*    public static TemporaryUser getNullable(UUID uuid) {
-        AlixUser user = UserManager.get(uuid);
-        return user instanceof TemporaryUser ? (TemporaryUser) user : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
-    }*/
-
-    //private static final String noTempUserMsg = "§cSomething went wrong! (User not assigned)";
-    //private static final ByteBuf noTempUserErr_Cfg = OutDisconnectPacketConstructor.dynamicAtConfig(noTempUserMsg);
-    //private static final ByteBuf noTempUserErr_Play = OutDisconnectPacketConstructor.constAtPlay(noTempUserMsg);
 
     public static TemporaryUser get(UUID uuid) {
         AlixUser user = UserManager.get(uuid);
@@ -75,10 +70,12 @@ public final class LoginVerdictManager {
         TemporaryUser temp = user instanceof TemporaryUser tem ? tem : null;//the user can be null, thus instanceof is used instead of a class comparison (since the performance is almost identical in this case)
 
         if (user == null) {
+            if (AlixUtils.isFakePlayer(p))
+                return null;
             //Cannot use Player::kickPlayer cuz Paper aids
             //Cannot use MethodProvider.kickAsync, because AlixUser is null
             Main.logWarning("No Alix User was found for the player " + p.getName() + " - disconnecting him for safety! Report this as an error immediately! When reporting make sure to include the errors shown before this, if there were any!");
-            AlixHandler.safeKick(p,"§cSomething went wrong! (User not assigned)");
+            AlixHandler.safeKick(p, "§cSomething went wrong! (User not assigned)");
         }
 
         return temp;

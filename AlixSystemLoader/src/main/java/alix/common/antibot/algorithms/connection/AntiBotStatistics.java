@@ -17,7 +17,7 @@ public final class AntiBotStatistics {
         for (int i = 0; i < SAMPLE_SIZE; i++)
             this.cps.offerLast(0);
 
-        AlixScheduler.repeatAsync(this::reset, 1L, TimeUnit.SECONDS);
+        AlixScheduler.repeatAsync(this::update, 1L, TimeUnit.SECONDS);
     }
 
     public final int startingBlocked = this.getTotalBlocked();
@@ -63,7 +63,7 @@ public final class AntiBotStatistics {
         return this.currentSum.sum() >= MAX_ALLOWED_SUM || this.getCPS() >= 7;
     }
 
-    public void reset() {
+    public void update() {
         int currentCps = (int) this.currentCps.sumThenReset();
         //this.lastCps.set(cps);
         this.cps.offerLast(currentCps);

@@ -50,7 +50,7 @@ public final class LimboConfig {
     private final double maxPacketRate;
 
     public LimboConfig() {
-        maxPlayers = 300;
+        maxPlayers = 500;
         pingData = new PingData("Ping Sex", "{\"text\": \"&9NanoLimbo\"}", -1);
         dimensionType = "the_end";
         gameMode = 2;

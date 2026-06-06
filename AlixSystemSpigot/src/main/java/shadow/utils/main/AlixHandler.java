@@ -74,7 +74,7 @@ public final class AlixHandler {
 
     private static final long teleportDelay = Main.config.getLong("user-teleportation-delay");
     private static final boolean isTeleportDelayed = teleportDelay > 0;
-    private static final String delayedTeleportMessage = Messages.get("user-delayed-teleportation", AlixUtils.formatMillis(teleportDelay));
+    private static final String delayedTeleportMessage = Messages.get("user-delayed-teleportation", formatMillis(teleportDelay));
     //public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
     public static final Channel SERVER_CHANNEL = getServerChannelFuture().channel();
     public static final boolean isEpollTransport = SERVER_CHANNEL.getClass() == EpollServerSocketChannel.class;
@@ -281,13 +281,13 @@ public final class AlixHandler {
     public static void delayedConfigTeleportExecute(Runnable r, Player p) {
         if (isTeleportDelayed) AlixScheduler.runLaterSync(r, teleportDelay, TimeUnit.MILLISECONDS);
         else r.run();
-        AlixUtils.sendMessage(p, delayedTeleportMessage);
+        sendMessage(p, delayedTeleportMessage);
     }
 
     public static void delayedConfigTeleport(Player player, Location loc) {
         if (isTeleportDelayed) {
             AlixScheduler.runLaterSync(() -> MethodProvider.teleportAsync(player, loc), teleportDelay, TimeUnit.MILLISECONDS);
-            AlixUtils.sendMessage(player, delayedTeleportMessage);
+            sendMessage(player, delayedTeleportMessage);
         } else MethodProvider.teleportAsync(player, loc);
     }
 
@@ -406,31 +406,40 @@ public final class AlixHandler {
         //Already done in the spawn location event
         /*if (login.getVerdict().isAutoLogin() && p.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) //tp back if there was an issue with the teleportation beforehand
             OriginalLocationsManager.teleportBack(p);*/
-        switch (login.getVerdict()) {//a fast injection based on the login verdict
-            case DISALLOWED_NO_DATA:
+
+        return switch (login.getVerdict()) {//a fast injection based on the login verdict
+            case DISALLOWED_NO_DATA -> {
                 GeoIPTracker.addIP(login.getIP());
-                return Verifications.add(p, user);
-            case DISALLOWED_PASSWORD_RESET://needs to register after a password reset
-            case DISALLOWED_LOGIN_REQUIRED://needs to log in
-                return Verifications.add(p, user);
-            case REGISTER_PREMIUM:
+                yield Verifications.add(p, user);
+            }
+            case DISALLOWED_PASSWORD_RESET,//needs to register after a password reset
+                 DISALLOWED_LOGIN_REQUIRED -> //needs to log in
+                    Verifications.add(p, user);
+
+            case ALLOWED_LIMBO_LOGIN_OCCURRED -> {
+                //scuffed
+                boolean isLogin = System.currentTimeMillis() - login.getData().createdAt() > 20_000L;
+                addVerifiedUser0(p, user, UnverifiedUser.loginSuccessMessagePacket, isLogin ? AuthReason.MANUAL_LOGIN : AuthReason.MANUAL_REGISTER);
+                yield null;
+            }
+            case REGISTER_PREMIUM -> {
                 autoRegisterCommandList.invoke(p);
                 premiumJoinCommands.invoke(p);
                 addVerifiedUser0(p, user, autoRegisterPremiumMessageBuffer, AuthReason.PREMIUM_AUTO_REGISTER);
-                return null;
-            case LOGIN_PREMIUM:
+                yield null;
+            }
+            case LOGIN_PREMIUM -> {
                 autoLoginCommandList.invoke(p);
                 premiumJoinCommands.invoke(p);
                 addVerifiedUser0(p, user, autoLoginPremiumMessageBuffer, AuthReason.PREMIUM_AUTO_LOGIN);
-                return null;
-            case IP_AUTO_LOGIN:
+                yield null;
+            }
+            case IP_AUTO_LOGIN -> {
                 autoLoginCommandList.invoke(p);
                 addVerifiedUser0(p, user, autoLoginMessageBuffer, AuthReason.IP_AUTO_LOGIN);
-                return null;
-            default:
-                user.getChannel().close();
-                throw new AlixError("Invalid verdict: " + login.getVerdict());
-        }
+                yield null;
+            }
+        };
     }
 
     private static void addVerifiedUser0(Player p, TemporaryUser user, ByteBuf constJoinMsgBuf, AuthReason authReason) {
@@ -451,7 +460,7 @@ public final class AlixHandler {
         AlixUser user = UserManager.remove(p);
 
         if (user == null) {
-            if (AlixUtils.isFakePlayer(p)) return;
+            if (isFakePlayer(p)) return;
             Main.logError("Could not get any User instance for the player " + p.getName() + " on quit! Report this as an error immediately!");
             return;//true
         }

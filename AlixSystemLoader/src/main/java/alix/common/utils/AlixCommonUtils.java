@@ -50,8 +50,11 @@ public final class AlixCommonUtils {
 
     //From PacketEvents, FakeChannelUtil.isFakeChannel
     public static boolean isFakeChannel(Channel channel) {
-        //Main.logError("CHANNEL: " + channel);
-        if (channel == null) return true;
+
+        //hmmm, is this right?
+        if (channel == null)
+            return true;
+
         switch (channel.getClass().getSimpleName()) {
             case "FakeChannel":
             case "SpoofedChannel":
@@ -120,7 +123,7 @@ public final class AlixCommonUtils {
 
         //+1 since it's exclusive
         int endIdx = Math.min(invalidAt + mentionLen + 1, len);
-        String end = text.substring(invalidAt + 1, endIdx) + (endIdx != len ? "..." : "") ;
+        String end = text.substring(invalidAt + 1, endIdx) + (endIdx != len ? "..." : "");
 
         return new String[]{start, String.valueOf(text.charAt(invalidAt)), end};
     }

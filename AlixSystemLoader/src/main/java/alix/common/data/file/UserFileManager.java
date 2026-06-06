@@ -1,6 +1,7 @@
 package alix.common.data.file;
 
 import alix.common.AlixCommonMain;
+import alix.common.connection.filters.PlayerNameIndex;
 import alix.common.data.PersistentUserData;
 import alix.common.database.DatabaseUpdater;
 
@@ -40,6 +41,7 @@ public final class UserFileManager {
     }
 
     public static PersistentUserData remove(String name) {
+        PlayerNameIndex.remove(name);
         return map.remove(name);
     }
 
@@ -55,6 +57,7 @@ public final class UserFileManager {
 
     public static void putData(PersistentUserData data) {
         map.put(data.getName(), data);
+        PlayerNameIndex.index(data.getName());
         //data.saveToDatabase();
     }
 

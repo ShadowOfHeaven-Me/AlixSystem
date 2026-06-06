@@ -7,6 +7,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
 import alix.common.data.security.password.Password;
+import alix.common.environment.ServerEnvironment;
 import alix.common.login.LoginVerdict;
 import alix.common.login.LoginVerification;
 import alix.common.messages.Messages;
@@ -28,6 +29,7 @@ import ua.nanit.limbo.connection.login.gui.bedrock.LimboBedrockGUI;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
+import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
@@ -115,7 +117,7 @@ public final class LoginState implements VerifyState {
     public void logIn() {
         if (this.authAction == null) throw new AlixException("authAction is null! Report this immediately!");
 
-        if (this.connection.hasConfigPhase()) {
+        if (ServerEnvironment.isVelocity() && this.connection.hasConfigPhase()) {
             this.duplexHandler.writeAndFlush(PacketSnapshots.RECONFIGURE);
             this.duplexHandler.disablePacketWriting = true;
             this.isAwaitingReconfigureAck = true;
@@ -127,8 +129,15 @@ public final class LoginState implements VerifyState {
 
     private void logIn0() {
         this.data.setIP(this.connection.getAddress().getAddress());
+        var config = this.connection.getChannel().config();
+
+        //disallow any reads after uninjecting the handlers, but before the authAction happens
+        config.setAutoRead(false);
+
         this.connection.uninjectConnection();
         this.authAction.accept(this.connection);
+
+        config.setAutoRead(true);
     }
 
     public boolean isPasswordCorrect(String password) {
@@ -311,8 +320,10 @@ public final class LoginState implements VerifyState {
     }
 
     private static final PacketSnapshot
-            incorrectPasswordMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("incorrect-password")),
-            incorrectPasswordKickPacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("incorrect-password"));
+            incorrectPasswordMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("incorrect-password"));
+
+    private static final PacketSnapshot
+            incorrectPasswordKickPacket = PacketPlayOutDisconnect.snapshot(Messages.getWithPrefix("incorrect-password"));
 
     public static final PacketSnapshot
             formatRegisterMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("format-register")),

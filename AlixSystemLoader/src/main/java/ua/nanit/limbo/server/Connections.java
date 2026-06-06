@@ -19,6 +19,7 @@ package ua.nanit.limbo.server;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelId;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
 
@@ -69,6 +70,7 @@ public final class Connections {
         if (removed != null) {
             this.connectionsCount.decrement();
             connection.getVerifyState().onLimboDisconnect();
+            NanoLimbo.INTEGRATION.onLimboDisconnect(connection);
         }
         //Log.info("Player %s disconnected", connection.getUsername());
     }

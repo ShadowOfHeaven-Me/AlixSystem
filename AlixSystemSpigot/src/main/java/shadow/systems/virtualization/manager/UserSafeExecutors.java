@@ -25,7 +25,7 @@ final class UserSafeExecutors implements Listener {
 
         Listener spawnLocExec;
 
-        if(paper) {
+        if (paper) {
             spawnLocExec = new AsyncSpawnLocEvent();
             Main.logInfo("Initiating Paper's AsyncInitialLocation support");
         } else {

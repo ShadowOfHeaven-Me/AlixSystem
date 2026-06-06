@@ -12,7 +12,6 @@ import alix.common.utils.other.throwable.AlixException;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -119,7 +118,7 @@ public final class FireWallManager {
     }
 
     private static void loadWithBuiltIn0() {
-        try (InputStream is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
+        try (var is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
             AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), new FireWallEntry(null)), false);
             int builtIn = map.size();
             file.load();

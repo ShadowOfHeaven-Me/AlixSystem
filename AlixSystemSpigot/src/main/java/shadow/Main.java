@@ -48,44 +48,14 @@ public final class Main implements LoaderBootstrap {
     private Metrics metrics;
     private boolean en = true;
 
-    //UPDATE:
-    //* Fixed a rare concurrency exception
-
-    //*
-
-    //Note:
-    //to do: Fix players trying to enter on different versions experiencing issues when they decide to use the GUIs (Currently disabled)
-
-    //todo: Add a custom data structure for unverified users
-    //TODO: add book captcha possibility in config
-
-    //TODO: /blacklist, mute-ip (?), ban format customizable
-    //TODO: ping check by Keep Alive packets or the CraftPlayer getPing method (?)
-    //TODO: Check if delay that's zero or less can bug the scheduler (packet auto kick)
-
-/*    #Defines the ban format
-# \n - for a new line
-# %sender% - the ban executor
-# %reason% - reason of the ban
-    ban-format: ""*/
-
-
-/*#If set to true, Alix will immediately forcibly close connections and have the player see the automatic "Connection Refused" message.
-#If set to false, the "Your IP has been firewalled" message will be shown after waiting for login packets (a bit less optimized).
-    fast-raw-firewall: true*/
-
-/*#----------------------------------------------#
-        #            PING CHECK (Experimental)         #
-            #----------------------------------------------#
-
-            #Defines whether captcha unverified players should be checked for ping before being able to start registering
-    ping-check: true
-            #Defines the maximum acceptable ping average - anything above that will make the player fail the ping check
-    ping-threshold: 250
-            #Defines the amount of ping checks sent in order to check the player's ping
-    ping-checks: 5*/
-
-    /**/
+    /*
+    * Added atomic file writes & graceful continues at read fail
+Added the ability to disallow players of the same, but differently-cased name, from joining
+Fixed fake players support not working properly when the channel is wrapped (e.g. when ProtocolLib is installed)
+Limbo max player count: 300 -> 500
+Accounts will now be appended to the list of information shown at /as user
+Reworked premium auth threads
+    * */
 
 
     public Main(BukkitAlixMain instance) {

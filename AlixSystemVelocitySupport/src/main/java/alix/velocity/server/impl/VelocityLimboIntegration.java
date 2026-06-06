@@ -4,7 +4,6 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.floodgate.GeyserUtil;
 import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.Main;
-import alix.velocity.server.impl.user.VelocityClientConnection;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
@@ -17,15 +16,12 @@ import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 import org.jetbrains.annotations.NotNull;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
-import ua.nanit.limbo.server.LimboServer;
 
 import java.util.UUID;
-import java.util.function.Function;
 
-public final class VelocityLimboIntegration extends LimboIntegration<VelocityClientConnection> {
+public final class VelocityLimboIntegration extends LimboIntegration<ClientConnection> {
 
     public static final AttributeKey<UUID> JOINED_UUID = AttributeKey.newInstance("alix:joined-uuid");
     private final GeyserUtil geyserUtil = GEYSER_UTIL;
@@ -35,12 +31,17 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
     }
 
     @Override
-    public void fireCustomPayloadEvent(VelocityClientConnection connection, String channel, byte[] data) {
+    public void fireCustomPayloadEvent(ClientConnection connection, String channel, byte[] data) {
         AlixScheduler.async(() -> {
             VelocityServer server = (VelocityServer) Main.PLUGIN.getServer();
             Player player = server.getPlayer(connection.getUsername()).orElseThrow(() -> new AlixException("How"));
             server.getEventManager().fireAndForget(new PluginMessageEvent(player, ArbitrarySink.SINK, MinecraftChannelIdentifier.from(channel), data));
         });
+    }
+
+    @Override
+    public boolean supportsCustomPayloadEvents() {
+        return true;
     }
 
     private static final class ArbitrarySink implements ChannelMessageSink {
@@ -67,7 +68,7 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
     }
 
     @Override
-    public boolean isTransferAccepted() {
+    public boolean isTransferAcceptable() {
         return this.getConfig().isAcceptTransfers();
     }
 
@@ -75,13 +76,13 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
         return (VelocityConfiguration) Main.PLUGIN.getServer().getConfiguration();
     }
 
-    @Override
-    public VelocityClientConnection newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
-        return new VelocityClientConnection(channel, server, state);
-    }
+    /*@Override
+    public ClientConnection newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
+        return new ClientConnection(channel, server, state);
+    }*/
 
     @Override
-    public void onHandshake(VelocityClientConnection connection, PacketHandshake handshake) {
+    public void onHandshake(ClientConnection connection, PacketHandshake handshake) {
     }
 
     @Override
@@ -94,7 +95,7 @@ public final class VelocityLimboIntegration extends LimboIntegration<VelocityCli
     }
 
     /*@Override
-    public PreLoginResult onLoginStart(VelocityClientConnection connection, PacketLoginStart packet, boolean[] recode) {
+    public PreLoginResult onLoginStart(ClientConnection connection, PacketLoginStart packet, boolean[] recode) {
         var channel = connection.getChannel();
         InetAddress ip = connection.getAddress().getAddress();
         String packetUsername = packet.getUsername();

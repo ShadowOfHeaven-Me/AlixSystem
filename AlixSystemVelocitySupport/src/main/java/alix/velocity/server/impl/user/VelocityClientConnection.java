@@ -1,3 +1,4 @@
+/*
 package alix.velocity.server.impl.user;
 
 import io.netty.channel.Channel;
@@ -12,4 +13,4 @@ public final class VelocityClientConnection extends ClientConnection {
     public VelocityClientConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
         super(channel, server, state);
     }
-}
+}*/

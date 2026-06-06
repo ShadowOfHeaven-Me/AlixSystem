@@ -44,6 +44,10 @@ public final class GeoIPTracker implements ConnectionFilter {
         return maxAccountsReached;
     }
 
+    public static int altsCount(InetAddress ip) {
+        return initialized ? INSTANCE.getAccountsOf(ip) : 0;
+    }
+
     private int getAccountsOf(InetAddress ip) {
         return this.map.getOrDefault(ip, 0);
     }

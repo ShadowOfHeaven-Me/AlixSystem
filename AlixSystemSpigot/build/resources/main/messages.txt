@@ -1,4 +1,5 @@
 account-limit-reached: &cYou've reached the maximum amount of accounts! ({0})
+account-name-exists-under-different-casing: &cThis account already exists under a differently-cased nickname!
 already-connecting: &cAnother login from the same nickname is registered to be already happening!
 already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
 already-logged-in: &cYou're already logged in!

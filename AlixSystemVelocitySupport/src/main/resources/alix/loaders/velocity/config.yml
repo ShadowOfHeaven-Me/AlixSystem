@@ -29,6 +29,10 @@ antibot-service: true
 load-builtin-ips: true
 #Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
 validate-name: true
+#Defines whether a player of an already existing player's nickname, ignoring casing, should be allowed to join pre-register
+# true -> Allow 'Marcos' & 'marcos' to coexist
+# false -> Disallow
+allow-case-sensitive-nicknames: true
 
 
 #----------------------------------------------#

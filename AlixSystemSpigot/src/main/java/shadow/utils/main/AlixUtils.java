@@ -76,7 +76,7 @@ public final class AlixUtils {
                 break;
             default:
                 Main.logWarning("Invalid language type in config! Available: en & pl, but instead got '" +
-                        language + "'! Switching to english, as default");
+                                language + "'! Switching to english, as default");
                 break;
         }
 /*        String restrictBase = config.getString("login-restrict-base", "packet").toLowerCase();
@@ -97,21 +97,21 @@ public final class AlixUtils {
             case "smooth":
                 if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
                     Main.logWarning("The option 'smooth' in 'captcha-visual-type' is only available in a headful graphic environment," +
-                            " with this being a headless one. Switching to 'subtitle', as default!");
+                                    " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
                 }
                 break;
             case "particle":
                 if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
                     Main.logWarning("The option 'particle' in 'captcha-visual-type' is only available in a headful graphic environment," +
-                            " with this being a headless one. Switching to 'subtitle', as default!");
+                                    " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
                     break;
                 }
 
 
                 Main.logWarning("The option 'particle' in 'captcha-visual-type' is now outdated! " +
-                        "The 'smooth' type will be used in it's stead, as its better equivalent.");
+                                "The 'smooth' type will be used in it's stead, as its better equivalent.");
                 captchaVisualType = "smooth";
                 break;
             case "map":
@@ -123,7 +123,7 @@ public final class AlixUtils {
 
                 if (AlixCommonUtils.isGraphicEnvironmentHeadless) {
                     Main.logWarning("The option 'map' in 'captcha-visual-type' is only available in a heedful graphic environment," +
-                            " with this being a headless one. Switching to 'subtitle', as default!");
+                                    " with this being a headless one. Switching to 'subtitle', as default!");
                     captchaVisualType = "subtitle";
                     break;
                 }
@@ -141,7 +141,7 @@ public final class AlixUtils {
             default:
                 String best = CaptchaVisualType.fallback().name();
                 Main.logWarning("Invalid 'captcha-visual-type' parameter set in config! Available: particle, map, subtitle & message, but instead got '" +
-                        captchaVisualType + "! Switching to '" + best + "', as default.");
+                                captchaVisualType + "! Switching to '" + best + "', as default.");
                 captchaVisualType = best;
                 break;
         }
@@ -152,7 +152,7 @@ public final class AlixUtils {
                 break;
             default:
                 Main.logWarning("Invalid 'captcha-type' parameter set in config! Available: numeric & text, but instead got '" +
-                        captchaType + "! Switching to 'text', as default.");
+                                captchaType + "! Switching to 'text', as default.");
                 break;
         }
         //pluginLanguage = getPluginLanguage(language););
@@ -263,7 +263,22 @@ public final class AlixUtils {
     }
 
     public static boolean isFakePlayer(Player player) {
-        return isFakeChannel((Channel) ProtocolManager.CHANNELS.get(player.getUniqueId()));
+        var channel = (Channel) ProtocolManager.CHANNELS.get(player.getUniqueId());
+
+        //cuz ProtocolLib
+        //https://github.com/dmulloy2/ProtocolLib/blob/master/src/main/java/com/comphenix/protocol/injector/netty/channel/NettyChannelProxy.java#L133
+        var unwrapped = channel == null ? null : channel.voidPromise().channel();
+
+
+        /*var reflectionsChannel = (Channel) SpigotReflectionUtil.getChannel(player);
+        reflectionsChannel = reflectionsChannel.voidPromise().channel();
+        AlixCommonMain.logWarning("channel=" + channel + " for " + player.getName()
+                                  + " clazz=" + (channel != null ? channel.getClass() : null) + " is Fake=" + isFakeChannel(channel) +
+                                  " REFLECTIONS channel=" + reflectionsChannel +
+                                  " refl-clazz =" + (reflectionsChannel != null ? reflectionsChannel.getClass() : null) +
+                                  "is refl-fake=" + isFakeChannel(reflectionsChannel)
+        );*/
+        return isFakeChannel(unwrapped);
     }
 
     public static boolean isFakeChannel(Channel channel) {
@@ -1264,7 +1279,7 @@ public final class AlixUtils {
     public static <T> void debug(T[] message, Function<T, String> formatting, char separator) {
         StringBuilder sb = new StringBuilder();
         for (T o : message) sb.append(formatting.apply(o)).append(separator);
-        Main.logInfo(sb.toString());
+        Main.logInfo(sb.substring(0, Math.max(0, sb.length() - 1)));
         //sendToAllPlayers(sb.toString());
     }
 

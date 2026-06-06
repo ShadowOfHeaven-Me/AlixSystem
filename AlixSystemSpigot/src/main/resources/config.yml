@@ -17,7 +17,7 @@
 prevent-first-time-join-during-high-traffic: true
 #Used for the parameter above to help determine the maximum size of the connecting users list
 connection-list-size: 500
-#Defines how long (in seconds) should a connection be stored for until it is forgotten (Used for 'prevent-first-time-join')
+#Defines how long (in seconds) should a connection be stored for until it is forgotten (Used for 'prevent-first-time-join-during-high-traffic')
 forget-connection-in: 60
 #Defines how much accounts in total should be a player allowed to have (counted by their ip), set it to 0 or less if you want to disable it (usually works as an antibot safety measure when the botter uses a single IP to send the bots)
 max-total-accounts: 1
@@ -31,6 +31,10 @@ antibot-service: true
 load-builtin-ips: true
 #Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
 validate-name: true
+#Defines whether a player of an already existing player's nickname, ignoring casing, should be allowed to join
+# true -> Allow 'Marcos' & 'marcos' to coexist
+# false -> Disallow
+allow-case-sensitive-nicknames: true
 
 
 #----------------------------------------------#
@@ -40,6 +44,8 @@ validate-name: true
 #Config used when the player is completing the captcha verification (before he's given the ability to register his account)
 
 #Defines whether any manual captcha should be replaced with automatic bot checks done on an extremely optimized limbo 'server' (not actually a server, it just pretends to be one). Only takes effect if 'captcha' is set to true.
+#Bear in mind that this enables extreme optimization and allows other functions to work properly
+#Setting this to false should be done with caution and only when you know what you're doing!
 virtual-limbo-server: true
 #Defines whether an unregistered player should be required to complete a captcha before registering (works as a safety measure against bot attacks, offline mode only)
 captcha: true
@@ -84,6 +90,11 @@ max-captcha-time: 45
 # title - A title paired with a subtitle will be used
 # action_bar - An action bar message will be used
 verification-reminder-type: title
+#Defines whether, if available, players should be sent to the virtual limbo during manual login
+# This option helps prevent issues related to trying to separate the player from the bukkit server artificially
+# It can also serve as an optimization tactic
+# You can set this to false, if you have a special set-up done in the verification world
+virtual-limbo-login: true
 #Defines whether premium players should be given their equivalent mojang-assigned uuid (their data will persist between name changes)
 premium-uuid: false
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)

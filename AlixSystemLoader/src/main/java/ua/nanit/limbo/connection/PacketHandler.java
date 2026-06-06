@@ -111,18 +111,24 @@ public final class PacketHandler {
 
     private void handleLogin0(ClientConnection conn, PacketLoginStart packet) {
         //Log.error("handleLogin0");
-        boolean[] recodeA = new boolean[1];
-        PreLoginResult result = this.server.getIntegration().onLoginStart(conn, packet, recodeA);
-        //Log.error("RESULT-" + result);
-        boolean recode = recodeA[0];
+        var info = this.server.getIntegration().onLoginStart(conn, packet);
+        boolean recode;
+
+        //Intention hide
+        boolean isTransfer = conn.getHandshakePacket().isTransfer();
+        if (isTransfer && info.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER) {
+            conn.getHandshakePacket().setLoginIntention();
+            recode = true;
+        } else recode = info.recode();
+        //Log.error("RESULT-" + info);
 
         //set the "proper" username here
         conn.getGameProfile().setUsername(packet.getUsername());
-        //AlixCommonMain.logError("result: " + result + " recode " + recode);
+        //AlixCommonMain.logError("info: " + info + " recode " + recode);
 
-        //Log.error("handleLogin0 - RESULT " + result);
+        //Log.error("handleLogin0 - RESULT " + info);
         conn.getChannel().eventLoop().execute(() -> {
-            switch (result) {
+            switch (info.result()) {
                 case DISCONNECTED:
                     conn.getFrameDecoder().releaseCollected();
                     return;
@@ -131,6 +137,7 @@ public final class PacketHandler {
                     else conn.uninject();
                     return;
                 case CONNECT_TO_LIMBO:
+                    conn.setVerifyState(info.supplier());
                     this.handleLogin1(conn);
                     return;
                 default:
@@ -139,12 +146,12 @@ public final class PacketHandler {
         });
     }
 
-    private static final String tooManyPlayersMessage = "§7Too many players connected";
+    private static final String tooManyPlayersMessage = "§eToo many players connected!";
     private static final PacketSnapshot
             CONFIG_TOO_MANY_PLAYERS = PacketConfigDisconnect.snapshot(tooManyPlayersMessage),
             LOGIN_TOO_MANY_PLAYERS = PacketLoginDisconnect.snapshot(tooManyPlayersMessage);
 
-    private static final String unsupportedClientVersionMessage = "§eUnsupported client version";
+    private static final String unsupportedClientVersionMessage = "§eUnsupported client version!";
     private static final PacketSnapshot
             CONFIG_UNSUPPORTED_VERSION = PacketConfigDisconnect.snapshot(unsupportedClientVersionMessage),
             LOGIN_UNSUPPORTED_VERSION = PacketLoginDisconnect.snapshot(unsupportedClientVersionMessage);
@@ -160,16 +167,14 @@ public final class PacketHandler {
         conn.getFrameDecoder().stopResendCollection();
 
         if (server.getConnections().getCount() >= server.getConfig().getMaxPlayers()) {
-            PacketSnapshot disconnectPacket = conn.isInConfigPhase() ? CONFIG_TOO_MANY_PLAYERS : LOGIN_TOO_MANY_PLAYERS;
+            var disconnectPacket = conn.isInConfigPhase() ? CONFIG_TOO_MANY_PLAYERS : LOGIN_TOO_MANY_PLAYERS;
             conn.sendPacketAndClose(disconnectPacket);
-            //conn.disconnectLogin("Too many players connected");
             return;
         }
 
         if (!conn.getClientVersion().isSupported()) {
-            PacketSnapshot disconnectPacket = conn.isInConfigPhase() ? CONFIG_UNSUPPORTED_VERSION : LOGIN_UNSUPPORTED_VERSION;
+            var disconnectPacket = conn.isInConfigPhase() ? CONFIG_UNSUPPORTED_VERSION : LOGIN_UNSUPPORTED_VERSION;
             conn.sendPacketAndClose(disconnectPacket);
-            //conn.disconnectLogin("Unsupported client version");
             return;
         }
 

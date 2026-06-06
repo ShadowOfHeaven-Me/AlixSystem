@@ -7,6 +7,7 @@ import alix.common.connection.ConnectionThreadManager;
 import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
+import alix.common.connection.filters.PlayerNameIndex;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumDataCache;
@@ -88,15 +89,15 @@ public final class AlixCommonHandler {
                 }
             }
 
-            if (!renamed && GeoIPTracker.disallowJoin(address, nameRefactored)) {
-                //event.setCancelled(true);
-                return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
-            }
+            if (PlayerNameIndex.isIndexedWithDifferentCase(nameRefactored))
+                return PreLoginVerdict.DISALLOWED_DIFFERENTLY_CASED_NAME_EXISTS;
 
-            if ((!isBedrock || isBedrock && antiVpnIncludeBedrock) && AntiVPN.disallowJoin(address, nameRefactored)) {
-                //event.setCancelled(true);
+            if (!renamed && GeoIPTracker.disallowJoin(address, nameRefactored))
+                return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
+
+            if ((!isBedrock || isBedrock && antiVpnIncludeBedrock) && AntiVPN.disallowJoin(address, nameRefactored))
                 return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
-            }
+
         }
         return PreLoginVerdict.ALLOWED;
     }

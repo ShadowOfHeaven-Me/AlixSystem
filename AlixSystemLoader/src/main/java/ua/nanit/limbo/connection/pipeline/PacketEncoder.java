@@ -47,9 +47,9 @@ public final class PacketEncoder {
         try {
             packet.encode(msg, version);
 
-            if (Log.isDebug()) {
+            /*if (Log.isDebug()) {
                 Log.debug("Sending %s[0x%s] packet (%d bytes)", packet.toString(), Integer.toHexString(packetId), msg.readableBytes());
-            }
+            }*/
             return msg;
         } catch (Exception e) {
             Log.error("Cannot encode packet 0x%s (%s): %s", Integer.toHexString(packetId), packet.getClass().getSimpleName(), e.getMessage());

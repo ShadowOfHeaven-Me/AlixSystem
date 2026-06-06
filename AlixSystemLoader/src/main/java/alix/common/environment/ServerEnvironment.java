@@ -16,6 +16,10 @@ public enum ServerEnvironment {
         return env == PAPER;
     }
 
+    public static boolean isVelocity() {
+        return env == VELOCITY;
+    }
+
     private static ServerEnvironment establishEnv0() {
         if (AlixCommonUtils.isValidClass("com.velocitypowered.proxy.VelocityServer")) return VELOCITY;
         if (AlixCommonUtils.isValidClass("com.destroystokyo.paper.PaperConfig")) return PAPER;

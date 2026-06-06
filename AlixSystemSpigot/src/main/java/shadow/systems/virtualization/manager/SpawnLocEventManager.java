@@ -21,7 +21,7 @@ final class SpawnLocEventManager extends VirtualEventManager {
     }
 
     //get new join loc, null if shouldn't be set
-    public static Location getJoinLoc(UUID uuid, Location joinLoc, boolean verified) {
+    static Location getJoinLoc(UUID uuid, Location joinLoc, boolean verified) {
         TemporaryUser tempUser = LoginVerdictManager.get(uuid);
 
         if (tempUser == null || AlixUtils.isFakeChannel(tempUser.getChannel()))

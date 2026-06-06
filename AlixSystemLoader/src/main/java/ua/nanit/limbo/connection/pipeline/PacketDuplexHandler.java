@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection.pipeline;
 
+import alix.common.environment.ServerEnvironment;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.annotation.AlixIntrinsified;
@@ -58,7 +59,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         this.voidPromise = channel.voidPromise();
         var geyserUtil = this.server.getIntegration().geyserUtil();
         this.isGeyser = geyserUtil.isBedrock(channel);
-        this.passPayloads = this.isGeyser && geyserUtil.isFloodgatePresent();
+        this.passPayloads = this.isGeyser && geyserUtil.isFloodgatePresent() && NanoLimbo.INTEGRATION.supportsCustomPayloadEvents();
         this.disableCompression = this._disableCompression0();
     }
 
@@ -419,7 +420,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     //prevent the events from being passed onto the other handlers
 
     private boolean passRegistration() {
-        return this.connection.getVerifyState().isLoginState();
+        //this.connection.getVerifyState() is null during limbo login on bukkit servers
+        return ServerEnvironment.isVelocity()
+               && this.connection.getVerifyState().isLoginState();
     }
 
     @Override

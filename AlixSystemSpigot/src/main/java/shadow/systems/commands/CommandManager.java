@@ -1604,7 +1604,7 @@ public final class CommandManager {
             boolean canBePremium = uuid == null || uuid.version() == 4;
 
             if (!canBePremium) {
-                user.writeAndFlushSilently(nonPremiumDataMessage);
+                user.writeAndFlushConstSilently(nonPremiumDataMessage);
                 return false;
             }
 
@@ -1612,7 +1612,7 @@ public final class CommandManager {
             var data = UserFileManager.get(name);
 
             if (data.getPremiumData().getStatus().isPremium()) {
-                user.writeAndFlushSilently(alreadyPremiumMessage);
+                user.writeAndFlushConstSilently(alreadyPremiumMessage);
                 return false;
             }
 
@@ -1625,16 +1625,16 @@ public final class CommandManager {
 
                 switch (premiumData.getStatus()) {
                     case PREMIUM: {
-                        user.writeAndFlushSilently(premiumDataMessage);
+                        user.writeAndFlushConstSilently(premiumDataMessage);
                         data.setPremiumData(premiumData);
                         return;
                     }
                     case NON_PREMIUM: {
-                        user.writeAndFlushSilently(nonPremiumDataMessage);
+                        user.writeAndFlushConstSilently(nonPremiumDataMessage);
                         return;
                     }
                     case UNKNOWN: {
-                        user.writeAndFlushSilently(unknownDataMessage);
+                        user.writeAndFlushConstSilently(unknownDataMessage);
                     }
                 }
             });

@@ -32,6 +32,7 @@ public final class PersistentUserData implements AlixUserData {
     private final UUID uuid;
     private final LoginParams loginParams;
     private final long createdAt;
+    @SuppressWarnings("NotNullFieldNotInitialized")//IJ tweaking
     @NotNull
     private volatile PremiumData premiumData;
     @NotNull
@@ -71,6 +72,20 @@ public final class PersistentUserData implements AlixUserData {
         this.saveToDatabase();
     }
 
+    //during a premium name change
+    private PersistentUserData(String name, PersistentUserData data) {
+        this.name = name;
+        this.uuid = this._uuid();
+        this.ip = data.ip;
+        this.createdAt = data.createdAt;
+        this.premiumData = data.premiumData;
+        this.homes = data.homes;
+        this.loginParams = data.loginParams;
+        UserFileManager.putData(this);
+
+        this.saveToDatabase();
+    }
+
     public void saveToDatabase() {
         database.insertUser(this.name, this.uuid, this.createdAt, this.getPassword());
         //this.setPasswordDatabase(password, this.getPassword());
@@ -90,16 +105,17 @@ public final class PersistentUserData implements AlixUserData {
             return false;
 
         AlixCommonMain.logInfo("Detected premium player's " + newName + " (Formerly " + renamedPlayersData.name + ") rename. Reassigning associated data");
-        if (AllowListFileManager.remove(renamedPlayersData.name)) {
+        if (AllowListFileManager.remove(renamedPlayersData.name))
             AllowListFileManager.add(newName);
-        }
+
         UserFileManager.remove(renamedPlayersData.name);
         renamedData(newName, renamedPlayersData);
         return true;
     }
 
     private static void renamedData(String newName, PersistentUserData old) {
-        var data = new PersistentUserData(newName, old.ip, old.getPassword());
+        new PersistentUserData(newName, old);
+        /*var data = new PersistentUserData(newName, old.ip, old.getPassword());
         data.setLastSuccessfulLogin(old.getLastSuccessfulLogin());
         data.setLoginType(old.getLoginType());
         data.setPremiumData(old.getPremiumData());
@@ -107,7 +123,7 @@ public final class PersistentUserData implements AlixUserData {
         data.getLoginParams().setExtraLoginType(old.getLoginParams().getExtraLoginType());
         data.getLoginParams().setAuthSettings(old.getLoginParams().getAuthSettings());
         data.getLoginParams().setExtraPassword(old.getLoginParams().getExtraPassword());
-        data.getLoginParams().setHasProvenAuthAccess(old.getLoginParams().hasProvenAuthAccess());
+        data.getLoginParams().setHasProvenAuthAccess(old.getLoginParams().hasProvenAuthAccess());*/
     }
 
     public static PremiumData getPremiumData(PersistentUserData data) {
@@ -272,6 +288,11 @@ public final class PersistentUserData implements AlixUserData {
 
         database.updateIpByName(this.name, ip.getHostAddress());
         return this;
+    }
+
+    @Override
+    public long createdAt() {
+        return createdAt;
     }
 
     @Override

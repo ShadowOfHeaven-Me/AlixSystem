@@ -31,10 +31,9 @@ import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
+import ua.nanit.limbo.integration.StateSupplier;
 import ua.nanit.limbo.protocol.PacketIn;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
@@ -43,6 +42,8 @@ import ua.nanit.limbo.protocol.packets.play.transfer.PacketPlayOutTransfer;
 import ua.nanit.limbo.protocol.packets.shadow.DisconnectPacket;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 import ua.nanit.limbo.server.data.TitlePacketSnapshot;
@@ -50,7 +51,6 @@ import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static ua.nanit.limbo.NanoLimbo.useTransfer;
 import static ua.nanit.limbo.NanoLimbo.verifyTheDud;
@@ -67,7 +67,7 @@ public class ClientConnection {
     private final VarIntFrameDecoder frameDecoder;
 
     //Login/Captcha
-    private final VerifyState verifyState;
+    private VerifyState verifyState;
     public boolean sentLogin;
 
     //Transfer
@@ -78,7 +78,7 @@ public class ClientConnection {
     private State decoderState, encoderState;
     private Version clientVersion;
 
-    public ClientConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
+    public ClientConnection(Channel channel, LimboServer server) {
         this.server = server;
         this.channel = channel;
         this.duplexHandler = new PacketDuplexHandler(channel, this.server, this);
@@ -86,10 +86,10 @@ public class ClientConnection {
         this.address = (InetSocketAddress) channel.remoteAddress();
         this.gameProfile = new GameProfile();
 
+        //this.verifyState = DummyVerifyState.INSTANCE;
+
         updateVersion(Version.getMin());
         updateState(State.HANDSHAKING);
-
-        this.verifyState = state.apply(this);
 
         if (NanoLimbo.debugAllDisconnects) {
             Log.warning("CONNECT AT=" + channel);
@@ -97,6 +97,13 @@ public class ClientConnection {
                 new Exception("DISCONNECT AT=").printStackTrace();
             });
         }
+    }
+
+    public void setVerifyState(StateSupplier state) {
+        if (this.verifyState != null)
+            return;
+
+        this.verifyState = state.apply(this);
     }
 
     public void verify() {

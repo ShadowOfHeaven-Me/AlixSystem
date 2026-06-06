@@ -52,7 +52,7 @@ import static shadow.utils.main.AlixUtils.requireCaptchaVerification;
 
 public final class UnverifiedUser extends AbstractAlixCtxUser {
 
-    private static final ByteBuf loginSuccessMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("login-success"));
+    public static final ByteBuf loginSuccessMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("login-success"));
     private final Player player;
     private final PersistentUserData data; //<- Can be null (other variables may be null as well, but this one is decently important)
     private final User retrooperUser;

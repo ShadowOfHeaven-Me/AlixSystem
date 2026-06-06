@@ -5,6 +5,7 @@ public enum LoginVerdict {
     REGISTER_PREMIUM(true, "Premium AutoRegister"),//premium register
     LOGIN_PREMIUM(true, "Premium AutoLogin"),//premium login
     IP_AUTO_LOGIN(true, "IP AutoLogin"),//ip autologin was confirmed
+    ALLOWED_LIMBO_LOGIN_OCCURRED(true, "Verified in Limbo"),
     DISALLOWED_NO_DATA(false, "No data"),//register (for the first time)
     DISALLOWED_PASSWORD_RESET(false,"Password was reset"),//register (after a password reset)
     DISALLOWED_LOGIN_REQUIRED(false,"Login required");//login is required - none of the other tests came back positive

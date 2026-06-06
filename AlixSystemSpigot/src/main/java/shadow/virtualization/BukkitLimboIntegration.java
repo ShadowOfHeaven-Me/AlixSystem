@@ -1,22 +1,30 @@
 package shadow.virtualization;
 
+import alix.common.data.PersistentUserData;
+import alix.common.utils.AlixCache;
+import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.floodgate.GeyserUtil;
-import io.netty.channel.Channel;
 import shadow.systems.dependencies.Dependencies;
+import shadow.systems.login.result.LoginVerdictManager;
 import shadow.systems.netty.AlixChannelHandler;
+import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.integration.LimboIntegration;
+import ua.nanit.limbo.integration.PreLoginInfo;
 import ua.nanit.limbo.integration.PreLoginResult;
+import ua.nanit.limbo.integration.StateSupplier;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
-import ua.nanit.limbo.server.LimboServer;
+import ua.nanit.limbo.protocol.packets.play.transfer.PacketPlayOutTransfer;
+import ua.nanit.limbo.protocol.registry.Version;
 
-import java.util.function.Function;
+import java.net.InetAddress;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 //https://wiki.vg/Protocol_FAQ
 
-public final class BukkitLimboIntegration extends LimboIntegration<LimboConnection> {
+public final class BukkitLimboIntegration extends LimboIntegration<ClientConnection> {
 
     /*@Nullable
     public static String removeCompletedCaptchaName(InetAddress address) {
@@ -33,17 +41,63 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
     }*/
 
     @Override
-    public PreLoginResult onLoginStart(LimboConnection connection, PacketLoginStart packet, boolean[] recode) {
-        var result = super.onLoginStart(connection, packet, recode);
-        if (result == PreLoginResult.CONNECT_TO_MAIN_SERVER)
+    public PreLoginInfo onLoginStart(ClientConnection connection, PacketLoginStart packet) {
+        var result = super.onLoginStart(connection, packet);
+        if (result.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER)
             AlixChannelHandler.assignLoginUUID(connection.getChannel(), packet);
         return result;
     }
 
-    @Override
-    public LimboConnection newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
-        return new LimboConnection(channel, server, state);
+    private static final boolean limboLogin = ConfigProvider.config.getBoolean("virtual-limbo-login");
+    //public static final Map<String, byte[]> LIMBO_LOGINS = AlixCache.newBuilder().maximumSize(300).expireAfterWrite(1, TimeUnit.MINUTES).<String, byte[]>build().asMap();
+    public static final Map<String, InetAddress> LIMBO_LOGINS = !limboLogin ? null : AlixCache.newBuilder().maximumSize(300).expireAfterWrite(20, TimeUnit.SECONDS).<String, InetAddress>build().asMap();
+
+    public static boolean hasVerifiedInLimbo(String name, InetAddress addr) {
+        if (!limboLogin)
+            return false;
+
+        var stored = LIMBO_LOGINS.get(name);
+        return stored != null && stored.equals(addr);
     }
+
+    @Override
+    public boolean limboLogin(ClientConnection connection, PersistentUserData data) {
+        if (!limboLogin)
+            return false;
+        //disabled for now
+        /*if (true)
+            return false;*/
+
+        if (connection.getClientVersion().less(Version.V1_20_5))
+            return false;
+
+        var addr = connection.getAddress().getAddress();
+        if (LoginVerdictManager.getVerdict(addr, data).isAutoLogin())
+            return false;
+
+        //already done in LoginVerdictManager
+        //if(hasVerifiedInLimbo())
+
+        connection.setVerifyState(StateSupplier.LOGIN);
+        //connection.writeAndFlushPacket(new PacketOutLoginCookieRequest());
+
+        NanoLimbo.LIMBO.getClientChannelInitializer().initAfterLimboLogin(connection, data,
+                conn -> {
+                    LIMBO_LOGINS.put(conn.getUsername(), addr);
+                    var handshakePacket = conn.getHandshakePacket();
+
+                    String host = handshakePacket.getExtractedHost();
+                    int port = handshakePacket.getPort();
+
+                    conn.sendPacketAndClose(new PacketPlayOutTransfer().setHost(host).setPort(port));
+                }, this.geyserUtil());
+        return true;
+    }
+
+    /*@Override
+    public ClientConnection newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
+        return new ClientConnection(channel, server, state);
+    }*/
 
     /*@Override
     public boolean hasCompletedCaptcha(String name, Channel channel) {
@@ -51,11 +105,11 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
     }*/
 
     @Override
-    public void onHandshake(LimboConnection connection, PacketHandshake handshake) {
+    public void onHandshake(ClientConnection connection, PacketHandshake handshake) {
         AlixChannelHandler.onHandshake(connection.getChannel(), handshake);
     }
 
-    /*private void join(LimboConnection connection, PacketLoginStart packet, boolean[] recode) {
+    /*private void join(ClientConnection connection, PacketLoginStart packet, boolean[] recode) {
         String name = packet.getUsername();
         Channel channel = connection.getChannel();
         PersistentUserData data = UserFileManager.get(name);
@@ -105,7 +159,7 @@ public final class BukkitLimboIntegration extends LimboIntegration<LimboConnecti
     }*/
 
     //@Override
-    /*public CommandHandler<LimboConnection> createCommandHandler() {
+    /*public CommandHandler<ClientConnection> createCommandHandler() {
         return new LimboCommandHandler();
     }*/
 

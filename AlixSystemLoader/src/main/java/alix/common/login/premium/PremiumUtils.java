@@ -31,8 +31,7 @@ public final class PremiumUtils {
 
     public static String getNonPrefixedName(String name) {
         switch (name.charAt(0)) {
-            case '+'://PREMIUM_PREFIX
-            case '-'://NON_PREMIUM_PREFIX
+            case PREMIUM_PREFIX, NON_PREMIUM_PREFIX:
                 return name.length() == 16 ? PremiumNameManager.removeOriginalByPrefixed(name) : name.substring(1);
         }
         return name;
@@ -48,7 +47,7 @@ public final class PremiumUtils {
     public static PremiumData getOrRequestData(PersistentUserData data, String username) {
         PremiumData premiumData = getCachedData(data, username);
 
-        return premiumData.getStatus().isKnown() ? premiumData : requestPremiumData(username);
+        return premiumData.getStatus().isKnown() ? premiumData : getPremiumData(username);
     }
 
     public static PremiumData getCachedData(PersistentUserData data, String username) {
@@ -68,6 +67,7 @@ public final class PremiumUtils {
 
         return data.getStatus().isKnown() ? data : requestPremiumData(username);
     }
+
     public static PremiumData requestPremiumData(String name) {
         return premiumCheck.fetchPremiumData(name);
     }

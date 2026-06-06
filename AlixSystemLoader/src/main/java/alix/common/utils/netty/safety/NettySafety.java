@@ -10,9 +10,11 @@ public final class NettySafety {
     public static final NettySafetyException INVALID_VAR_INT = NettySafetyException.of("Invalid VarInt");
     public static final NettySafetyException INVALID_PACKET_LEN = NettySafetyException.of("NUH-UH");
     public static final NettySafetyException INVALID_BUF = NettySafetyException.of("Invalid buf");
-    public static final NettySafetyException INVALID_STATE = NettySafetyException.of("Invalid state");
+    //public static final NettySafetyException INVALID_STATE = NettySafetyException.of("Invalid state");
     public static final NettySafetyException INVALID_PACKET = NettySafetyException.of("Invalid packet");
-    public static final NettySafetyException INVALID_UUID_RESP = NettySafetyException.of("Invalid UUID Resp");
+    public static final NettySafetyException INVALID_INTENTION = NettySafetyException.of("Invalid login intention");
+
+    //public static final NettySafetyException INVALID_UUID_RESP = NettySafetyException.of("Invalid UUID Resp");
 
     public static void validateUserInputBufAlloc(int allocSize) {
         if (allocSize > MAX_RECEIVED_SIZE || allocSize < 0) {

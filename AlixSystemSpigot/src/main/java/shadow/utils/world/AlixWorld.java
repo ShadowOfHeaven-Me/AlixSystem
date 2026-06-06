@@ -23,6 +23,7 @@ public final class AlixWorld {
     static {
         CAPTCHA_WORLD.setSpawnLocation(TELEPORT_LOCATION);
     }
+
     //private final List<Integer> playerIds = new ArrayList<>();
     private final World world;
     private final ConstLocation teleportLocation;
@@ -64,9 +65,6 @@ public final class AlixWorld {
             return;
         }
         int min = Math.max(CAPTCHA_WORLD.getViewDistance(), 2);//view distance is custom on paper
-        /*for (int i = -min; i <= min; i++)
-            for (int j = -min; j <= min; j++)
-                this.world.setChunkForceLoaded(i, j, false);*/
 
         int unloaded = 0;
         for (Chunk chunk : this.world.getForceLoadedChunks()) {
@@ -76,7 +74,11 @@ public final class AlixWorld {
             }
         }
 
-        if(unloaded > 0) Main.logInfo("Unloaded " + unloaded + " previously unnecessarily force-loaded chunks");
+        for (int i = -min; i <= min; i++)
+            for (int j = -min; j <= min; j++)
+                this.world.setChunkForceLoaded(i, j, true);
+
+        if (unloaded > 0) Main.logInfo("Unloaded " + unloaded + " previously unnecessarily force-loaded chunks");
 
         //this.world.setChunkForceLoaded(0, 0, true);
     }

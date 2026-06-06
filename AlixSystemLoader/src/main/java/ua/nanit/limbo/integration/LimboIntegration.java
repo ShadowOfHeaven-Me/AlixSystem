@@ -20,9 +20,9 @@ import com.google.common.cache.Cache;
 import io.netty.channel.Channel;
 import org.jetbrains.annotations.Nullable;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.connection.VerifyState;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
+import ua.nanit.limbo.protocol.packets.login.cookies.PacketInLoginCookieResponse;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.server.LimboServer;
@@ -32,7 +32,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static ua.nanit.limbo.integration.LimboIntegration.Packets.*;
 
@@ -65,7 +64,9 @@ public abstract class LimboIntegration<T extends ClientConnection> {
     public static boolean hasCompletedCaptcha(Channel channel) {
         return getCompletedCaptchaName(channel) != null;
     }*/
-//Captcha
+
+    //Captcha
+
     @Nullable
     public static boolean hasCompletedCaptcha(Channel channel, String name) {
         /*if (GEYSER_UTIL.isBedrock(channel))
@@ -75,22 +76,25 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         return ip.equals(completedCaptchaCache.get(name));
     }
 
-    public abstract T newConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state);
+    public T newConnection(Channel channel, LimboServer server) {
+        return (T) new ClientConnection(channel, server);
+    }
 
+    public void onCookieResponse(T connection, PacketInLoginCookieResponse response) {
+
+    }
 
     //Packets
     public abstract void onHandshake(T connection, PacketHandshake handshake);
 
-    public PreLoginResult onLoginStart(T connection, PacketLoginStart packet, boolean[] recode) {
+    public PreLoginInfo onLoginStart(T connection, PacketLoginStart packet) {
         String nameSent = packet.getUsername();
         Channel channel = connection.getChannel();
         PersistentUserData data = UserFileManager.get(nameSent);
         UUID uuid = packet.getUUID();
 
-
         String nameRefactored = nameSent;
         Boolean hasCompletedCaptcha = null;
-
 
         //Premium handling
 
@@ -108,6 +112,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         //PersistentUserData prefixedNameData = UserFileManager.get(nameRefactored);
 
         boolean shouldReEncodeName = false;
+        boolean recode = false;
 
         //data of the account <nameSent>
         if (data != null) {
@@ -138,7 +143,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
         boolean enabled = false;
         if (enabled && shouldReEncodeName) {
-            recode[0] = true;
+            recode = true;
             packet.wrapper().setUsername(nameRefactored);
 
             //special case:
@@ -153,31 +158,30 @@ public abstract class LimboIntegration<T extends ClientConnection> {
             //nameSent = nameRefactored;
         }
 
-        //Intention hide
-        boolean isTransfer = connection.getHandshakePacket().isTransfer();
-        if (isTransfer && (hasCompletedCaptcha = hasCompletedCaptcha(channel, nameRefactored))) {
-            connection.getHandshakePacket().setLoginIntention();
-            recode[0] = true;
-        }
-
         //AlixChannelHandler.getPreLoginVerdict(channel, nameSent, nameRefactored, data, isPremium)
         switch (AlixCommonHandler.getPreLoginVerdict(channel, nameSent, nameRefactored, data, isPremium, this.geyserUtil().isBedrock(channel))) {
-            case ALLOWED:
-                break;
-            case DISALLOWED_INVALID_NAME:
+            case ALLOWED -> {
+            }
+            case DISALLOWED_INVALID_NAME -> {
                 return disconnect(connection, invalidNamePacket);
-            case DISALLOWED_MAX_ACCOUNTS_REACHED:
+            }
+            case DISALLOWED_MAX_ACCOUNTS_REACHED -> {
                 return disconnect(connection, maxTotalAccountsPacket);
-            case DISALLOWED_PREVENT_FIRST_JOIN:
+            }
+            case DISALLOWED_PREVENT_FIRST_JOIN -> {
                 return disconnect(connection, preventFirstTimeJoinPacket);
-            case DISALLOWED_VPN_DETECTED:
+            }
+            case DISALLOWED_VPN_DETECTED -> {
                 return disconnect(connection, vpnDetectedPacket);
-            default:
-                throw new AlixError();
+            }
+            case DISALLOWED_DIFFERENTLY_CASED_NAME_EXISTS -> {
+                return disconnect(connection, accountExistsUnderDifferentCase);
+            }
+            default -> throw new AlixError();
         }
 
         //TODO: DEBUG
-        recode[0] = true;
+        //recode = true;
 
         //Main.logInfo("REMAPPED: " + nameSent + " pr: " + nameRefactored);
 
@@ -185,12 +189,27 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         //during premium -> non_premium switch the player hasn't passed the captcha,
         // but was let into the server without completing it - he must be shown the visual captcha now
         //|| isPremium
-        return data != null || (hasCompletedCaptcha == Boolean.TRUE || hasCompletedCaptcha(channel, nameSent)) ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
+        boolean readyForLogin = data != null || (hasCompletedCaptcha == Boolean.TRUE || hasCompletedCaptcha(channel, nameSent));
+
+        if (readyForLogin && !isPremium && this.limboLogin(connection, data))
+            return new PreLoginInfo(PreLoginResult.CONNECT_TO_LIMBO, recode, StateSupplier.LOGIN);
+
+        var result = readyForLogin ? PreLoginResult.CONNECT_TO_MAIN_SERVER : PreLoginResult.CONNECT_TO_LIMBO;
+
+        return new PreLoginInfo(result, recode, StateSupplier.CAPTCHA);
     }
 
-    private static PreLoginResult disconnect(ClientConnection connection, PacketSnapshot disconnectPacket) {
+    public boolean limboLogin(ClientConnection connection, PersistentUserData data) {
+        return false;
+    }
+
+    public void onLimboDisconnect(ClientConnection connection) {
+
+    }
+
+    private static PreLoginInfo disconnect(ClientConnection connection, PacketSnapshot disconnectPacket) {
         connection.sendPacketAndClose(disconnectPacket);
-        return PreLoginResult.DISCONNECTED;
+        return PreLoginInfo.EMPTY_DISCONNECTED;
     }
 
     static final class Packets {
@@ -199,7 +218,8 @@ public abstract class LimboIntegration<T extends ClientConnection> {
                 invalidNamePacket = PacketLoginDisconnect.snapshot(Messages.get("anti-bot-invalid-name-blocked")),
                 preventFirstTimeJoinPacket = PacketLoginDisconnect.snapshot(ConnectionManager.preventFirstTimeJoinMessage),
                 maxTotalAccountsPacket = PacketLoginDisconnect.snapshot(GeoIPTracker.maxAccountsReached),
-                vpnDetectedPacket = PacketLoginDisconnect.snapshot(AntiVPN.antiVpnMessage);
+                vpnDetectedPacket = PacketLoginDisconnect.snapshot(AntiVPN.antiVpnMessage),
+                accountExistsUnderDifferentCase = PacketLoginDisconnect.snapshot(Messages.get("account-name-exists-under-different-casing"));
     }
 
     //Utils
@@ -210,12 +230,16 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         return 128;
     }
 
-    public boolean isTransferAccepted() {
+    public boolean isTransferAcceptable() {
         return false;
     }
 
     //floodgate with compression disabled is present
     public boolean isFloodgateNoCompressionPresent() {
+        return false;
+    }
+
+    public boolean supportsCustomPayloadEvents() {
         return false;
     }
 

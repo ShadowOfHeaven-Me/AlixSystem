@@ -2,7 +2,6 @@ package alix.common.utils.file;
 
 
 import alix.common.AlixCommonMain;
-import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import lombok.SneakyThrows;
@@ -10,7 +9,9 @@ import lombok.SneakyThrows;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,12 +101,21 @@ public abstract class AlixFileManager {
 
             String line;
 
-            while ((line = reader.readLine()) != null) if (acceptEmpty || !line.isEmpty()) consumer.accept(line);
+            while ((line = reader.readLine()) != null) {
+                if (!acceptEmpty && line.isEmpty())
+                    continue;
+
+                try {
+                    consumer.accept(line);
+                } catch (Exception e) {
+                    AlixCommonMain.logWarning("Error reading line '" + line + "' in obj=" + is);
+                }
+            }
         }
     }
 
     public static <K, V> void writeKeyAndVal(File file, Map<K, V> map, String separator, Predicate<V> shouldSave, Function<K, String> keyFormatter, Function<V, String> valueFormatter) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {
+        /*try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {
 
             Function<V, String> valueFormatter0 = valueFormatter == null ? V::toString : valueFormatter;
             Function<K, String> keyFormatter0 = keyFormatter == null ? K::toString : keyFormatter;
@@ -116,11 +126,35 @@ public abstract class AlixFileManager {
                 writer.write(keyFormatter0.apply(e.getKey()) + separator + valueFormatter0.apply(e.getValue()));
                 writer.newLine();
             }
+        }*/
+        var sb = new StringBuilder(map.size() << 6);//best guess
+        var ls = System.lineSeparator();
+
+        Function<V, String> valueFormatter0 = valueFormatter == null ? V::toString : valueFormatter;
+        Function<K, String> keyFormatter0 = keyFormatter == null ? K::toString : keyFormatter;
+        Predicate<V> shouldSave0 = shouldSave == null ? v -> true : shouldSave;//assume all entries should be saved if not specified
+
+        for (Map.Entry<K, V> e : map.entrySet()) {
+            if (!shouldSave0.test(e.getValue())) continue;
+
+            int oldCnt = sb.length();
+            try {
+                sb.append(keyFormatter0.apply(e.getKey())).append(separator).append(valueFormatter0.apply(e.getValue()));
+                sb.append(ls);
+            } catch (Throwable ex) {
+                sb.setLength(oldCnt);
+                AlixCommonMain.logError("Corrupt data! Could not save record in " + file.getName() + "! Report the error below immediately!");
+                ex.printStackTrace();
+                //continue;
+            }
+
         }
+
+        writeAtomic(file.toPath(), sb.toString());
     }
 
     public static void write(File file, Collection<?> lines) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {//new BufferedWriter(new FileWriter(file, CHARSET))
+        /*try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {//new BufferedWriter(new FileWriter(file, CHARSET))
             for (Object line : lines) {
                 try {
                     writer.write(String.valueOf(line));
@@ -130,6 +164,49 @@ public abstract class AlixFileManager {
                     AlixCommonUtils.logException(e);
                 }
             }
+        }*/
+
+        var sb = new StringBuilder(lines.size() << 6);//best guess
+        var ls = System.lineSeparator();
+
+        for (var line : lines) {
+            String str;
+            try {
+                str = String.valueOf(line);
+            } catch (Throwable ex) {
+                AlixCommonMain.logError("Corrupt data! Could not save record in " + file.getName() + "! Report the error below immediately!");
+                ex.printStackTrace();
+                continue;
+            }
+            sb.append(str).append(ls);
+        }
+
+        writeAtomic(file.toPath(), sb.toString());
+    }
+
+    private static void writeAtomic(Path target, String data) throws IOException {
+        Path dir = target.toAbsolutePath().getParent();
+        Files.createDirectories(dir);
+
+        // temp file in same dir -> move will stay on same filesystem
+        Path tmp = Files.createTempFile(dir, target.getFileName().toString(), ".tmp");
+        doWrite0(tmp, data);
+
+        try {
+            Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            //best-effort
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(tmp);
+        }
+    }
+
+    private static void doWrite0(Path target, String src) {
+        try (var writer = Files.newBufferedWriter(target, CHARSET)) {
+            writer.write(src);
+        } catch (IOException e) {
+            throw new AlixException(e);
         }
     }
 
@@ -289,7 +366,7 @@ public abstract class AlixFileManager {
         readLines(file, this::loadLine, acceptEmpty);
     }
 
-    protected void loadSingularValue() {
+    /*protected void loadSingularValue() {
         try {
             DataInputStream stream = new DataInputStream(Files.newInputStream(file.toPath()));
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
@@ -301,17 +378,17 @@ public abstract class AlixFileManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     public <K, V> void saveKeyAndVal(Map<K, V> map, String separator) throws IOException {
         this.saveKeyAndVal(map, separator, null);
     }
 
-    public synchronized <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate) throws IOException {
+    public <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate) throws IOException {
         writeKeyAndVal(this.file, map, separator, predicate, null, null);
     }
 
-    public synchronized <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate, Function<K, String> keyFormatter, Function<V, String> valueFormatter) throws IOException {
+    public <K, V> void saveKeyAndVal(Map<K, V> map, String separator, Predicate<V> predicate, Function<K, String> keyFormatter, Function<V, String> valueFormatter) throws IOException {
         writeKeyAndVal(this.file, map, separator, predicate, keyFormatter, valueFormatter);
     }
 
@@ -319,7 +396,7 @@ public abstract class AlixFileManager {
         save0(map.values());
     }
 
-    public synchronized void save0(Collection<?> values) throws IOException {
+    public void save0(Collection<?> values) throws IOException {
         write(file, values);
     }
 

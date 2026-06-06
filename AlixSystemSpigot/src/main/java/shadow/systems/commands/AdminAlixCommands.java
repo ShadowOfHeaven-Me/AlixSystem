@@ -247,7 +247,7 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                         var invalidityReason = AlixUtils.getPasswordInvalidityReason(password, type);
                         if (invalidityReason != null) {
-                            sendMessage(sender, "&6Invalid password:");
+                            sendMessage(sender, "&eInvalid password:");
                             sender.sendMessage(invalidityReason);
                             return false;
                         }
@@ -255,7 +255,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                         data.setPassword(password);
                         data.setLoginType(type);
                         String passFormatted = "*".repeat(password.length() - 3) + password.substring(password.length() - 3);
-                        sendMessage(sender, "Successfully changed player " + data.getName() + " password to " + passFormatted + " with login type " + type);
+                        sendMessage(sender, "Successfully changed player " + data.getName() + "'s password to " + passFormatted + " with login type " + type);
 
                         if (data.getLoginParams().getExtraLoginType() != null) {
                             sendMessage(sender, "&eAdditionally setting the player's extra login type to NONE to avoid issues.");
@@ -313,6 +313,15 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, "IP: &c" + data.getSavedIP().getHostAddress());
                             //sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
                             sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
+                            //int alts = GeoIPTracker.altsCount()
+
+                            if (!data.getSavedIP().equals(PersistentUserData.UNKNOWN_IP)) {//I guess possibly incorrect info when testing on localhost
+                                var accounts = UserFileManager.getAllData().stream().filter(d -> d.getSavedIP().equals(data.getSavedIP()))
+                                        .map(PersistentUserData::getName).toList();
+
+                                var extraInfo = accounts.size() > 1 ? " &7(" + String.join(", ", accounts) + ")" : "";
+                                sendMessage(sender, "Accounts: &c" + accounts.size() + extraInfo);
+                            }
                             sendMessage(sender, "Login Type: &c" + data.getLoginType());
                             sendMessage(sender, "Premium Status: &c" + data.getPremiumData().getStatus().readableName());
                             if (dVer)

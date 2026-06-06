@@ -89,7 +89,7 @@ public final class PremiumAuthenticator {
         boolean registered = PersistentUserData.isRegistered(data);
 
         if (!registered && assumeNonPremiumOnFailedAuth) {
-            Main.logInfo("Assuming the premium-nicknamed user " + name + " is non-premium!");
+            Main.logInfo("Assuming the premium-nicknamed user " + name + " is non-premium");
 
             if (data != null) data.setPremiumData(PremiumData.NON_PREMIUM);
             else PremiumDataCache.add(name, PremiumData.NON_PREMIUM);
@@ -124,8 +124,8 @@ public final class PremiumAuthenticator {
             return;
         }
 
-        //enable encryption once we know that the player is expecting the connection to be encrypted
         AuthReflection.findNetworkManager((Channel) user.getChannel(), networkManager -> {
+            //enable encryption once we know that the player is expecting the connection to be encrypted
             if (!enableEncryption(loginKey, user, networkManager))
                 return;
 
@@ -155,26 +155,28 @@ public final class PremiumAuthenticator {
 
             String serverId = EncryptionUtil.getServerIdHashString("", loginKey, keyPair.getPublic());
 
-            try {
-                //make sure to remove the name char prefix
-                if (hasJoined(PremiumUtils.getNonPrefixedName(packetUsername), serverId, address.getAddress())) {
+            AlixScheduler.asyncBlocking(() -> {
+                try {
+                    //make sure to remove the name char prefix
+                    if (hasJoined(PremiumUtils.getNonPrefixedName(packetUsername), serverId, address.getAddress())) {
 
-                    if (this.assignPremiumUUID)
-                        this.setPremiumUUID(networkManager, data.uuid());
+                        if (this.assignPremiumUUID)
+                            this.setPremiumUUID(networkManager, data.uuid());
 
-                    //Main.debug("VerifiedCache.verify=" + user.getName());
-                    VerifiedCache.verify(serverUsername, user);
-                    receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
-                } else {
-                    this.onInvalidAuth(user, data.publicKey(), invalidSession);
+                        //Main.debug("VerifiedCache.verify=" + user.getName());
+                        VerifiedCache.verify(serverUsername, user);
+                        receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
+                    } else {
+                        this.onInvalidAuth(user, data.publicKey(), invalidSession);
+                    }
+                } catch (IOException e) {
+                    if (e instanceof SocketTimeoutException) {
+                        Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
+                    }
+                    //todo: see if this correct
+                    this.onInvalidAuth(user, data.publicKey(), cannotVerifySession);
                 }
-            } catch (IOException e) {
-                if (e instanceof SocketTimeoutException) {
-                    Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
-                }
-                //todo: see if this correct
-                this.onInvalidAuth(user, data.publicKey(), cannotVerifySession);
-            }
+            });
         });
     }
 

@@ -29,10 +29,12 @@ public final class ProxyCheckManager {
         Boolean isProxy = this.isProxy0(strAddress, this.fastRegen);
         if (isProxy == null) isProxy = this.isProxy0(strAddress, this.slowRegen);
 
-        //is isProxy is null (couldn't be determined) we return that the ip is not a proxy
+        //if isProxy is null (couldn't be determined) we return that the ip is not a proxy
         boolean proxy = isProxy == Boolean.TRUE;
 
-        IpsCacheFileManager.add(ip, proxy);
+        if (isProxy != null)
+            IpsCacheFileManager.add(ip, proxy);
+
         return proxy;
     }
 

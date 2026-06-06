@@ -1,3 +1,4 @@
+/*
 package shadow.virtualization;
 
 import io.netty.channel.Channel;
@@ -9,19 +10,21 @@ import java.util.function.Function;
 
 public final class LimboConnection extends ClientConnection {
 
-    public LimboConnection(Channel channel, LimboServer server, Function<ClientConnection, VerifyState> state) {
-        super(channel, server, state);
+    public LimboConnection(Channel channel, LimboServer server, Function<ClientConnection) {
+        super(channel, server);
     }
 
     //private VerificationReason verificationReason;
 
 
 
-    /*public VerificationReason getVerificationReason() {
+    */
+/*public VerificationReason getVerificationReason() {
         return verificationReason;
     }
 
     public void setVerificationReason(VerificationReason verificationReason) {
         this.verificationReason = verificationReason;
-    }*/
-}
+    }*//*
+
+}*/

@@ -1,6 +1,7 @@
 package ua.nanit.limbo.protocol.packets.retrooper;
 
 import alix.common.utils.netty.WrapperUtils;
+import com.github.retrooper.packetevents.util.mappings.GlobalRegistryHolder;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.Packet;
@@ -20,12 +21,19 @@ abstract class RetrooperPacket<T extends PacketWrapper> implements Packet {
 
     @Override
     public void encode(ByteMessage msg, Version version) {
+        this.prepare();
         WrapperUtils.writeNoID(this.wrapper, msg.getBuf(), version.getRetrooperVersion());
     }
 
     @Override
     public final void decode(ByteMessage msg, Version version) {
+        this.prepare();
         WrapperUtils.readEmptyWrapperNoID(msg.getBuf(), version.getRetrooperVersion(), this.wrapper);
+    }
+
+    private void prepare() {
+        if (this.wrapper.getRegistryHolder() == null)
+            this.wrapper.setRegistryHolder(GlobalRegistryHolder.INSTANCE);
     }
 
     public T wrapper() {

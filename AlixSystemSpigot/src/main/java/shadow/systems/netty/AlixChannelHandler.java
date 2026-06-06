@@ -293,7 +293,8 @@ public final class AlixChannelHandler {
             alreadyConnectingPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("already-connecting")),
             preventFirstTimeJoinPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(ConnectionManager.preventFirstTimeJoinMessage),
             maxTotalAccountsPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(GeoIPTracker.maxAccountsReached),
-            vpnDetectedPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(AntiVPN.antiVpnMessage);
+            vpnDetectedPacket = OutDisconnectPacketConstructor.constructConstAtLoginPhase(AntiVPN.antiVpnMessage),
+            accountExistsUnderDifferentCase = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("account-name-exists-under-different-casing"));
 
 
     //private static final ByteBuf invalidNamePacket = OutDisconnectKickPacketConstructor.constructConstAtLoginPhase(Messages.get("anti-bot-invalid-name-blocked"));
@@ -362,6 +363,9 @@ public final class AlixChannelHandler {
                 return false;
             case DISALLOWED_VPN_DETECTED:
                 NettyUtils.closeAfterConstSend(channel, vpnDetectedPacket);
+                return false;
+            case DISALLOWED_DIFFERENTLY_CASED_NAME_EXISTS:
+                NettyUtils.closeAfterConstSend(channel, accountExistsUnderDifferentCase);
                 return false;
         }
 

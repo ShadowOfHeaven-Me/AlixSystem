@@ -33,4 +33,6 @@ public interface AlixUserData {
     String getName();
 
     long getLastSuccessfulLogin();
+
+    long createdAt();
 }

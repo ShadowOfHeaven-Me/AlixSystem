@@ -17,20 +17,25 @@
 
 package ua.nanit.limbo.protocol.registry;
 
+import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.throwable.AlixError;
-import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
 import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.protocol.*;
+import ua.nanit.limbo.protocol.HandleMask;
+import ua.nanit.limbo.protocol.Packet;
+import ua.nanit.limbo.protocol.PacketIn;
+import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.configuration.*;
 import ua.nanit.limbo.protocol.packets.configuration.resourcepack.PacketConfigInResourcePackResponse;
 import ua.nanit.limbo.protocol.packets.configuration.resourcepack.PacketConfigOutResourcePack;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.*;
+import ua.nanit.limbo.protocol.packets.login.cookies.PacketInLoginCookieResponse;
+import ua.nanit.limbo.protocol.packets.login.cookies.PacketOutLoginCookieRequest;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.play.*;
 import ua.nanit.limbo.protocol.packets.play.animation.PacketPlayInAnimation;
@@ -109,11 +114,13 @@ public enum State {
             serverBound.registerRetrooper(PacketLoginStart::new, PacketType.Login.Client.LOGIN_START);
             serverBound.registerRetrooper(PacketLoginPluginResponse::new, PacketType.Login.Client.LOGIN_PLUGIN_RESPONSE);
             serverBound.registerRetrooper(() -> PacketLoginAcknowledged.INSTANCE, PacketType.Login.Client.LOGIN_SUCCESS_ACK);
+            serverBound.registerRetrooper(PacketInLoginCookieResponse::new, PacketType.Login.Client.COOKIE_RESPONSE);
 
             clientBound.registerRetrooper(PacketLoginDisconnect::new, PacketType.Login.Server.DISCONNECT);
             clientBound.registerRetrooper(PacketLoginSuccess::new, PacketType.Login.Server.LOGIN_SUCCESS);
             clientBound.registerRetrooper(PacketLoginPluginRequest::new, PacketType.Login.Server.LOGIN_PLUGIN_REQUEST);
             clientBound.registerRetrooper(PacketOutSetCompression::new, PacketType.Login.Server.SET_COMPRESSION);
+            clientBound.registerRetrooper(PacketOutLoginCookieRequest::new, PacketType.Login.Server.COOKIE_REQUEST);
         }
     },
     CONFIGURATION {
@@ -262,7 +269,7 @@ public enum State {
             case 3://transfer (same sequence as login)
                 return State.LOGIN;
             default:
-                throw new AlixException("Invalid stateId");
+                throw NettySafety.INVALID_INTENTION;
         }
     }
 

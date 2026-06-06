@@ -1,8 +1,9 @@
 package shadow.systems.login.autoin.premium;
 
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.util.reflection.Reflection;
-import com.google.common.collect.MapMaker;
 import io.github.retrooper.packetevents.util.SpigotReflectionUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -16,10 +17,7 @@ import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.Key;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static io.github.retrooper.packetevents.util.SpigotReflectionUtil.NETWORK_MANAGER_CLASS;
@@ -120,40 +118,46 @@ final class AuthReflection {
     }
 
     //private static final Consumer<Object> NO_CALLBACK = AlixCommonUtils.EMPTY_CONSUMER;
-    private static final Map<ChannelPromise, Consumer<Object>> MAP = new MapMaker().weakKeys().makeMap();
+    private static final Map<ChannelPromise, Consumer<Object>> MAP = new WeakHashMap<>();//new MapMaker().weakKeys().makeMap();
 
     static void onAdd0(Object networkManager) {
         Channel managerChannel = getChannel(networkManager);
         if (managerChannel == null || !managerChannel.isOpen()) return;
 
-        //should be alright to sync here
-        synchronized (managerChannel.voidPromise()) {
-            var callback = MAP.remove(managerChannel.voidPromise());
-            if (callback == null) return;
+        if (Thread.currentThread() != Main.mainServerThread)
+            throw new AlixException("networkManager added not on main thread!");
 
-            callback.accept(networkManager);
-        }
+        //should be alright to sync here
+        //synchronized (managerChannel.voidPromise()) {
+        var callback = MAP.remove(managerChannel.voidPromise());
+        if (callback == null) return;
+
+        callback.accept(networkManager);
+        //}
     }
 
     static void findNetworkManager(Channel channel, Consumer<Object> callback) {
-        //Try to find it immediately
-        for (Object manager : managers) {
-            Channel managerChannel = getChannel(manager);
-            if (managerChannel == null || !managerChannel.isOpen()) continue;
+        Consumer<Object> asyncCallback = net -> channel.eventLoop().execute(() -> callback.accept(net));
+        AlixScheduler.sync(() -> {
+            //Try to find it immediately
+            for (Object manager : managers) {
+                Channel managerChannel = getChannel(manager);
+                if (managerChannel == null || !managerChannel.isOpen()) continue;
 
-            //some plugins could've replaced the Channel field, but it's likely
-            //that they hadn't replaced the channel's voidPromise() method - use identity comparison on that
-            //do not use Channel#id cuz ProtocolLib is AIDS (and doesn't implement it)
-            if (managerChannel.voidPromise() == channel.voidPromise()) {
-                callback.accept(manager);
-                return;
+                //some plugins could've replaced the Channel field, but it's likely
+                //that they hadn't replaced the channel's voidPromise() method - use identity comparison on that
+                //do not use Channel#id cuz ProtocolLib is AIDS (and doesn't implement it)
+                if (managerChannel.voidPromise() == channel.voidPromise()) {
+                    asyncCallback.accept(manager);
+                    return;
+                }
             }
-        }
-        //Otherwise add a callback
-        //add a sync block to prevent race conditions
-        synchronized (channel.voidPromise()) {
-            MAP.put(channel.voidPromise(), callback);
-        }
+            //Otherwise add a callback
+            //add a sync block to prevent race conditions
+            //synchronized (channel.voidPromise()) {
+            MAP.put(channel.voidPromise(), asyncCallback);
+            //}
+        });
     }
 
     /*static Object findNetworkManager(Channel channel) {
