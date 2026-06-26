@@ -22,7 +22,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
    /* private static final EmptyVirtualInventory
             registerGUI,
             loginGUI;*/
-    private static final boolean invisible = true;
+    private static final boolean invisible = false;
     private final EmptyVirtualInventory gui;
     private final UnverifiedUser user;
 

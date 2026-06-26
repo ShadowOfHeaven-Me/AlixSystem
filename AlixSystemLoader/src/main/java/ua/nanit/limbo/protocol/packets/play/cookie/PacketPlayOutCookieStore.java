@@ -13,7 +13,7 @@ public final class PacketPlayOutCookieStore extends OutRetrooperPacket<WrapperPl
     }
 
     public PacketPlayOutCookieStore setKey(String key) {
-        String[] w = key.split(":");
+        var w = key.split(":");
         this.wrapper().setKey(new ResourceLocation(w[0], w[1]));
         return this;
     }

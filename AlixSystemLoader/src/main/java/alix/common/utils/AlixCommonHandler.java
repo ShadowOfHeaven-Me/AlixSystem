@@ -8,6 +8,8 @@ import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.PlayerNameIndex;
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumDataCache;
@@ -31,9 +33,9 @@ import alix.loaders.velocity.VelocityAlixMain;
 import io.netty.channel.Channel;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static alix.common.reflection.CommonReflection.invoke;
@@ -49,57 +51,70 @@ public final class AlixCommonHandler {
         static final boolean validateName = config.getBoolean("validate-name");
     }
 
-    public static PreLoginVerdict getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data,
-                                                     boolean deemedPremium, boolean isBedrock) {
-        return getPreLoginVerdict0(((InetSocketAddress) channel.remoteAddress()).getAddress(), nameSent, nameRefactored, data,
-                deemedPremium, isBedrock);
-    }
+    public static void getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data,
+                                          boolean deemedPremium, boolean isBedrock, boolean proxyProtocol,
+                                          Consumer<PreLoginVerdict> consumer) {
+        LimboJoinProfiler.update(channel, ConnectionStage.VERDICT_REQUESTED);
 
-    private static PreLoginVerdict getPreLoginVerdict0(InetAddress address, String nameSent, String nameRefactored,
-                                                       PersistentUserData data, boolean deemedPremium, boolean isBedrock) {
         if (data == null && validateName && (nameSent.length() > 16 || nameSent.isEmpty() || !NAME_PATTERN.matcher(nameSent).matches())) {
-            //FireWallManager.add(user.getAddress().getAddress(), "E1");
-            //event.setLastUsedWrapper(INVALID_LOGIN_WRAPPER);//we know it'll throw an exception during a normal read, so if other plugins try to read it they should check for nulls (although they are more than likely to be using a separate PE instance, but not much I can do about that)
-            //event.setCancelled(true);
-            return PreLoginVerdict.DISALLOWED_INVALID_NAME;
+            consumer.accept(PreLoginVerdict.DISALLOWED_INVALID_NAME);
+            return;
         }
+        LimboJoinProfiler.update(channel, ConnectionStage.NAME_PASSED);
 
         //String name = Dependencies.getCorrectUsername(channel, name); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + name : name;
         //String name = name;
 
         //AlixScheduler.async(() -> (?)
+        InetAddress address = AlixCommonUtils.getAddress(channel);
 
-        if (antibotService)
+        if (antibotService && !proxyProtocol)
             ConnectionThreadManager.onJoinAttempt(nameRefactored, address);
 
-        if (data == null) {
-            if (!deemedPremium && AntiBotStatistics.INSTANCE.isHighTraffic() && ConnectionManager.disallowJoin(nameRefactored)) {//Close the connection before the auth thread is started
-                //event.setCancelled(true);
-                return PreLoginVerdict.DISALLOWED_PREVENT_FIRST_JOIN;
-            }
-
-            boolean renamed = false;
-            if (deemedPremium && !UserFileManager.hasName(nameRefactored)) {
-                var premiumData = PremiumDataCache.getOrUnknown(nameSent);
-                var uuid = premiumData.premiumUUID();
-                //data is null, but the uuid of the player is already indexed here
-                //rename the player in the files
-                if (uuid != null && PremiumIdIndex.isIndexed(uuid)) {
-                    renamed = PersistentUserData.registerPremiumPlayerRename(nameRefactored, premiumData);
-                }
-            }
-
-            if (PlayerNameIndex.isIndexedWithDifferentCase(nameRefactored))
-                return PreLoginVerdict.DISALLOWED_DIFFERENTLY_CASED_NAME_EXISTS;
-
-            if (!renamed && GeoIPTracker.disallowJoin(address, nameRefactored))
-                return PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED;
-
-            if ((!isBedrock || isBedrock && antiVpnIncludeBedrock) && AntiVPN.disallowJoin(address, nameRefactored))
-                return PreLoginVerdict.DISALLOWED_VPN_DETECTED;
-
+        if (data != null) {
+            LimboJoinProfiler.update(channel, ConnectionStage.HAS_DATA_ALLOWED);
+            consumer.accept(PreLoginVerdict.ALLOWED);
+            return;
         }
-        return PreLoginVerdict.ALLOWED;
+
+        if (!deemedPremium && AntiBotStatistics.INSTANCE.isHighTraffic() && ConnectionManager.disallowJoin(nameRefactored)) {//Close the connection before the auth thread is started
+            consumer.accept(PreLoginVerdict.DISALLOWED_PREVENT_FIRST_JOIN);
+            return;
+        }
+
+        LimboJoinProfiler.update(channel, ConnectionStage.TRAFFIC_PASSED);
+
+        boolean renamed = false;
+        if (deemedPremium && !UserFileManager.hasName(nameRefactored)) {
+            var premiumData = PremiumDataCache.getOrUnknown(nameSent);
+            var uuid = premiumData.premiumUUID();
+            //data is null, but the uuid of the player is already indexed here
+            //rename the player in the files
+            if (uuid != null && PremiumIdIndex.isIndexed(uuid)) {
+                renamed = PersistentUserData.registerPremiumPlayerRename(nameRefactored, premiumData);
+            }
+        }
+
+        if (PlayerNameIndex.isIndexedWithDifferentCase(nameRefactored)) {
+            consumer.accept(PreLoginVerdict.DISALLOWED_DIFFERENTLY_CASED_NAME_EXISTS);
+            return;
+        }
+        LimboJoinProfiler.update(channel, ConnectionStage.INDEX_PASSED);
+
+        if (!renamed && !proxyProtocol && GeoIPTracker.disallowJoin(address, nameRefactored)) {
+            consumer.accept(PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED);
+            return;
+        }
+
+        LimboJoinProfiler.update(channel, ConnectionStage.TRACKER_PASSED);
+
+        if ((!isBedrock || isBedrock && antiVpnIncludeBedrock) && !proxyProtocol) {
+            AntiVPN.disallowJoin(channel, address, nameRefactored, isProxy -> {
+                if (LimboJoinProfiler.PROFILE_JOINS)
+                    LimboJoinProfiler.update(channel, ConnectionStage.VPN_EVALUATED, isProxy.toString());
+                consumer.accept(isProxy ? PreLoginVerdict.DISALLOWED_VPN_DETECTED : PreLoginVerdict.ALLOWED);
+            });
+        }
     }
 
     public static boolean preferDirectBufs() {

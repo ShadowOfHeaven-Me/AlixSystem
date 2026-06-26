@@ -1,3 +1,4 @@
+/*
 package ua.nanit.limbo.connection.pipeline;
 
 import io.netty.buffer.ByteBuf;
@@ -109,3 +110,4 @@ public class ChannelTrafficHandler extends ChannelInboundHandlerAdapter {
         }
     }
 }
+*/

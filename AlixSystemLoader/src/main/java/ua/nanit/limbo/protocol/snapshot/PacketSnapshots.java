@@ -51,7 +51,7 @@ public final class PacketSnapshots {
 
     public static final PacketSnapshot SET_COMPRESSION = PacketSnapshot.of(new PacketOutSetCompression());
     public static final PacketSnapshot RECONFIGURE = PacketSnapshot.of(new PacketPlayOutReconfigure());
-    public static final int PLAYER_ENTITY_ID = 0;
+    public static final int PLAYER_ENTITY_ID = 1;//AlixCommonUtils.random.nextInt(1, );
     public static final UUID PLAYER_UUID = new UUID(0, 0);
     public static final String PLAYER_NAME = "Sex";//...it is imperative we use this exact phrase
     public static final PacketSnapshot PACKET_LOGIN_SUCCESS;
@@ -138,25 +138,27 @@ public final class PacketSnapshots {
         loginSuccess.setUsername(username);
         loginSuccess.setUUID(uuid);*/
 
+        //https://minecraft.wiki/w/Java_Edition_protocol/Packets#Login_(play)
         PacketJoinGame joinGame = new PacketJoinGame();
-        String worldName = "minecraft:" + server.getConfig().getDimensionType().toLowerCase();
+        //String worldName = "minecraft:" + server.getConfig().getDimensionTypeName().toLowerCase();
+        joinGame.setDimension(server.getConfig().getDimensionType().createVersionedDimension(registry));
         joinGame.setEntityId(PLAYER_ENTITY_ID);
         joinGame.setViewDistance(0);
-        joinGame.setHashedSeed(0);
+        joinGame.setSeed(0);
         joinGame.setPreviousGameMode(-1);
         joinGame.setEnableRespawnScreen(false);
         joinGame.setFlat(false);
         joinGame.setHardcore(false);
-        joinGame.setGameMode(server.getConfig().getGameMode());
-        joinGame.setMaxPlayers(server.getConfig().getMaxPlayers());
+        joinGame.setGameMode(server.getConfig().getGameMode().getId());
+        //joinGame.setMaxPlayers(server.getConfig().getMaxPlayers());
+        joinGame.setMaxPlayers(0);
         joinGame.setReducedDebugInfo(true);
-        joinGame.setEnableRespawnScreen(false);
         joinGame.setDebug(false);
-        joinGame.setWorldName(worldName);
-        joinGame.setWorldNames(worldName);
+
+        //joinGame.setWorldName(worldName);
+        //joinGame.setWorldNames(worldName);
         joinGame.setLimitedCrafting(false);
-        joinGame.setSecureProfile(true);
-        joinGame.setDimensionRegistry(registry);
+        joinGame.setSecureProfile(true);//disable pop-up
         PACKET_JOIN_GAME = PacketSnapshot.of(joinGame);
 
         PacketPlayerAbilities fallAbilities = new PacketPlayerAbilities();
@@ -187,7 +189,7 @@ public final class PacketSnapshots {
                                 GameMode.SPECTATOR, null, null, 0, true))));
 
         //float validYaw = 0;
-        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername(PLAYER_NAME).setUUID(PLAYER_UUID));
+        PACKET_LOGIN_SUCCESS = PacketSnapshot.of(new PacketLoginSuccess().setUsername(PLAYER_NAME).setUUID(PLAYER_UUID).setSessionId(PLAYER_UUID));
         //PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
         PACKET_PLAYER_POS_AND_LOOK_LEGACY = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_VALID_Y, VALID_XZ, 0.1f, 0, TELEPORT_VALID_ID));
         PACKET_PLAYER_POS_AND_LOOK = PacketSnapshot.of(new PacketPlayerPositionAndLook(VALID_XZ, TELEPORT_Y, VALID_XZ, 0.1f, 0, TELEPORT_ID));
@@ -251,75 +253,18 @@ public final class PacketSnapshots {
 
         PACKET_REGISTRY_DATA = PacketSnapshot.of(packetRegistryData);
 
-        /*Dimension dimension1_21 = registry.getDimension_1_21();
-        List<PacketSnapshot> packetRegistries = new ArrayList<>();
-        CompoundBinaryTag dimensionTag = dimension1_21.getData();
-        for (String registryType : dimensionTag.keySet()) {
-            CompoundBinaryTag compoundRegistryType = dimensionTag.getCompound(registryType);
-
-            PacketRegistryData registryData = new PacketRegistryData();
-            registryData.setDimensionRegistry(registry);
-
-            ListBinaryTag values = compoundRegistryType.getList("value");
-            registryData.setMetadataWriter((message, version) -> {
-                message.writeString(registryType);
-
-                message.writeVarInt(values.size());
-                for (BinaryTag entry : values) {
-                    CompoundBinaryTag entryTag = (CompoundBinaryTag) entry;
-
-                    String name = entryTag.getString("name");
-                    CompoundBinaryTag element = entryTag.getCompound("element");
-
-                    message.writeString(name);
-                    message.writeBoolean(true);
-                    message.writeNamelessCompoundTag(element);
-                }
-            });
-
-            packetRegistries.add(PacketSnapshot.of(registryData));
-        }
-
-        PACKETS_REGISTRY_DATA = packetRegistries;*/
-
-        var PACKETS_REGISTRY_DATA_1_20_5 = createRegistryData(server, registry.getCodec_1_20_5());
-        var PACKETS_REGISTRY_DATA_1_21 = createRegistryData(server, registry.getCodec_1_21());
-        var PACKETS_REGISTRY_DATA_1_21_2 = createRegistryData(server, registry.getCodec_1_21_2());
-        var PACKETS_REGISTRY_DATA_1_21_4 = createRegistryData(server, registry.getCodec_1_21_4());
-        var PACKETS_REGISTRY_DATA_1_21_5 = createRegistryData(server, registry.getCodec_1_21_5());
-        var PACKETS_REGISTRY_DATA_1_21_6 = createRegistryData(server, registry.getCodec_1_21_6());
-        var PACKETS_REGISTRY_DATA_1_21_7 = createRegistryData(server, registry.getCodec_1_21_7());
-        var PACKETS_REGISTRY_DATA_1_21_9 = createRegistryData(server, registry.getCodec_1_21_9());
-        var PACKETS_REGISTRY_DATA_1_21_11 = createRegistryData(server, registry.getCodec_1_21_11());
-
         PACKET_FINISH_CONFIGURATION = PacketSnapshot.of(PacketOutFinishConfiguration.INSTANCE);
+
 
         PacketGameEvent packetGameEvent = new PacketGameEvent();
         packetGameEvent.setType((byte) 13); // Waiting for chunks type
         packetGameEvent.setValue(0);
         PACKET_START_WAITING_CHUNKS = PacketSnapshot.of(packetGameEvent);
 
-        UPDATE_TAGS.put(Version.V1_20_5, createTags(registry.getTags_1_20_5()));
-        UPDATE_TAGS.put(Version.V1_21, createTags(registry.getTags_1_21()));
-        UPDATE_TAGS.put(Version.V1_21_2, createTags(registry.getTags_1_21_2()));
-        UPDATE_TAGS.put(Version.V1_21_4, createTags(registry.getTags_1_21_4()));
-        UPDATE_TAGS.put(Version.V1_21_5, createTags(registry.getTags_1_21_5()));
-        UPDATE_TAGS.put(Version.V1_21_6, createTags(registry.getTags_1_21_6()));
-        UPDATE_TAGS.put(Version.V1_21_7, createTags(registry.getTags_1_21_7()));
-        UPDATE_TAGS.put(Version.V1_21_9, createTags(registry.getTags_1_21_9()));
-        UPDATE_TAGS.put(Version.V1_21_11, createTags(registry.getTags_1_21_11()));
-        UPDATE_TAGS.put(Version.V26_1, createTags(registry.getTags_26_1()));
-
-        REGISTRY_DATA.put(Version.V1_20_5, PACKETS_REGISTRY_DATA_1_20_5);
-        REGISTRY_DATA.put(Version.V1_21,   PACKETS_REGISTRY_DATA_1_21);
-        REGISTRY_DATA.put(Version.V1_21_2, PACKETS_REGISTRY_DATA_1_21_2);
-        REGISTRY_DATA.put(Version.V1_21_4, PACKETS_REGISTRY_DATA_1_21_4);
-        REGISTRY_DATA.put(Version.V1_21_5, PACKETS_REGISTRY_DATA_1_21_5);
-        REGISTRY_DATA.put(Version.V1_21_6, PACKETS_REGISTRY_DATA_1_21_6);
-        REGISTRY_DATA.put(Version.V1_21_7, PACKETS_REGISTRY_DATA_1_21_7);
-        REGISTRY_DATA.put(Version.V1_21_9, PACKETS_REGISTRY_DATA_1_21_9);
-        REGISTRY_DATA.put(Version.V1_21_11, PACKETS_REGISTRY_DATA_1_21_11);
-        REGISTRY_DATA.put(Version.V26_1, createRegistryData(server, registry.getCodec_26_1()));
+        for (var version : Version.range(Version.V1_20_5, Version.getMax())) {
+            UPDATE_TAGS.put(version, createTags(registry.getTags(version)));
+            REGISTRY_DATA.put(version, createRegistryData(server, registry.getCodec(version)));
+        }
 
         int chunkXOffset = (int) 0 >> 4; // Default x position is 0
         int chunkZOffset = (int) 0 >> 4; // Default z position is 0

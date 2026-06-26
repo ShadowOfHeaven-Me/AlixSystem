@@ -1,7 +1,6 @@
 package alix.common.data.premium;
 
 import alix.common.utils.AlixCache;
-import com.google.common.cache.Cache;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -9,12 +8,8 @@ import java.util.concurrent.TimeUnit;
 
 public final class PremiumDataCache {
 
-    private static final Map<String, PremiumData> premiumPlayersCache;
-
-    static {
-        Cache<String, PremiumData> cache = AlixCache.newBuilder().maximumSize(300).expireAfterWrite(10, TimeUnit.MINUTES).build();
-        premiumPlayersCache = cache.asMap();
-    }
+    private static final Map<String, PremiumData> premiumPlayersCache = AlixCache.newBuilder()
+            .maximumSize(300).expireAfterWrite(10, TimeUnit.MINUTES).<String, PremiumData>build().asMap();
 
     public static PremiumData removeOrUnknown(String username) {
         PremiumData data = premiumPlayersCache.remove(username);

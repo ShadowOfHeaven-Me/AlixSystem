@@ -7,12 +7,17 @@ import alix.common.messages.Messages;
 import alix.common.utils.collections.RandomCharIterator;
 import alix.common.utils.formatter.AlixFormatter;
 import io.netty.channel.Channel;
+import io.netty.channel.local.LocalAddress;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.connection.pipeline.VarIntFrameDecoder;
 
 import java.awt.*;
-import java.util.Arrays;
-import java.util.Collections;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -25,6 +30,8 @@ public final class AlixCommonUtils {
     public static final Consumer EMPTY_CONSUMER = e -> {
     };
     //public static final Predicate FALSE_PREDICATE = e -> false;
+
+    public static final SimpleDateFormat dateFormatter, timeFormatter;
     public static final Random random = new Random();
     public static final boolean isGraphicEnvironmentHeadless;
 
@@ -37,6 +44,14 @@ public final class AlixCommonUtils {
                 pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
     }
 
+    public static String getFormattedDate(Date date) {
+        return dateFormatter.format(date);
+    }
+
+    public static String getTime(Date date) {
+        return timeFormatter.format(date);
+    }
+
     static {
         boolean isGraphicEnvironmentHeadless0;
         try {
@@ -46,11 +61,36 @@ public final class AlixCommonUtils {
             isGraphicEnvironmentHeadless0 = true;
         }
         isGraphicEnvironmentHeadless = isGraphicEnvironmentHeadless0;
+
+        dateFormatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+        timeFormatter = new SimpleDateFormat("HH:mm:ss");
+    }
+
+    public static void runInEventLoop(Channel channel, Runnable task) {
+        if (channel.eventLoop().inEventLoop())
+            task.run();
+        else
+            channel.eventLoop().execute(task);
+    }
+
+    public static InetAddress getAddress(Channel channel) {
+        return NanoLimbo.INTEGRATION.isProxyProtocol() ? proxyAddress(channel) : getAddress(channel.remoteAddress());
+    }
+
+    static InetAddress proxyAddress(Channel channel) {
+        var addr = channel.attr(VarIntFrameDecoder.PROXY_ADDRESS_KEY).get();
+        if (addr == null)
+            AlixCommonMain.logWarning("Channel " + channel + " lacks an inet address assigned from proxy, despite proxy set-up!");
+        return addr;
+    }
+
+    static InetAddress getAddress(SocketAddress address) {
+        if (address instanceof LocalAddress) return null;
+        return ((InetSocketAddress) address).getAddress();
     }
 
     //From PacketEvents, FakeChannelUtil.isFakeChannel
     public static boolean isFakeChannel(Channel channel) {
-
         //hmmm, is this right?
         if (channel == null)
             return true;
@@ -223,9 +263,7 @@ public final class AlixCommonUtils {
     }
 
     public static <T> void fillArray(T[] array, Supplier<T> supplier) {
-        for (int i = 0; i < array.length; i++) {
-            array[i] = supplier.get();
-        }
+        for (int i = 0; i < array.length; i++) array[i] = supplier.get();
     }
 
     public static void logException(Throwable e) {

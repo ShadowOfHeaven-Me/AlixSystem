@@ -1,3 +1,5 @@
+import sun.jvmstat.monitor.MonitoredVmUtil.jvmArgs
+
 plugins {
     id("java")
     id("java-library")
@@ -53,6 +55,11 @@ dependencies {
     compileOnly("net.kyori:adventure-api:4.18.0")
     compileOnly("net.kyori:adventure-nbt:4.18.0")
 
+    implementation("org.ow2.asm:asm:9.7")
+    implementation("org.ow2.asm:asm-tree:9.7")
+    implementation("net.bytebuddy:byte-buddy-agent:1.14.18")
+    implementation("org.roaringbitmap:RoaringBitmap:1.6.9")
+
     //var srcPath = "C:\\Users\\Kubia\\Desktop\\alix sources\\common"
 
     /*api(files("$srcPath\\core-3.4.0.jar"))
@@ -79,7 +86,8 @@ dependencies {
     compileOnly("com.github.retrooper:packetevents-api:${project.findProperty("packet-events-version")}")
     api(project(":AlixAPI"))
 
-    compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
+    //compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:1.20.2-R0.1-SNAPSHOT")
 
     compileOnly("commons-codec:commons-codec:1.16.0")
 
@@ -98,7 +106,28 @@ dependencies {
     // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
     //compileOnly("com.velocitypowered:velocity-native:3.1.0") HOW IS THIS NOT FOUND
 }
-//java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
+
+
+if (project.findProperty("enable-preview")!! == "true") {
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("--enable-preview")
+    }
+    tasks.withType<Test>().configureEach {
+        jvmArgs("--enable-preview")
+    }
+
+    tasks.withType<JavaExec>().configureEach {
+        jvmArgs("--enable-preview")
+    }
+} else {
+    //cuz they rely on --enable-preview
+    tasks.compileJava {
+        exclude("alix/common/antibot/epoll/TelemetryProfilerImpl.java")
+        exclude("alix/common/antibot/epoll/TrafficHeuristics.java")
+        exclude("alix/common/antibot/epoll/ConnectionRecordSerializer.java")
+        exclude("alix/common/antibot/epoll/ConnectionStats.java")
+    }
+}
 tasks.test {
     useJUnitPlatform()
 }

@@ -97,6 +97,9 @@ public final class PacketSnapshot implements PacketOut {
     }
 
     private static CompressionSupplier compress(Channel channel) {
+        /*if (channel == null)
+            return CompressionSupplier.NULL_SUPPLIER;*/
+
         return channel.eventLoop().inEventLoop() ? CompressionSupplier.supply(CompressionHandler.getHandler(channel)) : CompressionSupplier.GLOBAL;
     }
 

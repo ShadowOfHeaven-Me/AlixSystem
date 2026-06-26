@@ -49,12 +49,8 @@ public final class Main implements LoaderBootstrap {
     private boolean en = true;
 
     /*
-    * Added atomic file writes & graceful continues at read fail
-Added the ability to disallow players of the same, but differently-cased name, from joining
-Fixed fake players support not working properly when the channel is wrapped (e.g. when ProtocolLib is installed)
-Limbo max player count: 300 -> 500
-Accounts will now be appended to the list of information shown at /as user
-Reworked premium auth threads
+     * Fixed fake players support not working properly when the channel is wrapped (e.g. when ProtocolLib is installed)
+     * Accounts will now be appended to the list of information shown at /as user
     * */
 
 

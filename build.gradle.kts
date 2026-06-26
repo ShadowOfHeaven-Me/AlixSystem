@@ -23,4 +23,5 @@ publishing {
 
 dependencies {
 }
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(Integer.parseInt(project.findProperty("toolchain-lang-version").toString())))

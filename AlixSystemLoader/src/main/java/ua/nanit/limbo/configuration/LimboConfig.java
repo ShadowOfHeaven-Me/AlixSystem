@@ -19,20 +19,18 @@ package ua.nanit.limbo.configuration;
 
 
 import alix.common.messages.Messages;
-import ua.nanit.limbo.server.data.InfoForwarding;
-import ua.nanit.limbo.server.data.PingData;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.util.Colors;
+import ua.nanit.limbo.world.DimensionType;
 
 import static ua.nanit.limbo.connection.login.LoginState.requirePasswordRepeatInRegister;
 
 public final class LimboConfig {
 
     private final int maxPlayers;
-    private final PingData pingData;
 
-    private final String dimensionType;
-    private final int gameMode;
+    private final GameMode gameMode;
 
     private final String brandName;
     private final String joinMessage;
@@ -41,7 +39,6 @@ public final class LimboConfig {
     private final String playerListHeader;
     private final String playerListFooter;
 
-    private final InfoForwarding infoForwarding;
     private final long readTimeout;
 
     private final boolean useTrafficLimits;
@@ -51,9 +48,7 @@ public final class LimboConfig {
 
     public LimboConfig() {
         maxPlayers = 500;
-        pingData = new PingData("Ping Sex", "{\"text\": \"&9NanoLimbo\"}", -1);
-        dimensionType = "the_end";
-        gameMode = 2;
+        gameMode = GameMode.ADVENTURE;
 
         brandName = "AlixVirtualLimbo";
         joinMessage = Colors.of("{\"text\": \"&eWelcome to the Limbo!\"}");
@@ -66,7 +61,6 @@ public final class LimboConfig {
         playerListHeader = Colors.of("none");
         playerListFooter = Colors.of("none");
 
-        infoForwarding = new InfoForwarding(InfoForwarding.Type.NONE, null, null);
         readTimeout = 30L;
 
         useTrafficLimits = false;
@@ -79,20 +73,20 @@ public final class LimboConfig {
         return maxPlayers;
     }
 
-    public PingData getPingData() {
-        return pingData;
+    public String getDimensionTypeName() {
+        return "the_end";
     }
 
-    public String getDimensionType() {
-        return dimensionType;
+    public DimensionType getDimensionType() {
+        return DimensionType.THE_END;
     }
 
-    public int getGameMode() {
+    /*public DimensionType getDimensionType(Version version) {
+        return version.moreOrEqual(Version.V1_21_9) ? DimensionTypes.THE_END : DimensionTypes.THE_END_PRE_1_21_9;
+    }*/
+
+    public GameMode getGameMode() {
         return gameMode;
-    }
-
-    public InfoForwarding getInfoForwarding() {
-        return infoForwarding;
     }
 
     public long getReadTimeout() {

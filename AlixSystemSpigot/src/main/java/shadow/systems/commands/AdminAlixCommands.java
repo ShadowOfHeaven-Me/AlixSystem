@@ -1,7 +1,6 @@
 package shadow.systems.commands;
 
 import alix.common.antibot.firewall.FireWallManager;
-import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
@@ -97,7 +96,6 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, playerDataNotFound.format(arg2));
                             return false;
                         }
-                        GeoIPTracker.removeIP(data.getSavedIP());
                         sendMessage(sender, "Fully removed the data of the account " + arg2 + "!");
                     }
                     break;
@@ -166,13 +164,11 @@ public final class AdminAlixCommands implements CommandExecutor {
                                 return false;
                             }
                         }
-                        AlixScheduler.asyncBlocking(() -> {
-                            var newPremiumData = PremiumUtils.requestPremiumData(arg2);
+                        PremiumUtils.getOrRequestAndCacheData(null, arg2, newPremiumData -> {
                             if (newPremiumData.getStatus().isUnknown()) {
                                 sendMessage(sender, "&cCould not determine player's " + arg2 + " premium status in any way, the status cannot be set");
                                 return;
                             }
-                            PremiumDataCache.add(arg2, newPremiumData);
                             if (newPremiumData.getStatus().isNonPremium()) {
                                 sendMessage(sender, "&cPlayer's " + arg2 + " status api request returned NON_PREMIUM, and thus it cannot be set to PREMIUM.");
                                 return;

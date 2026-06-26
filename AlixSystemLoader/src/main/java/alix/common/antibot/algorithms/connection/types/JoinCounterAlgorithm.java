@@ -3,6 +3,7 @@ package alix.common.antibot.algorithms.connection.types;
 import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.firewall.AlgorithmId;
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.utils.config.ConfigParams;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -35,7 +36,6 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
         return ALGORITHM_ID;
     }
 
-
     private static final class NameMapImpl extends NameMap {
 
         private final AtomicLong removalTime;
@@ -51,7 +51,8 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
             if (this.namesSet.add(name)) this.removalTime.getAndAdd(7000);
             else this.removalTime.getAndAdd(500);
 
-            if (this.namesSet.size() > 12) {
+            int cnt = this.namesSet.size();
+            if (cnt > 12 && cnt > ConfigParams.maximumTotalAccounts) {
                 FireWallManager.add(ip, ALGORITHM_ID, true);
                 return true;
             }

@@ -10,8 +10,8 @@ import java.lang.reflect.Modifier;
 
 public final class AlixUnsafe {
 
-    private static final Unsafe unsafe = tryGetUnsafe0();
-    private static final boolean hasUnsafe = unsafe != null;
+    private static final Unsafe UNSAFE = tryGetUnsafe0();
+    private static final boolean hasUnsafe = UNSAFE != null;
 
     private static Unsafe tryGetUnsafe0() {
         try {
@@ -21,13 +21,21 @@ public final class AlixUnsafe {
         }
     }
 
+    public static <T> T alloc(Class<T> clazz) {
+        try {
+            return (T) UNSAFE.allocateInstance(clazz);
+        } catch (InstantiationException e) {
+            throw new AlixException(e);
+        }
+    }
+
     public static Unsafe getUnsafe() {
-        return unsafe;
+        return UNSAFE;
     }
 
     public static long objectFieldOffset(Class<?> clazz, String fieldName) {
         if (!hasUnsafe) throw new AlixError("No Unsafe!");
-        return unsafe.objectFieldOffset(CommonReflection.getDeclaredField(clazz, fieldName));
+        return UNSAFE.objectFieldOffset(CommonReflection.getDeclaredField(clazz, fieldName));
     }
 
     public static boolean hasUnsafe() {
@@ -38,12 +46,12 @@ public final class AlixUnsafe {
         long offset;
         Object base;
         if (Modifier.isStatic(f.getModifiers())) {
-            offset = unsafe.staticFieldOffset(f);
-            base = unsafe.staticFieldBase(f);
+            offset = UNSAFE.staticFieldOffset(f);
+            base = UNSAFE.staticFieldBase(f);
             if (obj != null)
                 throw new AlixException("Object non-null for static field " + f.getName() + "!");
         } else {
-            offset = unsafe.objectFieldOffset(f);
+            offset = UNSAFE.objectFieldOffset(f);
             base = obj;
             if (obj == null)
                 throw new AlixException("Object null for object field " + f.getName() + "!");
@@ -57,12 +65,12 @@ public final class AlixUnsafe {
         long offset;
         Object base;
         if (Modifier.isStatic(f.getModifiers())) {
-            offset = unsafe.staticFieldOffset(f);
-            base = unsafe.staticFieldBase(f);
+            offset = UNSAFE.staticFieldOffset(f);
+            base = UNSAFE.staticFieldBase(f);
             if (obj != null)
                 throw new AlixException("Object non-null for static field " + f.getName() + "!");
         } else {
-            offset = unsafe.objectFieldOffset(f);
+            offset = UNSAFE.objectFieldOffset(f);
             base = obj;
             if (obj == null)
                 throw new AlixException("Object null for object field " + f.getName() + "!");
@@ -73,51 +81,51 @@ public final class AlixUnsafe {
     }
 
     public static void putValue(Object base, long offset, Object value, Class<?> c) {
-        if (c == byte.class) unsafe.putByte(base, offset, (byte) value);
-        else if (c == short.class) unsafe.putShort(base, offset, (short) value);
-        else if (c == int.class) unsafe.putInt(base, offset, (int) value);
-        else if (c == long.class) unsafe.putLong(base, offset, (long) value);
-        else if (c == float.class) unsafe.putFloat(base, offset, (float) value);
-        else if (c == double.class) unsafe.putDouble(base, offset, (double) value);
-        else if (c == char.class) unsafe.putChar(base, offset, (char) value);
-        else if (c == boolean.class) unsafe.putBoolean(base, offset, (boolean) value);
-        else unsafe.putObject(base, offset, value);
+        if (c == byte.class) UNSAFE.putByte(base, offset, (byte) value);
+        else if (c == short.class) UNSAFE.putShort(base, offset, (short) value);
+        else if (c == int.class) UNSAFE.putInt(base, offset, (int) value);
+        else if (c == long.class) UNSAFE.putLong(base, offset, (long) value);
+        else if (c == float.class) UNSAFE.putFloat(base, offset, (float) value);
+        else if (c == double.class) UNSAFE.putDouble(base, offset, (double) value);
+        else if (c == char.class) UNSAFE.putChar(base, offset, (char) value);
+        else if (c == boolean.class) UNSAFE.putBoolean(base, offset, (boolean) value);
+        else UNSAFE.putObject(base, offset, value);
     }
 
     public static void putValueVolatile(Object base, long offset, Object value, Class<?> c) {
-        if (c == byte.class) unsafe.putByteVolatile(base, offset, (byte) value);
-        else if (c == short.class) unsafe.putShortVolatile(base, offset, (short) value);
-        else if (c == int.class) unsafe.putIntVolatile(base, offset, (int) value);
-        else if (c == long.class) unsafe.putLongVolatile(base, offset, (long) value);
-        else if (c == float.class) unsafe.putFloatVolatile(base, offset, (float) value);
-        else if (c == double.class) unsafe.putDoubleVolatile(base, offset, (double) value);
-        else if (c == char.class) unsafe.putCharVolatile(base, offset, (char) value);
-        else if (c == boolean.class) unsafe.putBooleanVolatile(base, offset, (boolean) value);
-        else unsafe.putObjectVolatile(base, offset, value);
+        if (c == byte.class) UNSAFE.putByteVolatile(base, offset, (byte) value);
+        else if (c == short.class) UNSAFE.putShortVolatile(base, offset, (short) value);
+        else if (c == int.class) UNSAFE.putIntVolatile(base, offset, (int) value);
+        else if (c == long.class) UNSAFE.putLongVolatile(base, offset, (long) value);
+        else if (c == float.class) UNSAFE.putFloatVolatile(base, offset, (float) value);
+        else if (c == double.class) UNSAFE.putDoubleVolatile(base, offset, (double) value);
+        else if (c == char.class) UNSAFE.putCharVolatile(base, offset, (char) value);
+        else if (c == boolean.class) UNSAFE.putBooleanVolatile(base, offset, (boolean) value);
+        else UNSAFE.putObjectVolatile(base, offset, value);
     }
 
     public static Object getValue(Object base, long offset, Class<?> c) {
-        if (c == byte.class) return unsafe.getByte(base, offset);
-        else if (c == short.class) return unsafe.getShort(base, offset);
-        else if (c == int.class) return unsafe.getInt(base, offset);
-        else if (c == long.class) return unsafe.getLong(base, offset);
-        else if (c == float.class) return unsafe.getFloat(base, offset);
-        else if (c == double.class) return unsafe.getDouble(base, offset);
-        else if (c == char.class) return unsafe.getChar(base, offset);
-        else if (c == boolean.class) return unsafe.getBoolean(base, offset);
-        else return unsafe.getObject(base, offset);
+        if (c == byte.class) return UNSAFE.getByte(base, offset);
+        else if (c == short.class) return UNSAFE.getShort(base, offset);
+        else if (c == int.class) return UNSAFE.getInt(base, offset);
+        else if (c == long.class) return UNSAFE.getLong(base, offset);
+        else if (c == float.class) return UNSAFE.getFloat(base, offset);
+        else if (c == double.class) return UNSAFE.getDouble(base, offset);
+        else if (c == char.class) return UNSAFE.getChar(base, offset);
+        else if (c == boolean.class) return UNSAFE.getBoolean(base, offset);
+        else return UNSAFE.getObject(base, offset);
     }
 
     public static Object getValueVolatile(Object base, long offset, Class<?> c) {
-        if (c == byte.class) return unsafe.getByteVolatile(base, offset);
-        else if (c == short.class) return unsafe.getShortVolatile(base, offset);
-        else if (c == int.class) return unsafe.getIntVolatile(base, offset);
-        else if (c == long.class) return unsafe.getLongVolatile(base, offset);
-        else if (c == float.class) return unsafe.getFloatVolatile(base, offset);
-        else if (c == double.class) return unsafe.getDoubleVolatile(base, offset);
-        else if (c == char.class) return unsafe.getCharVolatile(base, offset);
-        else if (c == boolean.class) return unsafe.getBooleanVolatile(base, offset);
-        else return unsafe.getObjectVolatile(base, offset);
+        if (c == byte.class) return UNSAFE.getByteVolatile(base, offset);
+        else if (c == short.class) return UNSAFE.getShortVolatile(base, offset);
+        else if (c == int.class) return UNSAFE.getIntVolatile(base, offset);
+        else if (c == long.class) return UNSAFE.getLongVolatile(base, offset);
+        else if (c == float.class) return UNSAFE.getFloatVolatile(base, offset);
+        else if (c == double.class) return UNSAFE.getDoubleVolatile(base, offset);
+        else if (c == char.class) return UNSAFE.getCharVolatile(base, offset);
+        else if (c == boolean.class) return UNSAFE.getBooleanVolatile(base, offset);
+        else return UNSAFE.getObjectVolatile(base, offset);
     }
 
     private AlixUnsafe() {

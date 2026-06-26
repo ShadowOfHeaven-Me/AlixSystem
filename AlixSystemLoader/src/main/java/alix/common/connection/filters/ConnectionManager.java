@@ -3,7 +3,6 @@ package alix.common.connection.filters;
 import alix.common.messages.Messages;
 import alix.common.utils.AlixCache;
 import alix.common.utils.config.ConfigProvider;
-import com.google.common.cache.Cache;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -21,8 +20,7 @@ public final class ConnectionManager {
             CACHE = null;
         } else {
             int maxSize = Math.max(Math.min(ConfigProvider.config.getInt("connection-list-size"), 32767), 3);
-            Cache<String, Boolean> cache = AlixCache.newBuilder().expireAfterWrite(forgetInMillis, TimeUnit.MILLISECONDS).maximumSize(maxSize).build();
-            CACHE = cache.asMap();
+            CACHE = AlixCache.newBuilder().expireAfterWrite(forgetInMillis, TimeUnit.MILLISECONDS).maximumSize(maxSize).<String, Boolean>build().asMap();
         }
         //CACHE = isEnabled ? (Map<String, Long>) CacheBuilder.newBuilder().expireAfterWrite(forgetInMillis, TimeUnit.MILLISECONDS).maximumSize(maxSize).build().asMap() : null;
         //set = isEnabled ? new ConcurrentLoopSet<>(maxSize) : null;

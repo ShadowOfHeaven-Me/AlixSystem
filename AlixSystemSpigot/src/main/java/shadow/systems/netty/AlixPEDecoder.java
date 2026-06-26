@@ -11,8 +11,6 @@ import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.utils.main.AlixUtils;
 
-import java.net.InetSocketAddress;
-
 //Stacktrace filling can be heavy
 //Remaster exception throwing with a PacketEvents pull request
 @OptimizationCandidate
@@ -40,7 +38,7 @@ public final class AlixPEDecoder extends PacketEventsDecoder {
             }
             if (isPPE(cause)) {
                 //TODO: UHHHHHHHH
-                FireWallManager.addCauseException((InetSocketAddress) ctx.channel().remoteAddress(), cause);
+                FireWallManager.addCauseException(AlixCommonUtils.getAddress(ctx.channel()), cause);
                 ctx.channel().close();
                 return;
             }

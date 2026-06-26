@@ -29,17 +29,17 @@ import ua.nanit.limbo.connection.login.gui.bedrock.LimboBedrockGUI;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.connection.pipeline.PacketDuplexHandler;
 import ua.nanit.limbo.protocol.PacketOut;
-import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 import ua.nanit.limbo.protocol.packets.play.PacketPlayOutMessage;
 import ua.nanit.limbo.protocol.packets.play.config.PacketPlayInReconfigureAck;
+import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInClickSlot;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayInInventoryClose;
 import ua.nanit.limbo.protocol.packets.play.inventory.PacketPlayOutInventoryClose;
 import ua.nanit.limbo.protocol.packets.play.move.FlyingPacket;
 import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
 
 import java.util.function.Consumer;
 
@@ -97,7 +97,7 @@ public final class LoginState implements VerifyState {
         if (this.data != null) this.data.setPassword(password);
         else {
             this.data = PersistentUserData.createDefault(this.connection.getUsername(),
-                    this.connection.getAddress().getAddress(), Password.fromUnhashed(password));
+                    this.connection.getAddress(), Password.fromUnhashed(password));
             if (VerifiedCache.getAndCheckIfEquals(this.connection.getUsername(), this.connection.getChannel()))
                 this.data.setPremiumData(PremiumDataCache.getOrUnknown(this.connection.getUsername()));
         }
@@ -128,7 +128,7 @@ public final class LoginState implements VerifyState {
     }
 
     private void logIn0() {
-        this.data.setIP(this.connection.getAddress().getAddress());
+        this.data.setIP(this.connection.getAddress());
         var config = this.connection.getChannel().config();
 
         //disallow any reads after uninjecting the handlers, but before the authAction happens
@@ -259,6 +259,9 @@ public final class LoginState implements VerifyState {
     }
 
     private void writeCommands() {
+        /*if (PacketPlayOutShowDialog.write(this.connection))
+            return;*/
+
         if (this.version().moreOrEqual(Version.V1_13))
             this.write(this.isRegistered ? LOGIN : REGISTER);
     }

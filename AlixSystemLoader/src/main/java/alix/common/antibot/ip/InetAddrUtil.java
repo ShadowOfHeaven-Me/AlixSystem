@@ -7,6 +7,8 @@ import java.net.Inet6Address;
 
 interface InetAddrUtil {
 
+    boolean override(Inet4Address addr, int value);
+
     Inet6Address fastIPv6(byte[] addr) throws Exception;
 
     int ipv4Value(Inet4Address address);

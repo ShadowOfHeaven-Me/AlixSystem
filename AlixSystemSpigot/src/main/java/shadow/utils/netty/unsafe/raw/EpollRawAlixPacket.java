@@ -1,5 +1,6 @@
 package shadow.utils.netty.unsafe.raw;
 
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.annotation.ScheduledForFix;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -7,7 +8,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
 import java.net.Inet4Address;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -31,7 +31,7 @@ final class EpollRawAlixPacket extends AbstractRawAlixPacket {
 
     private static ByteBuf[] getRawBuffers(Channel channel, ByteBuf[] buffers, Function<ByteBuf, ByteBuf> transformer) {
         List<ByteBuf> raws = new ArrayList<>((buffers.length >> 4) + 10);//roughly guess the size (based on values seen in testing)
-        int threshold = ((InetSocketAddress) channel.remoteAddress()).getAddress().getClass() == Inet4Address.class ? IPV4_SIZE_THRESHOLD : IPV6_SIZE_THRESHOLD;
+        int threshold = AlixCommonUtils.getAddress(channel).getClass() == Inet4Address.class ? IPV4_SIZE_THRESHOLD : IPV6_SIZE_THRESHOLD;
 
         int currentSize = 0;
         CompositeByteBuf currentCompositeByteBuf = Unpooled.compositeBuffer();

@@ -28,6 +28,7 @@ import net.kyori.adventure.nbt.BinaryTagIO;
 import net.kyori.adventure.nbt.BinaryTagType;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.server.data.NamespacedKey;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,10 +40,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.EnumSet;
-import java.util.UUID;
+import java.util.*;
 
 @SuppressWarnings({"unused", "UnusedReturnValue", "EqualsWhichDoesntCheckParameterClass", "EqualsDoesntCheckParameterClass"})
 public final class ByteMessage {
@@ -104,9 +102,7 @@ public final class ByteMessage {
     public int[] readIntArray() {
         int len = readVarInt();
         int[] array = new int[len];
-        for (int i = 0; i < len; i++) {
-            array[i] = readVarInt();
-        }
+        for (int i = 0; i < len; i++) array[i] = readVarInt();
         return array;
     }
 
@@ -124,40 +120,30 @@ public final class ByteMessage {
     public String[] readStringsArray() {
         int length = readVarInt();
         String[] ret = new String[length];
-        for (int i = 0; i < length; i++) {
-            ret[i] = readString();
-        }
+        for (int i = 0; i < length; i++) ret[i] = readString();
         return ret;
     }
 
     public void writeStringsArray(String[] stringArray) {
         writeVarInt(stringArray.length);
-        for (String str : stringArray) {
-            writeString(str);
-        }
+        for (String str : stringArray) writeString(str);
     }
 
     public void writeVarIntArray(int[] array) {
         writeVarInt(array.length);
-        for (int i : array) {
-            writeVarInt(i);
-        }
+        for (int i : array) writeVarInt(i);
     }
 
     public void writeLongArray(long[] array) {
         writeVarInt(array.length);
-        for (long i : array) {
-            writeLong(i);
-        }
+        for (long i : array) writeLong(i);
     }
 
     public void writeCompoundTagArray(CompoundBinaryTag[] compoundTags) {
         try (ByteBufOutputStream stream = new ByteBufOutputStream(buf)) {
             writeVarInt(compoundTags.length);
 
-            for (CompoundBinaryTag tag : compoundTags) {
-                BinaryTagIO.writer().write(tag, (OutputStream) stream);
-            }
+            for (CompoundBinaryTag tag : compoundTags) BinaryTagIO.writer().write(tag, (OutputStream) stream);
         } catch (IOException e) {
             throw new EncoderException("Cannot write NBT CompoundTag");
         }
@@ -171,29 +157,86 @@ public final class ByteMessage {
         }
     }
 
-    public void writeCompoundTag(CompoundBinaryTag compoundTag) {
+    /*public void writeCompoundTag(CompoundBinaryTag compoundTag) {
         try (ByteBufOutputStream stream = new ByteBufOutputStream(buf)) {
             BinaryTagIO.writer().write(compoundTag, (OutputStream) stream);
         } catch (IOException e) {
             throw new EncoderException("Cannot write NBT CompoundTag");
         }
+    }*/
+
+    public void writeCompoundTag(CompoundBinaryTag compoundTag, Version version) {
+        try (ByteBufOutputStream stream = new ByteBufOutputStream(buf)) {
+            if (version.moreOrEqual(Version.V1_20_2)) {
+                BinaryTagIO.writer().writeNameless(compoundTag, stream, BinaryTagIO.Compression.NONE);
+            } else {
+                BinaryTagIO.writer().writeNamed(Map.entry("", compoundTag), stream, BinaryTagIO.Compression.NONE);
+            }
+        } catch (IOException e) {
+            throw new EncoderException("Cannot write NBT CompoundTag");
+        }
     }
-
-
-
+    
     public <T extends BinaryTag> void writeBinaryTag(Version version, T tag) {
         final BinaryTagType<T> type = (BinaryTagType<T>) tag.type();
         this.writeByte(type.id());
         try {
-            if (version.less(Version.V1_20_2)) {
-                // pre-1.20.2 clients need an empty name
-                this.writeShort(0);
-            }
+            // pre-1.20.2 clients need an empty name
+            if (version.less(Version.V1_20_2)) this.writeShort(0);
             type.write(tag, new ByteBufOutputStream(this.buf));
         } catch (IOException exception) {
             throw new EncoderException("Unable to encode BinaryTag", exception);
         }
     }
+
+    /*public static NBTCompound convertKyoriToPE(CompoundBinaryTag kyoriTag) {
+        NBTCompound peCompound = new NBTCompound();
+        for (Map.Entry<String, ? extends BinaryTag> entry : kyoriTag)
+            peCompound.setTag(entry.getKey(), convertTag(entry.getValue()));
+        return peCompound;
+    }
+
+    private static NBT convertTag(BinaryTag tag) {
+        if (tag instanceof CompoundBinaryTag compoundTag) return convertKyoriToPE(compoundTag);
+        if (tag instanceof ByteBinaryTag byteTag) return new NBTByte(byteTag.value());
+        if (tag instanceof IntBinaryTag intTag) return new NBTInt(intTag.value());
+        if (tag instanceof StringBinaryTag stringTag) return new NBTString(stringTag.value());
+        if (tag instanceof LongBinaryTag longTag) return new NBTLong(longTag.value());
+        if (tag instanceof FloatBinaryTag floatTag) return new NBTFloat(floatTag.value());
+        if (tag instanceof DoubleBinaryTag doubleTag) return new NBTDouble(doubleTag.value());
+        if (tag instanceof ShortBinaryTag shortTag) return new NBTShort(shortTag.value());
+        if (tag instanceof ByteArrayBinaryTag byteArrayTag) return new NBTByteArray(byteArrayTag.value());
+        if (tag instanceof IntArrayBinaryTag intArrayTag) return new NBTIntArray(intArrayTag.value());
+        if (tag instanceof LongArrayBinaryTag longArrayTag) return new NBTLongArray(longArrayTag.value());
+        if (tag instanceof ListBinaryTag listTag) {
+            //per BinaryTagTypes
+            NBTType peType = switch (listTag.elementType().id()) {
+                case 0 -> NBTType.END;
+                case 1 -> NBTType.BYTE;
+                case 2 -> NBTType.SHORT;
+                case 3 -> NBTType.INT;
+                case 4 -> NBTType.LONG;
+                case 5 -> NBTType.FLOAT;
+                case 6 -> NBTType.DOUBLE;
+                case 7 -> NBTType.BYTE_ARRAY;
+                case 8 -> NBTType.STRING;
+                case 9 -> NBTType.LIST;
+                case 10 -> NBTType.COMPOUND;
+                case 11 -> NBTType.INT_ARRAY;
+                case 12 -> NBTType.LONG_ARRAY;
+                case Byte.MAX_VALUE -> throw new AlixException("Heterogeneous list type!");
+                default -> throw new AlixException("Unknown=" + listTag.elementType());
+            };
+
+            NBTList<NBT> peList = new NBTList<>(peType);
+            for (BinaryTag listElement : listTag) {
+                peList.addTag(convertTag(listElement));
+            }
+            return peList;
+        }
+
+        throw new IllegalArgumentException("Unknown tag type: " + tag.type());
+    }*/
 
     public <T extends BinaryTag> void writeNamelessCompoundTag(T binaryTag) {
         try (ByteBufOutputStream stream = new ByteBufOutputStream(buf)) {
@@ -238,29 +281,34 @@ public final class ByteMessage {
         }
     }
 
-    public void writeNbtMessage(NbtMessage nbtMessage, Version version) {
-        if (version.moreOrEqual(Version.V1_20_3)) {
-            writeNamelessCompoundTag(nbtMessage.getTag());
-        } else {
-            writeString(nbtMessage.getJson());
+    public void writeNamespacedKey(NamespacedKey namespacedKey) {
+        writeString(namespacedKey.toString());
+    }
+
+    public void writeNamespacedKeyArray(NamespacedKey[] keys) {
+        writeVarInt(keys.length);
+        for (NamespacedKey namespacedKey : keys) {
+            writeNamespacedKey(namespacedKey);
         }
+    }
+
+    public void writeNbtMessage(NbtMessage nbtMessage, Version version) {
+        if (version.moreOrEqual(Version.V1_20_3)) writeNamelessCompoundTag(nbtMessage.getTag());
+        else writeString(nbtMessage.getJson());
     }
 
     public <E extends Enum<E>> void writeEnumSet(EnumSet<E> enumset, Class<E> oclass) {
         E[] enums = oclass.getEnumConstants();
         BitSet bits = new BitSet(enums.length);
 
-        for (int i = 0; i < enums.length; ++i) {
-            bits.set(i, enumset.contains(enums[i]));
-        }
+        for (int i = 0; i < enums.length; ++i) bits.set(i, enumset.contains(enums[i]));
 
         writeFixedBitSet(bits, enums.length, buf);
     }
 
     private static void writeFixedBitSet(BitSet bits, int size, ByteBuf buf) {
-        if (bits.length() > size) {
+        if (bits.length() > size)
             throw new StackOverflowError("BitSet too large (expected " + size + " got " + bits.size() + ")");
-        }
         buf.writeBytes(Arrays.copyOf(bits.toByteArray(), (size + 8) >> 3));
     }
 

@@ -5,10 +5,12 @@ import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.PremiumStatus;
 import alix.common.data.premium.name.PremiumNameManager;
+import alix.common.scheduler.AlixScheduler;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import ua.nanit.limbo.util.UUIDUtil;
+import io.netty.channel.Channel;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public final class PremiumUtils {
 
@@ -37,21 +39,51 @@ public final class PremiumUtils {
         return name;
     }
 
-    public static PremiumData getOrRequestAndCacheData(PersistentUserData data, String username) {
-        PremiumData premiumData = getOrRequestData(data, username);
+    public static void getOrRequestAndCacheData(Channel channel, String username, Consumer<PremiumData> consumer) {
+        getOrRequestAndCacheData(channel, null, username, consumer);
+    }
+
+    public static void getOrRequestAndCacheData(Channel channel, PersistentUserData data, String username, Consumer<PremiumData> consumer) {
+        PremiumData userData = data != null ? data.getPremiumData() : PremiumData.UNKNOWN;
+        if (userData.getStatus().isKnown()) {
+            consumer.accept(userData);
+            return;
+        }
+
+        PremiumData cached = PremiumDataCache.getOrUnknown(username);
+        if (cached.getStatus().isKnown()) {
+            consumer.accept(cached);
+            return;
+        }
+
+        AlixScheduler.asyncBlocking(() -> {
+            PremiumData premiumData = requestPremiumData(username);
+
+            //cache the username's premium status when it isn't unknown
+            if (premiumData.getStatus().isKnown())
+                PremiumDataCache.add(username, premiumData);
+
+            if (channel != null)
+                channel.eventLoop().execute(() -> consumer.accept(premiumData));
+            else
+                consumer.accept(premiumData);
+        });
+    }
+
+    public static PremiumData getOrRequestAndCacheDataSync(PersistentUserData data, String username) {
+        PremiumData userData = data != null ? data.getPremiumData() : PremiumData.UNKNOWN;
+        if (userData.getStatus().isKnown()) return userData;
+
+        PremiumData cached = PremiumDataCache.getOrUnknown(username);
+        if (cached.getStatus().isKnown()) return cached;
+
+        PremiumData premiumData = requestPremiumData(username);
+
         //cache the username's premium status when it isn't unknown
-        if (premiumData.getStatus().isKnown()) PremiumDataCache.add(username, premiumData);
+        if (premiumData.getStatus().isKnown())
+            PremiumDataCache.add(username, premiumData);
+
         return premiumData;
-    }
-
-    public static PremiumData getOrRequestData(PersistentUserData data, String username) {
-        PremiumData premiumData = getCachedData(data, username);
-
-        return premiumData.getStatus().isKnown() ? premiumData : getPremiumData(username);
-    }
-
-    public static PremiumData getCachedData(PersistentUserData data, String username) {
-        return data != null ? data.getPremiumData() : PremiumDataCache.getOrUnknown(username);
     }
 
     public static PremiumStatus suggestsStatus(UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
@@ -62,17 +94,7 @@ public final class PremiumUtils {
         return uuid.version() == 4 ? PremiumStatus.PREMIUM : PremiumStatus.NON_PREMIUM;
     }
 
-    public static PremiumData getPremiumData(String username) {
-        var data = PremiumDataCache.getOrUnknown(username);
-
-        return data.getStatus().isKnown() ? data : requestPremiumData(username);
-    }
-
-    public static PremiumData requestPremiumData(String name) {
+    static PremiumData requestPremiumData(String name) {
         return premiumCheck.fetchPremiumData(name);
-    }
-
-    private static UUID fromString(String str) {
-        return UUIDUtil.fromString(str);
     }
 }

@@ -1,11 +1,13 @@
 package ua.nanit.limbo.protocol.packets;
 
+import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
 import alix.common.utils.netty.WrapperUtils;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import lombok.SneakyThrows;
+import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.connection.pipeline.PacketDecoder;
@@ -14,9 +16,10 @@ import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionSupplier;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.protocol.Packet;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.server.Log;
 
 public final class PacketUtils {
@@ -87,6 +90,10 @@ public final class PacketUtils {
 
     public static void closeWith(Channel channel, Version version, PacketSnapshot packet, CipherHandler cipher) {
         PacketDuplexHandler.write0(channel, packet, cipher, version, channel.newPromise()).addListener(UnsafeCloseFuture.INSTANCE);
+    }
+
+    public static ByteBuf constLoginDisconnect(Component reason) {
+        return BufUtils.constBuffer(encode(new PacketLoginDisconnect().setReason(reason), true, Version.getMax(), null, false));
     }
 
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, CompressionHandler handler, boolean pooled) {

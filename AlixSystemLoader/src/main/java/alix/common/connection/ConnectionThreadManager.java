@@ -1,6 +1,5 @@
 package alix.common.connection;
 
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
 import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.algorithms.connection.types.JoinCounterAlgorithm;
 import alix.common.antibot.algorithms.connection.types.Name2IPAlgorithm;
@@ -37,11 +36,6 @@ public final class ConnectionThreadManager {
 
     public static void onJoinAttempt(String name, InetAddress address) {
         for (ConnectionAlgorithm algorithm : runnable.connectionAlgorithms) algorithm.onJoinAttempt(name, address);
-    }
-
-    public static void onConnection(InetAddress address) {
-        ConnectRequestAlgoImpl.onConnection(address);
-        //for (ConnectionRequestAlgorithm algorithm : runnable.pingRequestAlgorithms) algorithm.onConnection(address);
     }
 
     //runnable.joins.offerLast(new JoinAttempt(name, address));

@@ -409,7 +409,7 @@ public final class AlixHandler {
 
         return switch (login.getVerdict()) {//a fast injection based on the login verdict
             case DISALLOWED_NO_DATA -> {
-                GeoIPTracker.addIP(login.getIP());
+                GeoIPTracker.addTemporary(login.getIP());
                 yield Verifications.add(p, user);
             }
             case DISALLOWED_PASSWORD_RESET,//needs to register after a password reset
@@ -418,7 +418,7 @@ public final class AlixHandler {
 
             case ALLOWED_LIMBO_LOGIN_OCCURRED -> {
                 //scuffed
-                boolean isLogin = System.currentTimeMillis() - login.getData().createdAt() > 20_000L;
+                boolean isLogin = System.currentTimeMillis() - login.getData().createdAt() > 10_000L;
                 addVerifiedUser0(p, user, UnverifiedUser.loginSuccessMessagePacket, isLogin ? AuthReason.MANUAL_LOGIN : AuthReason.MANUAL_REGISTER);
                 yield null;
             }
@@ -473,7 +473,7 @@ public final class AlixHandler {
             UnverifiedUser u = (UnverifiedUser) user;
             u.uninjectOnQuit();//uninject the user
             event.setQuitMessage(null);//removing the quit message whenever the join message was also removed and never sent
-            if (!u.hasAccount()) GeoIPTracker.removeIP(u.getIPAddress());//remove the ip, if it's temporary
+            if (!u.hasAccount()) GeoIPTracker.removeTemporary(u.getIPAddress());//remove the ip, if it's temporary
             /*if (u.captchaInitialized()) {//quit after captcha was initialized, and the user hasn't registered, occurred
                 //if (alixJoinLog) Main.logInfo(quitCaptchaUnverified.format(p.getName(), u.getIPAddress()));
             }// else if (alixJoinLog) Main.logInfo(quitUnverified.format(p.getName(), u.getIPAddress()));*/

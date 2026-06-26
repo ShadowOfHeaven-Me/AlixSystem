@@ -1,6 +1,7 @@
 package alix.common.data.file;
 
 import alix.common.AlixCommonMain;
+import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.PlayerNameIndex;
 import alix.common.data.PersistentUserData;
 import alix.common.database.DatabaseUpdater;
@@ -42,7 +43,10 @@ public final class UserFileManager {
 
     public static PersistentUserData remove(String name) {
         PlayerNameIndex.remove(name);
-        return map.remove(name);
+        var data = map.remove(name);
+        if (data != null)
+            GeoIPTracker.removeIP(data.getSavedIP());
+        return data;
     }
 
     public static boolean hasName(String name) {

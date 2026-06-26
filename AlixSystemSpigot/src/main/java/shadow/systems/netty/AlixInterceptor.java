@@ -2,9 +2,12 @@ package shadow.systems.netty;
 
 import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
+import alix.common.antibot.epoll.AlixEpollConnection;
 import alix.common.antibot.firewall.AlixOSFireWall;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.FireWallType;
+import alix.common.environment.ServerEnvironment;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
@@ -13,6 +16,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
 import io.netty.util.internal.PlatformDependent;
+import io.papermc.paper.configuration.GlobalConfiguration;
 import org.bukkit.Bukkit;
 import shadow.Main;
 import shadow.systems.netty.unsafe.nio.AlixInternalNIOInterceptor;
@@ -26,10 +30,10 @@ import ua.nanit.limbo.handlers.DummyHandler;
 import ua.nanit.limbo.server.LimboServer;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
 public final class AlixInterceptor {
 
+    public static final boolean PROXY_PROTOCOL = ServerEnvironment.isPaper() && GlobalConfiguration.get().proxies.proxyProtocol;
     private static final String name = "alix-interceptor";//, name2 = "AlixInjector";
     private static final LimboServer limbo;
     private static final boolean enableLimbo = !Bukkit.getServer().getOnlineMode() && Main.config.getBoolean("virtual-limbo-server");
@@ -38,7 +42,7 @@ public final class AlixInterceptor {
     public static final FireWallType fireWallType;
 
     static {
-        FireWallType type;
+        FireWallType type = FireWallType.NETTY;
 
         if (!AlixUtils.antibotService) type = FireWallType.NOT_USED;
         else if (AlixOSFireWall.isOsFireWallInUse) {
@@ -47,13 +51,13 @@ public final class AlixInterceptor {
         } else if (!Main.config.getBoolean("unsafe-firewall")) {
             type = FireWallType.NETTY;
             AlixCommonMain.logInfo("Using Netty for FireWall Protection (per config).");
-        } else {
+        } else if (!PROXY_PROTOCOL) {
             try {
                 if (AlixHandler.isEpollTransport) {
                     AlixConsoleFilterHolder.INSTANCE.startFilteringStd();
                     try {
                         type = FireWallType.FAST_UNSAFE_EPOLL;
-                        AlixFastUnsafeEpoll.init();
+                        AlixFastUnsafeEpoll.init(AlixEpollConnection.class);
                         AlixCommonMain.logInfo("Using Fast Unsafe Epoll for FireWall Protection. Fast IPv4 look-ups are Enabled.");
                     } finally {
                         AlixConsoleFilterHolder.INSTANCE.stopFilteringStd();
@@ -92,7 +96,11 @@ public final class AlixInterceptor {
 
         //https://github.com/Nan1t/NanoLimbo/blob/main/src/main/java/ua/nanit/limbo/server/LimboServer.java
 
-        limbo = enableLimbo && AlixUtils.requireCaptchaVerification ? NanoLimbo.load(new BukkitLimboIntegration()) : null;
+        if (!enableLimbo) {
+            AlixCommonMain.logWarning("virtual-limbo-server=false is now unsupported! Enabling the limbo anyway");
+        }
+
+        limbo = NanoLimbo.load(new BukkitLimboIntegration());
     }
 
     private static void injectIntoServerPipeline(ChannelPipeline serverPipeline) {//, ChannelHandler firewallHandler) {//the server pipeline
@@ -123,6 +131,7 @@ public final class AlixInterceptor {
             //Class<?> ensureLoaded = AlixChannelInjector.class;
 
             //if (AlixHandler.isEpollTransport) AlixEpollEventLoop.override();
+
 
             AlixChannelHandler.init();
         }
@@ -159,17 +168,20 @@ public final class AlixInterceptor {
             //Main.logError("CTX NAME: " + ctx.name() + " HASH: " + System.identityHashCode(ctx));
 
             //Main.debug("CHANNEL CONNECT=" + channel);
+            InetAddress address = AlixCommonUtils.getAddress(channel);
             AntiBotStatistics.INSTANCE.incrementJoins();
-            if (isNettyFireWall) {
-                InetAddress address = ((InetSocketAddress) channel.unsafe().remoteAddress()).getAddress();
-                //Channel serverChannel = AlixHandler.SERVER_CHANNEL_FUTURE.channel();
-                if (FireWallManager.isBlocked(address)) {
-                    channel.unsafe().closeForcibly();
-                    return;
+
+            if (!PROXY_PROTOCOL && address != null) {
+                if (isNettyFireWall) {
+                    if (FireWallManager.isBlocked0(address)) {
+                        channel.unsafe().closeForcibly();
+                        return;
+                    }
                 }
             }
 
-            if (enableLimbo && AlixUtils.requireCaptchaVerification/*&& !LimboServerIntegration.hasCompletedCaptcha(address)*/) {
+            //always true
+            if (limbo != null) {
                 //Main.debug("Initializing the mfo");
 
                 ChannelConfig config = channel.config();
@@ -179,7 +191,8 @@ public final class AlixInterceptor {
 
                 //if (config.isAutoRead()) config.setAutoRead(false);
 
-                limbo.getClientChannelInitializer().initChannel(channel);
+                limbo.getClientChannelInitializer().initChannel(channel, PROXY_PROTOCOL, false);
+
                 super.channelRead(ctx, msg);
                 //Main.logError("PIPELINE: " + pipeline.names());
 
@@ -188,38 +201,9 @@ public final class AlixInterceptor {
 
                 config.setAutoRead(true);
 
-                //Main.debug("MFO HANDLERS: " + channel.pipeline().names() + " THREAD: " + Thread.currentThread());
-
-                //config.setAutoRead(false);
-
-                //prevent a race condition, where the server could read the packets without our handler being injected yet
-                //if (config.isAutoRead()) config.setAutoRead(false);
-
-                //Remove TimeOut handler
-
-                //if (pipeline.context("timeout") != null) pipeline.replace("timeout", "--timeout", NoTimeoutHandler.INSTANCE); //new NoTimeoutHandler(timeoutCtx.handler()));
-
-                /*for (String name : list) {
-                    if (name.equals("DefaultChannelPipeline$TailContext#0")) return;
-                    Main.debug("REMOVING " + name);
-                    try {
-                        channel.pipeline().remove(name);
-                    } catch (Throwable ignored) {
-                        Main.debug("NOT FOUND " + name);
-                    }
-                }*/
-                //Main.debug("MMMMMMM: " + channel.pipeline().names());
-
-                //Main.debug("REMOVED: " + channel.pipeline().names());
-
-
-                //Main.debug("INITIALIZED: " + channel.pipeline().names());
                 return;
             }
 
-            //Main.logError("CHANNELLLLLLLLLLLLLLLLLLLLLL: " + channel);
-
-            //VirtualServer.init(channel);
             AlixChannelHandler.inject(channel);
             super.channelRead(ctx, msg);
         }

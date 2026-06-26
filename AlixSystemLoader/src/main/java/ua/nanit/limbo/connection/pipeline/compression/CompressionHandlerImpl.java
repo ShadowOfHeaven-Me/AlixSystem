@@ -26,7 +26,6 @@ final class CompressionHandlerImpl implements CompressionHandler {
 
         //this.selfSupplier = CompressionSupplier.supply0(this);
         handlers.offerLast(this);
-        //channel.closeFuture().addListener(f -> this.impl.release0());
     }
 
     static void releaseAll() {

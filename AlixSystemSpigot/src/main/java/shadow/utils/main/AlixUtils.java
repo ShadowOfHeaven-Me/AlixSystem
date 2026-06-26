@@ -49,7 +49,6 @@ public final class AlixUtils {
     //public static final PotionEffect vanishInvisibilityEffect;
     public static final Pattern ipPattern;
     //public static final JsonObject alexSkinTexture;
-    public static final SimpleDateFormat dateFormatter, timeFormatter;
     //public static final String[] invalidNicknamesStart;
     //public static final Language pluginLanguage;
     public static final ExecutableCommandList registerCommandList, loginCommandList, autoLoginCommandList, autoRegisterCommandList, premiumJoinCommands;
@@ -227,8 +226,7 @@ public final class AlixUtils {
         //Copied from Essentials ;]
         ipPattern = Pattern.compile("^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
         //vanishInvisibilityEffect = new PotionEffect(PotionEffectType.INVISIBILITY, -1, 147, false, false, false);
-        dateFormatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-        timeFormatter = new SimpleDateFormat("HH:mm:ss");
+
         random = AlixCommonUtils.random;
         doubledDefaultWalkSpeed = 0.2F;
         doubledDefaultFlySpeed = 0.1F;
@@ -1083,11 +1081,11 @@ public final class AlixUtils {
     }
 
     public static String getFormattedDate(Date date) {
-        return dateFormatter.format(date);
+        return AlixCommonUtils.getFormattedDate(date);
     }
 
     public static String getTime(Date date) {
-        return timeFormatter.format(date);
+        return AlixCommonUtils.getTime(date);
     }
 
     public static boolean isValidIP(String text) {

@@ -32,6 +32,11 @@ public final class PacketLoginSuccess extends OutRetrooperPacket<WrapperLoginSer
         this.wrapper().setUserProfile(profile);
     }
 
+    public PacketLoginSuccess setSessionId(UUID uuid) {
+        this.wrapper().setSessionId(uuid);
+        return this;
+    }
+
     public PacketLoginSuccess setUUID(UUID uuid) {
          this.profile.setUUID(uuid);
          return this;

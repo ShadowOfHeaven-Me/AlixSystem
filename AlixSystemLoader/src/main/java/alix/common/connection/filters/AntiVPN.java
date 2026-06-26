@@ -4,11 +4,13 @@ import alix.common.connection.vpn.ProxyCheckManager;
 import alix.common.data.file.AllowListFileManager;
 import alix.common.messages.Messages;
 import alix.common.utils.config.ConfigProvider;
+import io.netty.channel.Channel;
 
 import java.net.InetAddress;
+import java.util.function.Consumer;
 
 
-public final class AntiVPN implements ConnectionFilter {
+public final class AntiVPN {
 
     private static final boolean isEnabled = ConfigProvider.config.getBoolean("anti-vpn");
     public static final AntiVPN INSTANCE = new AntiVPN();
@@ -18,13 +20,17 @@ public final class AntiVPN implements ConnectionFilter {
     private AntiVPN() {
     }
 
-    @Override
-    public boolean disallowJoin(InetAddress ip, String strAddress, String name) {
-        return !AllowListFileManager.has(name) && this.proxyCheck.isProxy(ip, strAddress);
+    void disallowJoin0(Channel channel, InetAddress ip, String strAddress, Consumer<Boolean> isProxy) {
+        this.proxyCheck.isProxy(channel, ip, strAddress, isProxy);
     }
 
-    public static boolean disallowJoin(InetAddress ip, String name) {
-        return isEnabled && INSTANCE.disallowJoin(ip, ip.getHostAddress(), name);
+    public static void disallowJoin(Channel channel, InetAddress ip, String name, Consumer<Boolean> isProxy) {
+        if (!isEnabled || AllowListFileManager.has(name)) {
+            isProxy.accept(false);
+            return;
+        }
+
+        INSTANCE.disallowJoin0(channel, ip, ip.getHostAddress(), isProxy);
     }
 
     /*try {
@@ -36,7 +42,6 @@ public final class AntiVPN implements ConnectionFilter {
             return false;//JavaUtils.isPluginLanguageEnglish ? "Something went wrong. Please try reconnecting."
         }*/
 
-    @Override
     public String getReason() {
         return antiVpnMessage;
     }

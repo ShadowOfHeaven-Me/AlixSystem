@@ -28,73 +28,75 @@ import java.util.List;
 
 public enum Version {
 
-    UNDEFINED(-1, List.of("UNDEFINED")),
+    UNDEFINED(-1, "UNDEFINED"),
     //Remove 1.7.2-1.7.5 support, since packetevents only supports client versions from 1.7.6+ (no longer true, 1.7.2 support is now present)
     //V1_7_2(4),
     // 1.7.2-1.7.5 has same protocol numbers
-    V1_7_6(5, List.of("1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10")),
+    V1_7_6(5, "1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10"),
     // 1.7.6-1.7.10 has same protocol numbers
-    V1_8(47, List.of("1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8")),
+    V1_8(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8"),
     // 1.8-1.8.8 has same protocol numbers
-    V1_9(107, List.of("1.9")),
-    V1_9_1(108, List.of("1.9.1")),
-    V1_9_2(109, List.of("1.9.2")),
-    V1_9_4(110, List.of("1.9.4")),
-    V1_10(210, List.of("1.10", "1.10.1", "1.10.2")),
+    V1_9(107, "1.9"),
+    V1_9_1(108, "1.9.1"),
+    V1_9_2(109, "1.9.2"),
+    V1_9_4(110, "1.9.4"),
+    V1_10(210, "1.10", "1.10.1", "1.10.2"),
     // 1.10-1.10.2 has same protocol numbers
-    V1_11(315, List.of("1.11")),
-    V1_11_1(316, List.of("1.11.1", "1.11.2")),
+    V1_11(315, "1.11"),
+    V1_11_1(316, "1.11.1", "1.11.2"),
     // 1.11.2 has same protocol number
-    V1_12(335, List.of("1.12")),
-    V1_12_1(338, List.of("1.12.1")),
-    V1_12_2(340, List.of("1.12.2")),
-    V1_13(393, List.of("1.13")),
-    V1_13_1(401, List.of("1.13.1")),
-    V1_13_2(404, List.of("1.13.2")),
-    V1_14(477, List.of("1.14")),
-    V1_14_1(480, List.of("1.14.1")),
-    V1_14_2(485, List.of("1.14.2")),
-    V1_14_3(490, List.of("1.14.3")),
-    V1_14_4(498, List.of("1.14.4")),
-    V1_15(573, List.of("1.15")),
-    V1_15_1(575, List.of("1.15.1")),
-    V1_15_2(578, List.of("1.15.2")),
-    V1_16(735, List.of("1.16")),
-    V1_16_1(736, List.of("1.16.1")),
-    V1_16_2(751, List.of("1.16.2")),
-    V1_16_3(753, List.of("1.16.3")),
-    V1_16_4(754, List.of("1.16.4", "1.16.5")),
+    V1_12(335, "1.12"),
+    V1_12_1(338, "1.12.1"),
+    V1_12_2(340, "1.12.2"),
+    V1_13(393, "1.13"),
+    V1_13_1(401, "1.13.1"),
+    V1_13_2(404, "1.13.2"),
+    V1_14(477, "1.14"),
+    V1_14_1(480, "1.14.1"),
+    V1_14_2(485, "1.14.2"),
+    V1_14_3(490, "1.14.3"),
+    V1_14_4(498, "1.14.4"),
+    V1_15(573, "1.15"),
+    V1_15_1(575, "1.15.1"),
+    V1_15_2(578, "1.15.2"),
+    V1_16(735, "1.16"),
+    V1_16_1(736, "1.16.1"),
+    V1_16_2(751, "1.16.2"),
+    V1_16_3(753, "1.16.3"),
+    V1_16_4(754, "1.16.4", "1.16.5"),
     // 1.16.5 has same protocol number
-    V1_17(755, List.of("1.17")),
-    V1_17_1(756, List.of("1.17.1")),
-    V1_18(757, List.of("1.18", "1.18.1")),
+    V1_17(755, "1.17"),
+    V1_17_1(756, "1.17.1"),
+    V1_18(757, "1.18", "1.18.1"),
     // 1.18.1 has same protocol number
-    V1_18_2(758, List.of("1.18.2")),
-    V1_19(759, List.of("1.19")),
-    V1_19_1(760, List.of("1.19.1", "1.19.2")),
+    V1_18_2(758, "1.18.2"),
+    V1_19(759, "1.19"),
+    V1_19_1(760, "1.19.1", "1.19.2"),
     // 1.19.2 has same protocol number
-    V1_19_3(761, List.of("1.19.3")),
-    V1_19_4(762, List.of("1.19.4")),
-    V1_20(763, List.of("1.20", "1.20.1")),
+    V1_19_3(761, "1.19.3"),
+    V1_19_4(762, "1.19.4"),
+    V1_20(763, "1.20", "1.20.1"),
     // 1.20.1 has same protocol number
-    V1_20_2(764, List.of("1.20.2")),
-    V1_20_3(765, List.of("1.20.3", "1.20.4")),
+    V1_20_2(764, "1.20.2"),
+    V1_20_3(765, "1.20.3", "1.20.4"),
     // 1.20.4 has same protocol number
-    V1_20_5(766, List.of("1.20.5", "1.20.6")),
+    V1_20_5(766, "1.20.5", "1.20.6"),
     // 1.20.6 has same protocol number
-    V1_21(767, List.of("1.21", "1.21.1")),
+    V1_21(767, "1.21", "1.21.1"),
     // 1.21.1 has same protocol number
-    V1_21_2(768, List.of("1.21.2", "1.21.3")),
+    V1_21_2(768, "1.21.2", "1.21.3"),
     // 1.21.3 has same protocol number
-    V1_21_4(769, List.of("1.21.4")),
-    V1_21_5(770, List.of("1.21.5")),
-    V1_21_6(771, List.of("1.21.6")),
-    V1_21_7(772, List.of("1.21.7")),
+    V1_21_4(769, "1.21.4"),
+    V1_21_5(770, "1.21.5"),
+    V1_21_6(771, "1.21.6"),
+    V1_21_7(772, "1.21.7"),
     // 1.21.8 has same protocol number
-    V1_21_9(773, List.of("1.21.9")),
+    V1_21_9(773, "1.21.9"),
     // 1.21.10 has same protocol number
-    V1_21_11(774, List.of("1.21.11")),
-    V26_1(775, List.of("26.1"));
+    V1_21_11(774, "1.21.11"),
+    V26_1(775, "26.1"),
+    // 26.1.1-26.1.2 has same protocol number
+    V26_2(776, "26.2");
 
     private static final IntObjectMap<Version> VERSION_MAP;
     private static final Version MIN, MAX;
@@ -120,9 +122,9 @@ public enum Version {
     private final List<String> displayNames;
     private Version prev;
 
-    Version(int protocolNumber, List<String> displayNames) {
+    Version(int protocolNumber, String... displayNames) {
         this.protocolNumber = protocolNumber;
-        this.displayNames = displayNames;
+        this.displayNames = List.of(displayNames);
         this.clientVersion = ClientVersion.getById(this.protocolNumber);
 
         if (clientVersion == null)
@@ -138,7 +140,7 @@ public enum Version {
     /*private static ServerVersion toServerVersion(ClientVersion client) {
         int leastDiff = Integer.MAX_VALUE;
         ServerVersion bestFind = null;
-        for (ServerVersion server : ServerVersion.values()) {
+        for (ServerVersion server : ServerVersion.values() {
             int diff = client.getProtocolVersion() - server.getProtocolVersion();
             if (diff == 0) return server;
             if (diff > 0 && diff < leastDiff) {
@@ -205,6 +207,16 @@ public enum Version {
     //isn't safe btw
     public Version getEncodingSafe() {
         return this.isUndefined() ? getMax() : this;
+    }
+
+    public static Version[] range(Version min, Version max) {
+        if (min.ordinal() > max.ordinal())
+            throw new AlixError("min=" + min + " max=" + max);
+
+        int len = max.ordinal() - min.ordinal() + 1;
+        Version[] range = new Version[len];
+        System.arraycopy(values(), min.ordinal(), range, 0, len);
+        return range;
     }
 
     public static Version getMin() {

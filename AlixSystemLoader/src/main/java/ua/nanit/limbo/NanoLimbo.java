@@ -20,6 +20,7 @@ package ua.nanit.limbo;
 import alix.common.AlixCommonMain;
 import alix.common.utils.other.annotation.DebugOnly;
 import alix.common.utils.other.throwable.AlixError;
+import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.protocol.snapshot.SnapshotEncodeStrategy;
 import ua.nanit.limbo.server.LimboServer;
@@ -39,7 +40,7 @@ public final class NanoLimbo {
 
     private static final SnapshotEncodeStrategy STRATEGY = SnapshotEncodeStrategy.RUNTIME_CACHE;
     //@DebugOnly
-    public static final boolean suppressInvalidPackets = of(true);
+    public static final boolean suppressInvalidPackets = false;//of(true);
     public static final boolean debugCipher = false;//of(false);
     //@DebugOnly
     public static final boolean debugPackets = of(false);
@@ -55,7 +56,7 @@ public final class NanoLimbo {
     //@DebugOnly
     public static final boolean performChecks = true;
     //@DebugOnly
-    public static final boolean debugAllDisconnects = false;//of(false);
+    public static final boolean debugAllDisconnects = of(false);
     //@DebugOnly
     public static final boolean validateWrites = of(false);
     //@DebugOnly
@@ -91,6 +92,6 @@ public final class NanoLimbo {
     }
 
     public static boolean suppress(Throwable t) {
-        return suppressInvalidPackets && !(t instanceof AlixError);
+        return suppressInvalidPackets && !(t instanceof AlixError) && !(t instanceof AlixException);
     }
 }

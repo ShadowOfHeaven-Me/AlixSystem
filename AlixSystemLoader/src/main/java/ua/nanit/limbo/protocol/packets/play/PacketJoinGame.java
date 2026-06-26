@@ -17,324 +17,145 @@
 
 package ua.nanit.limbo.protocol.packets.play;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.registry.Version;
-import ua.nanit.limbo.world.DimensionRegistry;
+import ua.nanit.limbo.server.data.NamespacedKey;
+import ua.nanit.limbo.world.VersionedDimension;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class PacketJoinGame implements PacketOut {
 
     private int entityId;
-    private boolean isHardcore = false;
+    private boolean hardcore;
     private int gameMode = 2;
     private int previousGameMode = -1;
-    private String[] worldNames;
-    private DimensionRegistry dimensionRegistry;
-    private String worldName;
-    private long hashedSeed;
+    private VersionedDimension dimension;
+    private String levelType = "flat";
+    private long seed;
+    private int difficulty = 0;
     private int maxPlayers;
     private int viewDistance = 2;
+    private int simulationDistance = 2;
     private boolean reducedDebugInfo;
     private boolean enableRespawnScreen;
-    private boolean isDebug;
-    private boolean isFlat;
+    private boolean debug;
+    private boolean flat;
+    private boolean normalRespawn = true;
     private boolean limitedCrafting;
+    private int portalCooldown;
+    private int seaLevel;
+    private boolean onlineMode;
     private boolean secureProfile;
 
-    public void setEntityId(int entityId) {
-        this.entityId = entityId;
-    }
+    public void encode(@NonNull ByteMessage msg, @NonNull Version version) {
+        msg.writeInt(this.entityId);
 
-    public void setHardcore(boolean hardcore) {
-        isHardcore = hardcore;
-    }
+        if (version.moreOrEqual(Version.V1_16_2)) {
+            msg.writeBoolean(this.hardcore);
+        }
+        if (version.less(Version.V1_20_2)) {
+            if (version.lessOrEqual(Version.V1_7_6)) {
+                msg.writeByte(this.gameMode == 3 ? 1 : this.gameMode);
+            } else {
+                msg.writeByte(this.gameMode);
+            }
+        }
+        if (version.moreOrEqual(Version.V1_16)) {
+            if (version.less(Version.V1_20_2)) {
+                msg.writeByte(this.previousGameMode);
+            }
 
-    public void setGameMode(int gameMode) {
-        this.gameMode = gameMode;
-    }
+            msg.writeNamespacedKeyArray(new NamespacedKey[]{this.dimension.getKey()});
 
-    public void setPreviousGameMode(int previousGameMode) {
-        this.previousGameMode = previousGameMode;
-    }
+            if (version.less(Version.V1_20_2)) {
+                msg.writeCompoundTag(this.dimension.getCodec(version), version);
+            }
+        }
 
-    public void setWorldNames(String... worldNames) {
-        this.worldNames = worldNames;
-    }
-
-    public void setDimensionRegistry(DimensionRegistry dimensionRegistry) {
-        this.dimensionRegistry = dimensionRegistry;
-    }
-
-    public void setWorldName(String worldName) {
-        this.worldName = worldName;
-    }
-
-    public void setHashedSeed(long hashedSeed) {
-        this.hashedSeed = hashedSeed;
-    }
-
-    public void setMaxPlayers(int maxPlayers) {
-        this.maxPlayers = maxPlayers;
-    }
-
-    public void setViewDistance(int viewDistance) {
-        this.viewDistance = viewDistance;
-    }
-
-    public void setReducedDebugInfo(boolean reducedDebugInfo) {
-        this.reducedDebugInfo = reducedDebugInfo;
-    }
-
-    public void setEnableRespawnScreen(boolean enableRespawnScreen) {
-        this.enableRespawnScreen = enableRespawnScreen;
-    }
-
-    public void setDebug(boolean debug) {
-        isDebug = debug;
-    }
-
-    public void setFlat(boolean flat) {
-        isFlat = flat;
-    }
-
-    public void setLimitedCrafting(boolean limitedCrafting) {
-        this.limitedCrafting = limitedCrafting;
-    }
-
-    public void setSecureProfile(boolean secureProfile) {
-        this.secureProfile = secureProfile;
+        if (version.moreOrEqual(Version.V1_16)) {
+            if (version.moreOrEqual(Version.V1_16_2) && version.less(Version.V1_19)) {
+                msg.writeCompoundTag(this.dimension.getDefaultCodec(version), version);
+            } else if (version.less(Version.V1_20_2)) {
+                msg.writeNamespacedKey(this.dimension.getKey());
+            }
+            if (version.less(Version.V1_20_2)) {
+                msg.writeNamespacedKey(this.dimension.getKey());
+            }
+        } else if (version.moreOrEqual(Version.V1_9)) {
+            msg.writeInt(this.dimension.getLegacyDimensionId());
+        } else {
+            msg.writeByte(this.dimension.getLegacyDimensionId());
+        }
+        if (version.moreOrEqual(Version.V1_15)) {
+            if (version.less(Version.V1_20_2)) {
+                msg.writeLong(this.seed);
+            }
+        }
+        if (version.less(Version.V1_14)) {
+            msg.writeByte(this.difficulty);
+        }
+        if (version.moreOrEqual(Version.V1_16_2)) {
+            msg.writeVarInt(this.maxPlayers);
+        } else {
+            msg.writeByte(this.maxPlayers);
+        }
+        if (version.less(Version.V1_16)) {
+            msg.writeString(this.levelType);
+        }
+        if (version.moreOrEqual(Version.V1_14)) {
+            msg.writeVarInt(this.viewDistance);
+        }
+        if (version.moreOrEqual(Version.V1_18)) {
+            msg.writeVarInt(this.simulationDistance);
+        }
+        if (version.moreOrEqual(Version.V1_8)) {
+            msg.writeBoolean(this.reducedDebugInfo);
+        }
+        if (version.moreOrEqual(Version.V1_15)) {
+            msg.writeBoolean(this.normalRespawn);
+        }
+        if (version.moreOrEqual(Version.V1_20_2)) {
+            msg.writeBoolean(this.limitedCrafting);
+            if (version.moreOrEqual(Version.V1_20_5)) {
+                msg.writeVarInt(this.dimension.getId(version));
+            } else {
+                msg.writeNamespacedKey(this.dimension.getKey());
+            }
+            msg.writeNamespacedKey(this.dimension.getKey());
+            msg.writeLong(this.seed);
+            msg.writeByte(this.gameMode);
+            msg.writeByte(this.previousGameMode);
+        }
+        if (version.moreOrEqual(Version.V1_16)) {
+            msg.writeBoolean(this.debug);
+            msg.writeBoolean(this.flat);
+        }
+        if (version.moreOrEqual(Version.V1_19)) {
+            msg.writeBoolean(false);
+        }
+        if (version.moreOrEqual(Version.V1_20)) {
+            msg.writeVarInt(this.portalCooldown);
+        }
+        if (version.moreOrEqual(Version.V1_21_2)) {
+            msg.writeVarInt(this.seaLevel);
+        }
+        if (version.moreOrEqual(Version.V26_2)) {
+            msg.writeBoolean(this.onlineMode);
+        }
+        if (version.moreOrEqual(Version.V1_20_5)) {
+            msg.writeBoolean(this.secureProfile);
+        }
     }
 
     @Override
-    public void encode(ByteMessage msg, Version version) {
-        msg.writeInt(entityId);
-
-        //if (version.fromTo(Version.V1_7_2, Version.V1_7_6)) {
-        if (version == Version.V1_7_6) {
-            msg.writeByte(gameMode == 3 ? 1 : gameMode);
-            msg.writeByte(dimensionRegistry.getDefaultDimension_1_16().getId());
-            msg.writeByte(0); // Difficulty
-            msg.writeByte(maxPlayers);
-            msg.writeString("flat"); // Level type
-        }
-
-        if (version.fromTo(Version.V1_8, Version.V1_9)) {
-            msg.writeByte(gameMode);
-            msg.writeByte(dimensionRegistry.getDefaultDimension_1_16().getId());
-            msg.writeByte(0); // Difficulty
-            msg.writeByte(maxPlayers);
-            msg.writeString("flat"); // Level type
-            msg.writeBoolean(reducedDebugInfo);
-        }
-
-        if (version.fromTo(Version.V1_9_1, Version.V1_13_2)) {
-            msg.writeByte(gameMode);
-            msg.writeInt(dimensionRegistry.getDefaultDimension_1_16().getId());
-            msg.writeByte(0); // Difficulty
-            msg.writeByte(maxPlayers);
-            msg.writeString("flat"); // Level type
-            msg.writeBoolean(reducedDebugInfo);
-        }
-
-        if (version.fromTo(Version.V1_14, Version.V1_14_4)) {
-            msg.writeByte(gameMode);
-            msg.writeInt(dimensionRegistry.getDefaultDimension_1_16().getId());
-            msg.writeByte(maxPlayers);
-            msg.writeString("flat"); // Level type
-            msg.writeVarInt(viewDistance);
-            msg.writeBoolean(reducedDebugInfo);
-        }
-
-        if (version.fromTo(Version.V1_15, Version.V1_15_2)) {
-            msg.writeByte(gameMode);
-            msg.writeInt(dimensionRegistry.getDefaultDimension_1_16().getId());
-            msg.writeLong(hashedSeed);
-            msg.writeByte(maxPlayers);
-            msg.writeString("flat"); // Level type
-            msg.writeVarInt(viewDistance);
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-        }
-
-        if (version.fromTo(Version.V1_16, Version.V1_16_1)) {
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeStringsArray(worldNames);
-            msg.writeCompoundTag(dimensionRegistry.getCodec_1_16());
-            msg.writeString(dimensionRegistry.getDefaultDimension_1_16().getName());
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeByte(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-        }
-
-        if (version.fromTo(Version.V1_16_2, Version.V1_17_1)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeStringsArray(worldNames);
-            if (version.moreOrEqual(Version.V1_17)) {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_17());
-                msg.writeCompoundTag(dimensionRegistry.getDefaultDimension_1_17().getData());
-            } else {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_16_2());
-                msg.writeCompoundTag(dimensionRegistry.getDefaultDimension_1_16_2().getData());
-            }
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-        }
-
-        if (version.fromTo(Version.V1_18, Version.V1_18_2)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeStringsArray(worldNames);
-            if (version.moreOrEqual(Version.V1_18_2)) {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_18_2());
-                msg.writeCompoundTag(dimensionRegistry.getDefaultDimension_1_18_2().getData());
-            } else {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_17());
-                msg.writeCompoundTag(dimensionRegistry.getDefaultDimension_1_17().getData());
-            }
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeVarInt(viewDistance); // Simulation Distance
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-        }
-
-        if (version.fromTo(Version.V1_19, Version.V1_19_4)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeStringsArray(worldNames);
-            if (version.moreOrEqual(Version.V1_19_4)) {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_19_4());
-            } else if (version.moreOrEqual(Version.V1_19_1)) {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_19_1());
-            } else {
-                msg.writeCompoundTag(dimensionRegistry.getCodec_1_19());
-            }
-            msg.writeString(worldName); // World type
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeVarInt(viewDistance); // Simulation Distance
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-            msg.writeBoolean(false);
-        }
-
-        if (version.equals(Version.V1_20)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeStringsArray(worldNames);
-            msg.writeCompoundTag(dimensionRegistry.getCodec_1_20());
-            msg.writeString(worldName); // World type
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeVarInt(viewDistance); // Simulation Distance
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-            msg.writeBoolean(false);
-            msg.writeVarInt(0);
-        }
-
-        if (version.fromTo(Version.V1_20_2, Version.V1_20_3)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeStringsArray(worldNames);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeVarInt(viewDistance); // Simulation Distance
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(limitedCrafting);
-            msg.writeString(worldName);
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-            msg.writeBoolean(false);
-            msg.writeVarInt(0);
-        }
-
-        if (version.fromTo(Version.V1_20_5, Version.V1_21)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeStringsArray(worldNames);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeVarInt(viewDistance); // Simulation Distance
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(limitedCrafting);
-            if (version.moreOrEqual(Version.V1_21)) {
-                msg.writeVarInt(dimensionRegistry.getDimension_1_21().getId());
-            } else {
-                msg.writeVarInt(dimensionRegistry.getDimension_1_20_5().getId());
-            }
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-            msg.writeBoolean(false);
-            msg.writeVarInt(0);
-            msg.writeBoolean(secureProfile);
-        }
-
-        if (version.moreOrEqual(Version.V1_21_2)) {
-            msg.writeBoolean(isHardcore);
-            msg.writeStringsArray(worldNames);
-            msg.writeVarInt(maxPlayers);
-            msg.writeVarInt(viewDistance);
-            msg.writeVarInt(viewDistance); // Simulation Distance
-            msg.writeBoolean(reducedDebugInfo);
-            msg.writeBoolean(enableRespawnScreen);
-            msg.writeBoolean(limitedCrafting);
-            if (version.moreOrEqual(Version.V1_21_6)) {
-                msg.writeVarInt(dimensionRegistry.getDimension_1_21_6().getId());
-            } else if (version.moreOrEqual(Version.V1_21_5)) {
-                msg.writeVarInt(dimensionRegistry.getDimension_1_21_5().getId());
-            } else if (version.moreOrEqual(Version.V1_21_4)) {
-                msg.writeVarInt(dimensionRegistry.getDimension_1_21_4().getId());
-            } else {
-                msg.writeVarInt(dimensionRegistry.getDimension_1_21_2().getId());
-            }
-            msg.writeString(worldName);
-            msg.writeLong(hashedSeed);
-            msg.writeByte(gameMode);
-            msg.writeByte(previousGameMode);
-            msg.writeBoolean(isDebug);
-            msg.writeBoolean(isFlat);
-            msg.writeBoolean(false);
-            msg.writeVarInt(0);
-            msg.writeVarInt(0);
-            msg.writeBoolean(secureProfile);
-        }
+    public String toString() {
+        return getClass().getSimpleName();
     }
 }

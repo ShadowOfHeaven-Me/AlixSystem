@@ -20,11 +20,11 @@ public final class VerifiedCache {
         return (data != null && data.getPremiumData().getStatus().isPremium() || getAndCheckIfEquals(name, user));
     }
 
-    //Intentional identity checks
-
     public static boolean getAndCheckIfEquals(String nickname, Channel channel) {
         return getAndCheckIfEquals(nickname, ProtocolManager.USERS.get(channel.pipeline()));
     }
+
+    //Intentional identity checks
 
     public static boolean getAndCheckIfEquals(String nickname, User user) {
         return user == verifiedNamesTempCache.get(nickname);

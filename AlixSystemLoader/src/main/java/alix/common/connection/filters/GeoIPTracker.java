@@ -7,31 +7,19 @@ import alix.common.utils.config.ConfigParams;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 
 public final class GeoIPTracker implements ConnectionFilter {
 
-    public static final GeoIPTracker INSTANCE = ConfigParams.maximumTotalAccounts > 0 ? new GeoIPTracker() : null;
-    private static final boolean initialized = INSTANCE != null;
+    private static final boolean initialized = ConfigParams.maximumTotalAccounts > 0;
     public static final String maxAccountsReached = Messages.get("account-limit-reached", ConfigParams.maximumTotalAccounts);
-    //private final TempIPCounter tempIPCounter;
 
-    private final Map<InetAddress, Integer> map;//existing accounts
-
-    public GeoIPTracker() {
-        this.map = new ConcurrentHashMap<>(1 << 8);//256
-        //Main.debug(JavaUtils.isPluginLanguageEnglish ? "GeoIpTracker is being initialized..." : "GeoIpTracker został zainitializowany!");
-    }
-
-/*    public static void initialize() {
-        Main.debug(JavaUtils.isPluginLanguageEnglish ? "GeoIpTracker has been initialized!" : "GeoIpTracker został zainitializowany!");
-    }*/
-/*        return isPluginLanguageEnglish ? "You've reached the maximum amount of accounts! (" + maximumTotalAccounts + ")"
-                : "Osiągnąłeś limit kont! (" + maximumTotalAccounts + ")";*/
-
+    private static final Map<InetAddress, Integer> EXISTING_ACCOUNTS = new ConcurrentHashMap<>(1 << 11);//2048
+    private static final Map<InetAddress, LongAdder> TEMPORARY_ACCOUNTS = new ConcurrentHashMap<>(1 << 8);
 
     public static boolean disallowJoin(InetAddress ip, String name) {//counts both: existing accounts and unregistered players currently on the server with that ip
         //CommonAlixMain.logInfo(tempIPCounter.getAccountsOf(address) + " " + getAccountsOf(address));
-        return initialized && !AllowListFileManager.has(name) && INSTANCE.getAccountsOf(ip) >= ConfigParams.maximumTotalAccounts;//invoked only if registered, so non-negatives to negative comparison won't occur
+        return initialized && !AllowListFileManager.has(name) && getAllAccountsOf(ip) >= ConfigParams.maximumTotalAccounts;//invoked only if registered, so non-negatives to negative comparison won't occur
     }
 
     @Override
@@ -44,59 +32,41 @@ public final class GeoIPTracker implements ConnectionFilter {
         return maxAccountsReached;
     }
 
-    public static int altsCount(InetAddress ip) {
-        return initialized ? INSTANCE.getAccountsOf(ip) : 0;
+    public static boolean isMapped(InetAddress ip) {
+        return EXISTING_ACCOUNTS.containsKey(ip);
     }
 
-    private int getAccountsOf(InetAddress ip) {
-        return this.map.getOrDefault(ip, 0);
+    public static int existingAccounts(InetAddress ip) {
+        return EXISTING_ACCOUNTS.getOrDefault(ip, 0);
     }
 
-/*    public boolean disallowJoin(String name, String ip) {
-        if (UserFileManager.hasName(name)) return false;
-        return getAccountsOf(ip) >= JavaUtils.maximumTotalAccounts;
-    }*/
+    public static int tempAccounts(InetAddress ip) {
+        var c = TEMPORARY_ACCOUNTS.get(ip);
+        return c != null ? (int) c.sum() : 0;
+    }
 
-    /*private static final class TempIPCounter {
+    public static int getAllAccountsOf(InetAddress ip) {
+        return existingAccounts(ip) + tempAccounts(ip);
+    }
 
-        private final Map<String, Integer> map;//not registered user ips currently on the server
+    public static void addTemporary(InetAddress ip) {
+        TEMPORARY_ACCOUNTS.computeIfAbsent(ip, w -> new LongAdder()).increment();
+    }
 
-        private TempIPCounter() {
-            this.map = new HashMap<>();
-        }
+    public static void removeTemporary(InetAddress ip) {
+        var c = TEMPORARY_ACCOUNTS.get(ip);
+        if (c != null)
+            c.decrement();
+    }
 
-        private int getAccountsOf(String ip) {
-            Integer i = map.get(ip);
-            return i != null ? i : 0;
-        }
-
-        private void addIP(String ip) {
-            map.compute(ip, (k, v) -> v == null ? 1 : v + 1);
-        }
-
-        private void removeIP(String ip) {
-            map.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
-        }
-    }*/
-
-    private void add0(InetAddress ip) {
-        this.map.merge(ip, 1, (current, one) -> current + 1);
+    //added either on data loading from a file or (on bukkit) unregistered user joining
+    public static void addExisting(InetAddress ip) {
+        EXISTING_ACCOUNTS.merge(ip, 1, (current, one) -> current + 1);
         //map.compute(ip, (k, v) -> v == null ? 1 : v + 1);
-        //tempIPCounter.removeIP(ip);//an account was created
-    }
-
-    private void remove0(InetAddress ip) {
-        this.map.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
-        //tempIPCounter.removeIP(ip);//an temporary ip quit
-    }
-
-    //added either on data loading from a file or unregistered user joining
-    public static void addIP(InetAddress ip) {
-        if (initialized) INSTANCE.add0(ip);
     }
 
     //removed only on quit of unregistered users (or when data is removed per /as frd <user>)
     public static void removeIP(InetAddress ip) {
-        if (initialized) INSTANCE.remove0(ip);
+        EXISTING_ACCOUNTS.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
     }
 }

@@ -17,7 +17,10 @@
 
 package ua.nanit.limbo.connection;
 
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.fingerprinting.FingerprintManager;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixException;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -48,14 +51,14 @@ import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static ua.nanit.limbo.NanoLimbo.useTransfer;
 import static ua.nanit.limbo.NanoLimbo.verifyTheDud;
 
-public class ClientConnection {
+public final class ClientConnection {
 
     private static final PacketSnapshot REJOIN = PacketSnapshot.of(new PacketPlayOutDisconnect().setReason("§7Passed CAPTCHA successfully\n§aYou may now join the server"));
     private final LimboServer server;
@@ -74,16 +77,14 @@ public class ClientConnection {
     private PacketHandshake handshakePacket;
 
     //NanoLimbo
-    private final InetSocketAddress address;
     private State decoderState, encoderState;
     private Version clientVersion;
 
-    public ClientConnection(Channel channel, LimboServer server) {
+    public ClientConnection(Channel channel, LimboServer server, boolean passActiveEvents) {
         this.server = server;
         this.channel = channel;
-        this.duplexHandler = new PacketDuplexHandler(channel, this.server, this);
+        this.duplexHandler = new PacketDuplexHandler(channel, this.server, this, passActiveEvents);
         this.frameDecoder = new VarIntFrameDecoder(this);
-        this.address = (InetSocketAddress) channel.remoteAddress();
         this.gameProfile = new GameProfile();
 
         //this.verifyState = DummyVerifyState.INSTANCE;
@@ -113,9 +114,11 @@ public class ClientConnection {
         boolean transfer = useTransfer && this.clientVersion.moreOrEqual(Version.V1_20_5);
         String host = this.handshakePacket.getExtractedHost(); //this.server.getIntegration().getServerIP();
         int port = this.handshakePacket.getPort(); //this.server.getIntegration().getPort();
+
         var extraInfo = transfer ? (", re-transferring to " + host + ":" + port) : "";
-        Log.info("Player " + this.gameProfile.getUsername() + "[" + this.address.getAddress().getHostAddress()
+        Log.info("Player " + this.gameProfile.getUsername() + "[" + this.getAddress().getHostAddress()
                  + "] passed the antibot verification" + extraInfo);
+
         if (!verifyTheDud) {
             Log.warning("VERIFICATION NOT PERFORMED - DISABLED");
             return;
@@ -123,7 +126,7 @@ public class ClientConnection {
 
         //UiiaiuiiiaiCat.cat(this);
 
-        this.server.getIntegration().setHasCompletedCaptcha(this.address.getAddress(), this.gameProfile.getUsername());
+        this.server.getIntegration().setHasCompletedCaptcha(this.getAddress(), this.gameProfile.getUsername());
         //Log.info("Brotha you got verified");
 
         if (transfer) {
@@ -146,9 +149,9 @@ public class ClientConnection {
     }
 
     //removes the limbo handlers, sends the original packets to the server and allows a normal join
-    public void uninject() {
+    /*public void uninject() {
         this.uninject0(this::resendCollected);
-    }
+    }*/
 
     public void uninjectWithRecoded(PacketIn recodedLoginStartOrStatusReq) {
         this.uninject0(() -> this.resendRecoded(recodedLoginStartOrStatusReq));
@@ -162,9 +165,9 @@ public class ClientConnection {
         return handshakePacket;
     }
 
-    private void resendCollected() {
-        this.frameDecoder.resendCollected(this.channel);
-    }
+    /*private void resendCollected() {
+        this.frameDecoder.resendCollected();
+    }*/
 
     //can be optimized via caching the originally decoded Handshake ByteBuf slice (since we do not modify it whatsoever, not sure if this is plausible)
     @OptimizationCandidate
@@ -220,12 +223,12 @@ public class ClientConnection {
         return gameProfile.getUuid();
     }*/
 
-    public String getUsername() {
-        return gameProfile.getUsername();
+    public InetAddress getAddress() {
+        return AlixCommonUtils.getAddress(this.channel);
     }
 
-    public InetSocketAddress getAddress() {
-        return address;
+    public String getUsername() {
+        return gameProfile.getUsername();
     }
 
     public Version getClientVersion() {
@@ -278,14 +281,9 @@ public class ClientConnection {
         return clientVersion.moreOrEqual(Version.V1_20_2);
     }
 
-    @OptimizationCandidate
     public void fireLoginSuccess() {
-        /*if (server.getConfig().getInfoForwarding().isModern() && velocityLoginMessageId == -1) {
-            disconnectLogin("You need to connect with Velocity");
-            return;
-        }*/
+        LimboJoinProfiler.update(this.channel, ConnectionStage.FIRED_LOGIN_SUCCESS);
 
-        //todo: see if we can optimize this
         writeAndFlushPacket(PacketSnapshots.PACKET_LOGIN_SUCCESS);
         server.getConnections().addConnection(this);
 
@@ -363,7 +361,7 @@ public class ClientConnection {
                 //writePacket(PacketSnapshots.MIDDLE_CHUNK);
             }
             //could help prevent being stuck in the "loading terrain..." screen
-            //src: https://minecraft.wiki/w/Java_Edition_protocol/FAQ#%E2%80%A6my_player_isn't_spawning!
+            //src: "https://minecraft.wiki/w/Java_Edition_protocol/FAQ#%E2%80%A6my_player_isn't_spawning!"
             //Probably changed from 'info' to 'update_info' in 1.19.3: https://mappings.dev/history/5249a7b578.html
             if (clientVersion.moreOrEqual(Version.V1_19_3))
                 writePacket(PacketSnapshots.PACKET_INFO_UPDATE);
@@ -481,7 +479,7 @@ public class ClientConnection {
         if (!this.channel.eventLoop().inEventLoop()) throw new AlixException("Not in eventLoop");
     }
 
-    private void safeExecute(Runnable task) {
+    public void runInEventLoop(Runnable task) {
         if (this.duplexHandler.inEventLoop()) task.run();
         else this.channel.eventLoop().execute(task);
     }
@@ -498,7 +496,7 @@ public class ClientConnection {
 
     public void sendPacketAndClose(PacketOut packet) {
         if (this.isConnected())
-            this.safeExecute(() -> this.closeWith0(packet));
+            this.runInEventLoop(() -> this.closeWith0(packet));
     }
 
     public void flush() {
@@ -565,6 +563,10 @@ public class ClientConnection {
     public void setCipher(CipherHandler cipher) {
         this.duplexHandler.setCipher(cipher);
         this.frameDecoder.setCipher(cipher);
+    }
+
+    public void close() {
+        this.channel.close(this.channel.voidPromise());
     }
 
     /*public void setAddress(String host) {

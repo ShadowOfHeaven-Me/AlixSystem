@@ -25,7 +25,7 @@ public final class AlixFastUnsafeEpoll {
     public static void init() {
 
         try {
-            //Class.forName("io.netty.channel.unix.AlixEpollConnection", true, Socket.class.getClassLoader());
+            //Class.forName("alix.common.antibot.epoll.AlixEpollConnection", true, Socket.class.getClassLoader());
             Instrumentation instrumentation = ByteBuddyAgent.install();
 
             Class<MethodHandles.Lookup> lkCl = MethodHandles.Lookup.class;
@@ -46,7 +46,7 @@ public final class AlixFastUnsafeEpoll {
 
             Class<?> bridgeClass = lk.defineClass(cw.toByteArray());
             Field test = bridgeClass.getDeclaredField("HANDLE");
-            test.set(null, MethodHandles.lookup().findStatic(Class.forName("io.netty.channel.unix.AlixEpollConnection"), "handle",
+            test.set(null, MethodHandles.lookup().findStatic(Class.forName("alix.common.antibot.epoll.AlixEpollConnection"), "handle",
                     MethodType.methodType(boolean.class, int.class, byte[].class)));
 
             instrumentation.addTransformer(new SocketClassTransformer(), true);

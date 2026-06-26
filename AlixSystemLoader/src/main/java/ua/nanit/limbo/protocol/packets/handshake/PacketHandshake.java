@@ -17,12 +17,15 @@
 
 package ua.nanit.limbo.protocol.packets.handshake;
 
+import alix.common.utils.config.ConfigProvider;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketIn;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
+import ua.nanit.limbo.server.Log;
+import ua.nanit.limbo.util.DomainUtils;
 
 import static com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake.ConnectionIntention;
 
@@ -41,26 +44,36 @@ public final class PacketHandshake implements PacketIn {
         return host;
     }
 
-    public String getExtractedHost() {
-        return extractHost(this.host);
+    private static final String cfgHostName = ConfigProvider.config.getString("transfer-hostname", "").trim();
+
+    static {
+        if (!cfgHostName.isEmpty() && !DomainUtils.isValidDomainOrIp(cfgHostName)) {
+            Log.warning("Invalid hostname in 'transfer-hostname': '" + cfgHostName + "'");
+        }
+        var portStr = ConfigProvider.config.getString("transfer-port", "").trim();
+        int port = -1;
+        try {
+            port = Integer.parseInt(portStr);
+            if (port < 1 || port > 65535)
+                Log.warning("Invalid (out of bounds) port in 'transfer-port': '" + portStr + "'");
+        } catch (Exception ignored) {
+            if (!portStr.isEmpty())
+                Log.warning("Invalid port in 'transfer-port': '" + portStr + "'");
+        }
+        cfgPort = port;
     }
 
-    //per: https://github.com/MinecraftForge/MinecraftForge/blob/478d8b3f181220c9be6911311ed2177d07febc08/src/main/java/net/minecraftforge/network/NetworkContext.java#L91
-    //extra info can be sent from bedrock/forge players in the host name
-    private static String extractHost(String host) {
-        int idx = host.indexOf('\0');
-        return idx != -1 ? host.substring(0, idx) : host;
-        /*for (int i = 0; i < host.length(); i++) {
-            char c = host.charAt(i);
-            //forge's delimiter is the null character
-            if (c == '\0') return host.substring(0, i + 1);
-            //if((c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' && c > 'Z') && c != '.')
-        }
-        return host;*/
+    private static final int cfgPort;
+
+    public String getExtractedHost() {
+        if (!cfgHostName.isEmpty())
+            return cfgHostName;
+
+        return DomainUtils.extractHost(this.host);
     }
 
     public int getPort() {
-        return port;
+        return cfgPort >= 0 ? cfgPort : port;
     }
 
     public State getNextState() {
@@ -68,7 +81,7 @@ public final class PacketHandshake implements PacketIn {
     }
 
     public boolean isTransfer() {
-       return this.getIntention() == ConnectionIntention.TRANSFER;
+        return this.getIntention() == ConnectionIntention.TRANSFER;
     }
 
     public void setLoginIntention() {
@@ -86,12 +99,6 @@ public final class PacketHandshake implements PacketIn {
     @Override
     public void decode(ByteMessage msg, Version version) {
         //WrapperHandshakingClientHandshake
-        /*try {
-            this.version = Version.of(msg.readVarInt());
-        } catch (IllegalArgumentException e) {
-            Log.error("Zjebany handshake: " + msg);
-            this.version = Version.UNDEFINED;
-        }*/
 
         this.version = Version.of(msg.readVarInt());
         this.host = msg.readString();
@@ -100,6 +107,11 @@ public final class PacketHandshake implements PacketIn {
         //if (this.nextState == null) Log.error("Zjebany state");
 
         //Log.error("Wszysko: " + version + " host: " + host + " port: " + port + " nextState: " + nextState);
+    }
+
+    @Override
+    public String toString() {
+        return "PacketHandshake{version=" + version + ", host='" + host + "', extracted='" + this.getExtractedHost() + "', port=" + port + ", intention=" + intention + "}";
     }
 
     @Override

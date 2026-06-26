@@ -17,11 +17,15 @@
 
 package ua.nanit.limbo.connection;
 
+import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.epoll.Telemetry;
+import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.AlgorithmId;
 import alix.common.antibot.firewall.FireWallManager;
-import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.other.throwable.AlixError;
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.integration.PreLoginInfo;
 import ua.nanit.limbo.integration.PreLoginResult;
 import ua.nanit.limbo.protocol.packets.configuration.PacketInFinishConfiguration;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
@@ -43,11 +47,16 @@ public final class PacketHandler {
     }
 
     public void handle(ClientConnection conn, PacketHandshake packet) {
+        if (Telemetry.ENABLED)
+            TelemetryProfiler.PROFILER.onHandshake(conn.getChannel(), packet.getIntention().getId());
+
         conn.updateVersion(packet.getVersion());
         conn.updateState(packet.getNextState());
 
         conn.setHandshakePacket(packet);
         this.server.getIntegration().onHandshake(conn, packet);
+
+        LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.HANDSHAKE);
         //conn.setJoinedInfo(packet.getHost(), packet.getPort());
 
         //Log.debug("Pinged from %s [%s]", conn.getAddress(), conn.getClientVersion().toString());
@@ -69,6 +78,12 @@ public final class PacketHandler {
     }
 
     public void handle(ClientConnection conn, PacketStatusRequest packet) {
+        if (Telemetry.ENABLED)
+            TelemetryProfiler.PROFILER.onStatusRequest(conn.getChannel());
+
+        LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.STATUS_REQUEST);
+        ConnectRequestAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), conn.getAddress());
+
         conn.getFrameDecoder().stopResendCollection();
         conn.uninjectWithRecoded(packet);
         //Log.error("STATUS REQUEST");
@@ -110,8 +125,16 @@ public final class PacketHandler {
     }
 
     private void handleLogin0(ClientConnection conn, PacketLoginStart packet) {
+        if (Telemetry.ENABLED)
+            TelemetryProfiler.PROFILER.onLoginStart(conn.getChannel());
         //Log.error("handleLogin0");
-        var info = this.server.getIntegration().onLoginStart(conn, packet);
+        this.server.getIntegration().onLoginStart(conn, packet, info -> {
+            this.handleLoginWithInfo0(conn, packet, info);
+        });
+    }
+
+    private void handleLoginWithInfo0(ClientConnection conn, PacketLoginStart packet, PreLoginInfo info) {
+        LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.VERDICT_REACHED, info.result().toString());
         boolean recode;
 
         //Intention hide
@@ -120,30 +143,28 @@ public final class PacketHandler {
             conn.getHandshakePacket().setLoginIntention();
             recode = true;
         } else recode = info.recode();
-        //Log.error("RESULT-" + info);
 
         //set the "proper" username here
         conn.getGameProfile().setUsername(packet.getUsername());
-        //AlixCommonMain.logError("info: " + info + " recode " + recode);
 
-        //Log.error("handleLogin0 - RESULT " + info);
-        conn.getChannel().eventLoop().execute(() -> {
-            switch (info.result()) {
-                case DISCONNECTED:
-                    conn.getFrameDecoder().releaseCollected();
-                    return;
-                case CONNECT_TO_MAIN_SERVER:
-                    if (recode) conn.uninjectWithRecoded(packet);
-                    else conn.uninject();
-                    return;
-                case CONNECT_TO_LIMBO:
-                    conn.setVerifyState(info.supplier());
-                    this.handleLogin1(conn);
-                    return;
-                default:
-                    throw new AlixError();
+        conn.runInEventLoop(() -> this.handleVerdict0(conn, packet, info, recode));
+    }
+
+    private void handleVerdict0(ClientConnection conn, PacketLoginStart packet, PreLoginInfo info, boolean recode) {
+        switch (info.result()) {
+            case DISCONNECTED -> conn.getFrameDecoder().releaseCollected();
+            case CONNECT_TO_MAIN_SERVER -> {
+                conn.uninjectWithRecoded(packet);
+                /*if (recode)
+                    conn.uninjectWithRecoded(packet);
+                else
+                    conn.uninject();*/
             }
-        });
+            case CONNECT_TO_LIMBO -> {
+                conn.setVerifyState(info.supplier());
+                this.handleLogin1(conn);
+            }
+        }
     }
 
     private static final String tooManyPlayersMessage = "§eToo many players connected!";
@@ -157,12 +178,17 @@ public final class PacketHandler {
             LOGIN_UNSUPPORTED_VERSION = PacketLoginDisconnect.snapshot(unsupportedClientVersionMessage);
 
     public void handle(ClientConnection conn, PacketLoginStart packet) {
-        //Log.error("LOGIN START");
+        LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.LOGIN_START);
+        var addr = conn.getAddress();
+
         if (conn.sentLogin) {
-            var ip = conn.getAddress().getAddress();
-            FireWallManager.add(ip, AlgorithmId.G1, true);
+            FireWallManager.add(addr, AlgorithmId.G1, true);
+            conn.close();
             return;
         }
+
+        ConnectRequestAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), addr);
+
         conn.sentLogin = true;
         conn.getFrameDecoder().stopResendCollection();
 
@@ -178,72 +204,8 @@ public final class PacketHandler {
             return;
         }
 
-        AlixScheduler.asyncBlocking(() -> this.handleLogin0(conn, packet));
-        //conn.getChannel().eventLoop().execute(() -> this.handleLogin0(conn, packet));
+        this.handleLogin0(conn, packet);
     }
-
-    /*//WHY WON'T THIS WORK WHEN SCHEDULED, EVEN ON THE VERY SAME THREAD
-    //I dunno, I give up, gonna have to block them netty threads
-    @ScheduledForFix
-    public void handleSex(ClientConnection conn, PacketLoginStart packet) {
-        conn.getFrameDecoder().stopResendCollection();
-        conn.getGameProfile().setUsername(packet.getUsername());
-
-        if (server.getConnections().getCount() >= server.getConfig().getMaxPlayers()) {
-            PacketSnapshot disconnectPacket = conn.isInConfigPhase() ? CONFIG_TOO_MANY_PLAYERS : LOGIN_TOO_MANY_PLAYERS;
-            conn.sendPacketAndClose(disconnectPacket);
-            //conn.disconnectLogin("Too many players connected");
-            return;
-        }
-
-        if (!conn.getClientVersion().isSupported()) {
-            PacketSnapshot disconnectPacket = conn.isInConfigPhase() ? CONFIG_UNSUPPORTED_VERSION : LOGIN_UNSUPPORTED_VERSION;
-            conn.sendPacketAndClose(disconnectPacket);
-            //conn.disconnectLogin("Unsupported client version");
-            return;
-        }
-        PreLoginResult result = this.server.getIntegration().onLoginStart(conn, packet);
-        //Log.error("handleLogin0 - RESULT " + result);
-        switch (result) {
-            case DISCONNECTED:
-                conn.getFrameDecoder().releaseCollected();
-                return;
-            case CONNECT_TO_MAIN_SERVER:
-                conn.getChannel().eventLoop().execute(conn::uninject);
-                return;
-            case CONNECT_TO_LIMBO:
-                break;
-        }
-
-        conn.ensureFirst();
-        conn.getFrameDecoder().releaseCollected();
-        conn.getDuplexHandler().tryEnableCompression();
-
-        conn.fireLoginSuccess();
-    }*/
-
-    /*public void handle(ClientConnection conn, PacketLoginPluginResponse packet) {
-     *//*if (server.getConfig().getInfoForwarding().isModern()
-                && packet.getMessageId() == conn.getVelocityLoginMessageId()) {
-
-            if (!packet.isSuccessful() || packet.getData() == null) {
-                conn.disconnectLogin("You need to connect with Velocity");
-                return;
-            }
-
-            if (!conn.checkVelocityKeyIntegrity(packet.getData())) {
-                conn.disconnectLogin("Can't verify forwarded player info");
-                return;
-            }
-
-            // Order is important
-            conn.setAddress(packet.getData().readString());
-            conn.getGameProfile().setUuid(packet.getData().readUuid());
-            conn.getGameProfile().setUsername(packet.getData().readString());
-
-            conn.fireLoginSuccess();
-        }*//*
-    }*/
 
     public void handle(ClientConnection conn, PacketLoginAcknowledged packet) {
         conn.onLoginAcknowledgedReceived();

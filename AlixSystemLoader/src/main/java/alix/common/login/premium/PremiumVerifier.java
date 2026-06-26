@@ -11,10 +11,13 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Optional;
 
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
+
 public final class PremiumVerifier {
 
     public static final KeyPair keyPair = EncryptionUtil.generateKeyPair();
 
+    //https://github.com/TuxCoding/CraftAPI/blob/main/src/main/java/com/github/games647/craftapi/resolver/MojangResolver.java#L78
     public static boolean hasJoined(String username, String serverHash, InetAddress hostIp) throws IOException {
         String url;
         boolean isReverseProxyEnabled = true;
@@ -30,8 +33,14 @@ public final class PremiumVerifier {
         conn.setReadTimeout(5000);
         conn.connect();
         int responseCode = conn.getResponseCode();
+
         conn.disconnect();
-        return responseCode != 204;
+
+        //from com.mojang.authlib.minecraft.client.MinecraftClient#readInputStream
+        return responseCode < 400 && switch (responseCode) {
+            case HTTP_NO_CONTENT -> false;//, HTTP_NOT_FOUND
+            default -> true;
+        };
     }
 
     /**

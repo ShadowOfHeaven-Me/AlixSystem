@@ -7,6 +7,7 @@ import alix.common.utils.floodgate.GeyserUtil;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.systems.netty.AlixChannelHandler;
+import shadow.systems.netty.AlixInterceptor;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -21,6 +22,7 @@ import ua.nanit.limbo.protocol.registry.Version;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 //https://wiki.vg/Protocol_FAQ
 
@@ -41,11 +43,13 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
     }*/
 
     @Override
-    public PreLoginInfo onLoginStart(ClientConnection connection, PacketLoginStart packet) {
-        var result = super.onLoginStart(connection, packet);
-        if (result.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER)
-            AlixChannelHandler.assignLoginUUID(connection.getChannel(), packet);
-        return result;
+    public void onLoginStart(ClientConnection connection, PacketLoginStart packet, Consumer<PreLoginInfo> consumer) {
+        super.onLoginStart(connection, packet, result -> {
+            if (result.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER)
+                AlixChannelHandler.assignLoginUUID(connection.getChannel(), packet);
+
+            consumer.accept(result);
+        });
     }
 
     private static final boolean limboLogin = ConfigProvider.config.getBoolean("virtual-limbo-login");
@@ -71,7 +75,7 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
         if (connection.getClientVersion().less(Version.V1_20_5))
             return false;
 
-        var addr = connection.getAddress().getAddress();
+        var addr = connection.getAddress();
         if (LoginVerdictManager.getVerdict(addr, data).isAutoLogin())
             return false;
 
@@ -89,6 +93,7 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
                     String host = handshakePacket.getExtractedHost();
                     int port = handshakePacket.getPort();
 
+                    //Version.V1_20_5 >=
                     conn.sendPacketAndClose(new PacketPlayOutTransfer().setHost(host).setPort(port));
                 }, this.geyserUtil());
         return true;
@@ -103,6 +108,11 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
     public boolean hasCompletedCaptcha(String name, Channel channel) {
         return Captcha.hasCompletedCaptcha(name, channel);// || ((InetSocketAddress) channel.remoteAddress()).getAddress().equals(this.completedCaptchaCache.getIfPresent(name));
     }*/
+
+    @Override
+    public boolean isProxyProtocol() {
+        return AlixInterceptor.PROXY_PROTOCOL;
+    }
 
     @Override
     public void onHandshake(ClientConnection connection, PacketHandshake handshake) {

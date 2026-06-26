@@ -1,8 +1,9 @@
 package ua.nanit.limbo.connection.pipeline;
 
-import alix.common.environment.ServerEnvironment;
+import alix.common.antibot.firewall.FireWallManager;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.netty.safety.NettySafety;
+import alix.common.utils.netty.safety.NettySafetyException;
 import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
@@ -19,7 +20,9 @@ import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.compression.GlobalCompressionHandler;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.connection.pipeline.flush.FlushBatcher;
-import ua.nanit.limbo.protocol.*;
+import ua.nanit.limbo.protocol.ByteMessage;
+import ua.nanit.limbo.protocol.Packet;
+import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.shadow.KeepAlivePacket;
 import ua.nanit.limbo.protocol.registry.State;
@@ -43,6 +46,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private final ClientConnection connection;
     private final FlushBatcher flushBatcher;
     private final ChannelPromise voidPromise;
+    private final boolean passActiveEvents;
     public final boolean isGeyser;
     public final boolean passPayloads;
     public boolean disableCompression;
@@ -51,12 +55,13 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     private CompressionHandler compression;
     private State.PacketRegistry encoderMappings, decoderMappings;
 
-    public PacketDuplexHandler(Channel channel, LimboServer server, ClientConnection connection) {
+    public PacketDuplexHandler(Channel channel, LimboServer server, ClientConnection connection, boolean passActiveEvents) {
         this.channel = channel;
         this.server = server;
         this.connection = connection;
         this.flushBatcher = FlushBatcher.implFor(channel);
         this.voidPromise = channel.voidPromise();
+        this.passActiveEvents = passActiveEvents;
         var geyserUtil = this.server.getIntegration().geyserUtil();
         this.isGeyser = geyserUtil.isBedrock(channel);
         this.passPayloads = this.isGeyser && geyserUtil.isFloodgatePresent() && NanoLimbo.INTEGRATION.supportsCustomPayloadEvents();
@@ -156,6 +161,12 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         //cause instanceof SocketException ||
         try {
             if (cause instanceof IOException) return;
+
+            if (cause instanceof NettySafetyException) {
+                var addr = AlixCommonUtils.getAddress(ctx.channel());
+                FireWallManager.addCauseException(addr, cause, FireWallManager.NO_TIMEOUT);
+                return;
+            }
 
             Class lastOut = this.lastOut;
 
@@ -421,8 +432,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     private boolean passRegistration() {
         //this.connection.getVerifyState() is null during limbo login on bukkit servers
-        return ServerEnvironment.isVelocity()
-               && this.connection.getVerifyState().isLoginState();
+        /*var state = this.connection.getVerifyState();
+        return !ServerEnvironment.isVelocity() && state != null && state.isLoginState();*/
+        return this.passActiveEvents;
     }
 
     @Override

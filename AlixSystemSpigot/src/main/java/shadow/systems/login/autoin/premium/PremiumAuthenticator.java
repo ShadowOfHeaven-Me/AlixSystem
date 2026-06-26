@@ -9,7 +9,6 @@ import alix.common.login.premium.*;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCache;
-import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
@@ -21,7 +20,6 @@ import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.login.server.WrapperLoginServerEncryptionRequest;
-import com.google.common.cache.Cache;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -44,6 +42,7 @@ import java.security.PrivateKey;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static shadow.systems.login.autoin.premium.AuthReflection.cipherMethod;
 import static shadow.systems.login.autoin.premium.AuthReflection.encryptMethod;
@@ -65,17 +64,9 @@ public final class PremiumAuthenticator {
             couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-enable-encryption"));
     //cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
 
-    //with caffeine
-    @OptimizationCandidate
-    private final Map<User, EncryptionData> encryptionDataCache;
-
-    {
-        Cache<User, EncryptionData> cache = AlixCache.newBuilder()
-                .expireAfterWrite(30, TimeUnit.SECONDS).weakKeys()
-                .build();
-        this.encryptionDataCache = cache.asMap();
-    }
-
+    private final Map<User, EncryptionData> encryptionDataCache = AlixCache.newBuilder()
+            .expireAfterWrite(30, TimeUnit.SECONDS).weakKeys()
+            .<User, EncryptionData>build().asMap();
 
     private final KeyPair keyPair = PremiumVerifier.keyPair;
     private final boolean
@@ -94,7 +85,7 @@ public final class PremiumAuthenticator {
             if (data != null) data.setPremiumData(PremiumData.NON_PREMIUM);
             else PremiumDataCache.add(name, PremiumData.NON_PREMIUM);
 
-            receiveFakeStartPacket(name, publicKey, user.getChannel(), user.getUUID());
+            receiveFakeStartPacket(name, publicKey, (Channel) user.getChannel(), user.getUUID());
             return;
         }
         this.disconnectWith(user, disconnectReason);
@@ -124,7 +115,8 @@ public final class PremiumAuthenticator {
             return;
         }
 
-        AuthReflection.findNetworkManager((Channel) user.getChannel(), networkManager -> {
+        var channel = (Channel) user.getChannel();
+        AuthReflection.findNetworkManager(channel, networkManager -> {
             //enable encryption once we know that the player is expecting the connection to be encrypted
             if (!enableEncryption(loginKey, user, networkManager))
                 return;
@@ -147,7 +139,7 @@ public final class PremiumAuthenticator {
             //Main.debug("data.shouldAuthenticate()=" + data.shouldAuthenticate());
 
             if (!data.shouldAuthenticate()) {
-                receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
+                receiveFakeStartPacket(packetUsername, data.publicKey(), channel, data.uuid());
                 return;
             }
 
@@ -165,7 +157,7 @@ public final class PremiumAuthenticator {
 
                         //Main.debug("VerifiedCache.verify=" + user.getName());
                         VerifiedCache.verify(serverUsername, user);
-                        receiveFakeStartPacket(packetUsername, data.publicKey(), user.getChannel(), data.uuid());
+                        receiveFakeStartPacket(packetUsername, data.publicKey(), channel, data.uuid());
                     } else {
                         this.onInvalidAuth(user, data.publicKey(), invalidSession);
                     }
@@ -180,24 +172,15 @@ public final class PremiumAuthenticator {
         });
     }
 
-
     private void onLoginStart(User user, WrapperLoginClientLoginStart packet) {
-        //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " " + packet.getPlayerUUID().get().version());
-
         Channel channel = (Channel) user.getChannel();
-        //String sessionKey = user.getAddress().toString();
         String packetUsername = packet.getUsername();
-        //Main.logInfo("PACKET USERNAME: " + packetUsername);
         String serverUsername = Dependencies.getCorrectUsername(channel, packetUsername);
         UUID uuid = packet.getPlayerUUID().orElse(null);
-        //Main.debug("packetUsername: '" + packetUsername + "' bedrockName: '" + bedrockName + "'");
 
         user.getProfile().setName(serverUsername);
         user.getProfile().setUUID(uuid);
-        //Main.logError("LOGIN START: " + AlixUtils.getFields(packet) + " VARIANT " + uuid.variant() + " ");
         ClientVersion version = user.getClientVersion();
-
-        //encryptionDataCache.remove(sessionKey);
 
         if (Dependencies.isFloodgatePresent) {
             // don't continue execution if the player was kicked by Floodgate
@@ -206,45 +189,34 @@ public final class PremiumAuthenticator {
 
         ClientPublicKey clientKey = ClientPublicKey.createKey(packet.getSignatureData().orElse(null));
 
-        //Alix - start
         PersistentUserData data = UserFileManager.get(serverUsername);
 
-        /*boolean justCreatedPremiumData = false;
+        Consumer<PremiumData> consumer = newPremiumData ->
+        this.onLoginStart0(user, data, channel, packetUsername, serverUsername, clientKey, uuid, newPremiumData);
 
-        boolean performPremiumCheck = data == null ?
-                (justCreatedPremiumData =
-                        (data = performPremiumCheckNullData(name, user.getAddress().getAddress())) != null)
-                : performPremiumCheck(data, name);*/
+        if (__noPremiumAuthButKeepIdentity)
+            consumer.accept(PremiumData.UNKNOWN);
+        else if (data != null)
+            PremiumSetting.performPremiumCheck(channel, data, packetUsername, uuid, clientKey, version, consumer);
+        else
+            PremiumSetting.performPremiumCheckNullData(channel, packetUsername, uuid, clientKey, version, consumer);
+    }
 
-        PremiumData newPremiumData;
-        boolean performPremiumCheck;// = data != null ? performPremiumCheck(data) : performPremiumCheckNullData(name);
+    private void onLoginStart0(User user, PersistentUserData data, Channel channel, String packetUsername, String serverUsername,
+                               ClientPublicKey clientKey, UUID uuid, PremiumData newPremiumData) {
+        boolean performPremiumCheck = newPremiumData.getStatus().isPremium();
 
-        if (__noPremiumAuthButKeepIdentity) {
-            newPremiumData = PremiumData.UNKNOWN;
-            performPremiumCheck = false;
-        } else if (data != null) {
-            performPremiumCheck = PremiumSetting.performPremiumCheck(data, packetUsername, uuid, clientKey, version);
-            newPremiumData = data.getPremiumData();
-        } else {
-            newPremiumData = PremiumSetting.performPremiumCheckNullData(packetUsername, uuid, clientKey, version);
-            performPremiumCheck = newPremiumData.getStatus().isPremium();
-        }
-
-        //Main.logError("IS PREMIUM: " + performPremiumCheck + " DATA: " + newPremiumData.getStatus() + " suggestsStatus: " + PremiumUtils.suggestsStatus(uuid, clientKey, version));
-
-        if (LimboIntegration.hasCompletedCaptcha(channel, packetUsername)) {
-            //Main.logError("passed name: " + passedCaptchaNameCache + " current name: " + name);
-            /*if (!name.equals(passedCaptchaNameCache)) {
-                this.disconnectWith(user, cachedNameDoesNotMatch);
-                return;
-            }*/
+        if (data != null || LimboIntegration.hasCompletedCaptcha(channel, packetUsername)) {
             //Since AlixChannelHandler.onLoginStart will not be invoked, add the connecting user manually
             if (!AlixChannelHandler.putConnecting(user, serverUsername)) return;
 
             //If hasn't passed the limbo captcha - either limbo is disabled or the player failed the captcha (so this isn't a reconnect after the limbo pass), so invoke onLoginStart here
-        } else if (!AlixChannelHandler.onLoginStart(user, packetUsername, serverUsername, data, performPremiumCheck))
+        } else {
+            /*else if (!AlixChannelHandler.onLoginStart(user, packetUsername, serverUsername, data, performPremiumCheck))
+            return;*/
+            NettyUtils.closeAfterDynamicSend(channel, OutDisconnectPacketConstructor.constructDynamicAtLoginPhase("§c[No captcha]"));
             return;
-        //Alix - end
+        }
 
         if (Dependencies.isBedrock(channel)) {
             //Floodgate player, do not handle, only retransmit the packet. The UUID will be set by Floodgate
@@ -255,7 +227,6 @@ public final class PremiumAuthenticator {
 
         if (__noPremiumAuthButKeepIdentity && assignPremiumUUID) {
             PremiumData premiumData = PersistentUserData.getPremiumData(data);
-            //Bukkit.getOfflinePlayer()
 
             if (premiumData.getStatus().isPremium()) {
                 AuthReflection.findNetworkManager((Channel) user.getChannel(), networkManager -> {
@@ -270,7 +241,6 @@ public final class PremiumAuthenticator {
             return;
         }
 
-        //Main.debug("performPremiumCheck=" + performPremiumCheck);
         if (performPremiumCheck || EncryptionSetting.enableEncryption(user.getClientVersion())) {
             try {
                 //should never happen
@@ -292,33 +262,6 @@ public final class PremiumAuthenticator {
                     //workaround to flush our current packet when FlushConsolidationHandler disallows to do so
                     channel.unsafe().flush();
                 });
-                /*channel.eventLoop().execute(() -> {
-                    Main.debug("SENT ENCRYPTION REQ: " + name + " UUID: " + newPremiumData.premiumUUID() + " pipeline: " + channel.pipeline().names());
-                    PacketEvents.getAPI().getProtocolManager().sendPacketSilently(user.getChannel(), newPacket);
-                });*/
-
-                /*channel.pipeline().addAfter("timeout", "sex", new ChannelDuplexHandler() {
-
-                    @Override
-                    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-                        Main.logError("SENDING HANDLED");
-                        super.write(ctx, msg, promise);
-                    }
-
-                    *//*@Override
-                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                        Main.logError("SENDING HANDLED");
-                        super.channelRead(ctx, msg);
-                    }*//*
-                });*/
-
-                //Main.debug("SENDING ENCRYPTION REQ: " + name + " UUID: " + newPremiumData.premiumUUID() + " pipeline: " + channel.pipeline().names());
-
-                /*NettyUtils.writeAndFlushDynamicWrapper(newPacket, NettyUtils.getSilentContext(channel)).addListener(f -> {
-                   Main.debug("WRITE OP SUCCESS: " + f.isSuccess());
-                });*/
-                //PacketEvents.getAPI().getProtocolManager().sendPacket(user.getChannel(), newPacket);
-                //Main.debug("SENDING DONE.");
             } catch (Exception e) {
                 this.disconnectWith(user, internalErrorEncryption);
                 Main.logError("Failed to send encryption begin packet for player " + packetUsername + "! Kicking player.");
@@ -330,10 +273,7 @@ public final class PremiumAuthenticator {
         }
     }
 
-    private void asyncPacketReceive(User user, PacketWrapper<?> wrapper, PacketType.Login.Client type) {
-
-        //if (AlixUtils.isDebugEnabled) Main.logDebug("Packet received " + wrapper.getPacketType() + " from " + user.getName() + " (" + user.getAddress().toString() + ")");
-
+    private void packetReceive0(User user, PacketWrapper<?> wrapper, PacketType.Login.Client type) {
         switch (type) {
             case LOGIN_START: {
                 this.onLoginStart(user, (WrapperLoginClientLoginStart) wrapper);
@@ -345,10 +285,6 @@ public final class PremiumAuthenticator {
         }
     }
 
-    private void async(Runnable r) {
-        AlixScheduler.asyncBlocking(r);
-    }
-
     public void onPacketReceive(PacketLoginReceiveEvent event) {
         event.setCancelled(true);
         var type = event.getPacketType();
@@ -358,12 +294,14 @@ public final class PremiumAuthenticator {
             default -> throw new AlixError();
         };
 
-        this.async(() -> {
-            asyncPacketReceive(event.getUser(), wrapper, type);
-            /* finally {
-                copy.cleanUp();
-            }*/
-        });
+        packetReceive0(event.getUser(), wrapper, type);
+    }
+
+    void receiveFakeStartPacket(String username, ClientPublicKey clientKey, Channel channel, UUID uuid) {
+        if (channel.eventLoop().inEventLoop())
+            this.receiveFakeStartPacket0(username, clientKey, channel, uuid);
+        else
+            channel.eventLoop().execute(() -> this.receiveFakeStartPacket0(username, clientKey, channel, uuid));
     }
 
     /**
@@ -371,7 +309,7 @@ public final class PremiumAuthenticator {
      *
      * @author games647 and FastLogin contributors
      */
-    private void receiveFakeStartPacket(String username, ClientPublicKey clientKey, Object channel, UUID uuid) {
+    private void receiveFakeStartPacket0(String username, ClientPublicKey clientKey, Channel channel, UUID uuid) {
         WrapperLoginClientLoginStart startPacket;
         if (getServerVersion().isNewerThanOrEquals(ServerVersion.V_1_20)) {
             startPacket = new WrapperLoginClientLoginStart(getServerVersion().toClientVersion(),

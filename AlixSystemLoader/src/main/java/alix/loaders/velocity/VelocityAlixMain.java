@@ -9,6 +9,7 @@ import alix.common.utils.file.update.FileUpdater;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.proxy.ListenerBoundEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Dependency;
@@ -23,7 +24,7 @@ import org.slf4j.Logger;
 import java.nio.file.Path;
 
 @MainClass
-@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.3.1 (DEV-1)", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
+@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.4.0", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
         authors = "ShadowOfHeaven", dependencies = {@Dependency(id = "floodgate", optional = true), @Dependency(id = "geyser", optional = true)})
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 

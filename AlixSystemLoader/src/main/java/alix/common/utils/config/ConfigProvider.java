@@ -16,6 +16,8 @@ public interface ConfigProvider {
 
     String getString(String s);
 
+    String getString(String s, String def);
+
     List<String> getStringList(String s);
 
     ConfigProvider config = AlixCommonHandler.createConfigProviderImpl();

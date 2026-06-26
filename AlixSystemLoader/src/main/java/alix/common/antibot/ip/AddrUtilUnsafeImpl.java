@@ -32,6 +32,13 @@ final class AddrUtilUnsafeImpl implements InetAddrUtil {
     }
 
     @Override
+    public boolean override(Inet4Address addr, int value) {
+        Object holder = UNSAFE.getObject(addr, holderOffset);
+        UNSAFE.putInt(holder, addressOffset, value);
+        return true;
+    }
+
+    @Override
     public Inet6Address fastIPv6(byte[] addr) throws InstantiationException {
         Object holder6 = UNSAFE.allocateInstance(holder6Clazz);
         UNSAFE.putObject(holder6, ipaddress6Offset, addr);

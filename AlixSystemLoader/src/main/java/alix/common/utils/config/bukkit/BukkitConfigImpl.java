@@ -36,6 +36,11 @@ public final class BukkitConfigImpl implements ConfigProvider {
     }
 
     @Override
+    public String getString(String s, String def) {
+        return config.getString(s, def);
+    }
+
+    @Override
     public List<String> getStringList(String s) {
         return this.config.getStringList(s);
     }

@@ -17,6 +17,7 @@
 
 package ua.nanit.limbo.protocol.packets.play;
 
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -33,8 +34,8 @@ public class PacketPlayerInfo implements PacketOut {
     private String username = "";
     private UUID uuid;
 
-    public void setGameMode(int gameMode) {
-        this.gameMode = gameMode;
+    public void setGameMode(GameMode gameMode) {
+        this.gameMode = gameMode.getId();
     }
 
     public void setUsername(String username) {

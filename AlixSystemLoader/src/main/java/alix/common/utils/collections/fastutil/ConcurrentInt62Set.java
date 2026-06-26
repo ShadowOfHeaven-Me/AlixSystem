@@ -1,10 +1,8 @@
 package alix.common.utils.collections.fastutil;
 
-import it.unimi.dsi.fastutil.longs.*;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -24,9 +22,9 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * <p>The atomic operations {@link #add(long)}, {@link #remove(long)} and {@link #contains(long)} are the smallest
  * unit from which the set can be altered. All other operations (aside from the iterator) are based on either the
  * atomic operations or the iterator. These operations are not atomic, that is the effects might not fully take effect.
- * For example a call to {@link #retainAll(LongCollection)} might remove a value added via {@link #add(long)} shortly after
- * calling {@link #retainAll(LongCollection)}. However, it is also possible that it keeps that value. Should
- * this atomic behaviour be required nonetheless, the set should be synchronised via {@link LongSets#synchronize(LongSet)}
+ * For example a call to {@link #retainAll(it.unimi.dsi.fastutil.longs.LongCollection)} might remove a value added via {@link #add(long)} shortly after
+ * calling {@link #retainAll(it.unimi.dsi.fastutil.longs.LongCollection)}. However, it is also possible that it keeps that value. Should
+ * this atomic behaviour be required nonetheless, the set should be synchronised via {@link it.unimi.dsi.fastutil.longs.LongSets#synchronize(it.unimi.dsi.fastutil.longs.LongSet)}
  * or similar.
  *
  * <p>Even though {@link #add(long)} and {@link #remove(long)} are considered atomic, they are not guaranteed to be
@@ -43,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * However, as iterators do not represent an atomic snapshot (or any snapshot at all for that matter) it is possible
  * that underlying changes may improperly reflect on the iteration results.
  * That is an {@link Iterator#next()} call can fail even though {@link Iterator#hasNext()} has been called beforehand
- * as a {@link LongSet#remove(long)} operation which was called in between hasNext and next caused the iterator to be
+ * as a {@link it.unimi.dsi.fastutil.longs.LongSet#remove(long)} operation which was called in between hasNext and next caused the iterator to be
  * exhausted. Extreme care should be taken when using Iterators in concurrent environments involving additions to the
  * set coupled with removals.
  *
@@ -52,7 +50,8 @@ import java.util.concurrent.atomic.AtomicLongArray;
  *
  * @author geolykt
  */
-public final class ConcurrentInt62Set implements LongSet {
+@SuppressWarnings("JavadocReference")
+public final class ConcurrentInt62Set {
 
     //Source code: https://github.com/stianloader/stianloader-concurrent/blob/main/src/main/java/org/stianloader/concurrent/ConcurrentInt62Set.java
 
@@ -248,58 +247,7 @@ public final class ConcurrentInt62Set implements LongSet {
         return buckets[ConcurrentInt62Set.indexFor(element, bucketCount)].contains(element);
     }
 
-    @Override
-    public long[] toLongArray() {
-        LongArrayList list = new LongArrayList();
-        this.iterator().forEachRemaining(list::add);
-        return list.toLongArray();
-    }
-
-    @Override
-    public long[] toArray(long[] a) {
-        // Not efficient either but does the job
-        long[] array = this.toLongArray();
-        if (array.length < a.length) {
-            System.arraycopy(array, 0, a, 0, array.length);
-            return a;
-        } else {
-            return array;
-        }
-    }
-
-    @Override
-    public boolean addAll(LongCollection c) {
-        LongIterator lt = c.longIterator();
-        boolean modified = false;
-        while (lt.hasNext()) {
-            modified |= this.add(lt.nextLong());
-        }
-        return modified;
-    }
-
-    @Override
-    public boolean containsAll(LongCollection c) {
-        LongIterator lt = c.longIterator();
-        while (lt.hasNext()) {
-            if (!this.contains(lt.nextLong())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean removeAll(LongCollection c) {
-        LongIterator lt = c.longIterator();
-        boolean modified = false;
-        while (lt.hasNext()) {
-            modified |= this.remove(lt.nextLong());
-        }
-        return modified;
-    }
-
-    @Override
-    public boolean retainAll(LongCollection c) {
+    /*public boolean retainAll(LongCollection c) {
         LongIterator it = this.longIterator();
         boolean modified = false;
         while (it.hasNext()) {
@@ -310,9 +258,8 @@ public final class ConcurrentInt62Set implements LongSet {
         }
 
         return modified;
-    }
+    }*/
 
-    @Override
     public boolean addAll(Collection<? extends Long> c) {
         Iterator<? extends Long> lt = c.iterator();
         boolean modified = false;
@@ -322,7 +269,6 @@ public final class ConcurrentInt62Set implements LongSet {
         return modified;
     }
 
-    @Override
     public int size() {
         int size = 0;
         for (Bucket b : this.buckets) {
@@ -331,146 +277,14 @@ public final class ConcurrentInt62Set implements LongSet {
         return size;
     }
 
-    @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
-    @Override
-    public Object[] toArray() {
-        LongArrayList list = new LongArrayList();
-        this.iterator().forEachRemaining(list::add);
-        return list.toArray();
-    }
-
-    @Override
-    public <T> T[] toArray(T[] a) {
-        LongArrayList list = new LongArrayList();
-        this.iterator().forEachRemaining(list::add);
-        return list.toArray(a);
-    }
-
-    @Override
-    @Deprecated
-    public boolean containsAll(Collection<?> c) {
-        for (Object o : c) {
-            if (!this.contains(o)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        LongIterator it = this.longIterator();
-        boolean modified = false;
-        while (it.hasNext()) {
-            if (!c.contains(it.nextLong())) {
-                it.remove();
-                modified = true;
-            }
-        }
-
-        return modified;
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        boolean modified = false;
-        for (Object o : c) {
-            if (o instanceof Number && this.remove(((Number) o).longValue())) {
-                modified = true;
-            }
-        }
-
-        return modified;
-    }
-
-    @Override
     public void clear() {
         // Not that efficient but should do the job for now
         for (int i = 0; i < this.bucketCount; i++) {
             this.buckets[i] = new Bucket();
         }
-    }
-
-    @Override
-    public LongIterator iterator() {
-        return new LongIterator() {
-            private final Bucket[] buckets = ConcurrentInt62Set.this.buckets;
-            private int indexGlobal = -1;
-            private int indexBucket;
-            private int lastIdxG = -1;
-            private AtomicLongArray currentBucketArray;
-            private long lastValue;
-
-            @Override
-            public boolean hasNext() {
-                if (this.indexGlobal == -1) {
-                    this.indexGlobal = 0;
-                    this.currentBucketArray = this.buckets[0].values;
-                }
-                if (this.indexGlobal >= this.buckets.length || this.currentBucketArray == null) {
-                    return false;
-                }
-                int len = this.currentBucketArray.length();
-                while ((this.currentBucketArray.get(this.indexBucket) & CTRL_BIT_READ) == 0) {
-                    if (++this.indexBucket == len) {
-                        if (++this.indexGlobal >= this.buckets.length) {
-                            return false;
-                        }
-                        this.currentBucketArray = this.buckets[this.indexGlobal].values;
-                        len = this.currentBucketArray.length();
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public long nextLong() {
-                if (this.indexGlobal == -1) {
-                    this.hasNext();
-                }
-
-                if (this.indexGlobal > this.buckets.length) {
-                    throw new NoSuchElementException("Iterator exhausted. (Note: In very rare cases this can be caused by resizing internal Arrays. In other cases this can be traced back to concurrency problems. The usage of the iterator in concurrent environments is dangerous.)");
-                }
-
-                long val = this.currentBucketArray.get(this.indexBucket);
-                while ((val & CTRL_BIT_READ) == 0) {
-                    if (this.hasNext()) {
-                        val = this.currentBucketArray.get(this.indexBucket);
-                    } else {
-                        throw new NoSuchElementException("Iterator exhausted. (Note: In very rare cases this can be caused by resizing internal Arrays. In other cases this can be traced back to concurrency problems. The usage of the iterator in concurrent environments is dangerous.)");
-                    }
-                }
-
-                this.lastIdxG = this.indexGlobal;
-                this.lastValue = val &= INT_63_BITS;
-
-                if (++this.indexBucket == this.currentBucketArray.length()) {
-                    this.indexBucket = 0;
-                    if (++this.indexGlobal == this.buckets.length) {
-                        this.currentBucketArray = null;
-                    } else {
-                        this.currentBucketArray = this.buckets[this.indexGlobal].values;
-                    }
-                }
-
-                return val - 1;
-            }
-
-            @Override
-            public void remove() {
-                if (this.lastIdxG == -1) {
-                    throw new IllegalStateException("#next() has not been called!");
-                }
-
-                if (!this.buckets[this.lastIdxG].remove(this.lastValue)) {
-                    throw new IllegalStateException("Element already removed.");
-                }
-            }
-        };
     }
 }

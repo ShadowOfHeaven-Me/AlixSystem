@@ -1,5 +1,6 @@
 package alix.common.antibot.algorithms.connection;
 
+import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
@@ -27,7 +28,7 @@ public final class AntiBotStatistics {
     //private final LongAdder totalConnections = new LongAdder();
 
     //the connections info from the last SAMPLE_SIZE amount of seconds
-    private static final int SAMPLE_SIZE = 3;
+    private static final int SAMPLE_SIZE = 7;
     private static final int MAX_ALLOWED_CPS = 5;
     private static final int MAX_ALLOWED_SUM = SAMPLE_SIZE * MAX_ALLOWED_CPS;
     //the total amount of connections from the last SAMPLE_SIZE amount of seconds
@@ -51,12 +52,31 @@ public final class AntiBotStatistics {
     }
 
     private int getTotalBlocked() {
-        return FireWallManager.getMap().size();
+        return FireWallManager.getTotalBlocked();
     }
 
+    //todo: proxyProtocol
     public void incrementJoins() {
         //if (viewed)
         this.currentCps.increment();
+
+        this.panicIfNecessary();
+    }
+
+    private void panicIfNecessary() {
+        int max = 60;
+        if (this.isLastAvgCPSGreaterThan(max))
+            PanicModeManager.activate("CPS greater than " + max + "!");
+    }
+
+    boolean isLastAvgCPSGreaterThan(long val) {
+        //this.currentSum.sum() / SAMPLE_SIZE > val
+        return this.currentSum.sum() > val * SAMPLE_SIZE;
+    }
+
+    private float lastAverageCPS() {
+        float f = this.currentSum.sum();
+        return f / SAMPLE_SIZE;
     }
 
     public boolean isHighTraffic() {

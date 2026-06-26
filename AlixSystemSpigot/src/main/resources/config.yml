@@ -43,6 +43,7 @@ allow-case-sensitive-nicknames: true
 
 #Config used when the player is completing the captcha verification (before he's given the ability to register his account)
 
+# Deprecated - no longer takes effect, limbo will always enable
 #Defines whether any manual captcha should be replaced with automatic bot checks done on an extremely optimized limbo 'server' (not actually a server, it just pretends to be one). Only takes effect if 'captcha' is set to true.
 #Bear in mind that this enables extreme optimization and allows other functions to work properly
 #Setting this to false should be done with caution and only when you know what you're doing!

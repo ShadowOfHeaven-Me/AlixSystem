@@ -6,8 +6,10 @@ import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumStatus;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import io.netty.channel.Channel;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static alix.common.utils.config.ConfigProvider.config;
 
@@ -18,24 +20,31 @@ public enum PremiumSetting {
     ALWAYS;
 
 
-    public static PremiumData performPremiumCheckNullData(String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
-        if (!PremiumSetting.requirePremium(false, uuid, clientPublicKey, version)) return PremiumData.UNKNOWN;
+    public static void performPremiumCheckNullData(Channel channel, String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version,
+                                                   Consumer<PremiumData> consumer) {
+        if (!PremiumSetting.requirePremium(false, uuid, clientPublicKey, version)) {
+            consumer.accept(PremiumData.UNKNOWN);
+            return;
+        }
 
-        return PremiumUtils.getOrRequestAndCacheData(null, name);
+        PremiumUtils.getOrRequestAndCacheData(channel, null, name, consumer);
     }
 
-    public static  boolean performPremiumCheck(PersistentUserData data, String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
+    public static void performPremiumCheck(Channel channel, PersistentUserData data, String name, UUID uuid, ClientPublicKey clientPublicKey,
+                                           ClientVersion version, Consumer<PremiumData> consumer) {
         switch (data.getPremiumData().getStatus()) {
-            case PREMIUM:
-                return true;
-            case NON_PREMIUM:
-                return false;
+            case PREMIUM, NON_PREMIUM:
+                consumer.accept(data.getPremiumData());
+                return;
             case UNKNOWN:
-                if (!PremiumSetting.requirePremium(data, uuid, clientPublicKey, version)) return false;
-                PremiumData newData = PremiumUtils.getOrRequestAndCacheData(data, name);//getOrRequestData
-
-                data.setPremiumData(newData);
-                return newData.getStatus().isPremium();
+                if (!PremiumSetting.requirePremium(data, uuid, clientPublicKey, version)) {
+                    consumer.accept(PremiumData.UNKNOWN);
+                    return;
+                }
+                PremiumUtils.getOrRequestAndCacheData(channel, data, name, newData -> {
+                    data.setPremiumData(newData);
+                    consumer.accept(newData);
+                });
             default:
                 throw new AlixError("Invalid: " + data.getPremiumData().getStatus());
         }

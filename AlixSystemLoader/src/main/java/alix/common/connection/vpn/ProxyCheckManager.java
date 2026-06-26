@@ -1,13 +1,18 @@
 package alix.common.connection.vpn;
 
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.connection.vpn.impl.IP2ProxyImpl;
 import alix.common.connection.vpn.impl.IPAPIImpl;
 import alix.common.connection.vpn.impl.KauriImpl;
 import alix.common.connection.vpn.impl.ProxyCheckIOImpl;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.file.managers.IpsCacheFileManager;
+import io.netty.channel.Channel;
 
 import java.net.InetAddress;
+import java.util.function.Consumer;
 
 public final class ProxyCheckManager {
 
@@ -21,21 +26,28 @@ public final class ProxyCheckManager {
         this.fastRegen = LoopList.newConcurrent(new IPAPIImpl());//up to 45 req/min
     }
 
-    public boolean isProxy(InetAddress ip, String strAddress) {
+    public void isProxy(Channel channel, InetAddress ip, String strAddress, Consumer<Boolean> isProxyCallback) {
         //Use the cached value to reduce request usage
         Boolean cache = IpsCacheFileManager.isProxy(ip);
-        if (cache != null) return cache;
+        if (cache != null) {
+            isProxyCallback.accept(cache);
+            return;
+        }
 
-        Boolean isProxy = this.isProxy0(strAddress, this.fastRegen);
-        if (isProxy == null) isProxy = this.isProxy0(strAddress, this.slowRegen);
+        AlixScheduler.asyncBlocking(() -> {
+            LimboJoinProfiler.update(channel, ConnectionStage.VPN_BLOCKING_REQUESTED);
 
-        //if isProxy is null (couldn't be determined) we return that the ip is not a proxy
-        boolean proxy = isProxy == Boolean.TRUE;
+            Boolean isProxy = this.isProxy0(strAddress, this.fastRegen);
+            if (isProxy == null) isProxy = this.isProxy0(strAddress, this.slowRegen);
 
-        if (isProxy != null)
-            IpsCacheFileManager.add(ip, proxy);
+            //if isProxy is null (couldn't be determined) we return that the ip is not a proxy
+            boolean proxy = isProxy == Boolean.TRUE;
 
-        return proxy;
+            if (isProxy != null)
+                IpsCacheFileManager.add(ip, proxy);
+
+            isProxyCallback.accept(proxy);
+        });
     }
 
     //returns null if couldn't be determined

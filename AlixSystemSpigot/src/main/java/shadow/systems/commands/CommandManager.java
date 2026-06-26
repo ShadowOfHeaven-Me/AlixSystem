@@ -4,12 +4,9 @@ import alix.common.commands.file.AlixCommandInfo;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
-import alix.common.data.premium.PremiumData;
-import alix.common.data.premium.PremiumDataCache;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
 import alix.common.packets.command.CommandsWrapperConstructor;
-import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import alix.common.utils.other.throwable.AlixError;
@@ -1616,13 +1613,7 @@ public final class CommandManager {
                 return false;
             }
 
-            AlixScheduler.asyncBlocking(() -> {
-                PremiumData premiumData = PremiumDataCache.getOrUnknown(name);
-                if (premiumData.getStatus().isUnknown()) {
-                    premiumData = PremiumUtils.requestPremiumData(name);
-                    if (premiumData.getStatus().isKnown()) PremiumDataCache.add(name, premiumData);
-                }
-
+            PremiumUtils.getOrRequestAndCacheData(channel, name, premiumData -> {
                 switch (premiumData.getStatus()) {
                     case PREMIUM: {
                         user.writeAndFlushConstSilently(premiumDataMessage);

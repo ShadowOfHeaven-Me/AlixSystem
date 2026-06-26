@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {//java-library
     id("java")
     id("java-library")
@@ -83,7 +85,7 @@ repositories {
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
     //geyser/floodgate
-    maven ("https://repo.opencollab.dev/main")
+    maven("https://repo.opencollab.dev/main")
 }
 //się wypierdala czasami bez tego
 tasks.register("prepareKotlinBuildScriptModel") {}
@@ -96,6 +98,8 @@ dependencies {
         //exclude("net.kyori", "adventure-api")
         //exclude("net.kyori", "adventure-nbt")
     }
+
+
 
     /*compileOnly("org.geysermc.geyser:api:2.9.0-SNAPSHOT")
     compileOnly("org.geysermc.floodgate:api:2.2.4-SNAPSHOT")*/
@@ -116,9 +120,6 @@ dependencies {
     //can't find the internals
     //compileOnly(files("$srcPath\\Geyser-Spigot.jar"))
 
-    implementation("org.ow2.asm:asm:9.7")
-    implementation("org.ow2.asm:asm-tree:9.7")
-    implementation("net.bytebuddy:byte-buddy-agent:1.14.18")
     implementation("io.papermc:paperlib:1.0.7")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
@@ -145,9 +146,22 @@ configurations.all {
         into("/") // Place the file in the root of the JAR
     }
 }*/
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+
+if (project.findProperty("enable-preview")!! == "true") {
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("--enable-preview")
+    }
+    tasks.withType<Test>().configureEach {
+        jvmArgs("--enable-preview")
+    }
+
+    tasks.withType<JavaExec>().configureEach {
+        jvmArgs("--enable-preview")
+    }
 }
+
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(Integer.parseInt(project.findProperty("toolchain-lang-version").toString())))
 tasks.test {
     useJUnitPlatform()
 }

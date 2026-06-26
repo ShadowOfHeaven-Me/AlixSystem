@@ -55,7 +55,7 @@ public final class PersistentUserData implements AlixUserData {
         this.setPremiumData0(PremiumData.fromSavable(splitData[9]));
         this.createdAt = Long.parseLong(splitData[10]);
         UserFileManager.putData(this);
-        GeoIPTracker.addIP(this.ip);//Add it here, as it was loaded
+        GeoIPTracker.addExisting(this.ip);//Add it here, as it was loaded
     }
 
     private PersistentUserData(String name, InetAddress ip, Password password) {
@@ -67,7 +67,9 @@ public final class PersistentUserData implements AlixUserData {
         this.premiumData = PremiumData.UNKNOWN;
         this.createdAt = System.currentTimeMillis();
         UserFileManager.putData(this);
-        //The GeoIPTracker add should not be invoked
+
+        GeoIPTracker.addExisting(ip);
+        GeoIPTracker.removeTemporary(ip);
 
         this.saveToDatabase();
     }
@@ -284,6 +286,13 @@ public final class PersistentUserData implements AlixUserData {
     }
 
     public PersistentUserData setIP(InetAddress ip) {
+        var oldIp = this.ip;
+        if (oldIp.equals(ip))
+            return this;
+
+        GeoIPTracker.addExisting(ip);
+        GeoIPTracker.removeIP(oldIp);
+
         this.ip = ip;
 
         database.updateIpByName(this.name, ip.getHostAddress());

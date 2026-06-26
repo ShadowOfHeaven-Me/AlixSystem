@@ -18,7 +18,7 @@ public class PacketSpawnPosition extends OutRetrooperPacket<WrapperPlayServerSpa
         this();
         this.wrapper().setPosition(new Vector3i(x, y, z));
 
-        var dimension = NanoLimbo.LIMBO.getConfig().getDimensionType().toLowerCase(Locale.ROOT);
+        var dimension = NanoLimbo.LIMBO.getConfig().getDimensionTypeName().toLowerCase(Locale.ROOT);
         this.wrapper().setDimension(new ResourceLocation("minecraft:" + dimension));
     }
 }

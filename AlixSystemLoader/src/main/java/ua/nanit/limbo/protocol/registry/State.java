@@ -53,7 +53,7 @@ import ua.nanit.limbo.protocol.packets.play.config.PacketPlayOutReconfigure;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayInCookieResponse;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieRequest;
 import ua.nanit.limbo.protocol.packets.play.cookie.PacketPlayOutCookieStore;
-import ua.nanit.limbo.protocol.packets.play.dialog.PacketConfigOutShowDialog;
+import ua.nanit.limbo.protocol.packets.play.dialog.PacketPlayOutShowDialog;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutEntityMetadata;
 import ua.nanit.limbo.protocol.packets.play.entity.PacketPlayOutSpawnEntity;
@@ -133,7 +133,6 @@ public enum State {
             clientBound.registerRetrooper(PacketUpdateTags::new, PacketType.Configuration.Server.UPDATE_TAGS);
             clientBound.registerRetrooper(PacketRegistryData::new, PacketType.Configuration.Server.REGISTRY_DATA);
             clientBound.registerRetrooper(PacketConfigOutResourcePack::new, PacketType.Configuration.Server.RESOURCE_PACK_SEND);
-            clientBound.registerRetrooper(PacketConfigOutShowDialog::new, PacketType.Configuration.Server.SHOW_DIALOG);
 
             serverBound.registerRetrooper(() -> PacketInFinishConfiguration.INSTANCE, PacketType.Configuration.Client.CONFIGURATION_END_ACK);
             serverBound.registerRetrooper(PacketInConfigKeepAlive::new, PacketType.Configuration.Client.KEEP_ALIVE);
@@ -165,6 +164,7 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInReconfigureAck::new, PacketType.Play.Client.CONFIGURATION_ACK);
             serverBound.registerRetrooper(PacketInPlayKeepAlive::new, PacketType.Play.Client.KEEP_ALIVE);
 
+            clientBound.registerRetrooper(PacketPlayOutShowDialog::new, PacketType.Play.Server.SHOW_DIALOG);
             clientBound.registerRetrooper(PacketPlayOutTransaction::new, PacketType.Play.Server.WINDOW_CONFIRMATION);
             clientBound.registerRetrooper(PacketPlayOutPluginMessage::new, PacketType.Play.Server.PLUGIN_MESSAGE);
             clientBound.registerRetrooper(PacketPlayOutPing::new, PacketType.Play.Server.PING);

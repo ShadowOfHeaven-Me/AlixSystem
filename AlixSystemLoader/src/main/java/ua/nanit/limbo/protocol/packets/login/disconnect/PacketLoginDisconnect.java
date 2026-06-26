@@ -29,11 +29,21 @@ public class PacketLoginDisconnect extends OutRetrooperPacket<WrapperLoginServer
     }
 
     public PacketLoginDisconnect setReason(String reason) {
-        this.wrapper().setReason(Component.text(reason));
+        this.setReason(Component.text(reason));
+        return this;
+    }
+
+    public PacketLoginDisconnect setReason(Component reason) {
+        this.wrapper().setReason(reason);
         return this;
     }
 
     public static PacketSnapshot snapshot(String reason) {
         return new PacketLoginDisconnect().setReason(reason).toSnapshot();
     }
+
+    public static PacketSnapshot snapshot(Component reason) {
+        return new PacketLoginDisconnect().setReason(reason).toSnapshot();
+    }
+
 }

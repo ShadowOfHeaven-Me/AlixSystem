@@ -1,3 +1,4 @@
+/*
 package ua.nanit.limbo.protocol.packets.play.chunk;
 
 import net.kyori.adventure.nbt.CompoundBinaryTag;
@@ -48,3 +49,4 @@ public final class PacketEmptyChunk implements PacketOut {
         msg.writeBytes(lightData, 1, lightData.length - 1);
     }
 }
+*/

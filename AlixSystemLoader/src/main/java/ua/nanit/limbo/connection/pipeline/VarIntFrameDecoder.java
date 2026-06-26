@@ -17,25 +17,28 @@
 
 package ua.nanit.limbo.connection.pipeline;
 
-import alix.common.utils.netty.BufRelease;
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.safety.NettySafety;
+import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.ByteToMessageDecoder.Cumulator;
+import io.netty.handler.codec.haproxy.HAProxyCommand;
+import io.netty.handler.codec.haproxy.HAProxyMessage;
+import io.netty.util.AttributeKey;
 import io.netty.util.ByteProcessor;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
+import ua.nanit.limbo.connection.UnsafeCloseFuture;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.server.Log;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Set;
-import java.util.function.Consumer;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
 
@@ -45,7 +48,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
     //Optimized with: https://github.com/jonesdevelopment/sonar/blob/main/common/src/main/java/xyz/jonesdev/sonar/common/fallback/netty/FallbackVarInt21FrameDecoder.java#L69
 
     //private static final Boolean PRESENT = Boolean.TRUE;
-    private boolean collectResend = true;
+    //private boolean collectResend = true;
     private CipherHandler cipher;
     //private final Map<ByteBuf, Integer> resendMap = new IdentityHashMap<>(2);
     //private final FixedSizeQueue<ByteBuf> collectedIdentity = new FixedSizeQueue<>(2);
@@ -53,7 +56,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
     //private final Deque<ByteBuf> resend = new ArrayDeque<>(2);
 
     //must be an IdentityHashMap, cuz the ByteBuf#hashCode changes depending on its readerIndex
-    private final Set<ByteBuf> resend = Collections.newSetFromMap(new IdentityHashMap<>(2));
+    //private final Set<ByteBuf> resend = Collections.newSetFromMap(new IdentityHashMap<>(2));
     private final ClientConnection connection;
 
     public VarIntFrameDecoder(ClientConnection connection) {
@@ -64,12 +67,18 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
     //private final VarIntByteDecoder reader = new VarIntByteDecoder();
 
     public void stopResendCollection() {
-        this.collectResend = false;
+        //this.collectResend = false;
     }
 
+    //cheap thread-local check
+    //boolean released;
+
     public void releaseCollected() {
+        /*if (released) return;
+
+        this.released = true;
         this.forEachCollected(BufRelease::safeDynamicRelease);
-        /*this.forEachCollected(buf -> {
+        *//*this.forEachCollected(buf -> {
             int refCnt = buf.refCnt();
             if (refCnt != 0) buf.release(refCnt);
         });*/
@@ -79,16 +88,16 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         this.forEachCollected(buf -> channel.pipeline().fireChannelRead(buf));
     }*/
 
-    public void resendCollected(Channel channel) {
-        /*this.forEachCollected(buf ->
-                channel.pipeline().fireChannelRead(buf.readerIndex(0)));*/
+    /*public void resendCollected() {
+        *//*this.forEachCollected(buf ->
+                channel.pipeline().fireChannelRead(buf.readerIndex(0)));*//*
         //readerIndex is already set by BufSet12
-        this.forEachCollected(buf -> channel.pipeline().fireChannelRead(buf.readerIndex(0)));
+        this.forEachCollected(buf -> this.connection.getChannel().pipeline().fireChannelRead(buf.readerIndex(0)));
     }
 
     private void forEachCollected(Consumer<ByteBuf> consumer) {
         this.resend.forEach(consumer);
-    }
+    }*/
 
     public void setCipher(CipherHandler cipher) {
         this.cipher = cipher;
@@ -119,17 +128,33 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         if (cum == null) return;
 
         this.cumulation = null;
-        //super.channelRead(ctx, this.cumulation);
-
-        //will always be readable
-        /*if (cum.isReadable())
-            Log.error("CUM SIZE= " + cum.readableBytes());*/
-
-        //safe release
-        //if (cum.refCnt() != 0)
 
         //(no need now, since executed on event loop)
-        cum.release();
+        BufUtils.safeRelease(cum);
+    }
+
+    public static final AttributeKey<InetAddress> PROXY_ADDRESS_KEY = AttributeKey.newInstance("alix-proxy-ip-addr");
+    public volatile HAProxyMessage haProxyMessage;
+
+    void handleProxyMessage(HAProxyMessage message) {
+        var channel = this.connection.getChannel();
+        LimboJoinProfiler.update(channel, ConnectionStage.HA_PROXY_MESSAGE_RECEIVED);
+
+        this.haProxyMessage = message;
+        if (message.command() != HAProxyCommand.PROXY)
+            return;
+
+
+        try {
+            var addr = InetAddress.getByName(message.sourceAddress());
+            channel.attr(PROXY_ADDRESS_KEY).set(addr);
+            LimboJoinProfiler.update(channel, ConnectionStage.HA_PROXY_ADDRESS_ASSIGNED);
+
+            NanoLimbo.INTEGRATION.onProxyAddress(channel, addr);
+        } catch (UnknownHostException e) {
+            UnsafeCloseFuture.unsafeClose(channel);
+            throw new AlixException(e);
+        }
     }
 
     private final Cumulator cumulator = MERGE_CUMULATOR;
@@ -143,10 +168,18 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (msg instanceof HAProxyMessage message) {
+            this.handleProxyMessage(message);
+            return;
+        }
+
+        if (!(msg instanceof ByteBuf buf))
+            return;
+
         if (NanoLimbo.debugFrames)
             Log.error("FRAME=" + msg);
 
-        ByteBuf in = this.tryDecrypt((ByteBuf) msg);
+        ByteBuf in = this.tryDecrypt(buf);
 
         if (NanoLimbo.debugBytes)
             PacketUtils.debugBytes(in);
@@ -171,7 +204,9 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         }
 
         if (!this.cumulation.isReadable()) {
-            this.cumulation.release();
+            if (this.cumulation.refCnt() != 0)//how tf does this happen
+                this.cumulation.release();
+
             this.cumulation = null;
         } else if (this.cumulation.readerIndex() > 1024) {
             //is discardSomeReadBytes a better alternative here?
@@ -214,8 +249,9 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         }
         //Log.error("PACKET START: " + packetStart + " IDX: " + in.readerIndex() + " notReadYet: " + notReadYet);
 
-        if (collectResend && !this.resend.contains(in))// && notReadYet) {
-            this.resend.add(in.retain());
+        /*if (collectResend && !this.resend.contains(in))// && notReadYet) {
+            this.resend.add(in.retain());*/
+
         //Log.error("IN BUF COUNT: " + resend.size() + " === " + in + " HASH: " + System.identityHashCode(in));
 
         try {
