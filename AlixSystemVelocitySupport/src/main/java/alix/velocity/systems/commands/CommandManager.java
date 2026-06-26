@@ -3,11 +3,8 @@ package alix.velocity.systems.commands;
 import alix.common.commands.file.CommandsFileManager;
 import alix.common.data.LoginType;
 import alix.common.data.file.UserFileManager;
-import alix.common.data.premium.PremiumData;
-import alix.common.data.premium.PremiumDataCache;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
-import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.velocity.Main;
@@ -148,16 +145,7 @@ public final class CommandManager {
                 return 0;
             }
 
-            // Run the premium check asynchronously
-            AlixScheduler.asyncBlocking(() -> {
-                PremiumData premiumData = PremiumDataCache.getOrUnknown(name);
-                if (premiumData.getStatus().isUnknown()) {
-                    premiumData = PremiumUtils.requestPremiumData(name);
-                    if (premiumData.getStatus().isKnown()) {
-                        PremiumDataCache.add(name, premiumData);
-                    }
-                }
-
+            PremiumUtils.getOrRequestAndCacheData(channel, name, premiumData -> {
                 switch (premiumData.getStatus()) {
                     case PREMIUM:
                         user.sendMessage(premiumDataMessage);

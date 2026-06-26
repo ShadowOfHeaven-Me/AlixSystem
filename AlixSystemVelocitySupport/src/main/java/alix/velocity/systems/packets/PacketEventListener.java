@@ -1,5 +1,8 @@
 package alix.velocity.systems.packets;
 
+import alix.common.AlixCommonMain;
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
@@ -10,6 +13,7 @@ import alix.common.login.premium.*;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
+import alix.common.utils.other.throwable.AlixError;
 import alix.velocity.Main;
 import alix.velocity.server.AlixVelocityLimbo;
 import alix.velocity.systems.events.Events;
@@ -17,6 +21,7 @@ import alix.velocity.utils.user.UserManager;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.event.UserConnectEvent;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
@@ -32,15 +37,16 @@ import io.netty.channel.Channel;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.login.LoginInfo;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
-import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayOutPluginMessage;
 import ua.nanit.limbo.protocol.registry.Version;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -65,6 +71,11 @@ public final class PacketEventListener extends PacketListenerAbstract {
     private static final boolean debugPackets = NanoLimbo.debugServerPackets;
 
     @Override
+    public void onUserConnect(UserConnectEvent event) {
+        LimboJoinProfiler.update((Channel) event.getUser().getChannel(), ConnectionStage.SERVER_CONNECT);
+    }
+
+    @Override
     public void onPacketReceive(PacketReceiveEvent event) {
         if (debugPackets) Main.logInfo("IN: " + event.getPacketType());
         /*event.getPostTasks().add(() -> {
@@ -72,6 +83,16 @@ public final class PacketEventListener extends PacketListenerAbstract {
         });*/
         Channel channel = (Channel) event.getChannel();
         var user = event.getUser();
+
+        if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
+            LimboJoinProfiler.update(channel, ConnectionStage.SERVER_HANDSHAKE);
+            return;
+        }
+
+        if (event.getPacketType() == PacketType.Status.Client.REQUEST) {
+            LimboJoinProfiler.update(channel, ConnectionStage.SERVER_STATUS_REQUEST);
+            return;
+        }
 
         /*if (event.getPacketType() == PacketType.Status.Client.REQUEST) {
             channel.pipeline().addAfter("pe-decoder-alixsystem", "seks", new ChannelDuplexHandler() {
@@ -94,6 +115,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
                 return;
             switch (loginEvent.getPacketType()) {
                 case LOGIN_START: {
+                    LimboJoinProfiler.update(channel, ConnectionStage.SERVER_LOGIN_START);
                     var wrapper = new WrapperLoginClientLoginStart(event);
 
                     //set these prematurely for identification
@@ -105,9 +127,11 @@ public final class PacketEventListener extends PacketListenerAbstract {
                     return;
                 }
                 case ENCRYPTION_RESPONSE: {
+                    LimboJoinProfiler.update(channel, ConnectionStage.SERVER_ENCRYPTION_REQUEST_RECEIVED);
+
                     var packet = new WrapperLoginClientEncryptionResponse(event);
                     event.setCancelled(true);
-                    AlixScheduler.asyncBlocking(() -> this.onEncryptionResponse(packet, user, channel));
+                    this.onEncryptionResponse(packet, user, channel);
                 }
             }
             return;
@@ -151,6 +175,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
             this.disconnectWith(user, illegalEncryptionState);
             return;
         }
+
         var continuation = encryptionInfo.continuation();
 
         EncryptionData encryptionData = encryptionInfo.encryptionData();
@@ -168,18 +193,17 @@ public final class PacketEventListener extends PacketListenerAbstract {
             this.disconnectWith(user, cannotDecryptSharedSecret);
             return;
         }
-
-
         //enable encryption once we know that the player is expecting the connection to be encrypted
 
-        channel.eventLoop().execute(() -> {
-            try {
-                encryptionInfo.minecraftConnection().enableEncryption(loginKey.getEncoded());
-            } catch (GeneralSecurityException e) {
-                this.disconnectWith(user, couldNotEnableEncryption);
-                AlixCommonUtils.logException(e);
-            }
-        });
+        if (!channel.eventLoop().inEventLoop())
+            throw new AlixError("Not in EventLoop");
+
+        try {
+            encryptionInfo.minecraftConnection().enableEncryption(loginKey.getEncoded());
+        } catch (GeneralSecurityException e) {
+            this.disconnectWith(user, couldNotEnableEncryption);
+            AlixCommonUtils.logException(e);
+        }
 
         InetSocketAddress address = user.getAddress();
         String packetUsername = encryptionData.packetUsername();
@@ -196,6 +220,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
             return;//did they forget a return here? - https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java#L270
         }
         if (!encryptionData.shouldAuthenticate()) {
+            LimboJoinProfiler.update(channel, ConnectionStage.SERVER_CONTINUE_NO_AUTH);
             continuation.resume();
             return;
         }
@@ -204,33 +229,38 @@ public final class PacketEventListener extends PacketListenerAbstract {
 
         String serverId = EncryptionUtil.getServerIdHashString("", loginKey, keyPair.getPublic());
 
-        try {
-            //make sure to remove the name char prefix (currently disabled)
-            if (PremiumVerifier.hasJoined(packetUsername, serverId, address.getAddress())) {
+        AlixScheduler.asyncBlocking(() -> {
+            LimboJoinProfiler.update(channel, ConnectionStage.SERVER_PREMIUM_REQUEST_BLOCKING);
+            try {
+                //make sure to remove the name char prefix (currently disabled)
+                if (PremiumVerifier.hasJoined(packetUsername, serverId, address.getAddress())) {
 
-                PremiumData premiumData = encryptionInfo.premiumData();
-                if (!premiumData.getStatus().isPremium()) premiumData = PremiumUtils.getPremiumData(packetUsername);
+                    PremiumData premiumData = encryptionInfo.premiumData();
+                    if (!premiumData.getStatus().isPremium())
+                        premiumData = PremiumUtils.getOrRequestAndCacheDataSync(data, packetUsername);
 
-                if (data == null && !ConfigParams.requireRegisterFromAll)
-                    PersistentUserData.createFromPremiumInfo(serverUsername, user.getAddress().getAddress(), premiumData);
+                    if (data == null && !ConfigParams.requireRegisterFromAll)
+                        PersistentUserData.createFromPremiumInfo(serverUsername, user.getAddress().getAddress(), premiumData);
 
-                boolean joinedRegistered = data != null;
-                LoginInfo.set(channel, joinedRegistered, joinedRegistered ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
+                    boolean joinedRegistered = data != null;
+                    LoginInfo.set(channel, joinedRegistered, joinedRegistered ? LoginVerdict.LOGIN_PREMIUM : LoginVerdict.REGISTER_PREMIUM);
 
-                VerifiedCache.verify(serverUsername, user);
-                continuation.resume();
-                //Main.logInfo("CONTINUATION TRUE");
-                //receiveFakeStartPacket(packetUsername, encryptionData.publicKey(), user.getChannel(), encryptionData.uuid());
-            } else {
-                this.onInvalidAuth(user, continuation, invalidSession, serverUsername);
+                    LimboJoinProfiler.update(channel, ConnectionStage.SERVER_ADD_TO_VERIFIED_CACHE);
+                    VerifiedCache.verify(serverUsername, user);
+                    continuation.resume();
+                    //Main.logInfo("CONTINUATION TRUE");
+                    //receiveFakeStartPacket(packetUsername, encryptionData.publicKey(), user.getChannel(), encryptionData.uuid());
+                } else {
+                    this.onInvalidAuth(user, continuation, invalidSession, serverUsername);
+                }
+            } catch (IOException e) {
+                if (e instanceof SocketTimeoutException) {
+                    AlixCommonMain.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
+                }
+                //todo: see if this correct
+                this.onInvalidAuth(user, continuation, cannotVerifySession, serverUsername);
             }
-        } catch (IOException e) {
-                        /*if (e instanceof SocketTimeoutException) {
-                            Main.logWarning("Session verification timed out (5 seconds) for " + serverUsername);
-                        }*/
-            //todo: see if this correct
-            this.onInvalidAuth(user, continuation, cannotVerifySession, serverUsername);
-        }
+        });
     }
 
     private final boolean

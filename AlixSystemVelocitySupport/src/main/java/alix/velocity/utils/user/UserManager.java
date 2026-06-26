@@ -1,6 +1,7 @@
 package alix.velocity.utils.user;
 
 import alix.common.reflection.CommonReflection;
+import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
 import alix.velocity.systems.commands.executable.ExecutableCommandList;
 import com.velocitypowered.api.proxy.ProxyServer;
@@ -31,10 +32,18 @@ public final class UserManager {
     public static boolean addConnected(String username, Channel channel) {
         if (!channel.isOpen())
             return false;
+
         //intentional identity check
         return channel == CONNECTED_USERS.compute(username, (u, c) -> {
-            if (c != null && c.isOpen())
+            if (c != null && c.isOpen()) {
+                //if same-nickname, same-ip connects
+                if (AlixCommonUtils.getAddress(c).equals(AlixCommonUtils.getAddress(channel))) {
+                    c.close();//close the previously "open" channel
+                    //since it's very likely to be the same user just actually trying to (re)connect
+                    return channel;
+                }
                 return c;
+            }
 
             channel.closeFuture().addListener(f -> {
                 CONNECTED_USERS.remove(username);

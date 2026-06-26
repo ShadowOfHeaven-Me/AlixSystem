@@ -41,6 +41,7 @@ repositories {
 }*/
 
 tasks.register("prepareKotlinBuildScriptModel") {}
+
 dependencies {
     //later see https://github.com/kyngs/LibreLogin/blob/master/Plugin/build.gradle.kts
     implementation("com.zaxxer:HikariCP:6.2.1")

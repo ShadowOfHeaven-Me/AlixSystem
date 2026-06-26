@@ -1,5 +1,7 @@
 package alix.velocity.server;
 
+import alix.common.connection.profiler.ConnectionStage;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.utils.floodgate.GeyserUtil;
 import alix.velocity.Main;
 import alix.velocity.server.impl.VelocityLimboIntegration;
@@ -25,8 +27,8 @@ public final class AlixVelocityLimbo {
     public static final Connections LIMBO_CONNECTIONS = limbo.getConnections();
     //private static final Map<ConnectedPlayer, Continuation> continuationMap = new ConcurrentHashMap<>();
 
-    public static void initChannel(Channel channel) {
-        limbo.getClientChannelInitializer().initChannel(channel);
+    public static void initChannel(Channel channel, boolean proxyProtocol) {
+        limbo.getClientChannelInitializer().initChannel(channel, proxyProtocol, false);
     }
 
     private static boolean enableCompress(ClientConnection connection) {
@@ -45,6 +47,8 @@ public final class AlixVelocityLimbo {
         Version version = Version.of(player.getProtocolVersion().getProtocol());
         var pipeline = channel.pipeline();
         pipeline.replace(READ_TIMEOUT, VELOCITY_TIMEOUT, DummyHandler.HANDLER);
+
+        LimboJoinProfiler.update(channel, ConnectionStage.SERVER_INIT_AFTER_LOGIN_SUCCESS);
 
         //Main.logInfo("initAfterLoginSuccess");
         //Main.logInfo("PIPELINE=" + pipeline.names());

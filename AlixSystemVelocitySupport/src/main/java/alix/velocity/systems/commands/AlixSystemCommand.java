@@ -1,6 +1,8 @@
 package alix.velocity.systems.commands;
 
+import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.connection.filters.GeoIPTracker;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
@@ -63,6 +65,60 @@ public final class AlixSystemCommand {
                     return SINGLE_SUCCESS;
                 })
         );
+
+        root.then(BrigadierCommand.literalArgumentBuilder("profilejoins")
+                .executes(context -> {
+                    CommandSource sender = context.getSource();
+                    LimboJoinProfiler.PROFILE_JOINS = !LimboJoinProfiler.PROFILE_JOINS;
+
+                    if (LimboJoinProfiler.PROFILE_JOINS)
+                        sendMessage(sender, "Enabled detailed join profiling, re-enter command to disable");
+                    else
+                        sendMessage(sender, "Disabled detailed join profiling");
+                    return SINGLE_SUCCESS;
+                })
+        );
+
+
+        root.then(BrigadierCommand.literalArgumentBuilder("panicmode")
+                // Default execution when no arguments are provided (/as panicmode)
+                .executes(context -> {
+                    CommandSource sender = context.getSource();
+                    if (PanicModeManager.activate("Manual trigger.")) {
+                        sendMessage(sender, "&aPanic mode has been manually enabled.");
+                    } else {
+                        sendMessage(sender, "&cPanic mode is already enabled!");
+                    }
+                    return SINGLE_SUCCESS;
+                })
+                // Subcommand for explicit "on" (/as panicmode on)
+                .then(BrigadierCommand.literalArgumentBuilder("on")
+                        .executes(context -> {
+                            CommandSource sender = context.getSource();
+                            if (PanicModeManager.activate("Manual trigger.")) {
+                                sendMessage(sender, "&aPanic mode has been manually enabled.");
+                            } else {
+                                sendMessage(sender, "&cPanic mode is already enabled!");
+                            }
+                            return SINGLE_SUCCESS;
+                        })
+                )
+                // Subcommand for explicit "off" (/as panicmode off)
+                .then(BrigadierCommand.literalArgumentBuilder("off")
+                        .executes(context -> {
+                            CommandSource sender = context.getSource();
+                            // Assuming PanicModeManager has a deactivate() method returning a boolean
+                            // You may need to remove the string argument if your deactivate method doesn't take a reason.
+                            if (PanicModeManager.deactivate("Manual trigger.")) {
+                                sendMessage(sender, "&aPanic mode has been manually disabled.");
+                            } else {
+                                sendMessage(sender, "&cPanic mode is already disabled!");
+                            }
+                            return SINGLE_SUCCESS;
+                        })
+                )
+        );
+
         if (devMode) {
             root.then(BrigadierCommand.literalArgumentBuilder("testdb")
                     .executes(context -> {
@@ -269,7 +325,7 @@ public final class AlixSystemCommand {
                                     data.setPassword(password);
                                     data.setLoginType(type);
                                     String passFormatted = "*".repeat(Math.max(0, password.length() - 3)) + password.substring(Math.max(0, password.length() - 3));
-                                    sendMessage(sender, "Successfully changed player " + data.getName() + " password to " + passFormatted + " with login type " + type);
+                                    sendMessage(sender, "Successfully changed player " + data.getName() + "'s password to " + passFormatted + " with login type " + type);
 
                                     if (data.getLoginParams().getExtraLoginType() != null) {
                                         sendMessage(sender, "&eAdditionally setting the player's extra login type to NONE to avoid issues.");
@@ -309,7 +365,7 @@ public final class AlixSystemCommand {
                                             data.setPassword(password);
                                             data.setLoginType(type);
                                             String passFormatted = "*".repeat(Math.max(0, password.length() - 3)) + password.substring(Math.max(0, password.length() - 3));
-                                            sendMessage(sender, "Successfully changed player " + data.getName() + " password to " + passFormatted + " with login type " + type);
+                                            sendMessage(sender, "Successfully changed player " + data.getName() + "'s password to " + passFormatted + " with login type " + type);
 
                                             if (data.getLoginParams().getExtraLoginType() != null) {
                                                 sendMessage(sender, "&eAdditionally setting the player's extra login type to NONE to avoid issues.");
@@ -380,14 +436,11 @@ public final class AlixSystemCommand {
                                         }
                                     }*/
 
-                                    // Async blocking request to external API
-                                    AlixScheduler.asyncBlocking(() -> {
-                                        var newPremiumData = PremiumUtils.requestPremiumData(target);
+                                    PremiumUtils.getOrRequestAndCacheData(null, target, newPremiumData -> {
                                         if (newPremiumData.getStatus().isUnknown()) {
                                             sendMessage(sender, "&cCould not determine player's " + target + " premium status in any way, the status cannot be set");
                                             return;
                                         }
-                                        PremiumDataCache.add(target, newPremiumData);
                                         if (newPremiumData.getStatus().isNonPremium()) {
                                             sendMessage(sender, "&cPlayer's " + target + " status api request returned NON_PREMIUM, and thus it cannot be set to PREMIUM.");
                                             return;
@@ -407,6 +460,7 @@ public final class AlixSystemCommand {
             CommandSource sender = context.getSource();
             sendMessage(sender, "");
             sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
+            sendMessage(sender, "&c/as panicmode [on/off] &7- Manually enables/disables Panic-Mode (only already-registered IPs can connect).");
             sendMessage(sender, "&c/as save_all_to_db &7- Saves all locally-stored data into an externally-defined database (if any).");
             sendMessage(sender, "&c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list. " +
                                 "Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.");

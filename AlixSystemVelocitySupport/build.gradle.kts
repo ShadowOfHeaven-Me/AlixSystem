@@ -57,7 +57,7 @@ repositories {
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
     //geyser/floodgate
-    maven ("https://repo.opencollab.dev/main")
+    maven("https://repo.opencollab.dev/main")
 }
 
 dependencies {
@@ -87,10 +87,10 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.36")
     annotationProcessor("org.projectlombok:lombok:1.18.36")
 
-    var srcDir = project.findProperty("velocity-sources-dir")
+    val srcDir = project.findProperty("velocity-sources-dir")
     //compileOnly(files("$srcDir\\Geyser-Velocity.jar"))
     //compileOnly(files("$srcDir\\floodgate-velocity.jar"))
-    compileOnly(files("$srcDir\\velocity-3.4.0-SNAPSHOT-469.jar"))
+    compileOnly(files("$srcDir\\velocity-3.5.0-SNAPSHOT-601.jar"))
     /*compileOnly("org.geysermc.geyser:api:2.9.0-SNAPSHOT")
     compileOnly("org.geysermc.floodgate:api:2.2.4-SNAPSHOT")*/
 
@@ -109,6 +109,20 @@ dependencies {
 
     compileOnly("io.netty:netty-all:4.1.24.Final")
 }
+
+if (project.findProperty("enable-preview")!! == "true") {
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("--enable-preview")
+    }
+    tasks.withType<Test>().configureEach {
+        jvmArgs("--enable-preview")
+    }
+
+    tasks.withType<JavaExec>().configureEach {
+        jvmArgs("--enable-preview")
+    }
+}
+
 /*
 publishing {
     publications {

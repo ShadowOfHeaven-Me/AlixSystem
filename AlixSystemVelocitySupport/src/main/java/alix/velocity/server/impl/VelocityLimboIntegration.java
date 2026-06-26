@@ -1,9 +1,12 @@
 package alix.velocity.server.impl;
 
+import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.floodgate.GeyserUtil;
-import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.Main;
+import alix.velocity.systems.channel.ServerChannelInitializer;
+import alix.velocity.utils.user.UserManager;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.messages.ChannelIdentifier;
@@ -17,9 +20,15 @@ import io.netty.util.AttributeKey;
 import org.jetbrains.annotations.NotNull;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.integration.LimboIntegration;
+import ua.nanit.limbo.integration.PreLoginInfo;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
+import ua.nanit.limbo.protocol.packets.login.PacketLoginStart;
+import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.server.Log;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public final class VelocityLimboIntegration extends LimboIntegration<ClientConnection> {
 
@@ -33,8 +42,37 @@ public final class VelocityLimboIntegration extends LimboIntegration<ClientConne
     @Override
     public void fireCustomPayloadEvent(ClientConnection connection, String channel, byte[] data) {
         AlixScheduler.async(() -> {
+            //rare, but could happen
+            if (!connection.getChannel().isOpen())
+                return;
+
             VelocityServer server = (VelocityServer) Main.PLUGIN.getServer();
-            Player player = server.getPlayer(connection.getUsername()).orElseThrow(() -> new AlixException("How"));
+            var bedrockUsername = GEYSER_UTIL.getCorrectUsername(connection.getChannel(), connection.getUsername());
+
+            Player player = server.getPlayer(bedrockUsername).orElse(null);
+
+            if (player == null && !bedrockUsername.equals(connection.getUsername()))
+                player = server.getPlayer(connection.getUsername()).orElse(null);
+
+            //last effort
+            if (player == null) {
+                for (var p : server.getAllPlayers()) {
+                    var c = PacketEvents.getAPI().getPlayerManager().getChannel(p);
+                    if (connection.getChannel().equals(c)) {
+                        player = p;
+                        break;
+                    }
+                }
+            }
+
+            //re-check, since absolutely no checks returned the player
+            if (player == null && !connection.getChannel().isOpen())
+                return;
+
+            if (player == null) {
+                Log.warning("Cannot propagate bedrock player " + bedrockUsername + "'s custom payload!");
+                return;
+            }
             server.getEventManager().fireAndForget(new PluginMessageEvent(player, ArbitrarySink.SINK, MinecraftChannelIdentifier.from(channel), data));
         });
     }
@@ -86,12 +124,41 @@ public final class VelocityLimboIntegration extends LimboIntegration<ClientConne
     }
 
     @Override
+    public boolean isProxyProtocol() {
+        return ServerChannelInitializer.PROXY_PROTOCOL;
+    }
+
+    @Override
+    public void invokeChannelInit(ClientConnection connection) {
+        ServerChannelInitializer.invokeOriginalChannelInit(connection.getChannel());
+    }
+
+    @Override
     public boolean isFloodgateNoCompressionPresent() {
         return this.geyserUtil.isFloodgatePresent();
     }
 
     public static UUID getLoginAssignedUUID(Channel channel) {
         return channel.hasAttr(JOINED_UUID) ? channel.attr(JOINED_UUID).get() : null;
+    }
+
+    static final class Packets {
+        static final PacketSnapshot
+                alreadyConnectedPacket = PacketPlayOutDisconnect.snapshot(Messages.get("already-connected"));
+    }
+
+    @Override
+    public void onLoginStart(ClientConnection connection, PacketLoginStart packet, Consumer<PreLoginInfo> consumer) {
+        var channel = connection.getChannel();
+        String packetUsername = packet.getUsername();
+        String serverUsername = this.geyserUtil.getCorrectUsername(channel, packetUsername);
+
+        if (!UserManager.addConnected(serverUsername, channel)) {
+            consumer.accept(disconnect(connection, Packets.alreadyConnectedPacket));
+            return;
+        }
+
+        super.onLoginStart(connection, packet, consumer);
     }
 
     /*@Override

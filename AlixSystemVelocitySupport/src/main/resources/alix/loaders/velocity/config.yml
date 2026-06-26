@@ -139,5 +139,10 @@ append-prefix: true
 
 #Config used for the very technical features of Alix
 
+#Define these explicitly if you ever encounter issues with server re-transfer
+#The domain/ip used to typically connect to your server
+transfer-hostname: ""
+#The port Velocity or some other most front proxy uses
+transfer-port:
 #Defines whether debug messages should be sent (usually helps the developer in identifying the source of an error)
 debug: false
