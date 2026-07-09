@@ -1,8 +1,12 @@
 package alix.common.antibot.epoll;
 
+import alix.common.antibot.epoll.TelemetryProfilerImpl.ConnectionRecord;
+
 interface AbstractTelemetryProfiler {
 
-    void enableSynSaving0(int serverFd);
+    void enableSynSaving(int serverFd);
+
+    ConnectionRecord record(int clientFd);
 
     void onConnection(int clientFd, byte[] addr);
 

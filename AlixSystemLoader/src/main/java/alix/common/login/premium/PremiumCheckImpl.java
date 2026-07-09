@@ -43,9 +43,12 @@ final class PremiumCheckImpl {
 
     private enum NameCheck {
 
-        ASHCON(PremiumCheckImpl::getPremiumData_Ashcon),
-        PLAYER_DB(PremiumCheckImpl::getPremiumData_PlayerDB),
-        MOJANG(PremiumCheckImpl::getPremiumData_Mojang);
+        //https://api.ashcon.app/mojang/v2/user/Corrupted_Waves
+        //missing!
+        //ASHCON(PremiumCheckImpl::getPremiumData_Ashcon),
+        //keep mojang as the primary provider
+        MOJANG(PremiumCheckImpl::getPremiumData_Mojang),
+        PLAYER_DB(PremiumCheckImpl::getPremiumData_PlayerDB);
 
         private final Function<String, PremiumData> nameCheck;
 

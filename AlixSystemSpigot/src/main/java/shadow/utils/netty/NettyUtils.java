@@ -7,11 +7,16 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import shadow.Main;
 import shadow.utils.netty.opt.PacketFactory;
 import shadow.utils.netty.unsafe.raw.RawAlixPacket;
 import shadow.utils.users.types.AlixUser;
+import ua.nanit.limbo.NanoLimbo;
+import ua.nanit.limbo.connection.UnsafeCloseFuture;
 
 public final class NettyUtils {
 
@@ -64,9 +69,9 @@ public final class NettyUtils {
         return promise;
     }
 
-    public static void closeAfterConstSendRaw(Channel channel, ByteBuf constBuf) {
+    /*public static void closeAfterConstSendRaw(Channel channel, ByteBuf constBuf) {
         writeAndFlushConstRaw(channel, constBuf).addListener(ChannelFutureListener.CLOSE);
-    }
+    }*/
 
     //fix sending invalid packets for ping
     @ScheduledForFix
@@ -77,13 +82,19 @@ public final class NettyUtils {
     //fix sending invalid packets for ping
     @ScheduledForFix
     public static void closeAfterConstSend(ChannelHandlerContext silentContext, ByteBuf constBuf) {
-        writeAndFlushConst(silentContext, constBuf).addListener(ChannelFutureListener.CLOSE);
+        if (NanoLimbo.debugAllDisconnects)
+            new Exception("closeAfterConstSend").printStackTrace();
+
+        writeAndFlushConst(silentContext, constBuf).addListener(UnsafeCloseFuture.INSTANCE);
     }
 
     //fix sending invalid packets for ping
     @ScheduledForFix
     public static void closeAfterDynamicSend(Channel channel, ByteBuf dynamicBuf) {
-        getSilentContext(channel).writeAndFlush(dynamicBuf).addListener(ChannelFutureListener.CLOSE);
+        if (NanoLimbo.debugAllDisconnects)
+            new Exception("closeAfterConstSend").printStackTrace();
+
+        getSilentContext(channel).writeAndFlush(dynamicBuf).addListener(UnsafeCloseFuture.INSTANCE);
     }
 
 /*    public static ByteBuf newBuffer(int initialCapacity) {

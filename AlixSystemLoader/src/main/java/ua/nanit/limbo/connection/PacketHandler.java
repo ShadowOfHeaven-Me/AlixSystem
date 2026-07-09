@@ -135,22 +135,19 @@ public final class PacketHandler {
 
     private void handleLoginWithInfo0(ClientConnection conn, PacketLoginStart packet, PreLoginInfo info) {
         LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.VERDICT_REACHED, info.result().toString());
-        boolean recode;
 
         //Intention hide
         boolean isTransfer = conn.getHandshakePacket().isTransfer();
-        if (isTransfer && info.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER) {
+        if (isTransfer && info.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER)
             conn.getHandshakePacket().setLoginIntention();
-            recode = true;
-        } else recode = info.recode();
 
         //set the "proper" username here
         conn.getGameProfile().setUsername(packet.getUsername());
 
-        conn.runInEventLoop(() -> this.handleVerdict0(conn, packet, info, recode));
+        conn.runInEventLoop(() -> this.handleVerdict0(conn, packet, info));
     }
 
-    private void handleVerdict0(ClientConnection conn, PacketLoginStart packet, PreLoginInfo info, boolean recode) {
+    private void handleVerdict0(ClientConnection conn, PacketLoginStart packet, PreLoginInfo info) {
         switch (info.result()) {
             case DISCONNECTED -> conn.getFrameDecoder().releaseCollected();
             case CONNECT_TO_MAIN_SERVER -> {

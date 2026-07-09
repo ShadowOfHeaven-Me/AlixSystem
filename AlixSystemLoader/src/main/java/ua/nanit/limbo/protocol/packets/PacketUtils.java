@@ -4,6 +4,7 @@ import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.FastNettyUtils;
 import alix.common.utils.netty.WrapperUtils;
 import alix.common.utils.other.throwable.AlixError;
+import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import lombok.SneakyThrows;
@@ -88,8 +89,13 @@ public final class PacketUtils {
         channel.flush();
     }
 
+    public static void closeWith(User user, PacketSnapshot packet, CipherHandler cipher) {
+        closeWith((Channel) user.getChannel(), Version.of(user.getClientVersion().getProtocolVersion()), packet, cipher);
+    }
+
     public static void closeWith(Channel channel, Version version, PacketSnapshot packet, CipherHandler cipher) {
         PacketDuplexHandler.write0(channel, packet, cipher, version, channel.newPromise()).addListener(UnsafeCloseFuture.INSTANCE);
+        channel.unsafe().flush();//not gonna worry about FCH
     }
 
     public static ByteBuf constLoginDisconnect(Component reason) {

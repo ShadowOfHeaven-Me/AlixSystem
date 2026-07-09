@@ -8,7 +8,8 @@ public enum FireWallType {
 
     NOT_USED,
     NETTY,
-    INTERNAL_NIO_INTERCEPTOR,
+    //unsupported
+    //INTERNAL_NIO_INTERCEPTOR,
     FAST_UNSAFE_EPOLL,
     OS_IPSET;
 

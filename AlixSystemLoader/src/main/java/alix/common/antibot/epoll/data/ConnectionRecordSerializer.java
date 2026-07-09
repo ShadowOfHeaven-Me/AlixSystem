@@ -1,4 +1,4 @@
-package alix.common.antibot.epoll;
+package alix.common.antibot.epoll.data;
 
 import alix.common.antibot.epoll.TelemetryProfilerImpl.ConnectionRecord;
 import com.google.gson.JsonElement;
@@ -19,7 +19,7 @@ final class ConnectionRecordSerializer implements JsonSerializer<ConnectionRecor
         obj.addProperty("nextState", src.nextState);
         obj.addProperty("l7DeltaT", src.getL7DeltaT());
 
-        obj.add("evaluation", context.serialize(src.evaluation));
+        //obj.add("evaluation", context.serialize(src.evaluation));
         obj.add("synSignature", context.serialize(src.synSignature));
         obj.add("stats", context.serialize(src.stats));
         obj.add("tcpSamples", context.serialize(src.tcpSamples));

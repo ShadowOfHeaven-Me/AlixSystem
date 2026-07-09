@@ -27,18 +27,7 @@ repositories {
     maven("https://repo.papermc.io/repository/maven-public/")
     //geyser/floodgate
     maven("https://repo.opencollab.dev/main")
-    /*maven {
-        name = "opencollabRepositoryMain"
-        url = uri("https://repo.opencollab.dev/main")
-    }*/
-    //bungeecord
-    //maven("https://oss.sonatype.org/content/repositories/snapshots")
-
 }
-/*tasks.shadowJar {
-    val prefix = "alix.libs"
-    relocate("org.mariadb.jdbc", "$prefix.org.mariadb.jdbc")
-}*/
 
 tasks.register("prepareKotlinBuildScriptModel") {}
 
@@ -60,18 +49,6 @@ dependencies {
     implementation("org.ow2.asm:asm-tree:9.7")
     implementation("net.bytebuddy:byte-buddy-agent:1.14.18")
     implementation("org.roaringbitmap:RoaringBitmap:1.6.9")
-
-    //var srcPath = "C:\\Users\\Kubia\\Desktop\\alix sources\\common"
-
-    /*api(files("$srcPath\\core-3.4.0.jar"))
-    api(files("$srcPath\\javase-3.4.0.jar"))
-    api(files("$srcPath\\totp-1.0.jar"))
-    api(files("$srcPath\\zxing-1.1.1.jar"))*/
-    //can't find the internals
-    //compileOnly(files("$srcPath\\velocity-3.4.0-SNAPSHOT-449.jar"))
-
-
-    //compileOnlyApi("org.geysermc.geyser:api:2.4.2-SNAPSHOT")
 
     compileOnlyApi("org.geysermc.geyser:api:2.9.0-SNAPSHOT")
     compileOnlyApi("org.geysermc.floodgate:api:2.2.4-SNAPSHOT")
@@ -103,11 +80,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.36")
     compileOnly("io.netty:netty-all:4.1.24.Final")
     compileOnly("com.google.code.gson:gson:2.12.1")
-
-    // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
-    //compileOnly("com.velocitypowered:velocity-native:3.1.0") HOW IS THIS NOT FOUND
 }
-
 
 if (project.findProperty("enable-preview")!! == "true") {
     tasks.withType<JavaCompile>().configureEach {
@@ -123,10 +96,7 @@ if (project.findProperty("enable-preview")!! == "true") {
 } else {
     //cuz they rely on --enable-preview
     tasks.compileJava {
-        exclude("alix/common/antibot/epoll/TelemetryProfilerImpl.java")
-        exclude("alix/common/antibot/epoll/TrafficHeuristics.java")
-        exclude("alix/common/antibot/epoll/ConnectionRecordSerializer.java")
-        exclude("alix/common/antibot/epoll/ConnectionStats.java")
+        exclude("alix/common/antibot/epoll/syn/SynJ22Impl.java")
     }
 }
 tasks.test {

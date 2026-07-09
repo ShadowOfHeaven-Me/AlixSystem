@@ -1,6 +1,8 @@
 package alix.common.utils.collections.fastutil;
 
 
+import io.netty.util.internal.PlatformDependent;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,22 +78,29 @@ public final class ConcurrentInt62Set {
 
         private void lockCtrl() {
             int ctrl;
-            while (!BUCKET_CTRL.compareAndSet(this, ctrl = this.ctrl, -ctrl - 1));
-            while (this.ctrl != -1) Thread.yield();
+            while (!BUCKET_CTRL.compareAndSet(this, ctrl = this.ctrl, -ctrl - 1)) ;
+            while (this.ctrl != -1) this.yieldOrSpinWait();
         }
 
         private void decrementCtrl() {
             int ctrl;
-            while (!BUCKET_CTRL.compareAndSet(this, ctrl = this.ctrl, ctrl < 0 ? ctrl + 1 : ctrl - 1));
+            while (!BUCKET_CTRL.compareAndSet(this, ctrl = this.ctrl, ctrl < 0 ? ctrl + 1 : ctrl - 1)) ;
         }
 
         private void incrementCtrl() {
             int ctrl;
             do {
-                while ((ctrl = this.ctrl) < 0) {
-                    Thread.yield();
-                }
+                while ((ctrl = this.ctrl) < 0) this.yieldOrSpinWait();
             } while (!BUCKET_CTRL.compareAndSet(this, ctrl, ctrl + 1));
+        }
+
+        private static final boolean HAS_SPIN_WAIT = PlatformDependent.javaVersion() >= 9;
+
+        private void yieldOrSpinWait() {
+            if (HAS_SPIN_WAIT)
+                Thread.onSpinWait();
+            else
+                Thread.yield();
         }
 
         boolean contains(long value) {

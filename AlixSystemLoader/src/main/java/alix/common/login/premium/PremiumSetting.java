@@ -20,9 +20,9 @@ public enum PremiumSetting {
     ALWAYS;
 
 
-    public static void performPremiumCheckNullData(Channel channel, String name, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version,
+    public static void performPremiumCheckNullData(Channel channel, String name, UUID uuid, ClientVersion version,
                                                    Consumer<PremiumData> consumer) {
-        if (!PremiumSetting.requirePremium(false, uuid, clientPublicKey, version)) {
+        if (!PremiumSetting.requirePremium(false, uuid, version)) {
             consumer.accept(PremiumData.UNKNOWN);
             return;
         }
@@ -30,14 +30,14 @@ public enum PremiumSetting {
         PremiumUtils.getOrRequestAndCacheData(channel, null, name, consumer);
     }
 
-    public static void performPremiumCheck(Channel channel, PersistentUserData data, String name, UUID uuid, ClientPublicKey clientPublicKey,
+    public static void performPremiumCheck(Channel channel, PersistentUserData data, String name, UUID uuid,
                                            ClientVersion version, Consumer<PremiumData> consumer) {
         switch (data.getPremiumData().getStatus()) {
             case PREMIUM, NON_PREMIUM:
                 consumer.accept(data.getPremiumData());
                 return;
             case UNKNOWN:
-                if (!PremiumSetting.requirePremium(data, uuid, clientPublicKey, version)) {
+                if (!PremiumSetting.requirePremium(data, uuid, version)) {
                     consumer.accept(PremiumData.UNKNOWN);
                     return;
                 }
@@ -63,12 +63,12 @@ public enum PremiumSetting {
         }
     }
 
-    public static boolean requirePremium(PersistentUserData data, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
-        return requirePremium(PersistentUserData.isRegistered(data), uuid, clientPublicKey, version);
+    public static boolean requirePremium(PersistentUserData data, UUID uuid, ClientVersion version) {
+        return requirePremium(PersistentUserData.isRegistered(data), uuid, version);
     }
 
-    public static boolean requirePremium(boolean isRegistered, UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
-        return requirePremium(isRegistered, PremiumUtils.suggestsStatus(uuid, clientPublicKey, version));
+    public static boolean requirePremium(boolean isRegistered, UUID uuid, ClientVersion version) {
+        return requirePremium(isRegistered, PremiumUtils.suggestsStatus(uuid, version));
     }
 
     public static boolean requirePremium(boolean isRegistered, PremiumStatus suggestsStatus) {

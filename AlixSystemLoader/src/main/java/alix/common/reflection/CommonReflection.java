@@ -14,11 +14,11 @@ public final class CommonReflection {
             method.setAccessible(true);
             return method;
         } catch (Exception e) {
-            return getDeclaredMethod(clazz, name, params);
+            return getDeclaredMethodAccessible(clazz, name, params);
         }
     }
 
-    public static Method getDeclaredMethod(Class<?> clazz, String name, Class<?>... params) {
+    public static Method getDeclaredMethodAccessible(Class<?> clazz, String name, Class<?>... params) {
         try {
             Method method = clazz.getDeclaredMethod(name, params);
             method.setAccessible(true);

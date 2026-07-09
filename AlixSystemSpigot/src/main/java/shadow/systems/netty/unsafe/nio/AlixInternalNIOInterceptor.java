@@ -1,3 +1,4 @@
+/*
 package shadow.systems.netty.unsafe.nio;
 
 import alix.common.antibot.firewall.FireWallManager;
@@ -141,4 +142,4 @@ public final class AlixInternalNIOInterceptor {
 
     public static void init() {
     }
-}
+}*/

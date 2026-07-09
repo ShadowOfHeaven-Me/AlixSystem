@@ -26,6 +26,8 @@ public final class UUIDUtil {
 
     private UUIDUtil() {}
 
+    //For both, Velocity & Spigot forks
+    //https://github.com/PaperMC/Velocity/blob/1edab1411d3afb95cb6f5c7c8227fc41f1260506/api/src/main/java/com/velocitypowered/api/util/UuidUtils.java#L52
     public static UUID getOfflineModeUuid(String username) {
         return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username)
                 .getBytes(StandardCharsets.UTF_8));

@@ -16,7 +16,6 @@ import alix.common.utils.file.managers.IpsCacheFileManager;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.channel.Channel;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -37,16 +36,13 @@ import shadow.utils.users.Verifications;
 import shadow.utils.world.AlixWorld;
 import shadow.utils.world.AlixWorldHolder;
 
+import java.util.concurrent.TimeUnit;
+
 import static shadow.utils.main.AlixUtils.*;
 
 public final class OfflineExecutors extends UniversalExecutors {
 
-    //private final LoginAuthenticator authenticator = PremiumAutoIn.support;
-    //private final ConnectionFilter[] filters = AlixHandler.getConnectionFilters();
     private final String playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
-    //serverIsFull = Messages.get("server-is-full");
-    //private static final BanList ipBanList = ConnectionAlgorithm.ipBanList;
-    private final boolean onlineMode = Bukkit.getServer().getOnlineMode();
     private static final boolean canOverride = assignPremiumUUID && ServerEnvironment.isPaper() && PaperReflection.isAvailable();
 
     //Pre-to-join executors - start
@@ -137,9 +133,9 @@ public final class OfflineExecutors extends UniversalExecutors {
             return;
         }
 
-        if (this.onlineMode || VerifiedCache.removeAndCheckIfEquals(name, user)) {
+        if (ONLINE_MODE || VerifiedCache.removeAndCheckIfEquals(name, user)) {
             PremiumData premiumData = PremiumUtils.getOrRequestAndCacheDataSync(null, name);
-            if (!this.onlineMode && !premiumData.getStatus().isPremium()) {
+            if (!ONLINE_MODE && !premiumData.getStatus().isPremium()) {
                 Main.logWarning("PremiumData " + premiumData.getStatus() + " clarified per PremiumDataCache is not premium, but was in the VerifiedCache! Report this immediately!");
             }
 
@@ -221,17 +217,23 @@ public final class OfflineExecutors extends UniversalExecutors {
         super.onChat(e);
     }
 
+    static {
+        AlixScheduler.repeatAsync(OfflineExecutors::saveFiles, 1, TimeUnit.MINUTES);
+    }
+
+    static void saveFiles() {
+        UserFileManager.onAsyncSave();
+        OriginalLocationsManager.onAsyncSave();
+        FireWallManager.onAsyncSave();
+        IpsCacheFileManager.save();
+        UserTokensFileManager.save();
+        AllowListFileManager.save();
+    }
+
     @EventHandler
     public void onSave(WorldSaveEvent e) {
         if (userDataAutoSave && AlixWorldHolder.isMain(e.getWorld())) {
-            AlixScheduler.async(() -> {
-                UserFileManager.onAsyncSave();
-                OriginalLocationsManager.onAsyncSave();
-                FireWallManager.onAsyncSave();
-                IpsCacheFileManager.save();
-                UserTokensFileManager.save();
-                AllowListFileManager.save();
-            });
+            AlixScheduler.async(OfflineExecutors::saveFiles);
         }
     }
 }

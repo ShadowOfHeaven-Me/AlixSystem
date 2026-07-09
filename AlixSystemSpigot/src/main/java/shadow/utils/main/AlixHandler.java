@@ -1,6 +1,8 @@
 package shadow.utils.main;
 
 import alix.api.event.types.AuthReason;
+import alix.common.antibot.epoll.Telemetry;
+import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
@@ -75,9 +77,19 @@ public final class AlixHandler {
     private static final long teleportDelay = Main.config.getLong("user-teleportation-delay");
     private static final boolean isTeleportDelayed = teleportDelay > 0;
     private static final String delayedTeleportMessage = Messages.get("user-delayed-teleportation", formatMillis(teleportDelay));
-    //public static final ChannelFuture SERVER_CHANNEL_FUTURE = getServerChannelFuture();
-    public static final Channel SERVER_CHANNEL = getServerChannelFuture().channel();
-    public static final boolean isEpollTransport = SERVER_CHANNEL.getClass() == EpollServerSocketChannel.class;
+    public static final List<Channel> SERVER_CHANNELS = getServerChannels();
+    public static final boolean isEpollTransport = SERVER_CHANNELS.get(0).getClass() == EpollServerSocketChannel.class;
+
+    public static void initSynSaving() {
+        if (!Telemetry.ENABLED)
+            return;
+
+        SERVER_CHANNELS.forEach(channel -> {
+            if (channel instanceof EpollServerSocketChannel epoll) {
+                TelemetryProfiler.enableSynSaving(epoll.fd().intValue());
+            }
+        });
+    }
 
     public static void safeKick(Player player, String msg) {
         safeKick0(player, AlixFormatter.translateColors(msg));
@@ -133,46 +145,8 @@ public final class AlixHandler {
         user.writeAndFlushDynamicSilently(new WrapperPlayServerRemoveEntityEffect(user.getPlayer().getEntityId(), PotionTypes.BLINDNESS));
     }
 
-    /*public static void resetLoginEffectPackets(UnverifiedUser user) {
-        Player player = user.getPlayer();
-
-        //Object removeBlindnessPacket = outRemoveEntityEffectPacketConstructor.newInstance(player.getEntityId(), BLINDNESS_MOB_EFFECT_LIST);
-//show players in tab
-        ByteBuf[] addPlayersBuffers = OutPlayerInfoPacketConstructor.construct_ADD_OF_ALL_VISIBLE(user.getPlayer(), user.silentContext());
-        //reset blindness effect
-        ByteBuf removeBlindnessBuffer = user.blindnessSent ? NettyUtils.dynamic(new WrapperPlayServerRemoveEntityEffect(player.getEntityId(), PotionTypes.BLINDNESS), user.silentContext()) : null;
-        //synchronize the tab information for the unverified user
-        user.getChannel().eventLoop().execute(() -> {
-            try {
-                for (ByteBuf buf : addPlayersBuffers) user.writeSilently(buf);
-                if (removeBlindnessBuffer != null) user.writeSilently(removeBlindnessBuffer);
-                user.flush();
-            } catch (Throwable e) {
-                Main.logError("No jak chuj coś tu nie działa");
-                e.printStackTrace();
-            }
-        });
-
-        //show the verified users the unverified user in tab
-        ByteBuf[] addUnvPlayerBuffersConst = OutPlayerInfoPacketConstructor.constructConst_ADD_OF_ONE_VISIBLE(user.reetrooperUser(), user.getPlayer());
-
-        for (AlixUser u : UserManager.users())
-            if (u instanceof VerifiedUser && OutPlayerInfoPacketConstructor.isVisible(((VerifiedUser) u).getPlayer(), player)) {
-                for (ByteBuf buf : addUnvPlayerBuffersConst) u.writeConstSilently(buf);
-                u.flush();
-            }
-
-        for (ByteBuf buf : addUnvPlayerBuffersConst) buf.unwrap().release();
-    }*/
-
     private static final boolean sendBlindness = CaptchaVisualType.shouldSendBlindness();
-    //private static final ByteBuf TIME_NIGHT = NettyUtils.constBuffer(new WrapperPlayServerTimeUpdate(0, 18000));
 
-/*
-    static {
-        Main.logError("BLINDNESS " + sendBlindness);
-    }
-*/
 
     private static float getScope(double level) {
         if (level < 1 || level > 10) {
@@ -202,14 +176,6 @@ public final class AlixHandler {
 
     public static void sendLoginEffectsPackets(UnverifiedUser user) {
         if (!user.hasCompletedCaptcha()) {
-            /*if (true) {//for testing
-                user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
-                user.writeAndFlushDynamicSilently(new WrapperPlayServerPlayerAbilities(true, true, true, false, 0.05f, 0.1f));
-                return;
-            }*/
-
-            //user.writeDynamicSilently(new WrapperPlayServerEntityAnimation(user.getPlayer().getEntityId(), WrapperPlayServerEntityAnimation.EntityAnimationType.SWING_MAIN_ARM));
-
             if (CaptchaVisualType.hasPositionLock()) {
                 user.writeConstSilently(OutGameStatePacketConstructor.SPECTATOR_GAMEMODE_PACKET);
                 user.writeConstSilently(LazyLoad.SPAWN_ENTITY);
@@ -242,11 +208,7 @@ public final class AlixHandler {
         user.blindnessSent = true;
     }
 
-/*    private static void initializeAlixInterceptor() {
-        AlixInterceptor.injectIntoServerPipeline(SERVER_CHANNEL.pipeline());
-    }*/
-
-    private static ChannelFuture getServerChannelFuture() {
+    private static List<Channel> getServerChannels() {
         try {
             Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
             Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
@@ -268,8 +230,13 @@ public final class AlixHandler {
             for (Field f : serverConnectionClass.getDeclaredFields()) {
                 if (f.getType() == List.class && ((ParameterizedType) f.getGenericType()).getActualTypeArguments()[0] == ChannelFuture.class) {//we know it's a parameterized type since it's a List
                     f.setAccessible(true);
-                    List<ChannelFuture> futures = (List<ChannelFuture>) f.get(serverConnection);//it's a List only because of reused code from minecraft singleplayer (info from Emily)
-                    return futures.get(0);//it should contain only one handler
+
+                    //it's a List only because of reused code from minecraft singleplayer (info from Emily)
+                    List<ChannelFuture> futures = (List<ChannelFuture>) f.get(serverConnection);
+
+                    //it should contain only one handler
+                    //it should, however, be possible for there to be more than one future,
+                    return futures.stream().map(ChannelFuture::channel).toList();
                 }
             }
             throw new AlixError("No Server Channel found! - " + Arrays.toString(serverConnectionClass.getDeclaredFields()));
@@ -291,79 +258,15 @@ public final class AlixHandler {
         } else MethodProvider.teleportAsync(player, loc);
     }
 
-/*    public static ConnectionFilter[] getConnectionFilters() {//set up in the most efficient way
-        List<ConnectionFilter> filters = new ArrayList<>();
-        if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.instance);
-        if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
-        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.instance);
-        if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
-        return filters.toArray(new ConnectionFilter[0]);
-    }*/
-
-    /*public static ConnectionFilter[] getConnectionFilters() {//set up in the most efficient way
-        List<ConnectionFilter> filters = new ArrayList<>();
-        //if (ServerPingManager.isRegistered()) filters.add(ServerPingManager.INSTANCE);
-        //Moved to AlixChannelHandler
-        //if (Main.config.getBoolean("prevent-first-time-join")) filters.add(new ConnectionManager());
-        //if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
-        if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
-        return filters.toArray(new ConnectionFilter[0]);
-    }
-
-    public static ConnectionFilter[] getPremiumConnectionFilters() {//set up in the most efficient way
-        List<ConnectionFilter> filters = new ArrayList<>();
-        if (maximumTotalAccounts > 0) filters.add(GeoIPTracker.INSTANCE);
-        if (Main.config.getBoolean("anti-vpn")) filters.add(AntiVPN.INSTANCE);
-        return filters.toArray(new ConnectionFilter[0]);
-    }*/
-
     public static void initExecutors(PluginManager pm) {
-        //if (isOfflineExecutorRegistered) {
         pm.registerEvents(new OfflineExecutors(), Main.plugin);
         pm.registerEvents(
                 AlixCommonUtils.isValidClass("com.destroystokyo.paper.event.player.PlayerSetSpawnEvent")
                         ? new PaperSpawnExecutors() : new SpigotSpawnExecutors(), Main.plugin);
 
-        //initializeAlixInterceptor();
-        //PaperAccess.initializeFireWall();
-                /*if (ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER)
-                    PaperAccess.initializeFireWall();
-                else if (Dependencies.isPacketEventsPresent) PacketEventsAccess.initializeFireWall();
-                else {
-                    Main.logError("[---------------------------------------------------------------------------------------------------]");
-                    Main.logError("                        +=======================================+");
-                    Main.logError("                        |                " + AlixLoggerProvider.wrap("WARNING", ConsoleColor.BRIGHT_RED) + "                |");
-                    Main.logError("                        +=======================================+");
-                    Main.logError("");
-                    Main.logError("                      Unable to initialize the FireWall Protection!");
-                    Main.logError("Either switch to " + AlixLoggerProvider.wrap("Paper", ConsoleColor.BRIGHT_CYAN) + " (server software) or install " + AlixLoggerProvider.wrap("PacketEvents", ConsoleColor.BRIGHT_CYAN) + " if you wish to use this function!");
-                    Main.logError("                   If you're absolutely sure you don't want to use this function,");
-                    Main.logError("                         set 'antibot-service' in config.yml to false.");
-                    Main.logError("");
-                    Main.logError("[---------------------------------------------------------------------------------------------------]");
-                }*/
-
-            /*if (Dependencies.isPacketEventsPresent) new PacketEventsListener();
-            else */
         pm.registerEvents(new GUIExecutors(), Main.plugin);
-            /*if (anvilPasswordGui) {
-                pm.registerEvents(new AnvilGuiExecutors(), Main.plugin);
-                Main.logError("drftgyhjuik");
-            }*/
         if (ServerPingManager.isRegistered())
             pm.registerEvents(new ServerPingListener(), Main.plugin);
-        /*            if (requireCaptchaVerification) {
-         *//*if(ServerEnvironment.getEnvironment() == ServerEnvironment.PAPER) {
-                    Main.logInfo("Enabling Async Tab Completion support.");
-                    pm.registerEvents(new PaperTabCompletionExecutors(), Main.plugin);
-                } else *//*
-                //pm.registerEvents(new BukkitTabCompletionExecutors(), Main.plugin);
-            }*/
-
-        //Listener listener = PremiumAutoIn.getAutoLoginListener();
-
-        //if (listener != null) pm.registerEvents(listener, Main.plugin);
-        //} else pm.registerEvents(new OnlineExecutors(), Main.plugin);
     }
 
     public static void updateConsoleFilter() {
@@ -387,7 +290,6 @@ public final class AlixHandler {
 
     public static void initializeServerPingManager() {
         ServerPingManager.init();
-        //JavaScheduler.repeatAsync(ServerPingManager::clear, 10, TimeUnit.MINUTES);
     }
 
     private static final ByteBuf

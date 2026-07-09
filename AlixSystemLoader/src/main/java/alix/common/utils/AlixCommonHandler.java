@@ -52,8 +52,7 @@ public final class AlixCommonHandler {
     }
 
     public static void getPreLoginVerdict(Channel channel, String nameSent, String nameRefactored, PersistentUserData data,
-                                          boolean deemedPremium, boolean isBedrock, boolean proxyProtocol,
-                                          Consumer<PreLoginVerdict> consumer) {
+                                          boolean deemedPremium, boolean isBedrock, Consumer<PreLoginVerdict> consumer) {
         LimboJoinProfiler.update(channel, ConnectionStage.VERDICT_REQUESTED);
 
         if (data == null && validateName && (nameSent.length() > 16 || nameSent.isEmpty() || !NAME_PATTERN.matcher(nameSent).matches())) {
@@ -68,7 +67,7 @@ public final class AlixCommonHandler {
         //AlixScheduler.async(() -> (?)
         InetAddress address = AlixCommonUtils.getAddress(channel);
 
-        if (antibotService && !proxyProtocol)
+        if (antibotService)// && !proxyProtocol)
             ConnectionThreadManager.onJoinAttempt(nameRefactored, address);
 
         if (data != null) {
@@ -101,20 +100,20 @@ public final class AlixCommonHandler {
         }
         LimboJoinProfiler.update(channel, ConnectionStage.INDEX_PASSED);
 
-        if (!renamed && !proxyProtocol && GeoIPTracker.disallowJoin(address, nameRefactored)) {
+        if (!renamed && GeoIPTracker.disallowJoin(address, nameRefactored)) {//&& !proxyProtocol
             consumer.accept(PreLoginVerdict.DISALLOWED_MAX_ACCOUNTS_REACHED);
             return;
         }
 
         LimboJoinProfiler.update(channel, ConnectionStage.TRACKER_PASSED);
 
-        if ((!isBedrock || isBedrock && antiVpnIncludeBedrock) && !proxyProtocol) {
+        if ((!isBedrock || isBedrock && antiVpnIncludeBedrock)) {// && !proxyProtocol) {
             AntiVPN.disallowJoin(channel, address, nameRefactored, isProxy -> {
                 if (LimboJoinProfiler.PROFILE_JOINS)
                     LimboJoinProfiler.update(channel, ConnectionStage.VPN_EVALUATED, isProxy.toString());
                 consumer.accept(isProxy ? PreLoginVerdict.DISALLOWED_VPN_DETECTED : PreLoginVerdict.ALLOWED);
             });
-        }
+        } else consumer.accept(PreLoginVerdict.ALLOWED);
     }
 
     public static boolean preferDirectBufs() {

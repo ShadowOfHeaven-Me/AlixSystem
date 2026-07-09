@@ -12,14 +12,17 @@ public final class SpigotEncryption {
         return switch (data.getPremiumData().getStatus()) {
             case NON_PREMIUM -> false;
             case PREMIUM -> true;
-            case UNKNOWN -> isOnlineEncryptionEnabled(data);
+            case UNKNOWN -> isOnlineEncryptionEnabled(channel(data));
         };
     }
 
-    public static Boolean isOnlineEncryptionEnabled(PersistentUserData data) {
+    public static Channel channel(PersistentUserData data) {
         var player = Bukkit.getPlayer(data.getName());
         if (player == null) return null;
-        Channel channel = (Channel) PacketEvents.getAPI().getPlayerManager().getChannel(player);
-        return channel.pipeline().context("decrypt") != null;
+        return (Channel) PacketEvents.getAPI().getPlayerManager().getChannel(player);
+    }
+
+    public static Boolean isOnlineEncryptionEnabled(Channel channel) {
+        return channel == null ? null : channel.pipeline().context("decrypt") != null;
     }
 }

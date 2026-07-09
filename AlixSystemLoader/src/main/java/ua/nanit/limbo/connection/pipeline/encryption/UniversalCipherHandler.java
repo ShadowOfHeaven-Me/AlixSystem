@@ -61,6 +61,7 @@ final class UniversalCipherHandler implements CipherHandler {
     private static String encoderName() {
         return switch (ServerEnvironment.getEnvironment()) {
             case VELOCITY -> "cipher-encoder";
+            case PAPER, SPIGOT -> "encrypt";
             default -> throw new AlixError("ServerEnvironment.getEnvironment()=" + ServerEnvironment.getEnvironment());
         };
     }

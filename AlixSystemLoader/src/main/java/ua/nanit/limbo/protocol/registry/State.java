@@ -357,7 +357,7 @@ public enum State {
 
             this.register0(
                     packet,
-                    v -> map.get(v).getNativePacketId(),
+                    v -> map.get(v).getPacketTypeData().getPacketType().getId(v.getClientVersion()),
                     classes
             );
         }

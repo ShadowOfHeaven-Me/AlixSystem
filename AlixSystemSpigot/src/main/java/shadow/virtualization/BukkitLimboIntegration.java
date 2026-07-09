@@ -8,6 +8,8 @@ import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.systems.netty.AlixInterceptor;
+import shadow.utils.main.AlixHandler;
+import shadow.utils.main.AlixUtils;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -45,8 +47,10 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
     @Override
     public void onLoginStart(ClientConnection connection, PacketLoginStart packet, Consumer<PreLoginInfo> consumer) {
         super.onLoginStart(connection, packet, result -> {
-            if (result.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER)
+            if (result.result() == PreLoginResult.CONNECT_TO_MAIN_SERVER) {
+                AlixChannelHandler.assignHandshakeHostname(connection.getChannel(), connection.getHandshakePacket());
                 AlixChannelHandler.assignLoginUUID(connection.getChannel(), packet);
+            }
 
             consumer.accept(result);
         });
@@ -115,8 +119,17 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
     }
 
     @Override
+    public boolean isEpoll() {
+        return AlixHandler.isEpollTransport;
+    }
+
+    @Override
+    public boolean isOnlineMode() {
+        return AlixUtils.ONLINE_MODE;
+    }
+
+    @Override
     public void onHandshake(ClientConnection connection, PacketHandshake handshake) {
-        AlixChannelHandler.onHandshake(connection.getChannel(), handshake);
     }
 
     /*private void join(ClientConnection connection, PacketLoginStart packet, boolean[] recode) {

@@ -117,15 +117,6 @@ public final class PersistentUserData implements AlixUserData {
 
     private static void renamedData(String newName, PersistentUserData old) {
         new PersistentUserData(newName, old);
-        /*var data = new PersistentUserData(newName, old.ip, old.getPassword());
-        data.setLastSuccessfulLogin(old.getLastSuccessfulLogin());
-        data.setLoginType(old.getLoginType());
-        data.setPremiumData(old.getPremiumData());
-
-        data.getLoginParams().setExtraLoginType(old.getLoginParams().getExtraLoginType());
-        data.getLoginParams().setAuthSettings(old.getLoginParams().getAuthSettings());
-        data.getLoginParams().setExtraPassword(old.getLoginParams().getExtraPassword());
-        data.getLoginParams().setHasProvenAuthAccess(old.getLoginParams().hasProvenAuthAccess());*/
     }
 
     public static PremiumData getPremiumData(PersistentUserData data) {
@@ -200,6 +191,10 @@ public final class PersistentUserData implements AlixUserData {
 
     public LoginParams getLoginParams() {
         return loginParams;
+    }
+
+    public UUID getUUID() {
+        return this.uuid;
     }
 
     @Override

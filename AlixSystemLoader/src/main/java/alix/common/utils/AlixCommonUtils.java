@@ -2,10 +2,13 @@ package alix.common.utils;
 
 import alix.common.AlixCommonMain;
 import alix.common.data.LoginType;
+import alix.common.data.PersistentUserData;
+import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
 import alix.common.messages.Messages;
 import alix.common.utils.collections.RandomCharIterator;
 import alix.common.utils.formatter.AlixFormatter;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import io.netty.channel.Channel;
 import io.netty.channel.local.LocalAddress;
 import ua.nanit.limbo.NanoLimbo;
@@ -16,8 +19,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -71,6 +74,18 @@ public final class AlixCommonUtils {
             task.run();
         else
             channel.eventLoop().execute(task);
+    }
+
+    public static Channel channel(PersistentUserData data) {
+        var channels = ProtocolManager.CHANNELS;
+        var channel = channels.get(data.getUUID());
+
+        PremiumData premiumData;
+
+        if (channel == null && (premiumData = data.getPremiumData()).getStatus().isPremium())
+            channel = channels.get(premiumData.premiumUUID());
+
+        return (Channel) channel;
     }
 
     public static InetAddress getAddress(Channel channel) {

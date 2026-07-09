@@ -19,19 +19,14 @@ public final class SpawnFile extends FileManager {
 
     @Override
     protected void loadLine(String line) {
-/*        if (spawn != null) throw new RuntimeException("Spawn tried to load in twice!");
-        spawn = Spawn.fromString(line);*/
         if (index++ == 0) {
             spawn = Spawn.fromString(line);
         }
     }
-                /*            case 1:
-                Password.setEncrypt(JavaUtils.parseInteger(line));
-                break;*/
 
     public void save() {
         try {
-            saveSingularValue(spawnSavable());//, Password.generateNewEncryption()));
+            saveSingularValue(spawnSavable());
         } catch (IOException e) {
             e.printStackTrace();
             Main.logWarning(AlixUtils.isPluginLanguageEnglish ? "Could not save spawn.yml file! Some information could be lost!" : "Nie udało się zapisać pliku spawn.yml! Pewne informacje mogły zostać utracone!");

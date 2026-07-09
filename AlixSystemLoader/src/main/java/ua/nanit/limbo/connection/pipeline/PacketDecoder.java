@@ -69,6 +69,7 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
         } catch (Exception e) {
             if (connection != null)
                 connection.closeInvalidPacket();
+
             if (NanoLimbo.suppress(e)) return null;
 
             Log.error("Cannot decode %s packet 0x%s: %s", e, packet.getClass().getSimpleName(), Integer.toHexString(packetId), e.getMessage());

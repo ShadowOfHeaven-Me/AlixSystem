@@ -18,6 +18,7 @@
 package ua.nanit.limbo.protocol.packets.handshake;
 
 import alix.common.utils.config.ConfigProvider;
+import alix.common.utils.netty.safety.NettySafety;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketIn;
@@ -102,11 +103,12 @@ public final class PacketHandshake implements PacketIn {
 
         this.version = Version.of(msg.readVarInt());
         this.host = msg.readString();
+
+        if (this.host.equals("matscan"))
+            throw NettySafety.MAT_SCAN;
+
         this.port = msg.readUnsignedShort();
         this.intention = msg.readVarInt();
-        //if (this.nextState == null) Log.error("Zjebany state");
-
-        //Log.error("Wszysko: " + version + " host: " + host + " port: " + port + " nextState: " + nextState);
     }
 
     @Override

@@ -37,6 +37,9 @@ public final class TimeOutAlgo {
     }
 
     public static void onConnection(Channel channel, InetAddress addr, boolean mapped) {
+        /*AlixCommonMain.logInfo("onConnection " + channel.id());
+        new Exception().printStackTrace();*/
+
         int timeout = mapped ? 12 : 7; // more leeway for mapped addresses
         TIMEOUTS.put(channel.id(), channel.eventLoop().schedule(() -> {
             LimboJoinProfiler.update(channel, ConnectionStage.TIMED_OUT);
@@ -46,7 +49,6 @@ public final class TimeOutAlgo {
             var info = TIMEOUT_COUNT.computeIfAbsent(addr, w -> new TimeOutInfo());
             if (info.addTimeout(addr))
                 TIMEOUT_COUNT.remove(addr);
-
 
         }, timeout, TimeUnit.SECONDS));
 
@@ -85,6 +87,8 @@ public final class TimeOutAlgo {
     }
 
     private static void remove(Channel channel) {
+        /*AlixCommonMain.logInfo("REMOVE " + channel.id());
+        new Exception().printStackTrace();*/
         var future = TIMEOUTS.remove(channel.id());
         if (future != null) {
             future.cancel(false);

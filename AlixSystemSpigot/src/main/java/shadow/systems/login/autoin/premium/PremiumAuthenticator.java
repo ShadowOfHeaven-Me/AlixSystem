@@ -30,6 +30,9 @@ import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import ua.nanit.limbo.integration.LimboIntegration;
+import ua.nanit.limbo.protocol.packets.PacketUtils;
+import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
+import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -46,23 +49,20 @@ import java.util.function.Consumer;
 
 import static shadow.systems.login.autoin.premium.AuthReflection.cipherMethod;
 import static shadow.systems.login.autoin.premium.AuthReflection.encryptMethod;
+import static shadow.utils.main.AlixUtils.ONLINE_MODE;
 
 //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/paper/PaperListeners.java
 
 public final class PremiumAuthenticator {
 
-    //todo: add support
-    //private final boolean isReverseProxyEnabled = true;
-
-    private static final ByteBuf
-            illegalEncryptionState = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-illegal-encryption-state")),
-            invalidNonce = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-invalid-nonce")),
-            cannotDecryptSharedSecret = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-decrypt-secret")),
-            invalidSession = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-invalid-session")),
-            cannotVerifySession = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-verify-session")),
-            internalErrorEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-internal-error")),
-            couldNotEnableEncryption = OutDisconnectPacketConstructor.constructConstAtLoginPhase(Messages.get("premium-disconnect-cannot-enable-encryption"));
-    //cachedNameDoesNotMatch = OutDisconnectPacketConstructor.constructConstAtLoginPhase("§cCached name does not match");
+    private static final PacketSnapshot
+            illegalEncryptionState = disconnect("premium-disconnect-illegal-encryption-state"),
+            invalidNonce = disconnect("premium-disconnect-invalid-nonce"),
+            cannotDecryptSharedSecret = disconnect("premium-disconnect-cannot-decrypt-secret"),
+            invalidSession = disconnect("premium-disconnect-invalid-session"),
+            cannotVerifySession = disconnect("premium-disconnect-cannot-verify-session"),
+            internalErrorEncryption = disconnect("premium-disconnect-internal-error"),
+            couldNotEnableEncryption = disconnect("premium-disconnect-cannot-enable-encryption");
 
     private final Map<User, EncryptionData> encryptionDataCache = AlixCache.newBuilder()
             .expireAfterWrite(30, TimeUnit.SECONDS).weakKeys()
@@ -74,7 +74,11 @@ public final class PremiumAuthenticator {
             assignPremiumUUID = AlixUtils.assignPremiumUUID,
             __noPremiumAuthButKeepIdentity = AlixUtils.__noPremiumAuthButKeepIdentity;
 
-    private void onInvalidAuth(User user, ClientPublicKey publicKey, ByteBuf disconnectReason) {
+    private static PacketSnapshot disconnect(String msgId) {
+        return PacketLoginDisconnect.snapshot(Messages.get(msgId));
+    }
+
+    private void onInvalidAuth(User user, ClientPublicKey publicKey, PacketSnapshot disconnectReason) {
         String name = user.getName();
         PersistentUserData data = UserFileManager.get(name);
         boolean registered = PersistentUserData.isRegistered(data);
@@ -92,6 +96,9 @@ public final class PremiumAuthenticator {
     }
 
     private void onEncryptionResponse(User user, WrapperLoginClientEncryptionResponse packet) {
+        if (ONLINE_MODE)
+            return;
+
         byte[] sharedSecret = packet.getEncryptedSharedSecret();
 
         EncryptionData data = this.encryptionDataCache.remove(user);
@@ -192,14 +199,14 @@ public final class PremiumAuthenticator {
         PersistentUserData data = UserFileManager.get(serverUsername);
 
         Consumer<PremiumData> consumer = newPremiumData ->
-        this.onLoginStart0(user, data, channel, packetUsername, serverUsername, clientKey, uuid, newPremiumData);
+                this.onLoginStart0(user, data, channel, packetUsername, serverUsername, clientKey, uuid, newPremiumData);
 
         if (__noPremiumAuthButKeepIdentity)
             consumer.accept(PremiumData.UNKNOWN);
         else if (data != null)
-            PremiumSetting.performPremiumCheck(channel, data, packetUsername, uuid, clientKey, version, consumer);
+            PremiumSetting.performPremiumCheck(channel, data, packetUsername, uuid, version, consumer);
         else
-            PremiumSetting.performPremiumCheckNullData(channel, packetUsername, uuid, clientKey, version, consumer);
+            PremiumSetting.performPremiumCheckNullData(channel, packetUsername, uuid, version, consumer);
     }
 
     private void onLoginStart0(User user, PersistentUserData data, Channel channel, String packetUsername, String serverUsername,
@@ -241,7 +248,9 @@ public final class PremiumAuthenticator {
             return;
         }
 
-        if (performPremiumCheck || EncryptionSetting.enableEncryption(user.getClientVersion())) {
+        boolean encrypt = !ONLINE_MODE && (performPremiumCheck || EncryptionSetting.enableEncryption(user.getClientVersion()));
+
+        if (encrypt) {
             try {
                 //should never happen
                 if (performPremiumCheck && newPremiumData.premiumUUID() == null)
@@ -280,6 +289,7 @@ public final class PremiumAuthenticator {
                 return;
             }
             case ENCRYPTION_RESPONSE: {
+                //Log.error("ENCRYPTION ENABLED=" + SpigotEncryption.isOnlineEncryptionEnabled((Channel) user.getChannel()));
                 this.onEncryptionResponse(user, (WrapperLoginClientEncryptionResponse) wrapper);
             }
         }
@@ -365,8 +375,9 @@ public final class PremiumAuthenticator {
         AuthReflection.setUUID(networkManager, premiumUUID);
     }
 
-    private void disconnectWith(User user, ByteBuf constDisconnectBuf) {
-        NettyUtils.closeAfterConstSend((Channel) user.getChannel(), constDisconnectBuf);
+    private void disconnectWith(User user, PacketSnapshot packet) {
+        PacketUtils.closeWith(user, packet, null);
+        //NettyUtils.closeAfterConstSend((Channel) user.getChannel(), constDisconnectBuf);
     }
 
     private boolean verifyNonce(WrapperLoginClientEncryptionResponse packet,

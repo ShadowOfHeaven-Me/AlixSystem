@@ -20,7 +20,7 @@ import java.util.function.BiFunction;
 public final class MessageWrapper {
 
     public static PacketWrapper<?> createWrapper(String message, boolean actionBar, ServerVersion version) {
-        var component = AdventureSerializer.serializer(version.toClientVersion()).fromLegacy(message);
+        var component = AdventureSerializer.serializer(version.toClientVersion()).fromLegacy(message);//Component.text(message);
         return createWrapper(component, actionBar, version);
     }
 

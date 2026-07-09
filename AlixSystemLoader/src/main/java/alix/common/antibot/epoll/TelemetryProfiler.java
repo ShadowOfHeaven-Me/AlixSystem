@@ -1,5 +1,6 @@
 package alix.common.antibot.epoll;
 
+import alix.common.antibot.epoll.syn.signature.SynSignature;
 import io.netty.channel.Channel;
 import io.netty.channel.epoll.EpollSocketChannel;
 
@@ -8,11 +9,19 @@ import static alix.common.antibot.epoll.Telemetry.ENABLED;
 public final class TelemetryProfiler {
 
     public static final TelemetryProfiler PROFILER = new TelemetryProfiler();
-    static final AbstractTelemetryProfiler IMPL = null;//TelemetryProfilerImpl.PROFILER;
+    static final AbstractTelemetryProfiler IMPL = TelemetryProfilerImpl.PROFILER;
 
     public static void enableSynSaving(int serverFd) {
         if (ENABLED)
-            IMPL.enableSynSaving0(serverFd);
+            IMPL.enableSynSaving(serverFd);
+    }
+
+    public static SynSignature synSignature(Channel channel) {
+        if (!ENABLED)
+            return null;
+
+        var record = IMPL.record(clientFd(channel));
+        return record != null ? record.synSignature : null;
     }
 
     public void onConnection(int clientFd, byte[] addr) {
@@ -20,27 +29,27 @@ public final class TelemetryProfiler {
             IMPL.onConnection(clientFd, addr);
     }
 
-    int clientFd(Channel channel) {
-        return ((EpollSocketChannel) channel).fd().intValue();
-    }
-
     public void onLoginStart(Channel channel) {
         if (ENABLED)
-            IMPL.onLoginStart(this.clientFd(channel));
+            IMPL.onLoginStart(clientFd(channel));
     }
 
     public void onStatusRequest(Channel channel) {
         if (ENABLED)
-            IMPL.onStatusRequest(this.clientFd(channel));
+            IMPL.onStatusRequest(clientFd(channel));
     }
 
     public void onHandshake(Channel channel, int nextState) {
         if (ENABLED)
-            IMPL.onHandshake(this.clientFd(channel), nextState);
+            IMPL.onHandshake(clientFd(channel), nextState);
     }
 
-    public void removeClosed(Channel channel) {
+    public static void removeClosed(Channel channel) {
         if (ENABLED)
-            IMPL.removeClosed(this.clientFd(channel));
+            IMPL.removeClosed(clientFd(channel));
+    }
+
+    static int clientFd(Channel channel) {
+        return ((EpollSocketChannel) channel).fd().intValue();
     }
 }

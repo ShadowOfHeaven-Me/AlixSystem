@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection.pipeline;
 
+import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.netty.safety.NettySafety;
@@ -439,6 +440,8 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        //Log.error("channelRegistered");
+        ConnectRequestAlgoImpl.onConnection(this.channel, AlixCommonUtils.getAddress(this.channel));
         if (this.passRegistration())
             super.channelRegistered(ctx);
     }

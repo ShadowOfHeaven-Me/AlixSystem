@@ -75,7 +75,7 @@ public final class ConnectionCountLimiter {
 
         channel.closeFuture().addListener(f -> {
             if (Telemetry.ENABLED)
-                TelemetryProfiler.PROFILER.removeClosed(channel);
+                TelemetryProfiler.removeClosed(channel);
             c.decrement();
             TOTAL.decrement();
             LimboJoinProfiler.update(channel, ConnectionStage.CLOSE_FUTURE_FINISHED);

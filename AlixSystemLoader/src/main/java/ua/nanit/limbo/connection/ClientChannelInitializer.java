@@ -181,7 +181,7 @@ public final class ClientChannelInitializer {
             if (msg != null)
                 pipeline.fireChannelRead(msg);
             else
-                Log.warning("Missing haProxyMessage while proxy protocol on!");
+                Log.warning("Missing HA-Proxy Message with proxy protocol ON!");
         }
 
         //resend the correct packets to the server

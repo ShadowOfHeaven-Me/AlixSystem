@@ -86,7 +86,7 @@ public final class PremiumUtils {
         return premiumData;
     }
 
-    public static PremiumStatus suggestsStatus(UUID uuid, ClientPublicKey clientPublicKey, ClientVersion version) {
+    public static PremiumStatus suggestsStatus(UUID uuid, ClientVersion version) {
         //Not sure about this one
         //if (clientPublicKey != null) return PremiumStatus.PREMIUM;
         if (uuid == null || version.isOlderThan(ClientVersion.V_1_19)) return PremiumStatus.UNKNOWN;

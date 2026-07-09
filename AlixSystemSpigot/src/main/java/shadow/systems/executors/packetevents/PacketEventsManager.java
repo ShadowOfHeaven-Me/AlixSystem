@@ -5,16 +5,22 @@ import com.github.retrooper.packetevents.event.*;
 import com.github.retrooper.packetevents.event.simple.PacketLoginReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.util.TimeStampMode;
+import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import io.netty.channel.Channel;
 import org.bukkit.Bukkit;
 import shadow.Main;
+import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.autoin.premium.PremiumAuthenticator;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.AlixUser;
 import ua.nanit.limbo.NanoLimbo;
+
+import static shadow.utils.main.AlixUtils.ONLINE_MODE;
 
 public final class PacketEventsManager {
 
@@ -89,11 +95,19 @@ public final class PacketEventsManager {
             if (event.getClass() == PacketLoginReceiveEvent.class) {
                 PacketLoginReceiveEvent e = (PacketLoginReceiveEvent) event;
 
-                switch (e.getPacketType()) {
-                    case LOGIN_START:
-                        //AlixChannelHandler.assignLoginUUID(e);
-                    case ENCRYPTION_RESPONSE:
-                        this.premiumAuthenticator.onPacketReceive(e);
+                if (!ONLINE_MODE) {
+                    switch (e.getPacketType()) {
+                        case LOGIN_START:
+                            //AlixChannelHandler.assignLoginUUID(e);
+                        case ENCRYPTION_RESPONSE:
+                            this.premiumAuthenticator.onPacketReceive(e);
+                    }
+                } else if (e.getPacketType() == PacketType.Login.Client.LOGIN_START) {
+                    User retrooperUser = event.getUser();
+                    var packet = new WrapperLoginClientLoginStart(event);
+                    String packetUsername = packet.getUsername();
+                    String serverUsername = Dependencies.getCorrectUsername((Channel) retrooperUser.getChannel(), packetUsername);
+                    AlixChannelHandler.putConnecting(retrooperUser, serverUsername);
                 }
             }
             /*if (event.getPacketType() == PacketType.Play.Client.CHAT_PREVIEW || event.getPacketType() == PacketType.Play.Client.CHAT_MESSAGE || event.getPacketType() == PacketType.Play.Client.CHAT_ACK) {

@@ -1,6 +1,9 @@
 package shadow.systems.commands;
 
+import alix.common.antibot.epoll.Telemetry;
+import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
@@ -303,13 +306,22 @@ public final class AdminAlixCommands implements CommandExecutor {
                                 sendMessage(sender, "&cPlayer " + arg2 + " is not in AlixSystem's User DataBase!");
                                 return;
                             }
+
+                            var channel = SpigotEncryption.channel(data);
+
                             boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
                             sendMessage(sender, "");
                             sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
                             sendMessage(sender, "IP: &c" + data.getSavedIP().getHostAddress());
-                            //sendMessage(sender, "Password" + (data.getPassword().isHashed() ? " (Hashed): " : ": ") + data.getHashedPassword());
-                            sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
-                            //int alts = GeoIPTracker.altsCount()
+                            sendMessage(sender, "Premium Status: &c" + data.getPremiumData().getStatus().readableName());
+
+                            if (Telemetry.ENABLED && channel != null) {
+                                var sig = TelemetryProfiler.synSignature(channel);
+                                if (sig != null) {
+                                    sendMessage(sender, "Operating System: &c" + sig.os.getReadableName());
+                                    sendMessage(sender, "Connection Environment: &c" + sig.mtuEnv.getReadableName());
+                                }
+                            }
 
                             if (!data.getSavedIP().equals(PersistentUserData.UNKNOWN_IP)) {//I guess possibly incorrect info when testing on localhost
                                 var accounts = UserFileManager.getAllData().stream().filter(d -> d.getSavedIP().equals(data.getSavedIP()))
@@ -318,35 +330,43 @@ public final class AdminAlixCommands implements CommandExecutor {
                                 var extraInfo = accounts.size() > 1 ? " &7(" + String.join(", ", accounts) + ")" : "";
                                 sendMessage(sender, "Accounts: &c" + accounts.size() + extraInfo);
                             }
-                            sendMessage(sender, "Login Type: &c" + data.getLoginType());
-                            sendMessage(sender, "Premium Status: &c" + data.getPremiumData().getStatus().readableName());
-                            if (dVer)
-                                sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
 
-                            sendMessage(sender, "Double password verification: &c" + (dVer ? "Enabled" : "Disabled"));
-
-                            var isEncrypted = SpigotEncryption.isOnlineEncryptionEnabled(data);
+                            var isEncrypted = SpigotEncryption.isOnlineEncryptionEnabled(channel);
                             if (isEncrypted != null)
                                 sendMessage(sender, "Encryption: &c" + (isEncrypted ? "Enabled" : "Disabled"));
 
-                            String authApp;
-                            switch (data.getLoginParams().getAuthSettings()) {
-                                case PASSWORD:
-                                    authApp = "&cDisabled";
-                                    break;
-                                case AUTH_APP:
-                                    authApp = "&aEnabled - Just Auth App";
-                                    break;
-                                case PASSWORD_AND_AUTH_APP:
-                                    authApp = "&aEnabled - Auth App and " + (dVer ? "two " : "") + "in-game password" + (dVer ? "s" : "");
-                                    break;
-                                default:
-                                    throw new AlixError("Invalid - " + data.getLoginParams().getAuthSettings());
+                            boolean isPremium = data.getPremiumData().getStatus().isPremium();
+                            if (!isPremium) {
+                                sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
+                                sendMessage(sender, "Login Type: &c" + data.getLoginType());
+                                if (dVer)
+                                    sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
+
+                                sendMessage(sender, "Double password verification: &c" + (dVer ? "Enabled" : "Disabled"));
+
+                                String authApp;
+                                switch (data.getLoginParams().getAuthSettings()) {
+                                    case PASSWORD:
+                                        authApp = "&cDisabled";
+                                        break;
+                                    case AUTH_APP:
+                                        authApp = "&aEnabled - Just Auth App";
+                                        break;
+                                    case PASSWORD_AND_AUTH_APP:
+                                        authApp = "&aEnabled - Auth App and " + (dVer ? "two " : "") + "in-game password" + (dVer ? "s" : "");
+                                        break;
+                                    default:
+                                        throw new AlixError("Invalid - " + data.getLoginParams().getAuthSettings());
+                                }
+                                sendMessage(sender, "TOTP Auth app: " + authApp);
+                                sendMessage(sender, "Has TOTP app linked: " + (data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
                             }
-                            sendMessage(sender, "TOTP Auth app: " + authApp);
-                            sendMessage(sender, "Has TOTP app linked: " + (data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
-                            sendMessage(sender, "First joined: &c" + getFormattedDate(new Date(offlinePlayer.getFirstPlayed())));
-                            sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: &c" : "Last joined: &c") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
+                            long createdAt = data.createdAt();
+                            long firstPlayed = offlinePlayer.getFirstPlayed();
+
+                            long older = firstPlayed == 0 ? createdAt : Math.min(createdAt, firstPlayed);
+                            sendMessage(sender, "First joined: &c" + getFormattedDate(new Date(older)));
+                            //sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: &c" : "Last joined: &c") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
                             sendMessage(sender, "");
                         });
                         return true;
@@ -498,6 +518,16 @@ public final class AdminAlixCommands implements CommandExecutor {
                     //sendMessage(sender, "&c/as incognitooff &7- Gives you back your original name");//, and skin.");
 
                     break;
+
+                case "profilejoins": {
+                    LimboJoinProfiler.PROFILE_JOINS = !LimboJoinProfiler.PROFILE_JOINS;
+
+                    if (LimboJoinProfiler.PROFILE_JOINS)
+                        sendMessage(sender, "Enabled detailed join profiling, re-enter command to disable");
+                    else
+                        sendMessage(sender, "Disabled detailed join profiling");
+                    return true;
+                }
                 case "save_all_to_db": {
                     sendMessage(sender, "All user data sync with the connected database has been initiated and should complete soon enough");
                     UserFileManager.getAllData().forEach(PersistentUserData::saveToDatabase);

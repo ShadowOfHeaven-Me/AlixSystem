@@ -13,6 +13,7 @@ public final class NettySafety {
     //public static final NettySafetyException INVALID_STATE = NettySafetyException.of("Invalid state");
     public static final NettySafetyException INVALID_PACKET = NettySafetyException.of("Invalid packet");
     public static final NettySafetyException INVALID_INTENTION = NettySafetyException.of("Invalid login intention");
+    public static final NettySafetyException MAT_SCAN = NettySafetyException.of("matscan");
 
     //public static final NettySafetyException INVALID_UUID_RESP = NettySafetyException.of("Invalid UUID Resp");
 

@@ -38,13 +38,13 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public final class AlixUtils {
 
+    public static final boolean ONLINE_MODE = Bukkit.getOnlineMode();
     public static final Random random;
     //public static final PotionEffect vanishInvisibilityEffect;
     public static final Pattern ipPattern;
@@ -65,6 +65,8 @@ public final class AlixUtils {
             requirePingCheckVerification, forcefullyDisableIpAutoLogin, //repeatedVerificationReminderMessages,
             anvilPasswordGui, hideFailedJoinAttempts, alixJoinLog, overrideExistingCommands, antibotService,
             requirePasswordRepeatInRegister, __noPremiumAuthButKeepIdentity, assignPremiumUUID;//renderFancyCaptchaDigits
+
+
 
     static {
         FileConfiguration config = Main.config;
@@ -1024,7 +1026,7 @@ public final class AlixUtils {
     public static boolean isConsoleButPlayerRequired(CommandSender sender) {
         boolean console = !(sender instanceof Player);
         if (console)
-            Main.logInfo(isPluginLanguageEnglish ? "Console cannot use that command!" : "Konsola nie może używać tej komendy!");
+            Main.logInfo(isPluginLanguageEnglish ? "Console cannot use this command!" : "Konsola nie może używać tej komendy!");
         return console;
     }
 

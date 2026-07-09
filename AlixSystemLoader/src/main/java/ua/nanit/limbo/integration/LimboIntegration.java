@@ -10,7 +10,6 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumStatus;
 import alix.common.data.premium.name.PremiumNameManager;
-import alix.common.login.premium.ClientPublicKey;
 import alix.common.login.premium.PremiumSetting;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
@@ -52,6 +51,9 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
     public abstract boolean isProxyProtocol();
 
+    public abstract boolean isEpoll();
+
+    public abstract boolean isOnlineMode();
 
     public final void setHasCompletedCaptcha(InetAddress address, String name) {
         completedCaptchaCache.put(name, address);
@@ -109,8 +111,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         //Premium handling
 
         ClientVersion version = connection.getClientVersion().getRetrooperVersion().toClientVersion();
-        ClientPublicKey publicKey = ClientPublicKey.createKey(packet.getSignatureData());
-        PremiumStatus suggestsStatus = PremiumUtils.suggestsStatus(uuid, publicKey, version);
+        PremiumStatus suggestsStatus = PremiumUtils.suggestsStatus(uuid, version);
 
         Consumer<PremiumData> premiumDataFuture = premiumData -> {
             boolean isPremium = premiumData.getStatus().isPremium();
@@ -183,7 +184,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         }
 
         //AlixChannelHandler.getPreLoginVerdict(channel, nameSent, nameRefactored, data, isPremium)
-        AlixCommonHandler.getPreLoginVerdict(channel, nameSent, nameRefactored, data, isPremium, this.geyserUtil().isBedrock(channel), this.isProxyProtocol(), verdict -> {
+        AlixCommonHandler.getPreLoginVerdict(channel, nameSent, nameRefactored, data, isPremium, this.geyserUtil().isBedrock(channel), verdict -> {
             switch (verdict) {
                 case ALLOWED -> {
                 }

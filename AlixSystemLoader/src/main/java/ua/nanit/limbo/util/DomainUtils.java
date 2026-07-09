@@ -1,7 +1,9 @@
 package ua.nanit.limbo.util;
 
-import alix.common.utils.other.throwable.AlixException;
+import alix.common.utils.AlixCache;
+import ua.nanit.limbo.server.Log;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public final class DomainUtils {
@@ -24,25 +26,36 @@ public final class DomainUtils {
             "^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$"
     );
 
+    private static final Map<String, Boolean> CACHE = AlixCache.newBuilder().maximumSize(32).<String, Boolean>build().asMap();
+
     public static boolean isValidDomainOrIp(String input) {
         if (input == null)
             return false;
 
-        String trimmed = input.trim();
+        Boolean cache = CACHE.get(input);
+        if (cache != null)
+            return cache;
 
-        if (trimmed.isEmpty())
+        String host = input.trim();
+        if (host.isEmpty())
             return false;
 
-        return DOMAIN_PATTERN.matcher(trimmed).matches() ||
-               IPV4_PATTERN.matcher(trimmed).matches() ||
-               SPECIAL_CASES.matcher(trimmed).matches();
+        boolean isValid = DOMAIN_PATTERN.matcher(host).matches() ||
+                          IPV4_PATTERN.matcher(host).matches() ||
+                          SPECIAL_CASES.matcher(host).matches();
+        CACHE.put(input, isValid);
+
+        return isValid;
     }
 
     public static String extractHost(String host) {
         var result = extractHost0(host);
         //invalid domain attack?
         if (!isValidDomainOrIp(result))
-            throw new AlixException("Invalid host: '" + host + "'");
+            Log.warning("Invalid extracted host '" + host + "'. Report this immediately!");
+
+        //throw NettySafetyException
+        //throw new AlixException("Invalid host: '" + host + "'");
         return result;
     }
 
@@ -52,6 +65,7 @@ public final class DomainUtils {
         int idx = host.indexOf('\0');
         var f = idx != -1 ? host.substring(0, idx) : host;
         //this dot comes from the PlayIt tunnel (maybe?)
-        return f.charAt(f.length() - 1) == '.' ? f.substring(0, f.length() - 1) : f;
+        var out = f.charAt(f.length() - 1) == '.' ? f.substring(0, f.length() - 1) : f;
+        return out.split(":", 2)[0];
     }
 }

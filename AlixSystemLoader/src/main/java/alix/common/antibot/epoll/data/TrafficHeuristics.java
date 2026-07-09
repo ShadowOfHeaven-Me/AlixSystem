@@ -1,5 +1,9 @@
-package alix.common.antibot.epoll;
+package alix.common.antibot.epoll.data;
 
+
+import alix.common.antibot.epoll.ConnectionStats;
+import alix.common.antibot.epoll.TelemetryProfilerImpl;
+import alix.common.antibot.epoll.syn.signature.SynSignature;
 
 final class TrafficHeuristics {
 
@@ -43,7 +47,7 @@ final class TrafficHeuristics {
             return new Result(ThreatProfile.RAW_BOTNET, Confidence.LOW, 5, 0, "Dead connection (No TCP stats, No L7)");
         }
 
-        TelemetryProfilerImpl.SynSignature syn = record.synSignature;
+        SynSignature syn = record.synSignature;
         int suspicion = 0;
         int legit = 0;
 

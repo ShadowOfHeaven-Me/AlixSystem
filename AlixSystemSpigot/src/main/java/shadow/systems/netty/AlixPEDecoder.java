@@ -37,7 +37,6 @@ public final class AlixPEDecoder extends PacketEventsDecoder {
                 return;
             }
             if (isPPE(cause)) {
-                //TODO: UHHHHHHHH
                 FireWallManager.addCauseException(AlixCommonUtils.getAddress(ctx.channel()), cause);
                 ctx.channel().close();
                 return;

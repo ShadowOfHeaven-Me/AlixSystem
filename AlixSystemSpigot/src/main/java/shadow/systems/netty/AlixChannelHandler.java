@@ -113,7 +113,7 @@ public final class AlixChannelHandler {
 
     private static final AttributeKey<String> JOINED_WITH_IP = AttributeKey.valueOf("alix-joined-with-ip");
 
-    public static void onHandshake(Channel channel, PacketHandshake handshake) {
+    public static void assignHandshakeHostname(Channel channel, PacketHandshake handshake) {
         channel.attr(JOINED_WITH_IP).set(handshake.getExtractedHost());
     }
 
