@@ -12,7 +12,6 @@ import alix.velocity.server.AlixVelocityLimbo;
 import alix.velocity.systems.commands.CommandManager;
 import alix.velocity.systems.events.Events;
 import alix.velocity.systems.packets.PacketEventsManager;
-import alix.velocity.utils.AlixChannelInitInterceptor;
 import alix.velocity.utils.AlixUtils;
 import alix.velocity.utils.file.FileManager;
 import alix.velocity.utils.user.UserManager;
@@ -61,7 +60,7 @@ public final class Main implements LoaderBootstrap {
         PacketEventsManager.register();
 
         this.server.getEventManager().register(PLUGIN, new Events(this.util));
-        AlixChannelInitInterceptor.initializeInterceptor(this.server);
+        //AlixChannelInitInterceptor.initializeInterceptor();
 
         CommandManager.register(this.server);
         FileManager.loadFiles();

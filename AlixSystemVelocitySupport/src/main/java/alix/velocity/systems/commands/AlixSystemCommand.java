@@ -1,6 +1,8 @@
 package alix.velocity.systems.commands;
 
 import alix.common.antibot.algorithms.any.PanicModeManager;
+import alix.common.antibot.epoll.Telemetry;
+import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.LoginType;
@@ -17,6 +19,7 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
+import alix.velocity.utils.AlixUtils;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -24,6 +27,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandSource;
+import io.netty.channel.Channel;
 import net.kyori.adventure.text.Component;
 
 import java.util.Arrays;
@@ -267,32 +271,61 @@ public final class AlixSystemCommand {
                                     sendMessage(sender, playerDataNotFound.format(target));
                                     return;
                                 }
-                                boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
+
+                                Channel channel = AlixCommonUtils.channel(data);
+
+                                boolean isPremium = data.getPremiumData().getStatus().isPremium();
+
                                 sendMessage(sender, "");
                                 sendMessage(sender, "User " + target + " has the following data:");
                                 sendMessage(sender, "IP: &c" + data.getSavedIP().getHostAddress());
-                                sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "Enabled" : "Disabled"));
-                                sendMessage(sender, "Login Type: &c" + data.getLoginType());
                                 sendMessage(sender, "Premium Status: &c" + data.getPremiumData().getStatus().readableName());
-                                if (dVer)
-                                    sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
-                                sendMessage(sender, "Double password verification: " + (dVer ? "&aEnabled" : "&cDisabled"));
-                                String authApp;
-                                switch (data.getLoginParams().getAuthSettings()) {
-                                    case PASSWORD:
-                                        authApp = "&cDisabled";
-                                        break;
-                                    case AUTH_APP:
-                                        authApp = "&aEnabled - Just Auth App";
-                                        break;
-                                    case PASSWORD_AND_AUTH_APP:
-                                        authApp = "&aEnabled - Auth App and " + (dVer ? "two " : "") + "in-game password" + (dVer ? "s" : "");
-                                        break;
-                                    default:
-                                        throw new RuntimeException("Invalid - " + data.getLoginParams().getAuthSettings());
+
+                                if (Telemetry.ENABLED && channel != null) {
+                                    var sig = TelemetryProfiler.synSignature(channel);
+                                    if (sig != null) {
+                                        sendMessage(sender, "Operating System: &c" + sig.os.getReadableName());
+                                        sendMessage(sender, "Connection Environment: &c" + sig.mtuEnv.getReadableName());
+                                    }
                                 }
-                                sendMessage(sender, "TOTP Auth app: " + authApp);
-                                sendMessage(sender, "Has TOTP app linked: " + (data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
+
+                                if (!data.getSavedIP().equals(PersistentUserData.UNKNOWN_IP)) {//I guess possibly incorrect info when testing on localhost
+                                    var accounts = UserFileManager.getAllData().stream().filter(d -> d.getSavedIP().equals(data.getSavedIP()))
+                                            .map(PersistentUserData::getName).toList();
+
+                                    var extraInfo = accounts.size() > 1 ? " &7(" + String.join(", ", accounts) + ")" : "";
+                                    sendMessage(sender, "Accounts: &c" + accounts.size() + extraInfo);
+                                }
+
+                                var isEncrypted = AlixUtils.isOnlineEncryptionEnabled(channel);
+                                if (isEncrypted != null)
+                                    sendMessage(sender, "Encryption: &c" + (isEncrypted ? "Enabled" : "Disabled"));
+
+                                if (!isPremium) {
+                                    sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "Enabled" : "Disabled"));
+                                    sendMessage(sender, "Login Type: &c" + data.getLoginType());
+
+                                    boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
+                                    if (dVer)
+                                        sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
+                                    sendMessage(sender, "Double password verification: " + (dVer ? "&aEnabled" : "&cDisabled"));
+                                    String authApp;
+                                    switch (data.getLoginParams().getAuthSettings()) {
+                                        case PASSWORD:
+                                            authApp = "&cDisabled";
+                                            break;
+                                        case AUTH_APP:
+                                            authApp = "&aEnabled - Just Auth App";
+                                            break;
+                                        case PASSWORD_AND_AUTH_APP:
+                                            authApp = "&aEnabled - Auth App and " + (dVer ? "two " : "") + "in-game password" + (dVer ? "s" : "");
+                                            break;
+                                        default:
+                                            throw new RuntimeException("Invalid - " + data.getLoginParams().getAuthSettings());
+                                    }
+                                    sendMessage(sender, "TOTP Auth app: " + authApp);
+                                    sendMessage(sender, "Has TOTP app linked: " + (data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
+                                }
                                 sendMessage(sender, "");
                             });
                             return SINGLE_SUCCESS;

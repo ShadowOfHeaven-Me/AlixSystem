@@ -1,35 +1,28 @@
 package alix.velocity.systems.channel;
 
 import alix.common.AlixCommonMain;
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.epoll.AlixEpollConnection;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.FireWallType;
 import alix.common.utils.AlixCommonUtils;
-import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.Main;
 import alix.velocity.server.AlixVelocityLimbo;
-import com.github.retrooper.packetevents.PacketEvents;
-import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.network.TransportType;
-import io.github.retrooper.packetevents.handlers.PacketEventsEncoder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
-import ua.nanit.limbo.NanoLimbo;
 
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 
-public final class ServerChannelInitializer extends com.velocitypowered.proxy.network.ServerChannelInitializer {
+public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter {//com.velocitypowered.proxy.network.ServerChannelInitializer {
 
     //public static final Class<?> EXTENDING_CLASS = ServerChannelInitializer.class;
     //private final BackendChannelInitializer original;
     public static final boolean PROXY_PROTOCOL = Main.SERVER.getConfiguration().isProxyProtocol();
     private static final boolean isNettyFireWall;
-    private static final Method initChannelMethod;
+    //private static final Method initChannelMethod;
 
     static {
         FireWallType used = FireWallType.NETTY;
@@ -51,67 +44,48 @@ public final class ServerChannelInitializer extends com.velocitypowered.proxy.ne
 
         FireWallType.USED.set(used);
 
-        try {
+        /*try {
             initChannelMethod = ChannelInitializer.class.getDeclaredMethod("initChannel", Channel.class);
             initChannelMethod.setAccessible(true);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
-        }
+        }*/
     }
 
-    private final ChannelInitializer<Channel> original;
-    final VelocityServer server;
+    //private final ChannelInitializer<Channel> original;
 
-    static ServerChannelInitializer INITIALIZER;
+    //static ServerChannelInitializer INITIALIZER;
 
-    public ServerChannelInitializer(VelocityServer server, ChannelInitializer<Channel> original) {
-        super(server);
-        this.server = server;
-        this.original = original;
-        INITIALIZER = this;
+    public ServerChannelInitializer() {
+        //super(server);
+        //this.original = original;
+        //INITIALIZER = this;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel channel = (Channel) msg;
+        AntiBotStatistics.INSTANCE.incrementJoins();
         if (!PROXY_PROTOCOL) {
             InetAddress address = AlixCommonUtils.getAddress(channel);
-            if (isNettyFireWall && address != null) {
+            if (isNettyFireWall) {
                 if (FireWallManager.isBlocked0(address)) {
                     channel.unsafe().closeForcibly();
                     return;
                 }
             }
-        }
-        super.channelRead(ctx, msg);
-    }
-
-    @Override
-    protected void initChannel(Channel channel) {
-        AntiBotStatistics.INSTANCE.incrementJoins();
-
-        if (!PROXY_PROTOCOL) {
-            InetAddress address = AlixCommonUtils.getAddress(channel);
-            if (address != null) {
-                if (ConnectRequestAlgoImpl.onConnection(channel, address))
-                    return;
-            }
+            //ConnectRequestAlgoImpl.onUnregisteredConnection(channel);
         }
 
-        /*var config = channel.config();
-        config.setAutoRead(false);
-        try {
-            initChannelMethod.invoke(this.original, channel);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }*/
         AlixVelocityLimbo.initChannel(channel, PROXY_PROTOCOL);
-        //config.setAutoRead(true);
-
-        //Main.logInfo("Pipeline: " + channel.pipeline().names());
+        super.channelRead(ctx, msg);
+        //channel.parent().eventLoop().parent().next();
     }
 
-    public static void invokeOriginalChannelInit(Channel channel) {
+    /*public static void invokeOriginalChannelInit(Channel channel) {
+        if (true)
+            return;
+
         try {
             initChannelMethod.invoke(INITIALIZER.original, channel);
         } catch (Exception e) {
@@ -123,5 +97,5 @@ public final class ServerChannelInitializer extends com.velocitypowered.proxy.ne
         var pipeline = channel.pipeline();
         var original = (PacketEventsEncoder) pipeline.context(PacketEvents.ENCODER_NAME).handler();
         pipeline.replace(PacketEvents.ENCODER_NAME, PacketEvents.ENCODER_NAME, new EncoderMonitor(original));
-    }
+    }*/
 }

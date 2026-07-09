@@ -3,8 +3,10 @@ package alix.velocity.server.impl;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.floodgate.GeyserUtil;
+import alix.loaders.velocity.VelocityAlixMain;
 import alix.velocity.Main;
 import alix.velocity.systems.channel.ServerChannelInitializer;
+import alix.velocity.utils.AlixChannelInitInterceptor;
 import alix.velocity.utils.user.UserManager;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
@@ -129,9 +131,19 @@ public final class VelocityLimboIntegration extends LimboIntegration<ClientConne
     }
 
     @Override
+    public boolean isEpoll() {
+        return AlixChannelInitInterceptor.isEpoll();
+    }
+
+    @Override
+    public boolean isOnlineMode() {
+        return VelocityAlixMain.instance.getServer().getConfiguration().isOnlineMode();
+    }
+
+    /*@Override
     public void invokeChannelInit(ClientConnection connection) {
         ServerChannelInitializer.invokeOriginalChannelInit(connection.getChannel());
-    }
+    }*/
 
     @Override
     public boolean isFloodgateNoCompressionPresent() {

@@ -1,7 +1,6 @@
 package alix.velocity.systems.events;
 
 
-import alix.common.antibot.epoll.Telemetry;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.PersistentUserData;
@@ -58,15 +57,12 @@ public final class Events {
         //this.limboRegisteredServer = new LimboRegisteredServer(server);
     }
 
-    @Subscribe
+    @Subscribe(order = PostOrder.LAST)
     public void onListenerBound(ListenerBoundEvent event) {
-        if (!Telemetry.ENABLED)
-            return;
-
         if (event.getListenerType() != ListenerType.MINECRAFT)
             return;
 
-        AlixChannelInitInterceptor.initSynFingerprint();
+        AlixChannelInitInterceptor.initEndpoints();
     }
 
     /*@Subscribe
@@ -166,9 +162,9 @@ public final class Events {
         };
 
         if (data != null)
-            PremiumSetting.performPremiumCheck(channel, data, name, uuid, null, version, consumer);
+            PremiumSetting.performPremiumCheck(channel, data, name, uuid, version, consumer);
         else
-            PremiumSetting.performPremiumCheckNullData(channel, name, uuid, null, version, consumer);
+            PremiumSetting.performPremiumCheckNullData(channel, name, uuid, version, consumer);
     }
 
     private void onPreLogin0(Channel channel, PersistentUserData data, MinecraftConnection minecraftConnection, String packetUsername,

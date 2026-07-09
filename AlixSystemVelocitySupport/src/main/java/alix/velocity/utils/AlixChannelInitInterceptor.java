@@ -1,6 +1,7 @@
 package alix.velocity.utils;
 
 
+import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.reflection.CommonReflection;
 import alix.common.utils.other.throwable.AlixException;
@@ -22,29 +23,42 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AlixChannelInitInterceptor {
 
     private static final ConnectionManager MANAGER = getManager();
+    private static final Multimap<InetSocketAddress, Endpoint> endpoints = getEndpoints();
 
-    @SneakyThrows
-    public static void initSynFingerprint() {
-        ConnectionManager manager = MANAGER;
-        var f = CommonReflection.getDeclaredFieldAccessible(ConnectionManager.class, "endpoints");
-        Multimap<InetSocketAddress, Endpoint> endpoints = (Multimap<InetSocketAddress, Endpoint>) f.get(manager);
-
+    public static void initEndpoints() {
         endpoints.values().forEach(e -> {
-            if (!INIT.add(e.getChannel()))
+            var ch = e.getChannel();
+            if (!INIT.add(ch))
                 return;
-            var serverChannel = (EpollServerSocketChannel) e.getChannel();
+
+            //var initHolder = MANAGER.getServerChannelInitializer();
+            ch.pipeline().addFirst("--alix_init", new ServerChannelInitializer());
+
+            if (!Telemetry.ENABLED || !(ch instanceof EpollServerSocketChannel serverChannel))
+                return;
+
             TelemetryProfiler.enableSynSaving(serverChannel.fd().intValue());
         });
     }
 
+    public static boolean isEpoll() {
+        return endpoints.values().stream().anyMatch(endpoint -> endpoint.getChannel() instanceof EpollServerSocketChannel);
+    }
+
     private static final Set<Channel> INIT = ConcurrentHashMap.newKeySet(); //Collections.newSetFromMap(Collections.synchronizedMap(new IdentityHashMap<>()));
 
-    @SneakyThrows
-    public static void initializeInterceptor(VelocityServer server) {
-        ConnectionManager m = MANAGER;
-        var initHolder = m.getServerChannelInitializer();
+    /*@SneakyThrows
+    public static void initializeInterceptor() {
+        var initHolder = MANAGER.getServerChannelInitializer();
 
-        initHolder.set(new ServerChannelInitializer(server, initHolder.get()));
+        initHolder.set(new ServerChannelInitializer(initHolder.get()));
+    }*/
+
+    @SneakyThrows
+    private static Multimap<InetSocketAddress, Endpoint> getEndpoints() {
+        ConnectionManager manager = MANAGER;
+        var f = CommonReflection.getDeclaredFieldAccessible(ConnectionManager.class, "endpoints");
+        return (Multimap<InetSocketAddress, Endpoint>) f.get(manager);
     }
 
     @SneakyThrows
