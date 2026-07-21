@@ -26,7 +26,18 @@ public abstract class ReminderStrategy implements Runnable {
     }
 
     public static ScheduledFuture<?> newReminderImplFor(UnverifiedUser user) {
-        return user.getChannel().eventLoop().scheduleAtFixedRate(strategy(user), 500L, TICK_DELAY, TimeUnit.MILLISECONDS);
+        return !needsTask(user) ? null : user.getChannel().eventLoop().scheduleAtFixedRate(strategy(user), 500L, TICK_DELAY, TimeUnit.MILLISECONDS);
+    }
+
+    private static boolean needsTask(UnverifiedUser user) {
+        switch (VerificationReminder.STRATEGY) {
+            case ACTION_BAR:
+                return true;
+            case TITLE:
+                return user.captchaInitialized();
+            default:
+                throw new AlixError("Invalid: " + VerificationReminder.STRATEGY);
+        }
     }
 
     private static ReminderStrategy strategy(UnverifiedUser user) {

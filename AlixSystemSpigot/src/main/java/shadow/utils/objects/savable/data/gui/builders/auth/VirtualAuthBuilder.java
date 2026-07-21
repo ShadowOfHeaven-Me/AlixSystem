@@ -1,10 +1,10 @@
 package shadow.utils.objects.savable.data.gui.builders.auth;
 
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
+import alix.common.data.PersistentUserData;
 import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
-import alix.common.utils.other.keys.secret.MapSecretKey;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
@@ -185,12 +185,12 @@ public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
         return items;
     }
 
-    public VirtualAuthBuilder(AlixUser user, Consumer<Boolean> onConfirm, boolean includeLeaveButton) {
+    public VirtualAuthBuilder(AlixUser user, PersistentUserData data, Consumer<Boolean> onConfirm, boolean includeLeaveButton) {
         this.includeLeaveButton = includeLeaveButton;
         this.user = user;
         this.onConfirm = onConfirm;
         this.gui = new CachingVirtualInventory(this.user.silentContext(), null, includeLeaveButton ? invItemsByteBuf : invItemsByteBufNoLeave, invOpenBuffer);
-        this.hexSecretKey = GoogleAuthUtils.getHexKey(UserTokensFileManager.getTokenOrSupply(MapSecretKey.uuidKey(user.retrooperUser().getUUID()), GoogleAuthUtils::generateSecretKey));
+        this.hexSecretKey = GoogleAuthUtils.getHexKey(UserTokensFileManager.getTokenOrSupply(data.tokenKey()));
         this.gui.setSpoofWithCached(true);
     }
 

@@ -1,0 +1,18 @@
+#------------------------------------------------#
+#                 SERVER SET-UP                  #
+#------------------------------------------------#
+
+#This config is used to set up the connection to an SMTP server
+# This is useful if you want to give the players the ability to add their own emails,
+# which can be used for account recovery or if you want to connect them to your own website
+
+username: account@gmail.com
+sender: Alix
+email: account@gmail.com
+
+# Connection parameters
+password:
+host: smtp.gmail.com
+# Usually either 587 (TLS) or 465 (SSL)
+#Can also be set custom (will have SSL enabled)
+port: 587

@@ -52,38 +52,7 @@ import static shadow.utils.users.UserManager.getVerifiedUser;
 
 public final class CommandManager {
 
-/*    private static final Map<String, List<String>> polishCommandAliasesMap;
-
-    static {
-        polishCommandAliasesMap = new HashMap<>();
-        putIntoMap("fly", "latanie", "lataj");
-        putIntoMap("rename", "nazwijprzedmiot", "nazwaprzedmiotu", "zmiennazweprzedmiotu");
-        putIntoMap("speed", "szybkosc", "predkosc");
-        putIntoMap("heal", "ulecz");
-        putIntoMap("feed", "najedz", "nasyc");
-        putIntoMap("invsee", "zobaczeq", "zobaczekwipunek", "ekwipunek");
-        putIntoMap("gamemode", "trybgry");
-        putIntoMap("list", "lista");
-        putIntoMap("nickname", "nazwa", "zmiennazwe");
-        putIntoMap("register", "zarejestruj");
-        putIntoMap("login", "loguj", "zaloguj");
-        putIntoMap("changepassword", "zmienhaslo");
-        putIntoMap("mute", "wycisz");
-        putIntoMap("unmute", "odcisz");
-        putIntoMap("reply", "odpowiedz");
-        putIntoMap("addwarp", "dodajwarp", "stworzwarp");
-        putIntoMap("removewarp", "usunwarp");
-        putIntoMap("chat", "czat", "czatoff", "czaton");
-    }
-
-    private static void putIntoMap(String command, String... aliases) {
-        polishCommandAliasesMap.put(command, Arrays.asList(aliases));
-    }*/
-
-    public static final String /*antiVpn = Messages.get("anti-vpn"),
-            accountLimiter = Messages.get("account-limiter"),
-            preventFirstTimeJoin = Messages.get("prevent-first-time-join"),
-            pingBeforeJoin = Messages.get("ping-before-join"),*/
+    public static final String
             flyingPlayerDisabled = Messages.get("flying-player-disabled"),
             flyingPlayerEnabled = Messages.get("flying-player-enabled"),
             flyingSpeedPlayer = Messages.get("flying-speed-player"),
@@ -115,8 +84,7 @@ public final class CommandManager {
             formatTempban = Messages.get("format-tempban"),
             formatUnban = Messages.get("format-unban"),
             formatUnbanip = Messages.get("format-unbanip"),
-    //formatCaptcha = Messages.get("format-captcha"),
-    formatChangepassword = Messages.get("format-changepassword"),
+            formatChangepassword = Messages.get("format-changepassword"),
             formatLogin = Messages.get("format-login"),
             formatRegister = Messages.get("format-register"),
             formatNicknamePlayer = Messages.get("format-nicknameplayer"),
@@ -192,18 +160,9 @@ public final class CommandManager {
             bannedPlayerReasonAndTime = Messages.get("banned-player-reason-and-time"),
             playerNotBanned = Messages.get("player-not-banned"),
             unbannedPlayer = Messages.get("unbanned-player"),
-    //ipNotBanned = Messages.get("ip-not-banned"),
-    unbannedIp = Messages.get("unbanned-ip"),
-    //alreadyLoggedIn = Messages.get("already-logged-in"),
-    //captchaAlreadyCompleted = Messages.get("captcha-already-completed"),
-    //captchaNotInitialized = Messages.get("captcha-not-initialized"),
-    incorrectCaptcha = Messages.get("incorrect-captcha"),
-    //loginReminderCommand = Messages.get("login-reminder-command"),
-    registerReminderCommand = Messages.get("register-reminder-command"),
+            unbannedIp = Messages.get("unbanned-ip"),
+            incorrectCaptcha = Messages.get("incorrect-captcha"),
             passwordChanged = Messages.get("password-changed"),
-            alreadyLoggedInLoginCommand = Messages.get("already-logged-in-login-command"),
-            captchaReminderCommand = Messages.get("captcha-reminder-command"),
-            passwordRegister = Messages.get("password-register"),
             nicknamePlayerReset = Messages.get("nickname-player-reset"),
             nicknamePlayerSet = Messages.get("nickname-player-set"),
             nicknameReset = Messages.get("nickname-reset"),

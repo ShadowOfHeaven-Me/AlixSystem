@@ -29,6 +29,7 @@ import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.server.LimboServer;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +72,8 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
     @Nullable
     public static boolean hasCompletedCaptcha(Channel channel, String name) {
-        /*if (GEYSER_UTIL.isBedrock(channel))
-            return true;*/
+        if (GEYSER_UTIL.isBedrock(channel))
+            return true;
 
         var ip = AlixCommonUtils.getAddress(channel);
         return ip.equals(completedCaptchaCache.get(name));
@@ -88,13 +89,17 @@ public abstract class LimboIntegration<T extends ClientConnection> {
     }*/
 
     //invoked whenever the real address become known
-    public final void onProxyAddress(Channel channel, InetAddress address) {
-        if (FireWallManager.isBlocked0(address)) {
+    public final void onProxyAddress(Channel channel, InetSocketAddress address) {
+        var addr = address.getAddress();
+        if (FireWallManager.isBlocked0(addr)) {
             channel.close();
             return;
         }
 
-        ConnectRequestAlgoImpl.onConnection(channel, address);
+        if (ConnectRequestAlgoImpl.isInvalidPort(channel, address))
+            return;
+
+        ConnectRequestAlgoImpl.onConnection(channel, addr);
     }
 
     public void invokeChannelInit(ClientConnection connection) {
@@ -188,6 +193,10 @@ public abstract class LimboIntegration<T extends ClientConnection> {
             switch (verdict) {
                 case ALLOWED -> {
                 }
+                case DISALLOWED_ANTIBOT_FAILED -> {
+                    consumer.accept(disconnect(connection, antiBotFailedPacket));
+                    return;
+                }
                 case DISALLOWED_INVALID_NAME -> {
                     consumer.accept(disconnect(connection, invalidNamePacket));
                     return;
@@ -252,6 +261,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
     static final class Packets {
         static final PacketSnapshot
+                antiBotFailedPacket = PacketLoginDisconnect.snapshot("§cFailed AntiBot"),
                 invalidNamePacket = PacketLoginDisconnect.snapshot(Messages.get("anti-bot-invalid-name-blocked")),
                 preventFirstTimeJoinPacket = PacketLoginDisconnect.snapshot(ConnectionManager.preventFirstTimeJoinMessage),
                 maxTotalAccountsPacket = PacketLoginDisconnect.snapshot(GeoIPTracker.maxAccountsReached),

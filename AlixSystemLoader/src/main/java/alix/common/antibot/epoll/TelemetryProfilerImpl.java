@@ -21,7 +21,8 @@ public final class TelemetryProfilerImpl implements AbstractTelemetryProfiler {
     static final boolean NO_DEBUG = true;
 
     static {
-        var opt = NanoLimbo.INTEGRATION.isEpoll() ? SynReaderWriter.createImpl() : null;
+        boolean enable = NanoLimbo.INTEGRATION.isEpoll() && !NanoLimbo.INTEGRATION.isProxyProtocol();
+        var opt = enable ? SynReaderWriter.createImpl() : null;
         PROFILER = opt != null ? new TelemetryProfilerImpl(opt) : null;
     }
 

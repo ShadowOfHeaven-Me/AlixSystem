@@ -3,7 +3,7 @@ package alix.common.utils;
 import alix.common.AlixCommonMain;
 import alix.common.AlixMain;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
-import alix.common.connection.ConnectionThreadManager;
+import alix.common.connection.ConnectionAlgoManager;
 import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
 import alix.common.connection.filters.GeoIPTracker;
@@ -61,14 +61,17 @@ public final class AlixCommonHandler {
         }
         LimboJoinProfiler.update(channel, ConnectionStage.NAME_PASSED);
 
-        //String name = Dependencies.getCorrectUsername(channel, name); //Dependencies.FLOODGATE_PREFIX != null && Dependencies.isBedrock(channel) ? Dependencies.FLOODGATE_PREFIX + name : name;
-        //String name = name;
-
-        //AlixScheduler.async(() -> (?)
         InetAddress address = AlixCommonUtils.getAddress(channel);
 
-        if (antibotService)// && !proxyProtocol)
-            ConnectionThreadManager.onJoinAttempt(nameRefactored, address);
+        if (antibotService && ConnectionAlgoManager.onJoinAttempt(nameRefactored, address)) {
+            consumer.accept(PreLoginVerdict.DISALLOWED_ANTIBOT_FAILED);
+            return;
+        }
+
+        /*var sig = TelemetryProfiler.synSignature(channel);
+        if(sig != null) {
+
+        }*/
 
         if (data != null) {
             LimboJoinProfiler.update(channel, ConnectionStage.HAS_DATA_ALLOWED);

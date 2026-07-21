@@ -25,10 +25,12 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
+import shadow.systems.login.autoin.uuid.PremiumUuidSetting;
 import shadow.systems.netty.AlixChannelHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.netty.NettyUtils;
+import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
@@ -71,7 +73,6 @@ public final class PremiumAuthenticator {
     private final KeyPair keyPair = PremiumVerifier.keyPair;
     private final boolean
             assumeNonPremiumOnFailedAuth = Main.config.getBoolean("assume-non-premium-if-auth-failed"),
-            assignPremiumUUID = AlixUtils.assignPremiumUUID,
             __noPremiumAuthButKeepIdentity = AlixUtils.__noPremiumAuthButKeepIdentity;
 
     private static PacketSnapshot disconnect(String msgId) {
@@ -159,7 +160,7 @@ public final class PremiumAuthenticator {
                     //make sure to remove the name char prefix
                     if (hasJoined(PremiumUtils.getNonPrefixedName(packetUsername), serverId, address.getAddress())) {
 
-                        if (this.assignPremiumUUID)
+                        if (PremiumUuidSetting.CONFIG.shouldAssignPremiumUuid(serverUsername, data.uuid()))
                             this.setPremiumUUID(networkManager, data.uuid());
 
                         //Main.debug("VerifiedCache.verify=" + user.getName());
@@ -219,8 +220,7 @@ public final class PremiumAuthenticator {
 
             //If hasn't passed the limbo captcha - either limbo is disabled or the player failed the captcha (so this isn't a reconnect after the limbo pass), so invoke onLoginStart here
         } else {
-            /*else if (!AlixChannelHandler.onLoginStart(user, packetUsername, serverUsername, data, performPremiumCheck))
-            return;*/
+            Main.logWarning("onLoginStart0 invoked without captcha pass for " + serverUsername + "! Disconnecting him for safety!");
             NettyUtils.closeAfterDynamicSend(channel, OutDisconnectPacketConstructor.constructDynamicAtLoginPhase("§c[No captcha]"));
             return;
         }
@@ -232,7 +232,7 @@ public final class PremiumAuthenticator {
         }
         //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/listener/AuthenticListeners.java#L29
 
-        if (__noPremiumAuthButKeepIdentity && assignPremiumUUID) {
+        if (__noPremiumAuthButKeepIdentity) {
             PremiumData premiumData = PersistentUserData.getPremiumData(data);
 
             if (premiumData.getStatus().isPremium()) {
@@ -376,8 +376,16 @@ public final class PremiumAuthenticator {
     }
 
     private void disconnectWith(User user, PacketSnapshot packet) {
-        PacketUtils.closeWith(user, packet, null);
-        //NettyUtils.closeAfterConstSend((Channel) user.getChannel(), constDisconnectBuf);
+        var channel = (Channel) user.getChannel();
+        var cipher = CipherHandler.encryptionFor(channel);
+
+        //AlixCommonMain.logWarning("PIPELINE= " + channel.pipeline().names());
+        //new Exception().printStackTrace();
+        if (channel.eventLoop().inEventLoop())
+            PacketUtils.closeWith(user, packet, cipher);
+        else
+            channel.eventLoop().execute(() -> PacketUtils.closeWith(user, packet, cipher));
+        //NettyUtils.closeAfterConstSend(, constDisconnectBuf);
     }
 
     private boolean verifyNonce(WrapperLoginClientEncryptionResponse packet,

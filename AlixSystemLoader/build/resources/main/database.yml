@@ -45,4 +45,4 @@ port:
 sqlite-path: "AlixSystem/sqlite.db"
 
 #The maximum lifetime of a database connection (in seconds)
-max-lifetime: 60
+max-lifetime: -1

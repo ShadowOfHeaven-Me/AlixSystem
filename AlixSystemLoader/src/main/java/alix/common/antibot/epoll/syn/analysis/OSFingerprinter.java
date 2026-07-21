@@ -83,12 +83,8 @@ public final class OSFingerprinter {
             }
         }
 
-        if (sig.windowSize == 8192) {
-            return OS.WINDOWS_NT_6_GENERIC;
-        }
-
-        if (sig.windowSize == 16384 || sig.windowSize == 65535) {
-            if (layoutEqualsAny(layout, "mss,nop,nop,sok", "mss,nop,ws,nop,nop,sok") && sig.df) {
+        if (sig.windowScale != 8 && (sig.windowSize == 16384 || sig.windowSize == 65535)) {
+            if (layoutEqualsAny(layout, "mss,nop,nop,sok") && sig.df) {
                 return OS.WINDOWS_XP;
             }
             return OS.WINDOWS_NT_5_GENERIC;
@@ -103,6 +99,10 @@ public final class OSFingerprinter {
 
         if (score >= 8) {
             return OS.WINDOWS_MODERN_GENERIC;
+        }
+
+        if (sig.windowSize == 8192) {
+            return OS.WINDOWS_NT_6_GENERIC;
         }
 
         return OS.WINDOWS_NT_GENERIC;

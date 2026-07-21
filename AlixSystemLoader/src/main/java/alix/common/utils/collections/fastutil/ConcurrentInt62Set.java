@@ -96,7 +96,7 @@ public final class ConcurrentInt62Set {
 
         private static final boolean HAS_SPIN_WAIT = PlatformDependent.javaVersion() >= 9;
 
-        private void yieldOrSpinWait() {
+        void yieldOrSpinWait() {
             if (HAS_SPIN_WAIT)
                 Thread.onSpinWait();
             else

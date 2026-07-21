@@ -182,7 +182,8 @@ public final class PacketSnapshot implements PacketOut {
     private static final ByteBuf EMPTY = Unpooled.EMPTY_BUFFER;
 
     @NotNull
-    private static ByteBuf encode0(VersionMap<ByteBuf> encodings, Map<ByteBuf, Version> encoded, Version version, PacketOut packet, State state, CompressionSupplier compressionSupplier) {
+    private static ByteBuf encode0(VersionMap<ByteBuf> encodings, Map<ByteBuf, Version> encoded, Version version,
+                                   PacketOut packet, State state, CompressionSupplier compressionSupplier) {
         if (version.isUndefined()) {
             encodings.put(version, EMPTY);
             return EMPTY;
@@ -210,6 +211,7 @@ public final class PacketSnapshot implements PacketOut {
             return cached;
         } else {
             var constBuf = BufUtils.constBuffer(buf);
+            //buf, not constBuf
             encoded.put(buf, version);
             encodings.put(version, constBuf);
             return constBuf;

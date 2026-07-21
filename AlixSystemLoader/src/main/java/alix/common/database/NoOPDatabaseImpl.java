@@ -1,10 +1,9 @@
 package alix.common.database;
 
+import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
 import alix.common.database.connect.DatabaseType;
-
-import java.util.UUID;
 
 final class NoOPDatabaseImpl implements DatabaseUpdater {
     @Override
@@ -13,17 +12,12 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
+    public void saveData(PersistentUserData data) {
+
+    }
+
+    @Override
     public void createTablesSync() {
-
-    }
-
-    @Override
-    public void insertUser(String name, UUID uuid, long createdAt, Password password) {
-
-    }
-
-    @Override
-    public void addPasswordAndLink(String ownerName, Password password) {
 
     }
 

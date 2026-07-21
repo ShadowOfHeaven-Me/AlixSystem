@@ -53,12 +53,6 @@ public final class UserFileManager {
         return get(name) != null;
     }
 
-    /*public static PersistentUserData getOrCreatePremiumInformation(String name, InetAddress ip) {
-        PersistentUserData data = get(name);
-
-        return data != null ? data : PersistentUserData.createFromPremiumInfo(name, ip);
-    }*/
-
     public static void putData(PersistentUserData data) {
         map.put(data.getName(), data);
         PlayerNameIndex.index(data.getName());

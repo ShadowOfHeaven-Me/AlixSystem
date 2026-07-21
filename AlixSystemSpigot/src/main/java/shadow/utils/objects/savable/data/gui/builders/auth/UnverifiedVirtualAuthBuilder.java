@@ -18,7 +18,7 @@ public final class UnverifiedVirtualAuthBuilder extends VirtualAuthBuilder {
     private final UnverifiedUser user;
 
     public UnverifiedVirtualAuthBuilder(UnverifiedUser user) {
-        super(user, correct -> onCodeConfirm(user, correct), true);
+        super(user, user.getData(), correct -> onCodeConfirm(user, correct), true);
         this.user = user;
     }
 

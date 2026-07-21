@@ -15,7 +15,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
 import io.papermc.paper.configuration.GlobalConfiguration;
-import org.bukkit.Bukkit;
 import shadow.Main;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
@@ -33,7 +32,7 @@ public final class AlixInterceptor {
     public static final boolean PROXY_PROTOCOL = ServerEnvironment.isPaper() && GlobalConfiguration.get().proxies.proxyProtocol;
     private static final String name = "alix-interceptor";//, name2 = "AlixInjector";
     private static final LimboServer limbo;
-    private static final boolean enableLimbo = !Bukkit.getServer().getOnlineMode() && Main.config.getBoolean("virtual-limbo-server");
+    //private static final boolean enableLimbo = !Bukkit.getServer().getOnlineMode() && Main.config.getBoolean("virtual-limbo-server");
     private static final Interceptor interceptor;
     public static final FireWallType fireWallType;
 
@@ -92,9 +91,9 @@ public final class AlixInterceptor {
             injectIntoServerPipeline(serverPipeline);
         });
 
-        if (!enableLimbo) {
+        /*if (!enableLimbo) {
             AlixCommonMain.logWarning("virtual-limbo-server=false is now unsupported! Enabling the limbo anyway");
-        }
+        }*/
 
         limbo = NanoLimbo.load(new BukkitLimboIntegration());
     }

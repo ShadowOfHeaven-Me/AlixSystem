@@ -1,5 +1,6 @@
 package alix.common.utils.collections.queue.network;
 
+import alix.common.AlixCommonMain;
 import alix.common.utils.collections.queue.AlixDeque;
 import alix.common.utils.collections.queue.AlixQueue;
 
@@ -47,10 +48,24 @@ public final class AlixNetworkDeque<T> implements AlixQueue<T> {
         if (this.deque != null) this.deque.clear();
     }
 
+    Consumer<T> errorProne(Consumer<T> action) {
+        return t -> {
+            try {
+                action.accept(t);
+            } catch (Throwable e) {
+                AlixCommonMain.logWarning("Could not accept packet - " + e.getMessage());
+            }
+        };
+    }
+
+    void forEach0(Consumer<T> consumer) {
+        for (int i = 0; i < this.index; i++) consumer.accept((T) this.array[i]);
+
+        if (this.deque != null) this.deque.forEach(consumer);
+    }
+
     @Override
     public void forEach(Consumer<T> action) {
-        for (int i = 0; i < this.index; i++) action.accept((T) this.array[i]);
-
-        if (this.deque != null) this.deque.forEach(action);
+        this.forEach0(this.errorProne(action));
     }
 }

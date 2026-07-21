@@ -60,7 +60,7 @@ import static ua.nanit.limbo.NanoLimbo.verifyTheDud;
 
 public final class ClientConnection {
 
-    private static final PacketSnapshot REJOIN = PacketSnapshot.of(new PacketPlayOutDisconnect().setReason("§7Passed CAPTCHA successfully\n§aYou may now join the server"));
+    private static final PacketSnapshot REJOIN = PacketSnapshot.of(new PacketPlayOutDisconnect().setReason("§6§lAntiBot\n§7Passed CAPTCHA successfully\n§aYou may now join the server"));
     private final LimboServer server;
     private final Channel channel;
     private final GameProfile gameProfile;

@@ -3,82 +3,102 @@ package alix.common.antibot.algorithms.connection.types;
 import alix.common.antibot.algorithms.connection.ConnectionAlgorithm;
 import alix.common.antibot.firewall.AlgorithmId;
 import alix.common.antibot.firewall.FireWallManager;
-import alix.common.messages.AlixMessage;
-import alix.common.messages.Messages;
+import alix.common.connection.filters.GeoIPTracker;
+import alix.common.data.file.UserFileManager;
+import alix.common.utils.AlixCache;
+import alix.common.utils.AlixClock;
 
 import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
-import static alix.common.antibot.firewall.AlgorithmId.B2;
+import static alix.common.antibot.firewall.AlgorithmId.B3;
 
 public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
-    //private final String userMessage = Messages.get("anti-bot-fail-suspect-message","{0}", this.getAlgorithmID());
-    private static final AlgorithmId ALGORITHM_ID = B2;
-    private final Map<InetAddress, NameMapImpl> ipMap = new ConcurrentHashMap<>();//<ip, Name to join attempt map>
+    private static final AlgorithmId ALGORITHM_ID = B3;
+    private static final long WINDOW_MS = 4000;
+    private static final Map<InetAddress, Bucket> MAP = AlixCache.newBuilder().expireAfterAccess(WINDOW_MS, TimeUnit.MILLISECONDS).<InetAddress, Bucket>build().asMap();
 
     @Override
-    public void onJoinAttempt(String name, InetAddress ip) {
-        if (name == null) return; //Does not support pre-login checks
-        if (this.ipMap.computeIfAbsent(ip, NameMapImpl::new).add(name)) this.ipMap.remove(ip);
+    public boolean onJoinAttempt(String name, InetAddress ip) {
+        return MAP.computeIfAbsent(ip, i -> new Bucket()).onAttempt(name, ip);
     }
 
-    @Override
-    public void onThreadRepeat() {
-        //final long now = System.currentTimeMillis();
-        this.ipMap.forEach((ip, map) -> {
-            if (map.tick() <= 0) this.ipMap.remove(ip);
-        });
-    }
+    static final class Bucket {
 
-    @Override
-    public AlgorithmId getAlgorithmID() {
-        return ALGORITHM_ID;
-    }
+        static final long REFILL_PERIOD = 800;//5 tokens per 4 seconds
+        static final int MAX_TOKENS = 12;
 
-    private static final class NameMapImpl extends NameMap {
+        int tokens = MAX_TOKENS;
+        int overrun = 0;
+        long lastRefill = AlixClock.currentTimeMillis();
+        //name -> expire at
+        //final Object2LongMap<String> lastNames = new Object2LongOpenHashMap<>();//AlixCache.newBuilder().expireAfterWrite(WINDOWS_MS, TimeUnit.MILLISECONDS).<String, Boolean>build().asMap();
+        final Map<String, Long> lastNames = new HashMap<>();
 
-        private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message", "{0}", ALGORITHM_ID);
-        private final AtomicInteger vl;
+        void refillIfNecessary() {
+            if (this.tokens == MAX_TOKENS)
+                return;
 
-        private NameMapImpl(InetAddress address) {
-            super(address);
-            this.vl = new AtomicInteger();
-            //this.removalTime = new AtomicLong(System.currentTimeMillis() + 20000);
+            long now = AlixClock.currentTimeMillis();
+            long passed = now - this.lastRefill;
+            if (passed < REFILL_PERIOD)
+                return;
+
+            int refill = (int) (passed / REFILL_PERIOD);
+
+            this.tokens = Math.min(this.tokens + refill, MAX_TOKENS);
+
+            if (this.tokens == MAX_TOKENS)
+                this.lastRefill = now;
+            else
+                this.lastRefill += refill * REFILL_PERIOD;//account for rounding errors by lying a bit about lastRefill time
+
+            if (this.tokens > 0)
+                this.overrun = 0;
         }
 
-        protected boolean add(String name) {
-            //AliCommonMain.logInfo("IP: " + ip + " Name To IP: " + vl.get());
+        void removeStale() {
+            long now = AlixClock.currentTimeMillis();
+            this.lastNames.entrySet().removeIf(entry -> entry.getValue() < now);
+        }
 
-            if (this.namesSet.add(name)) this.vl.getAndAdd(24);
-            else this.vl.getAndAdd(2);
-
-            if (this.vl.get() > 240) {
-                FireWallManager.add(ip, ALGORITHM_ID, true);
+        synchronized boolean onAttempt(String name, InetAddress ip) {
+            //already firewalled, fast-path
+            if (this.tokens < 0 && this.overrun > 1)
                 return true;
-            }
+
+            this.refillIfNecessary();
+            this.removeStale();
+            long now = AlixClock.currentTimeMillis();
+
+            boolean newName = this.lastNames.put(name, now + WINDOW_MS) == null;
+
+            int penalty = 1;
+
+            if (newName)
+                penalty += UserFileManager.hasName(name) ? 1 : 2;
+
+            int attemptCount = this.lastNames.size();
+            if (attemptCount >= 2)
+                penalty += Math.min(attemptCount - 1, 3);
+
+            if (GeoIPTracker.isMapped(ip))
+                penalty = Math.max(1, penalty - 1);
+
+            this.tokens -= penalty;
+
+            if (this.tokens < 0) {
+                if (++this.overrun > 1) {
+                    FireWallManager.add(ip, ALGORITHM_ID, true);
+                    return true;
+                }
+            } else
+                this.overrun = 0;
+
             return false;
         }
-
-        private int tick() {
-            return this.vl.addAndGet(-3);
-        }
     }
-
-/*    private static final class CheckFunction implements BiFunction<String, Integer, Integer> {
-        private final String ip;
-
-        private CheckFunction(String ip) {
-            this.ip = ip;
-        }
-
-        @Override
-        public Integer apply(String name, Integer vl) {
-            if (vl == null) return 3;
-
-            return vl + 1;
-        }
-    }*/
 }

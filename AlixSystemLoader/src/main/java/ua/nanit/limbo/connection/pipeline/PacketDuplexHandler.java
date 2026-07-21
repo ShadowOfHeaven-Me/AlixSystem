@@ -25,7 +25,6 @@ import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
-import ua.nanit.limbo.protocol.packets.shadow.KeepAlivePacket;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
@@ -34,7 +33,6 @@ import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import static ua.nanit.limbo.connection.pipeline.compression.CompressionHandler.COMPRESSION_ENABLED;
 import static ua.nanit.limbo.protocol.snapshot.PacketSnapshot.floodgateNoCompression;
@@ -262,7 +260,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         return promise;
     }
 
-    private static final KeepAlivePacket sex = KeepAlivePacket.sex(67);
+    /*private static final KeepAlivePacket sex = KeepAlivePacket.sex(67);
     private long delay;
 
     private void delayed(Runnable r) {
@@ -275,7 +273,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
             FlushBatcher.flush0(this.channel);
         }, this.delay, TimeUnit.SECONDS);
         this.delay += 2;
-    }
+    }*/
 
     public void write(PacketOut packet) {
         this.write(packet, this.voidPromise);
@@ -384,7 +382,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         ByteBuf buf = noCompression ? packet.getEncodedNoCompression(version, channel) : packet.getEncoded(version, channel);
 
         if (NanoLimbo.debugPackets) {
-            Log.error("write0 - " + packet.getPacket() + " COMPRESS=" + (!noCompression));
+            Log.error("write0 - " + packet.getPacket() + " COMPRESS=" + (!noCompression) + " CIPHER=" + (cipher != null));
         }
 
         if (NanoLimbo.validateWrites)
@@ -441,7 +439,15 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         //Log.error("channelRegistered");
-        ConnectRequestAlgoImpl.onConnection(this.channel, AlixCommonUtils.getAddress(this.channel));
+        if (!NanoLimbo.INTEGRATION.isProxyProtocol()) {
+            var addr = AlixCommonUtils.getSocketAddress(this.channel);
+            if (ConnectRequestAlgoImpl.onConnection(this.channel, addr.getAddress()))
+                return;
+
+            if (ConnectRequestAlgoImpl.isInvalidPort(this.channel, addr))
+                return;
+        }
+
         if (this.passRegistration())
             super.channelRegistered(ctx);
     }

@@ -1,14 +1,3 @@
-Title
+Fix erroneous message
 
-* Fixed console spam caused by bots scanning the internet
-* Improved premium data request sources (Removed AshCon, set Mojang as primary source)
-* All 'matscan' scans will now be firewalled by default
-* Removed obsolete Internal NIO Interceptor firewall type
-
-Spigot
-
-* Enabled two new antibot algorithms
-
-Velocity
-
-* Fixed an issues related to channel init plugins (like packetevents)
+* Fixed non-premium players getting an invalid packet message instead of the actual packet (except the very first person)

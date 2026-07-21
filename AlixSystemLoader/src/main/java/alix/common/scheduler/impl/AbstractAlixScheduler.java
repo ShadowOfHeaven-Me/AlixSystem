@@ -69,7 +69,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
 
     @Override
     public <T> AlixFuture<T> singleAlixFuture(Supplier<T> r) {
-        return AlixFuture.singleFuture(this.asyncExecutor, new ErrorReportingSupplier<>(r));
+        return AlixFuture.singleFuture(this.asyncExecutor, r);//new ErrorReportingSupplier<>(r)
     }
 
     @Override

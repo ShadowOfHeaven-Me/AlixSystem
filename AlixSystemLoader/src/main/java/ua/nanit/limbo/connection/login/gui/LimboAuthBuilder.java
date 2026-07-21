@@ -277,7 +277,7 @@ public final class LimboAuthBuilder implements LimboGUI {
         this.duplexHandler = connection.getDuplexHandler();
         this.includeLeaveButton = includeLeaveButton;
         this.onConfirm = onConfirm;
-        this.hexSecretKey = GoogleAuthUtils.getHexKey(UserTokensFileManager.getTokenOrSupply(secretKey, GoogleAuthUtils::generateSecretKey));
+        this.hexSecretKey = GoogleAuthUtils.getHexKey(UserTokensFileManager.getTokenOrSupply(secretKey));
         this.allItems = includeLeaveButton ? invItems : invItemsNoLeave;
     }
 

@@ -12,6 +12,11 @@ final class AddrUtilAPIImpl implements InetAddrUtil {
     }
 
     @Override
+    public Inet4Address _unsafeAllocIpv4WithHolder() {
+        throw new UnsupportedOperationException("No Unsafe Impl");
+    }
+
+    @Override
     public Inet6Address fastIPv6(byte[] addr) throws Exception {
         return (Inet6Address) InetAddress.getByAddress(addr);
     }

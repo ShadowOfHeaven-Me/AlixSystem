@@ -28,7 +28,7 @@ import static alix.common.utils.config.ConfigParams.defaultLoginType;
 
 public final class AlixCommonUtils {
 
-    public static final char[] generationChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-+=".toCharArray();
+    public static final char[] generationChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&()-+=".toCharArray();
     private static final RandomCharIterator RANDOM_CHAR_ITERATOR = new RandomCharIterator(generationChars);
     public static final Consumer EMPTY_CONSUMER = e -> {
     };
@@ -45,6 +45,38 @@ public final class AlixCommonUtils {
                 invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character"),
                 invalidCharacterBlankMessage = Messages.getWithPrefix("password-invalid-character-blank"),
                 pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
+    }
+
+    public static String formatNicely(int i) {
+        StringBuilder sb = new StringBuilder();
+        String s = Integer.toString(i);
+
+        int toEat = i < 0 ? 4 : 3;
+        for (int j = 0; j < s.length(); j++) {
+            char c = s.charAt(j);
+            if (toEat-- == 0 && j != s.length() - 1) {
+                sb.append(',');
+                toEat = 3;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    public static Integer parseIntOrNull(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public static String generateCode(int digits) {
+        StringBuilder sb = new StringBuilder(digits);
+        for (int i = 0; i < digits; i++)
+            sb.append(random.nextInt(10));
+
+        return sb.toString();
     }
 
     public static String getFormattedDate(Date date) {
@@ -89,19 +121,23 @@ public final class AlixCommonUtils {
     }
 
     public static InetAddress getAddress(Channel channel) {
+        return getSocketAddress(channel).getAddress();
+    }
+
+    public static InetSocketAddress getSocketAddress(Channel channel) {
         return NanoLimbo.INTEGRATION.isProxyProtocol() ? proxyAddress(channel) : getAddress(channel.remoteAddress());
     }
 
-    static InetAddress proxyAddress(Channel channel) {
+    static InetSocketAddress proxyAddress(Channel channel) {
         var addr = channel.attr(VarIntFrameDecoder.PROXY_ADDRESS_KEY).get();
         if (addr == null)
             AlixCommonMain.logWarning("Channel " + channel + " lacks an inet address assigned from proxy, despite proxy set-up!");
         return addr;
     }
 
-    static InetAddress getAddress(SocketAddress address) {
+    static InetSocketAddress getAddress(SocketAddress address) {
         if (address instanceof LocalAddress) return null;
-        return ((InetSocketAddress) address).getAddress();
+        return (InetSocketAddress) address;
     }
 
     //From PacketEvents, FakeChannelUtil.isFakeChannel

@@ -620,7 +620,7 @@ public final class AlixUtils {
 
     public static final ByteBuf
             notLoggedInUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.notLoggedInUserMessage, true, true),
-            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.captchaNotCompletedUserMessage, true, true),
+            captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.get("uncompleted-captcha-type-reminder"), true, true),
             unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.get("unregistered-reminder-password-repeat") : Messages.get("unregistered-reminder"), true, true);
 
     public static ByteBuf getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {

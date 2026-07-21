@@ -18,7 +18,7 @@ public final class VerifiedVirtualAuthBuilder extends VirtualAuthBuilder {
     private final Vector3i loc;
 
     public VerifiedVirtualAuthBuilder(VerifiedUser user, Consumer<Boolean> onConfirm) {
-        super(user, onConfirm, false);
+        super(user, user.getData(), onConfirm, false);
         this.user = user;
         this.loc = vec3iLoc(user);
     }

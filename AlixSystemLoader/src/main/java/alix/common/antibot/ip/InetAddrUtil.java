@@ -9,6 +9,8 @@ interface InetAddrUtil {
 
     boolean override(Inet4Address addr, int value);
 
+    Inet4Address _unsafeAllocIpv4WithHolder() throws InstantiationException;
+
     Inet6Address fastIPv6(byte[] addr) throws Exception;
 
     int ipv4Value(Inet4Address address);

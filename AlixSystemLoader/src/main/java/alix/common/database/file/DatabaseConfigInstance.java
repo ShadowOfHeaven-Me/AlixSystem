@@ -14,12 +14,11 @@ public final class DatabaseConfigInstance {
     public final String HOST = getString("host", "127.0.0.1");
     private final String SQLITE_PATH = getString("sqlite-path", "AuthMe/authme.db");
     public final File SQLITE_FILE = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder().getParentFile() + File.separator + SQLITE_PATH.replace('/', File.separatorChar));
-    public final int MAX_LIFETIME = getInt("max-lifetime", 60) * 1000;
+    public final int MAX_LIFETIME = getInt("max-lifetime", -1) * 1000;
     private final boolean migrate;
 
     public DatabaseConfigInstance(boolean migrate) {
         this.migrate = migrate;
-        //WrapperConfigServerShowDialog
     }
 
     public boolean isMigrate() {

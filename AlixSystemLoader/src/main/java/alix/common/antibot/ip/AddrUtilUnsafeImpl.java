@@ -14,13 +14,14 @@ final class AddrUtilUnsafeImpl implements InetAddrUtil {
     private static final Unsafe UNSAFE = AlixUnsafe.getUnsafe();
     private static final long holderOffset, addressOffset;//ipv4
     private static final long holder6Offset, ipaddress6Offset;//ipv6
-    private static final Class<?> holder6Clazz;
+    private static final Class<?> holderClazz, holder6Clazz;
 
     static {
         try {
             Field holderField = InetAddress.class.getDeclaredField("holder");
+            holderClazz = holderField.getType();
             holderOffset = UNSAFE.objectFieldOffset(holderField);
-            addressOffset = UNSAFE.objectFieldOffset(holderField.getType().getDeclaredField("address"));
+            addressOffset = UNSAFE.objectFieldOffset(holderClazz.getDeclaredField("address"));
 
             Field holder6Field = Inet6Address.class.getDeclaredField("holder6");
             holder6Offset = UNSAFE.objectFieldOffset(holder6Field);
@@ -36,6 +37,14 @@ final class AddrUtilUnsafeImpl implements InetAddrUtil {
         Object holder = UNSAFE.getObject(addr, holderOffset);
         UNSAFE.putInt(holder, addressOffset, value);
         return true;
+    }
+
+    @Override
+    public Inet4Address _unsafeAllocIpv4WithHolder() throws InstantiationException {
+        Object holder = UNSAFE.allocateInstance(holderClazz);
+        Inet4Address ipv4 = (Inet4Address) UNSAFE.allocateInstance(Inet4Address.class);
+        UNSAFE.putObject(ipv4, holderOffset, holder);
+        return ipv4;
     }
 
     @Override

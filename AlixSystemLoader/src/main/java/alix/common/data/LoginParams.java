@@ -87,6 +87,10 @@ public final class LoginParams {
         return ipAutoLogin == null ? ConfigParams.playerIPAutoLogin : ipAutoLogin;//default to config if not set manually by the user
     }
 
+    public Boolean getRawIpAutoLogin() {
+        return this.ipAutoLogin;
+    }
+
     public void setIpAutoLogin(boolean ipAutoLogin) {
         this.ipAutoLogin = ipAutoLogin;
     }
@@ -124,4 +128,6 @@ public final class LoginParams {
     public void setExtraLoginType(LoginType extraLoginType) {
         this.extraLoginType = extraLoginType;
     }
+
+
 }

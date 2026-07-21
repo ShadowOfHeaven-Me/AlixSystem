@@ -1,6 +1,7 @@
 package alix.common.utils.file.update;
 
 import alix.common.AlixCommonMain;
+import alix.common.utils.AlixCommonUtils;
 import alix.loaders.bukkit.BukkitAlixMain;
 
 import java.io.IOException;
@@ -15,15 +16,15 @@ public final class UpdateChecker {
         getVersion(newestVersion -> {
             String currentVersion = BukkitAlixMain.instance.getDescription().getVersion();
             if (isOutdatedVersion(currentVersion, newestVersion))
-                AlixCommonMain.logWarning("\n You're running an outdated version of AlixSystem (Using " + currentVersion + " with the newest being " + newestVersion + ")! An update is available at: https://www.spigotmc.org/resources/alixsystem.109144/\n");
+                AlixCommonMain.logWarning("\n You're running an outdated version of AlixSystem (Using " + currentVersion + " with the newest being " + newestVersion + ")! An update is available at: https://modrinth.com/plugin/alixsystem\n");
         });
     }
 
     private static boolean isOutdatedVersion(String current, String newest) {
         if (newest.equals(current)) return false;
 
-        String[] newestVersionSplit = newest.split(" ");
-        String[] currentVersionSplit = current.split(" ");
+        String[] newestVersionSplit = newest.split(" ")[0].split("-");
+        String[] currentVersionSplit = current.split(" ")[0].split("-");
 
         String newestFirstWord = newestVersionSplit[0];
         String currentFirstWord = currentVersionSplit[0];
@@ -43,8 +44,12 @@ public final class UpdateChecker {
         if (newestVer.length != currentVer.length) return true;
         //throw new RuntimeException("Invalid length: " + newestFirstWord + " " + newestVer.length + " - " + current + " " + currentVer.length);
         for (int i = 0; i < newestVer.length; i++) {
-            int newestVersionParsed = Integer.parseInt(newestVer[i]);
-            int currentVersionParsed = Integer.parseInt(currentVer[i]);
+            var newestVersionParsed = AlixCommonUtils.parseIntOrNull(getUntilNonDigit(newestVer[i]));
+            var currentVersionParsed = AlixCommonUtils.parseIntOrNull(getUntilNonDigit(currentVer[i]));
+
+            //something's malformed, ignore
+            if (newestVersionParsed == null || currentVersionParsed == null)
+                return false;
 
             if (newestVersionParsed < currentVersionParsed)
                 return false;//the used version is greater than the one released - must be a dev version, so ahead of releases
@@ -52,6 +57,15 @@ public final class UpdateChecker {
                 return true;//the used version is lesser than the newest one - must be outdated
         }
         return false;
+    }
+
+    private static String getUntilNonDigit(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9')
+                return s.substring(0, i);
+        }
+        return s;
     }
 
     private static void getVersion(Consumer<String> consumer) {

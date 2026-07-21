@@ -154,27 +154,19 @@ public abstract class AlixFileManager {
     }
 
     public static void write(File file, Collection<?> lines) throws IOException {
-        /*try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), CHARSET))) {//new BufferedWriter(new FileWriter(file, CHARSET))
-            for (Object line : lines) {
-                try {
-                    writer.write(String.valueOf(line));
-                    writer.newLine();
-                } catch (Exception e) {
-                    AlixCommonMain.logError("Error during file writing, lines=" + lines + ", file=" + file.getName());
-                    AlixCommonUtils.logException(e);
-                }
-            }
-        }*/
+        write(file, lines, String::valueOf);
+    }
 
+    public static <T> void write(File file, Collection<T> lines, Function<T, String> formatter) throws IOException {
         var sb = new StringBuilder(lines.size() << 6);//best guess
         var ls = System.lineSeparator();
 
         for (var line : lines) {
             String str;
             try {
-                str = String.valueOf(line);
+                str = formatter.apply(line);
             } catch (Throwable ex) {
-                AlixCommonMain.logError("Corrupt data! Could not save record in " + file.getName() + "! Report the error below immediately!");
+                AlixCommonMain.logError("Corrupt data! Could not save record '" + line + "' in " + file.getName() + "! Report the error below immediately!");
                 ex.printStackTrace();
                 continue;
             }
@@ -229,7 +221,7 @@ public abstract class AlixFileManager {
             written = writeJarCompiledFileIntoDest(copyInto, clazz.getClassLoader().getResourceAsStream(s)) != null;
 
         if (!written)
-            throw new AlixError("Resource: " + s);
+            throw new AlixError("No Resource: " + s);
 
         return copyInto;
     }
@@ -398,6 +390,10 @@ public abstract class AlixFileManager {
 
     public void save0(Collection<?> values) throws IOException {
         write(file, values);
+    }
+
+    public <T> void save0(Collection<T> values, Function<T, String> formatter) throws IOException {
+        write(file, values, formatter);
     }
 
     protected void saveSingularValue(String value) throws IOException {

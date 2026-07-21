@@ -41,7 +41,7 @@ public final class NanoLimbo {
 
     private static final SnapshotEncodeStrategy STRATEGY = SnapshotEncodeStrategy.RUNTIME_CACHE;
     //@DebugOnly
-    public static final boolean suppressInvalidPackets = true;//of(true);
+    public static final boolean suppressInvalidPackets = false;//of(true);
     public static final boolean debugCipher = false;//of(false);
     //@DebugOnly
     public static final boolean debugPackets = of(false);

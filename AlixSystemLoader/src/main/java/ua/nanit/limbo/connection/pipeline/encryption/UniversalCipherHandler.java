@@ -2,14 +2,17 @@ package ua.nanit.limbo.connection.pipeline.encryption;
 
 import alix.common.environment.ServerEnvironment;
 import alix.common.reflection.CommonReflection;
+import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,19 +49,38 @@ final class UniversalCipherHandler implements CipherHandler {
         return buf;
     }
 
+    //write a proper optimization for this...
+    @OptimizationCandidate
+    private static ByteBuf compatible(ByteBuf buf) {
+        return buf.isReadOnly() ? buf.copy() : buf;
+    }
+
+    static ByteBuf crypt(Method method, ChannelHandlerAdapter handler, ChannelHandlerContext ctx, ByteBuf in, List<ByteBuf> out) throws InvocationTargetException, IllegalAccessException {
+        ByteBuf compatible = compatible(in);
+
+        if (compatible != in) {
+            //compatible is a fresh copy
+            in.release();
+        }
+
+        method.invoke(handler, ctx, compatible, out);
+
+        return result(out);
+    }
+
     @Override
     public ByteBuf encrypt(ByteBuf in) throws Exception {
-        ENCODE.invoke(this.encoder, this.encoderCtx, in, this.out);
-        return result(this.out);
+        return crypt(ENCODE, this.encoder, this.encoderCtx, in, this.out);
     }
 
     @Override
     public ByteBuf decrypt(ByteBuf in) throws Exception {
-        DECODE.invoke(this.decoder, this.decoderCtx, in, this.out);
-        return result(this.out);
+        ByteBuf in0 = compatible(in);
+
+        return crypt(DECODE, this.decoder, this.decoderCtx, in0, this.out);
     }
 
-    private static String encoderName() {
+    static String encoderName() {
         return switch (ServerEnvironment.getEnvironment()) {
             case VELOCITY -> "cipher-encoder";
             case PAPER, SPIGOT -> "encrypt";
@@ -66,9 +88,10 @@ final class UniversalCipherHandler implements CipherHandler {
         };
     }
 
-    private static String decoderName() {
+    static String decoderName() {
         return switch (ServerEnvironment.getEnvironment()) {
             case VELOCITY -> "cipher-decoder";
+            case PAPER, SPIGOT -> "decrypt";
             default -> throw new AlixError("ServerEnvironment.getEnvironment()=" + ServerEnvironment.getEnvironment());
         };
     }

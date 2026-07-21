@@ -1,22 +1,29 @@
 package alix.common.database;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.ip.IPUtils;
+import alix.common.data.*;
+import alix.common.data.loc.AlixLocationList;
+import alix.common.data.loc.provider.LocationListProvider;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.security.email.Email;
 import alix.common.data.security.password.Password;
 import alix.common.database.connect.DatabaseConnector;
 import alix.common.database.connect.DatabaseType;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
-import alix.common.utils.other.throwable.AlixException;
-import lombok.SneakyThrows;
+import alix.common.utils.other.keys.secret.MapSecretKey;
 
+import java.net.InetAddress;
 import java.sql.*;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static alix.common.database.QueryConstants.*;
 
 final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
+    private static final LocationListProvider HOMES_PROVIDER = LocationListProvider.IMPL;
     private final DatabaseConnector database;
 
     DatabaseUpdaterImpl(DatabaseConnector database) {
@@ -30,204 +37,315 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void createTablesSync() {
-        this.query(conn -> {
-            try (var st = conn.createStatement()) {
-                st.execute(CREATE_USERS_SQL());
-                //AlixCommonMain.logError(CREATE_PASSWORDS_SQL());
-                st.execute(CREATE_PASSWORDS_SQL());
-                st.execute(CREATE_PREMIUM_DATA_SQL());
-                // Try to add FK once. Some DBs may throw if already added; ignore that case.
-                try {
-                    DatabaseMetaData md = conn.getMetaData();
-                    boolean fkExists = false;
-// NOTE: getImportedKeys parameters are (catalog, schema, table)
-                    try (ResultSet rs = md.getImportedKeys(conn.getCatalog(), null, "alix_users")) {
-                        while (rs.next()) {
-                            String fkColumn = rs.getString("FKCOLUMN_NAME");   // column in alix_users
-                            String pkTable  = rs.getString("PKTABLE_NAME");    // referenced table
-                            // You can also read FK_NAME if you want: rs.getString("FK_NAME")
-                            if ("password_id".equalsIgnoreCase(fkColumn)
-                                && "alix_passwords".equalsIgnoreCase(pkTable)) {
-                                fkExists = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!fkExists) {
-                        st.execute(ADD_FK_USERS_PASSWORD);
-                    }
-                } catch (SQLException e) {
-                    // If constraint already exists, ignore. Otherwise rethrow.
-                    // Postgres duplicate_object is SQLState 42710; but we just ignore any
-                    // "already exists" style errors because the tables and constraint are idempotent.
-                    String sqlState = e.getSQLState();
-                    if (sqlState == null || !(sqlState.equals("42710") || sqlState.equals("42P07"))) {
-                        // rethrow if it's some other error
-                        throw e;
-                    }
-                }
+        this.query(connection -> {
+            try (var st = connection.createStatement()) {
+                st.execute(CREATE_USERS_SQL(this.getType()));
+                st.execute(CREATE_PASSWORDS_SQL(this.getType()));
             }
         });
     }
 
-    void addPremiumData(String name, String premiumUuid) {
+    public PersistentUserData loadUser(String name) {
+        AtomicReference<PersistentUserData> result = new AtomicReference<>();
+
+        this.query(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(SELECT_USER_SQL)) {
+                ps.setString(1, name);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next())
+                        result.set(readUser(rs));
+                }
+            }
+        });
+
+        return result.get();
+    }
+
+    private PersistentUserData readUser(ResultSet rs) throws SQLException {
+        int i = 1;
+
+        String name = rs.getString(i++);
+        UUID uuid = readUuid(rs, i++);
+        long createdAt = rs.getLong(i++);
+        Long lastSuccessfulLogin = getNullableLong(rs, i++);
+        String ipStr = rs.getString(i++);
+        long mutedUntil = rs.getLong(i++);
+
+        LoginType loginType = LoginType.valueOf(rs.getString(i++));
+
+        String extraLoginTypeStr = rs.getString(i++);
+        LoginType extraLoginType = extraLoginTypeStr == null ? null : LoginType.valueOf(extraLoginTypeStr);
+
+        Boolean ipAutoLogin = getNullableBoolean(rs, i++);
+        AuthSetting authSettings = AuthSetting.fromString(rs.getString(i++));
+        boolean hasProvenAuthAccess = rs.getBoolean(i++);
+
+        String identityStr = rs.getString(i++);
+        Identity identity = identityStr == null ? Identity.newIdentity(name) : Identity.fromSaved(name, identityStr);
+
+        String emailSaved = rs.getString(i++);
+        String homesSaved = rs.getString(i++);
+
+        int premiumStatus = rs.getInt(i++);
+        String premiumUuid = rs.getString(i++);
+
+        Password mainPassword = readPassword(rs, i);
+        i += 4;
+
+        Password extraPassword = readPassword(rs, i);
+
+        InetAddress ip = ipStr == null ? PersistentUserData.UNKNOWN_IP : IPUtils.fromAddress(ipStr);
+        AlixLocationList homes = readHomes(homesSaved);
+        PremiumData premiumData = readPremiumData(premiumStatus, premiumUuid);
+        Email email = readEmail(emailSaved, identity);
+
+        return PersistentUserData.fromDatabase(
+                name,
+                uuid,
+                createdAt,
+                lastSuccessfulLogin == null ? 0L : lastSuccessfulLogin,
+                ip,
+                mutedUntil,
+                loginType,
+                extraLoginType,
+                ipAutoLogin,
+                authSettings,
+                hasProvenAuthAccess,
+                identity,
+                email,
+                homes,
+                premiumData,
+                mainPassword,
+                extraPassword
+        );
+    }
+
+    private static Long getNullableLong(ResultSet rs, int index) throws SQLException {
+        long value = rs.getLong(index);
+        return rs.wasNull() ? null : value;
+    }
+
+    private static Boolean getNullableBoolean(ResultSet rs, int index) throws SQLException {
+        boolean value = rs.getBoolean(index);
+        return rs.wasNull() ? null : value;
+    }
+
+    private static UUID readUuid(ResultSet rs, int index) throws SQLException {
+        Object value = rs.getObject(index);
+        if (value == null) return null;
+        if (value instanceof UUID uuid) return uuid;
+        return UUID.fromString(value.toString());
+    }
+
+    private static AlixLocationList readHomes(String saved) {
+        if (saved == null || saved.equals(PersistentUserData.NO_VALUE)) {
+            return HOMES_PROVIDER.newList();
+        }
+        return HOMES_PROVIDER.fromSavable(saved);
+    }
+
+    private static Email readEmail(String saved, Identity identity) {
+        if (saved == null || saved.equals(PersistentUserData.NO_VALUE)) {
+            return null;
+        }
+
+        try {
+            return Email.readFromSaved(saved, MapSecretKey.fromName(identity.identity()));
+        } catch (Exception e) {
+            AlixCommonMain.logWarning("Failed to load encrypted email for identity=" + identity.identity() + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static PremiumData readPremiumData(int premiumStatus, String premiumUuid) {
+        if (premiumStatus == 1 && premiumUuid != null) {
+            try {
+                return PremiumData.createNew(UUID.fromString(premiumUuid));
+            } catch (IllegalArgumentException e) {
+                AlixCommonMain.logWarning("Invalid premium UUID found: " + premiumUuid);
+                return PremiumData.UNKNOWN;
+            }
+        }
+        return premiumStatus == -1 ? PremiumData.NON_PREMIUM : PremiumData.UNKNOWN;
+    }
+
+    private Password readPassword(ResultSet rs, int index) throws SQLException {
+        String hashedPassword = rs.getString(index);
+        if (hashedPassword == null) {
+            return Password.empty();
+        }
+
+        byte hashId = (byte) rs.getInt(index + 1);
+
+        String salt = rs.getString(index + 2);
+        if (salt == null) {
+            salt = "";
+        }
+
+        byte matcherId = (byte) rs.getInt(index + 3);
+
+        return Password.fromDatabase(hashedPassword, hashId, salt, matcherId);
+    }
+
+    @Override
+    public void saveData(PersistentUserData data) {
         this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_PREMIUM_DATA_SQL, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, premiumUuid);
-                ps.executeUpdate();
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        long id = rs.getLong(1);
-                        this.setPremiumPointerToId0(connection, name, id);
-                    } else {
-                        throw new AlixException("Inserting premium_data did not return generated id");
-                    }
+            boolean originalAutoCommit = connection.getAutoCommit();
+            try {
+                connection.setAutoCommit(false);
+
+                upsertUser(connection, data);
+
+                upsertPassword(connection, data.getName(), MAIN_PASSWORD_SLOT, data.getLoginParams().getPassword());
+
+                Password extraPassword = data.getLoginParams().getExtraPassword();
+                if (extraPassword == null) {
+                    deletePassword(connection, data.getName(), EXTRA_PASSWORD_SLOT);
+                } else {
+                    upsertPassword(connection, data.getName(), EXTRA_PASSWORD_SLOT, extraPassword);
+                }
+
+                connection.commit();
+            } catch (Throwable t) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ignored) {
+                }
+                throw t;
+            } finally {
+                try {
+                    connection.setAutoCommit(originalAutoCommit);
+                } catch (SQLException ignored) {
                 }
             }
         });
     }
 
-    @SneakyThrows
-    void setPremiumPointerToId0(Connection connection, String name, long premiumDataId) {
-        try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_PREMIUM_POINTER_BY_NAME_SQL)) {
-            ps.setLong(1, premiumDataId);
-            ps.setString(2, name);
+    private void upsertUser(Connection connection, PersistentUserData data) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(UPSERT_USER_SQL(this.getType()))) {
+            int i = 1;
+
+            ps.setString(i++, data.getName());
+            setUuid(ps, i++, data.getUUID());
+            ps.setLong(i++, data.createdAt());
+            setNullableLong(ps, i++, data.getLastSuccessfulLogin());
+            setNullableString(ps, i++, data.getSavedIP() == null ? null : data.getSavedIP().getHostAddress());
+            ps.setLong(i++, data.getMutedUntil());
+
+            LoginParams login = data.getLoginParams();
+
+            ps.setString(i++, data.getLoginType().name());
+
+            LoginType extraLoginType = login.getExtraLoginType();
+            if (extraLoginType == null) {
+                ps.setNull(i++, Types.VARCHAR);
+            } else {
+                ps.setString(i++, extraLoginType.name());
+            }
+
+            Boolean rawIpAutoLogin = login.getRawIpAutoLogin();
+            if (rawIpAutoLogin == null) {
+                ps.setNull(i++, Types.BOOLEAN);
+            } else {
+                ps.setBoolean(i++, rawIpAutoLogin);
+            }
+
+            ps.setString(i++, login.getAuthSettings().toSavable());
+            ps.setBoolean(i++, login.hasProvenAuthAccess());
+            ps.setString(i++, data.identity().identity());
+
+            Email email = data.getEmail();
+            if (email == null) {
+                ps.setNull(i++, Types.LONGVARCHAR);
+            } else {
+                ps.setString(i++, email.toSavable());
+            }
+
+            String homes = data.getHomes() == null ? null : data.getHomes().toSavable();
+            setNullableString(ps, i++, homes);
+
+            PremiumData premium = data.getPremiumData();
+            if (premium.getStatus().isPremium()) {
+                ps.setInt(i++, 1);
+                setUuid(ps, i++, premium.premiumUUID());
+            } else if (premium.getStatus().isNonPremium()) {
+                ps.setInt(i++, -1);
+                ps.setNull(i++, Types.VARCHAR);
+            } else {
+                ps.setInt(i++, 0);
+                ps.setNull(i++, Types.VARCHAR);
+            }
+
+            ps.executeUpdate();
+        }
+    }
+
+    private void updatePremiumData(Connection connection, String name, PremiumData data) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_PREMIUM_SQL)) {
+            if (data.getStatus().isPremium()) {
+                ps.setInt(1, 1);
+                setUuid(ps, 2, data.premiumUUID());
+            } else if (data.getStatus().isNonPremium()) {
+                ps.setInt(1, -1);
+                ps.setNull(2, Types.VARCHAR);
+            } else {
+                ps.setInt(1, 0);
+                ps.setNull(2, Types.VARCHAR);
+            }
+
+            ps.setString(3, name);
+            ps.executeUpdate();
+        }
+    }
+
+    private void upsertPassword(Connection connection, String ownerName, int slot, Password password) throws SQLException {
+        if (password == null || !password.isSet()) {
+            deletePassword(connection, ownerName, slot);
+            return;
+        }
+
+        try (PreparedStatement ps = connection.prepareStatement(UPSERT_PASSWORD_SQL(this.getType()))) {
+            ps.setString(1, ownerName);
+            ps.setInt(2, slot);
+            ps.setString(3, password.getHashedPassword());
+            ps.setShort(4, (short) (password.getHashId() & 0xFF));
+            ps.setString(5, password.getSalt());
+            ps.setShort(6, (short) (password.getMatcherId() & 0xFF));
+            ps.executeUpdate();
+        }
+    }
+
+    private void deletePassword(Connection connection, String ownerName, int slot) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(DELETE_PASSWORD_SQL)) {
+            ps.setString(1, ownerName);
+            ps.setInt(2, slot);
             ps.executeUpdate();
         }
     }
 
     @Override
     public void setPremiumData(String name, PremiumData data) {
-        if (data.getStatus().isPremium()) {
-            this.addPremiumData(name, data.premiumUUID().toString());
-            return;
-        }
-        this.queryAsync(connection -> {
-            this.setPremiumPointerToId0(connection, name, data.getStatus().isNonPremium() ? -1 : 0);
-        });
-    }
-
-    void setPassword0(Connection connection, String name, Password newPass, Password oldPass) throws SQLException {
-        //password reset
-        if (!newPass.isSet()) {
-            this.clearPasswordPointer0(connection, name);
-            return;
-        }
-
-        //first-time/password reset register
-        if (!oldPass.isSet()) {
-            this.addPasswordAndLink0(connection, name, newPass);
-            return;
-        }
-
-        //just a password change
-        this.updatePasswordByOwner0(connection, name, newPass);
+        this.queryAsync(connection -> updatePremiumData(connection, name, data));
     }
 
     @Override
     public void setPassword(String name, Password newPass, Password oldPass) {
-        this.queryAsync(connection -> {
-            this.setPassword0(connection, name, newPass, oldPass);
-        });
+        this.queryAsync(connection -> upsertPassword(connection, name, MAIN_PASSWORD_SLOT, newPass));
     }
 
-    @Override
-    public void insertUser(String name, UUID uuid, long createdAt, Password password) {
-        this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_USER_SQL())) {
-                ps.setString(1, name);
-                ps.setObject(2, uuid); // driver may accept UUID; otherwise use uuid.toString()
-                ps.setLong(3, createdAt);
-                ps.executeUpdate();
-            }
-            this.setPassword0(connection, name, password,
-                    Password.empty()//it's fine to call addPasswordAndLink0 even if a linked password exists
-            );
-        });
-    }
-
-    private void addPasswordAndLink0(Connection connection, String ownerName, Password password) throws SQLException {
-        boolean origAuto = connection.getAutoCommit();
-        try {
-            connection.setAutoCommit(false);
-            long pwdId;
-            // insert password
-            try (PreparedStatement ps = connection.prepareStatement(INSERT_PASSWORD_SQL(), Statement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, ownerName);
-                ps.setString(2, password.getHashedPassword());
-                ps.setShort(3, (short) (password.getHashId() & 0xFF));
-                ps.setString(4, password.getSalt());
-                ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
-                ps.executeUpdate();
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        pwdId = rs.getLong(1);
-                    } else {
-                        throw new AlixException("Insert password did not return generated id");
-                    }
-                }
-            }
-            // update user pointer
-            try (PreparedStatement ps2 = connection.prepareStatement(UPDATE_USERS_PASSWORD_ID_BY_NAME_SQL)) {
-                ps2.setLong(1, pwdId);
-                ps2.setString(2, ownerName);
-                int updated = ps2.executeUpdate();
-                if (updated == 0) {
-                    connection.rollback();
-                    throw new AlixException("User not found for ownerName: " + ownerName);
-                }
-            }
-            connection.commit();
-            //if (onSuccess != null) onSuccess.accept(pwdId);
-        } catch (AlixException e) {
-            try {
-                connection.rollback();
-            } catch (Exception ignore) {
-            }
-            throw e;
-        } finally {
-            try {
-                connection.setAutoCommit(origAuto);
-            } catch (Exception ignore) {
-            }
-        }
-    }
-
-    /**
-     * Atomically insert a password and link it to the user (update users.password_id).
-     * onSuccess receives the generated password id.
-     */
-    @Override
-    public void addPasswordAndLink(String ownerName, Password password) {
-        this.queryAsync(connection -> {
-            this.addPasswordAndLink0(connection, ownerName, password);
-        });
-    }
-
-    /**
-     * Explicit helper to set users.password_id = NULL.
-     */
     @Override
     public void clearPasswordPointer(String name) {
         this.queryAsync(connection -> {
-            this.clearPasswordPointer0(connection, name);
+            deletePassword(connection, name, MAIN_PASSWORD_SLOT);
+            deletePassword(connection, name, EXTRA_PASSWORD_SLOT);
         });
     }
 
-    void clearPasswordPointer0(Connection connection, String name) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement(CLEAR_USERS_PASSWORD_ID_BY_NAME_SQL)) {
-            ps.setString(1, name);
-            ps.executeUpdate();
-        }
-    }
-
-    /**
-     * Update lastSuccessfulLogin by user name.
-     */
     @Override
     public void updateLastSuccessfulLoginByName(String name, long lastSuccessfulLogin) {
         this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_LAST_LOGIN_BY_NAME_SQL)) {
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_LAST_LOGIN_SQL)) {
                 ps.setLong(1, lastSuccessfulLogin);
                 ps.setString(2, name);
                 ps.executeUpdate();
@@ -235,52 +353,52 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
-    /**
-     * Update IP by UUID.
-     */
     @Override
     public void updateIpByName(String name, String ip) {
         this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_IP_BY_NAME_SQL)) {
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_USERS_IP_SQL)) {
                 ps.setString(1, ip);
-                ps.setObject(2, name);
+                ps.setString(2, name);
                 ps.executeUpdate();
             }
         });
     }
 
-    void updatePasswordByOwner0(Connection connection, String ownerName, Password password) throws SQLException {
-        try (PreparedStatement ps = connection.prepareStatement(UPDATE_PASSWORD_BY_OWNER_SQL())) {
-            ps.setString(1, ownerName);
-            ps.setString(2, password.getHashedPassword());
-            ps.setShort(3, (short) (password.getHashId() & 0xFF));
-            ps.setString(4, password.getSalt());
-            ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
-            int rows = ps.executeUpdate();
-            if (rows == 0) {
-                throw new AlixException("No password row found for owner: " + ownerName);
+    @Override
+    public void updatePasswordByOwner(String ownerName, Password password) {
+        this.queryAsync(connection -> upsertPassword(connection, ownerName, MAIN_PASSWORD_SLOT, password));
+    }
+
+    private void setUuid(PreparedStatement ps, int index, UUID uuid) throws SQLException {
+        if (uuid == null) {
+            if (this.getType() == DatabaseType.POSTGRESQL) {
+                ps.setNull(index, Types.OTHER);
+            } else {
+                ps.setNull(index, Types.VARCHAR);
+            }
+        } else {
+            if (this.getType() == DatabaseType.POSTGRESQL) {
+                ps.setObject(index, uuid);
+            } else {
+                ps.setString(index, uuid.toString());
             }
         }
     }
 
-    /**
-     * Replace a password row by owner name.
-     */
-    @Override
-    public void updatePasswordByOwner(String ownerName, Password password) {
-        this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPDATE_PASSWORD_BY_OWNER_SQL())) {
-                ps.setString(1, ownerName);
-                ps.setString(2, password.getHashedPassword());
-                ps.setShort(3, (short) (password.getHashId() & 0xFF));
-                ps.setString(4, password.getSalt());
-                ps.setShort(5, (short) (password.getMatcherId() & 0xFF));
-                int rows = ps.executeUpdate();
-                if (rows == 0) {
-                    throw new AlixException("No password row found for owner: " + ownerName);
-                }
-            }
-        });
+    private static void setNullableLong(PreparedStatement ps, int index, Long value) throws SQLException {
+        if (value == null) {
+            ps.setNull(index, Types.BIGINT);
+        } else {
+            ps.setLong(index, value);
+        }
+    }
+
+    private static void setNullableString(PreparedStatement ps, int index, String value) throws SQLException {
+        if (value == null) {
+            ps.setNull(index, Types.VARCHAR);
+        } else {
+            ps.setString(index, value);
+        }
     }
 
     @Override
@@ -310,10 +428,10 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 this.delegate.apply(obj);
             } catch (Throwable t) {
                 StackTraceElement[] stackTrace = t.getStackTrace();
-                for (int i = 0; i < stackTrace.length; i++) {
+                for (int i = 1; i < stackTrace.length; i++) {
                     var frame = stackTrace[i];
                     if (frame.getClassName().equals(this.getClass().getName())) {
-                        var errAt = stackTrace[i - 1];
+                        var errAt = stackTrace[i - 1];//>= 0
                         int line = errAt.getLineNumber();
                         AlixCommonMain.logError("Error at line=" + line + ", type=" + DatabaseUpdater.INSTANCE.getType() + ", in=" + errAt.getMethodName());
                         break;

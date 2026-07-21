@@ -9,7 +9,9 @@ public interface LocationListProvider {
 
     AlixLocationList newList();
 
-    static LocationListProvider createImpl() {
+    LocationListProvider IMPL = createImpl();
+
+    private static LocationListProvider createImpl() {
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:

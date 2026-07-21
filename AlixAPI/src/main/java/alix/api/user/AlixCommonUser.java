@@ -25,7 +25,11 @@ public interface AlixCommonUser {
     }
 
     default InetAddress getAddress() {
-        return ((InetSocketAddress) this.getChannel().remoteAddress()).getAddress();
+        return this.getSocketAddress().getAddress();
+    }
+
+    default InetSocketAddress getSocketAddress() {
+        return (InetSocketAddress) this.getChannel().remoteAddress();
     }
 
     /**

@@ -30,9 +30,13 @@ import net.kyori.adventure.nbt.CompoundBinaryTag;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.data.NamespacedKey;
 
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -178,13 +182,16 @@ public final class ByteMessage {
     }
     
     public <T extends BinaryTag> void writeBinaryTag(Version version, T tag) {
-        final BinaryTagType<T> type = (BinaryTagType<T>) tag.type();
-        this.writeByte(type.id());
+        Object type = tag.type();
         try {
+            this.writeByte((byte) BINARY_TAG_ID.invoke(type));
+
             // pre-1.20.2 clients need an empty name
-            if (version.less(Version.V1_20_2)) this.writeShort(0);
-            type.write(tag, new ByteBufOutputStream(this.buf));
-        } catch (IOException exception) {
+            if (version.less(Version.V1_20_2))
+                this.writeShort(0);
+
+            BINARY_TAG_WRITE.invoke(type, tag, new ByteBufOutputStream(this.buf));
+        } catch (Throwable exception) {
             throw new EncoderException("Unable to encode BinaryTag", exception);
         }
     }
@@ -238,45 +245,32 @@ public final class ByteMessage {
         throw new IllegalArgumentException("Unknown tag type: " + tag.type());
     }*/
 
+    private static final MethodHandle BINARY_TAG_ID, BINARY_TAG_WRITE;
+
+    //Cuz BinaryTagType changed from abstract class to interface
+    static {
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+
+            BINARY_TAG_ID = lookup.findVirtual(BinaryTagType.class, "id", MethodType.methodType(byte.class));
+            BINARY_TAG_WRITE = lookup.findVirtual(BinaryTagType.class, "write", MethodType.methodType(void.class, BinaryTag.class, DataOutput.class));
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError("Failed to initialize Kyori compatibility layer: " + e.getMessage());
+        }
+    }
+
     public <T extends BinaryTag> void writeNamelessCompoundTag(T binaryTag) {
         try (ByteBufOutputStream stream = new ByteBufOutputStream(buf)) {
-            BinaryTagType<T> type = (BinaryTagType<T>) binaryTag.type();
+            Object type = binaryTag.type();
 
-            stream.writeByte(type.id());
-            type.write(binaryTag, stream);
+            byte id = (byte) BINARY_TAG_ID.invoke(type);
+            stream.writeByte(id);
 
-            // TODO Find a way to improve this...
-            //binaryTag.type().write(binaryTag, stream);
-            /*if (binaryTag instanceof CompoundBinaryTag) {
-                CompoundBinaryTag tag = (CompoundBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof ByteBinaryTag) {
-                ByteBinaryTag tag = (ByteBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof ShortBinaryTag) {
-                ShortBinaryTag tag = (ShortBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof IntBinaryTag) {
-                IntBinaryTag tag = (IntBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof LongBinaryTag) {
-                LongBinaryTag tag = (LongBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof DoubleBinaryTag) {
-                DoubleBinaryTag tag = (DoubleBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof StringBinaryTag) {
-                StringBinaryTag tag = (StringBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof ListBinaryTag) {
-                ListBinaryTag tag = (ListBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            } else if (binaryTag instanceof EndBinaryTag) {
-                EndBinaryTag tag = (EndBinaryTag) binaryTag;
-                tag.type().write(tag, stream);
-            }*/
+            BINARY_TAG_WRITE.invoke(type, binaryTag, (DataOutput) stream);
 
-        } catch (IOException e) {
+            /*stream.writeByte(type.id());
+            type.write(binaryTag, stream);*/
+        } catch (Throwable e) {
             throw new EncoderException("Cannot write NBT CompoundTag");
         }
     }

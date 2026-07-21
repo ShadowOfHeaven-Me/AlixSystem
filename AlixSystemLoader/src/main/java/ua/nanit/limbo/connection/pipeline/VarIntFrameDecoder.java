@@ -37,8 +37,7 @@ import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.server.Log;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.InetSocketAddress;
 
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
 
@@ -133,7 +132,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         BufUtils.safeRelease(cum);
     }
 
-    public static final AttributeKey<InetAddress> PROXY_ADDRESS_KEY = AttributeKey.newInstance("alix-proxy-ip-addr");
+    public static final AttributeKey<InetSocketAddress> PROXY_ADDRESS_KEY = AttributeKey.newInstance("alix-proxy-ip-addr");
     public volatile HAProxyMessage haProxyMessage;
 
     void handleProxyMessage(HAProxyMessage message) {
@@ -144,14 +143,13 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         if (message.command() != HAProxyCommand.PROXY)
             return;
 
-
         try {
-            var addr = InetAddress.getByName(message.sourceAddress());
+            var addr = InetSocketAddress.createUnresolved(message.sourceAddress(), message.sourcePort());
             channel.attr(PROXY_ADDRESS_KEY).set(addr);
             LimboJoinProfiler.update(channel, ConnectionStage.HA_PROXY_ADDRESS_ASSIGNED);
 
             NanoLimbo.INTEGRATION.onProxyAddress(channel, addr);
-        } catch (UnknownHostException e) {
+        } catch (Exception e) {
             UnsafeCloseFuture.unsafeClose(channel);
             throw new AlixException(e);
         }

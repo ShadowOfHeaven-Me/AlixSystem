@@ -1,6 +1,6 @@
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
-public class Tester {
+public class TesterBCrypt {
 
     public static final BCrypt.Hasher HASHER = BCrypt
             .with(BCrypt.Version.VERSION_2A);
@@ -8,7 +8,6 @@ public class Tester {
             .verifyer(BCrypt.Version.VERSION_2A);
 
     public static void main(String[] args) {
-        //var password = Hashing.BCRYPT.hash("sex");
         var word = "sex";
         var password = HASHER.hashToString(10, word.toCharArray());
         boolean match = VERIFIER.verify(word.toCharArray(), password).verified;

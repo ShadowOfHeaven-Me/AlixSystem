@@ -20,6 +20,6 @@ abstract class AbstractAlixCtxUser implements AlixUser, AlixSpigotUser {
 
     @Override
     public final ChannelHandlerContext silentContext() {
-        return this.silentContext.isRemoved() ? (this.silentContext = NettyUtils.getSilentContext(this.getChannel())) : this.silentContext;
+        return this.silentContext == null || this.silentContext.isRemoved() ? (this.silentContext = NettyUtils.getSilentContext(this.getChannel())) : this.silentContext;
     }
 }

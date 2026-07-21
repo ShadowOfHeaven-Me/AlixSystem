@@ -5,8 +5,6 @@ import alix.common.antibot.algorithms.any.types.TimeOutAlgo;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
-import alix.common.utils.AlixCommonUtils;
-import alix.common.utils.netty.register.ChannelRegisteredListener;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -14,10 +12,11 @@ import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.server.Log;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 public final class ConnectRequestAlgoImpl {
 
-    static final ChannelRegisteredListener ON_CONNECTION = ChannelRegisteredListener.of(ctx -> {
+    /*static final ChannelRegisteredListener ON_CONNECTION = ChannelRegisteredListener.of(ctx -> {
         var channel = ctx.channel();
         var addr = AlixCommonUtils.getAddress(channel);
         onConnection(channel, addr);
@@ -26,6 +25,38 @@ public final class ConnectRequestAlgoImpl {
 
     public static void onUnregisteredConnection(Channel channel) {
         channel.pipeline().addFirst("--alix-on-connection", ON_CONNECTION);
+    }*/
+
+    public static boolean isInvalidPort(Channel channel, InetSocketAddress address) {
+        /*int minPort = 32768, maxPort = 65535;
+
+        var sig = TelemetryProfiler.synSignature(channel);
+        OS os = null;
+
+        if (sig != null) {
+            os = sig.os;
+            if (os.isWindows() || os.isMacOS()) {
+                minPort = 49152;
+                //maxPort is 65535
+            } else if (os.isLinux()) {
+                //minPort is 32768
+                maxPort = 60999;
+            }
+        }
+
+        int port = address.getPort();
+        if (port < minPort || port > maxPort) {
+            //AlixCommonMain.logWarning("Invalid port, ip=" + address.getAddress().getHostAddress() + " port=" + port + " OS= " + (os != null ? os.getReadableName() : null));
+
+            *//*if (channel.isRegistered())
+                channel.close();
+            else
+                channel.unsafe().closeForcibly();
+
+            FireWallManager.add(address.getAddress(), AlgorithmId.I1, true);
+            return true;*//*
+        }*/
+        return false;
     }
 
     //true on disconnect

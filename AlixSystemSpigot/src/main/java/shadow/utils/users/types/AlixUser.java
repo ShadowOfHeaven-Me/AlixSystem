@@ -1,6 +1,5 @@
 package shadow.utils.users.types;
 
-import alix.common.utils.netty.BufUtils;
 import alix.spigot.api.users.AbstractSpigotUser;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -110,7 +109,7 @@ public interface AlixUser extends AbstractSpigotUser {
 
     default void writeAndFlushSilently(ByteBuf buffer) {
         DEBUG_TIME();
-        if(BufUtils.pooledBuffer().isContiguous())
+        //BufUtils.pooledBuffer().isContiguous()
         this.silentContext().writeAndFlush(buffer);
     }
 

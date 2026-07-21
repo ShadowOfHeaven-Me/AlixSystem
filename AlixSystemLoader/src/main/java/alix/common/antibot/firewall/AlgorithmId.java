@@ -1,8 +1,9 @@
 package alix.common.antibot.firewall;
 
 public enum AlgorithmId {
-    B2,
-    C1,
+    B3,
+    C2,
     G1,
-    H1
+    H2,
+    I1
 }

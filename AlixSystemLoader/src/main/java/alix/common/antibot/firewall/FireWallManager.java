@@ -7,6 +7,8 @@ import alix.common.antibot.ip.IPUtils;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.AlixMathUtils;
 import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.AlixFileManager;
@@ -39,7 +41,7 @@ public final class FireWallManager {
 
     //Dynamic
     private static final Map<InetAddress, FireWallEntry> dynamicMap = new ConcurrentHashMap<>();
-    private static final ConcurrentInt62Set dynamicIpv4Set = new ConcurrentInt62Set(1 << 14);
+    private static final ConcurrentInt62Set dynamicIpv4SetFastLookUp = new ConcurrentInt62Set(1 << 14);
 
     public static void addCauseException(InetSocketAddress ip, Throwable t) {
         addCauseException(ip.getAddress(), t);
@@ -80,7 +82,7 @@ public final class FireWallManager {
     }
 
     static FireWallEntry add(InetAddress ip, String message, long timeoutIn, TimeUnit unit) {
-        long timeoutAt = System.currentTimeMillis() + unit.toMillis(timeoutIn);
+        long timeoutAt = timeoutIn <= 0 ? 0 : System.currentTimeMillis() + unit.toMillis(timeoutIn);
         return add0(ip, FireWallEntry.from(message, timeoutAt));
     }
 
@@ -95,18 +97,21 @@ public final class FireWallManager {
             } else {
                 staticIpv6Set.add(ip);
             }
-            return null;
+            return entry;
         }
 
         // Dynamic
-        FireWallEntry previous = dynamicMap.put(ip, entry);
+        FireWallEntry previous = dynamicMap.putIfAbsent(ip, entry);
         if (ip instanceof Inet4Address ipv4) {
             long val = Integer.toUnsignedLong(IPUtils.ipv4Value(ipv4));
-            dynamicIpv4Set.add(val);
+            dynamicIpv4SetFastLookUp.add(val);
 
             if (entry.timeoutAt() > 0) {
                 long timeoutIn = entry.timeoutAt() - System.currentTimeMillis();
-                AlixScheduler.runLaterAsync(() -> removeDynamic0(ip), timeoutIn, TimeUnit.MILLISECONDS);
+                if (timeoutIn > 0)
+                    AlixScheduler.runLaterAsync(() -> removeDynamic0(ip), timeoutIn, TimeUnit.MILLISECONDS);
+                else
+                    removeDynamic0(ip);
             }
         }
         return previous;
@@ -142,13 +147,13 @@ public final class FireWallManager {
     private static void removeDynamic0(InetAddress ip) {
         dynamicMap.remove(ip);
         if (ip instanceof Inet4Address ipv4) {
-            dynamicIpv4Set.remove(Integer.toUnsignedLong(IPUtils.ipv4Value(ipv4)));
+            dynamicIpv4SetFastLookUp.remove(Integer.toUnsignedLong(IPUtils.ipv4Value(ipv4)));
         }
     }
 
     public static boolean isV4Blocked0(int ipv4Value) {
         return staticIpv4Tree.contains(ipv4Value)
-               || dynamicIpv4Set.contains(Integer.toUnsignedLong(ipv4Value))
+               || dynamicIpv4SetFastLookUp.contains(Integer.toUnsignedLong(ipv4Value))
                || PanicModeManager.isV4Blocked(ipv4Value);
     }
 
@@ -205,10 +210,14 @@ public final class FireWallManager {
     private static void loadWithBuiltIn0() {
         try (var is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
             AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN), false);
+
             int builtIn = staticBlocked();
             file.load();
             int total = getTotalBlocked();
-            AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Loaded built-in blacklisted IPs: " + builtIn + ", Blacklisted by this server: " + (total - builtIn) + ", Total: " + total);
+
+            float MB = AlixMathUtils.round(staticIpv4Tree.getSizeInBytes() / 1e6f, 1);
+
+            AlixCommonMain.logInfo("Fully loaded the FireWall DataBase. Loaded built-in blacklisted IPs: " + AlixCommonUtils.formatNicely(builtIn) + " (~" + MB + " MB), Blacklisted by this server: " + (total - builtIn) + ", Total: " + total);
         } catch (Throwable e) {
             e.printStackTrace();
         }

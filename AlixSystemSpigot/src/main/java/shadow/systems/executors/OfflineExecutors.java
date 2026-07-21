@@ -26,6 +26,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.world.WorldSaveEvent;
 import shadow.Main;
 import shadow.systems.dependencies.Dependencies;
+import shadow.systems.login.autoin.uuid.PremiumUuidSetting;
 import shadow.systems.login.paper.PaperReflection;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.utils.main.file.managers.OriginalLocationsManager;
@@ -43,20 +44,31 @@ import static shadow.utils.main.AlixUtils.*;
 public final class OfflineExecutors extends UniversalExecutors {
 
     private final String playerAlreadyOnlineMessage = Messages.get("player-already-online");//,
-    private static final boolean canOverride = assignPremiumUUID && ServerEnvironment.isPaper() && PaperReflection.isAvailable();
+    private static final boolean canOverride = PremiumUuidSetting.CONFIG != PremiumUuidSetting.FALSE && ServerEnvironment.isPaper() && PaperReflection.isAvailable();
 
     //Pre-to-join executors - start
 
     private void overrideUUIDIfNecessary(AsyncPlayerPreLoginEvent e, PersistentUserData data, String name, User user) {
-        if (!assignPremiumUUID)
+        //No data -> not premium, as it would've been automatically created -> no uuid change (we can later add the 'identity' trait)
+        if (data == null)
+            return;
+
+        var premiumData = data.getPremiumData();
+        if (!premiumData.getStatus().isPremium())
             return;
 
         var uuid = e.getUniqueId();
-        //boolean isPremium = VerifiedCache.isPremium(data, name, user);
+        if (uuid.version() != 3)//either v4 or some custom stuff
+            return;
 
-        if (uuid.version() == 3 && VerifiedCache.isPremium(data, name, user)) {
+        var config = PremiumUuidSetting.CONFIG;
+        if (!config.shouldAssignPremiumUuid(name, premiumData.premiumUUID()))
+            return;
+
+        //uuid.version() == 3 &&
+        if (VerifiedCache.isPremium(data, name, user)) {
             if (canOverride) {
-                var premiumUUID = data.getPremiumData().premiumUUID();
+                var premiumUUID = premiumData.premiumUUID();
                 PaperReflection.override(e, premiumUUID);
 
                 Main.logInfo("Late overriding of player's " + name + " non-premium uuid " + uuid + " with premium uuid " + premiumUUID);

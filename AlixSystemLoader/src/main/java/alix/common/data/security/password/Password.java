@@ -176,7 +176,7 @@ public final class Password {
     }
 
     public static Password readFromSaved(String savedPassword) {
-        String[] s = savedPassword.split(":");
+        String[] s = savedPassword.split(":", -1);
         String password = s[0];
 
         if (password.equals("null"))
@@ -194,5 +194,18 @@ public final class Password {
             default:
                 throw new AlixError("Invalid saved password: '" + savedPassword + "' for saved length " + s.length + " with saved parts " + Arrays.toString(s) + "!");
         }
+    }
+
+    public static Password fromDatabase(
+            String hashedPassword,
+            byte hashId,
+            String salt,
+            byte matcherId) {
+        return new Password(
+                hashedPassword,
+                hashId,
+                salt,
+                matcherId
+        );
     }
 }

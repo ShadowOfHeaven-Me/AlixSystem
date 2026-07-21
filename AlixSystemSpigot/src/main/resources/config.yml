@@ -43,11 +43,6 @@ allow-case-sensitive-nicknames: true
 
 #Config used when the player is completing the captcha verification (before he's given the ability to register his account)
 
-# Deprecated - no longer takes effect, limbo will always enable
-#Defines whether any manual captcha should be replaced with automatic bot checks done on an extremely optimized limbo 'server' (not actually a server, it just pretends to be one). Only takes effect if 'captcha' is set to true.
-#Bear in mind that this enables extreme optimization and allows other functions to work properly
-#Setting this to false should be done with caution and only when you know what you're doing!
-virtual-limbo-server: true
 #Defines whether an unregistered player should be required to complete a captcha before registering (works as a safety measure against bot attacks, offline mode only)
 captcha: true
 #Defines the visual representation type of the captcha that will be shown to the tested player. Available:
@@ -97,7 +92,11 @@ verification-reminder-type: title
 # You can set this to false, if you have a special set-up done in the verification world
 virtual-limbo-login: true
 #Defines whether premium players should be given their equivalent mojang-assigned uuid (their data will persist between name changes)
-premium-uuid: false
+#Possible values:
+# true -> always assign a premium uuid to premium players (good if you don't already have premium players with an offline uuid)
+# auto -> automatically decide whether to assign the premium player their premium uuid (based on the check that the user never joined was already known under the premium uuid)
+# false -> never assign premium uuid
+premium-uuid: auto
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)
 verification-blindness: false
 #Defines whether the registering user should have to repeat the password he's trying to set whilst registering
@@ -118,9 +117,9 @@ forcefully-disable-auto-login: false
 #Defines how long (in seconds) should be a player allowed to be on the server not logged in (must be greater than zero)
 max-login-time: 75
 #Defines how many attempts does a user have when entering his password (setting it too high could be risky because of password crackers)
-max-login-attempts: 2
+max-login-attempts: 3
 #Defines how many attempts should a player be allowed to have to enter the 2FA code from the app
-max-auth-app-attempts: 2
+max-auth-app-attempts: 3
 #Defines the way the passwords set by the users will be hashed in by default
 # 0 - No hash, not recommended in case of password leaks
 # 1 - Mixes characters' code points, very fast but possibly repeatable, stored in a 32-bit integer
@@ -160,7 +159,7 @@ assume-non-premium-if-auth-failed: true
 #Defines whether a non-premium, server-client connection should be encrypted - helps mitigate MITM attacks, but slightly increases CPU usage
 # always - All client connections will always be requested to encrypt their connection (some pre-1.20.5 cracked clients might disconnect because of this)
 # safe - Only 1.20.5+ client connections will be encrypted (no risk of disconnecting)
-# never - Will never try to enable encryption (Except for side effects of checking the client's premium status)
+# never - Will never try to enable encryption (Besides side effects of checking the client's premium status)
 encrypt-connection: safe
 #Defines the commands invoked after a successful, manual register. Specified in the form of a list. Replaces all %name% with the player's name. If "-p" is placed at the end of a command it will be invoked with the player as the sender.
 #Invoked after a manual register
@@ -229,9 +228,9 @@ use-this-syntax: false
 #Config used for the overall set-up
 
 #(Deprecated)
-#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.properties file)
+#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.txt file)
 language: en
-#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.properties file)
+#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
 custom-join-log: true
 #Defines which fallback location should be used if for some unknown reason, the player is destined to respawn in the verification world
 # true - The last saved location will be used or the Alix spawn (defined by /setspawn) if it's absent as well
@@ -270,6 +269,3 @@ auto-save: true
 unsafe-firewall: true
 #Defines whether constant buffer writes should be done in order to achieve maximal performance
 write-const-bufs: true
-# UNSAFE when true, NEVER turn this on unless specifically instructed by Shadow (me ;])
-# Disables all premium auth & encryption, but makes sure to keep the uuid of premium players (the 'premium-uuid' param)
-__no-premium-auth-but-keep-identity: false

@@ -3,6 +3,8 @@ package shadow.utils.main.file;
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.data.file.AllowListFileManager;
+import alix.common.data.security.email.EmailConfig;
+import alix.common.data.settings.ServerSettingsManager;
 import alix.common.messages.Messages;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.file.managers.IpsCacheFileManager;
@@ -30,6 +32,8 @@ public abstract class FileManager extends AlixFileManager {
         try {
             Messages.init();
             UserFileManager.init();
+            EmailConfig.init();
+            ServerSettingsManager.init();
             if (AlixUtils.antibotService) FireWallManager.init();
             IpsCacheFileManager.init();
             WarpFileManager.initialize();

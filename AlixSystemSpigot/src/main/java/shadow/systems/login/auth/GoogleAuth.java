@@ -4,7 +4,6 @@ import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.other.keys.secret.MapSecretKey;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerAbilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -63,9 +62,7 @@ public final class GoogleAuth {
     public static void showQRCode(VerifiedUser user, Player player) {
         if (user == null) return;
 
-        //Main.logError("INVOKED QR SHOW");
-        MapSecretKey key = MapSecretKey.uuidKey(player.getUniqueId());
-        String token = UserTokensFileManager.getTokenOrSupply(key, GoogleAuthUtils::generateSecretKey);
+        String token = UserTokensFileManager.getTokenOrSupply(user.getData().tokenKey());
 
         try {
             String joinedWithIp = AlixChannelHandler.getJoinedWithIP(user.getChannel());

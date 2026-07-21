@@ -102,8 +102,8 @@ public final class PacketUtils {
         return BufUtils.constBuffer(encode(new PacketLoginDisconnect().setReason(reason), true, Version.getMax(), null, false));
     }
 
-    public static ByteBuf encode(Packet packet, boolean clientbound, Version version, CompressionHandler handler, boolean pooled) {
-        return encode0(packet, clientbound, version, CompressionSupplier.supply(handler), pooled);
+    public static ByteBuf encode(Packet packet, boolean clientbound, Version version, CompressionHandler compression, boolean pooled) {
+        return encode0(packet, clientbound, version, CompressionSupplier.supply(compression), pooled);
     }
 
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, boolean pooled) {

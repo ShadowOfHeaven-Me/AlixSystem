@@ -3,7 +3,7 @@ package alix.common.antibot.algorithms.any;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.scheduler.AlixScheduler;
-import alix.common.utils.other.AlixUnsafe;
+import alix.common.utils.other.annotation.OptimizationCandidate;
 import ua.nanit.limbo.server.Log;
 
 import java.net.Inet4Address;
@@ -16,7 +16,7 @@ public final class PanicModeManager {
 
     private static final AtomicBoolean PANIC_MODE = new AtomicBoolean();
     private static final boolean UNSAFE = IPUtils.hasUnsafeImpl();
-    private static final ThreadLocal<Inet4Address> INET4_CACHE = UNSAFE ? ThreadLocal.withInitial(() -> AlixUnsafe.alloc(Inet4Address.class)) : null;
+    private static final ThreadLocal<Inet4Address> INET4_CACHE = UNSAFE ? ThreadLocal.withInitial(IPUtils::allocV4WithHolder) : null;
 
     public static boolean activate(String reason) {
         if (!PANIC_MODE.compareAndSet(false, true)) return false;
@@ -44,15 +44,16 @@ public final class PanicModeManager {
         return isActive() && !GeoIPTracker.isMapped(addr);
     }
 
+    //no need to alloc an Inet4Address, especially after I made a segfault here...
+    @OptimizationCandidate
     public static boolean isV4Blocked(int addr) {
         if (!isActive()) return false;
 
         Inet4Address obj;
 
-        //low trash, fast look-up
         if (UNSAFE) {
             obj = INET4_CACHE.get();
-            IPUtils.override(obj, addr);//correct cast, maps lower order 32-bit of a long to 32-bit of the int
+            IPUtils.override(obj, addr);
         } else {
             try {
                 obj = (Inet4Address) InetAddress.getByAddress(IPUtils.ipv4ByteArray(addr));

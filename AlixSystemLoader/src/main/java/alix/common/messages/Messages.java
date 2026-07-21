@@ -12,14 +12,11 @@ public final class Messages {
 
     private static final MessagesFile file = new MessagesFile();
     private static ExtractedMessages extractedMessages;
-    public static final String //unregisteredUserMessage,
-            notLoggedInUserMessage, captchaNotCompletedUserMessage, autoLoginMessage, chatAlreadyOn, chatAlreadyOff;
+    public static final String notLoggedInUserMessage, autoLoginMessage, chatAlreadyOn, chatAlreadyOff;
 
     static {
         file.loadExceptionless();
-        //unregisteredUserMessage = get("unregistered-reminder");
         notLoggedInUserMessage = get("not-logged-in-reminder");
-        captchaNotCompletedUserMessage = get("uncompleted-captcha-type-reminder");
         autoLoginMessage = getWithPrefix("auto-login");
         chatAlreadyOn = getWithPrefix("chat-already-on");
         chatAlreadyOff = getWithPrefix("chat-already-off");

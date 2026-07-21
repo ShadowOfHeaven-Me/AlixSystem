@@ -33,9 +33,11 @@ bukkit {
     )
 }
 
+
 mcupload {
     file = tasks.shadowJar
-    swallowErrors = false
+    swallowErrors = true
+
     platforms {
         modrinth {
             loaders = listOf("paper", "purpur", "spigot", "bukkit")
@@ -63,7 +65,9 @@ mcupload {
         }
     }
 }
-
+tasks.named("release") {
+    notCompatibleWithConfigurationCache("mcupload plugin does not support configuration cache yet")
+}
 tasks.shadowJar {
     destinationDirectory = file(project.findProperty("build-dir") as String)
     archiveBaseName.set("AlixSystem")

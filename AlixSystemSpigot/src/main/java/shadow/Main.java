@@ -124,7 +124,7 @@ public final class Main implements LoaderBootstrap {
         AlixHandler.initExecutors(pm);
         PacketEventsManager.onEnable();
         ReflectionUtils.replaceBansToConcurrent();
-        UpdateChecker.checkForUpdates();
+        AlixScheduler.asyncBlocking(UpdateChecker::checkForUpdates);
         Captcha.pregenerate(); //will not pregenerate the captcha itself if disabled, but needs to be invoked for the BufferedPackets values to pregenerate
         PotionEffectHandler.init();
         if (requireCaptchaVerification) Captcha.sendInitMessage();

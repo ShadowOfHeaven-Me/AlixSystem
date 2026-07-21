@@ -39,6 +39,9 @@ dependencies {
     implementation("at.favre.lib:bcrypt:0.10.2")
     implementation("net.kyori:adventure-text-minimessage:4.16.0")
 
+    implementation("org.apache.commons:commons-email:1.6.0")
+    implementation("com.sun.mail:javax.mail:1.6.2")
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
@@ -57,7 +60,8 @@ dependencies {
     api("com.google.zxing:core:3.4.0")// https://mvnrepository.com/artifact/com.google.zxing/javase
     api("com.google.zxing:javase:3.4.0")// https://mvnrepository.com/artifact/de.taimos/totp
     api("de.taimos:totp:1.0")// https://mvnrepository.com/artifact/com.nepxion/zxing
-    api("com.nepxion:zxing:1.1.1")// https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
+    api("com.nepxion:zxing:1.1.1")
+    // https://mvnrepository.com/artifact/com.velocitypowered/velocity-native
     // https://mvnrepository.com/artifact/io.github.bivashy/velocity-native
     compileOnly("io.github.bivashy:velocity-native:3.3.0-410636a")
 

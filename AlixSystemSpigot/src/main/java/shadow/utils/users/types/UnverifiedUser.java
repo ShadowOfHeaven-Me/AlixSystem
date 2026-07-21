@@ -186,9 +186,14 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //release allocated
         if (captchaInitialized)
             Captcha.uninject(this.captchaFuture); //this.captchaFuture.whenCompleted(Captcha::release);
-        this.reminderTask.cancel(true);
+
+        if (this.reminderTask != null)
+            this.reminderTask.cancel(true);
+
         this.verificationMessage.destroy();
-        if (this.alixGui != null) this.alixGui.destroy();
+
+        if (this.alixGui != null)
+            this.alixGui.destroy();
 
         //return collidable state
         this.player.setCollidable(this.originalCollidableState);

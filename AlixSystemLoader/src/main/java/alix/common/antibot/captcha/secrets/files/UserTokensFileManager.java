@@ -1,5 +1,6 @@
 package alix.common.antibot.captcha.secrets.files;
 
+import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.utils.other.keys.secret.MapSecretKey;
 
 import java.util.function.Supplier;
@@ -12,11 +13,11 @@ public final class UserTokensFileManager {
         file.getMap().put(key, token);
     }
 
-    public static String getToken(MapSecretKey key) {
-        return file.getMap().get(key);
+    public static String getTokenOrSupply(MapSecretKey key) {
+        return getTokenOrSupply0(key, GoogleAuthUtils::generateSecretKey);
     }
 
-    public static String getTokenOrSupply(MapSecretKey key, Supplier<String> tokenSupplier) {
+    static String getTokenOrSupply0(MapSecretKey key, Supplier<String> tokenSupplier) {
         return file.getMap().computeIfAbsent(key, k -> tokenSupplier.get());
     }
 

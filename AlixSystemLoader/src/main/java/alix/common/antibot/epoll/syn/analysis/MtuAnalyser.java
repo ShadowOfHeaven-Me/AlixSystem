@@ -56,7 +56,7 @@ public final class MtuAnalyser {
             }
         }
 
-        // 1508, due to (tho rarely) being able
+        // 1508, due to (tho rarely) being able to above this
         if (mtu > 1508) {
             return MTUEnvironment.UNKNOWN_HIGH_MTU; //
         } else if (mtu < 1300) {

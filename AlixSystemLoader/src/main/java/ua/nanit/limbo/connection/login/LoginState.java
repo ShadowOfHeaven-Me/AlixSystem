@@ -16,7 +16,6 @@ import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.floodgate.GeyserUtil;
 import alix.common.utils.other.annotation.OptimizationCandidate;
-import alix.common.utils.other.keys.secret.MapSecretKey;
 import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 import ua.nanit.limbo.commands.LimboCommand;
@@ -156,7 +155,6 @@ public final class LoginState implements VerifyState {
         return true;
     }
 
-
     //public static final AttributeKey<Boolean> JOINED_UNREGISTERED = AttributeKey.newInstance("alix:joined_unregistered");
 
     private static LoginVerdict getVerdict(PersistentUserData data) {
@@ -216,7 +214,7 @@ public final class LoginState implements VerifyState {
     }
 
     private LimboGUI newBuilder2FA() {
-        return new LimboAuthBuilder(this.connection, MapSecretKey.fromName(this.connection.getUsername()), correct -> {
+        return new LimboAuthBuilder(this.connection, this.data.tokenKey(), correct -> {
             if (correct) {
                 this.logIn();
                 return;

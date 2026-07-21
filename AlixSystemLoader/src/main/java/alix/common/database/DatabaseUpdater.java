@@ -1,13 +1,14 @@
 package alix.common.database;
 
 import alix.common.AlixCommonMain;
+import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
 import alix.common.database.connect.DatabaseType;
 import alix.common.database.file.DatabaseConfig;
 import alix.common.utils.config.ConfigParams;
 
-import java.nio.charset.StandardCharsets;
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -15,7 +16,8 @@ public interface DatabaseUpdater {
 
     default void testDatabase() {
         String player = "sex";
-        this.insertUser(player, UUID.nameUUIDFromBytes(player.getBytes(StandardCharsets.UTF_8)), System.currentTimeMillis(), Password.createRandom());
+        //this.insertUser(player, UUID.nameUUIDFromBytes(player.getBytes(StandardCharsets.UTF_8)), System.currentTimeMillis(), Password.createRandom());
+        PersistentUserData.createDefault(player, InetAddress.getLoopbackAddress(), Password.createRandom());
         this.clearPasswordPointer(player);
         this.updateLastSuccessfulLoginByName(player, 96_240L);
         this.updateIpByName(player, "127.0.0.1");
@@ -25,11 +27,9 @@ public interface DatabaseUpdater {
 
     void connect();
 
+    void saveData(PersistentUserData data);
+
     void createTablesSync();
-
-    void insertUser(String name, UUID uuid, long createdAt, Password password);
-
-    void addPasswordAndLink(String ownerName, Password password);
 
     void clearPasswordPointer(String name);
 
@@ -74,42 +74,4 @@ public interface DatabaseUpdater {
             return NOOP;
         }
     }
-
-    /**
-     * Fetch a user with its linked password (if any) by user name.
-     * The result is delivered to onResult (Optional.empty() if not found).
-     */
-    /*public void findUserWithPasswordByName(String name, Consumer<Optional<UserWithPassword>> onResult) {
-        this.queryAsync(connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(SELECT_USER_WITH_PASSWORD_BY_NAME_SQL)) {
-                ps.setString(1, name);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        onResult.accept(Optional.empty());
-                        return;
-                    }
-                    UserWithPassword dto = new UserWithPassword();
-                    dto.name = rs.getString("name");
-                    dto.uuid = (UUID) rs.getObject("uuid");
-                    dto.createdAt = rs.getLong("created_at");
-                    long lastLogin = rs.getLong("last_successful_login");
-                    dto.lastSuccessfulLogin = rs.wasNull() ? null : lastLogin;
-                    dto.ip = rs.getString("ip");
-                    long pwdPointer = rs.getLong("password_id");
-                    dto.passwordId = rs.wasNull() ? null : pwdPointer;
-
-                    long pwdId = rs.getLong("id");
-                    if (!rs.wasNull()) {
-                        dto.password = new PasswordRow();
-                        dto.password.id = pwdId;
-                        dto.password.hashedPassword = rs.getString("hashed_password");
-                        dto.password.hashId = (byte) rs.getShort("hash_id");
-                        dto.password.salt = rs.getString("salt");
-                        dto.password.matcherId = (byte) rs.getShort("matcher_id");
-                    }
-                    onResult.accept(Optional.of(dto));
-                }
-            }
-        });
-    }*/
 }
