@@ -21,7 +21,7 @@ public final class MtuAnalyser {
                 case 1280:
                     return MTUEnvironment.GIF_IPV6_TUNNEL;
                 case 1440:
-                    return MTUEnvironment.WIREGUARD_VPN;
+                    return MTUEnvironment.GENERIC_VPN;
                 case 1432:
                     return MTUEnvironment.DSL_PPPOE;
                 default:
@@ -40,7 +40,7 @@ public final class MtuAnalyser {
                 case 1454:
                     return MTUEnvironment.DSL_PPPOE;
                 case 1420:
-                    return MTUEnvironment.WIREGUARD_VPN;
+                    return MTUEnvironment.GENERIC_VPN;
                 case 1476:
                     return MTUEnvironment.IPSEC_OR_GRE;
                 case 1480:

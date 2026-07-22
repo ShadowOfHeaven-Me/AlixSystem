@@ -1,5 +1,6 @@
 package alix.common.database;
 
+import alix.common.data.Identity;
 import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
@@ -49,6 +50,16 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     @Override
     public void setPassword(String name, Password newPass, Password oldPass) {
 
+    }
+
+    @Override
+    public void saveUserToken(Identity identity, String token) {
+
+    }
+
+    @Override
+    public PersistentUserData loadUser(String name) {
+        return null;
     }
 
     @Override

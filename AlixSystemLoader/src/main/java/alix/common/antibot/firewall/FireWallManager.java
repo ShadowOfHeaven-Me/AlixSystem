@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 public final class FireWallManager {
 
@@ -55,11 +58,50 @@ public final class FireWallManager {
         addCauseException(ip, t, EXCEPTION_TIMEOUT.getSeconds());
     }
 
+    private static final AlixMessage antiAbuseConsoleMessage = Messages.getAsObject("anti-abuse-fail-console-message");
+    private static final String firewallLogsExhaustedConsoleMessage = Messages.get("firewall-exhausted-logs");
+
+    private static final LongAdder recentFirewalls = new LongAdder();
+    private static final int MAX_RECENT_FIREWALLS = 8;
+    private static final long RECENT_FIREWALL_WINDOW = 20;
+    private static final AtomicBoolean MESSAGES_LOCKED = new AtomicBoolean();
+    private static final AtomicLong LAST_FIREWALL = new AtomicLong();
+
     public static void addCauseException(InetAddress ip, Throwable t, long timeoutInSeconds) {
-        add(ip, EXCEPTION_CAUGHT_KEY + t.getMessage(), timeoutInSeconds, TimeUnit.SECONDS);
+        boolean added = null == add(ip, EXCEPTION_CAUGHT_KEY + t.getMessage(), timeoutInSeconds, TimeUnit.SECONDS);
+        if (!added || checkIfLogsExhausted()) return;
+
+        String expires = timeoutInSeconds > 0 ? "in " + AlixCommonUtils.prettyTime(timeoutInSeconds) : "Never";
+        AlixCommonMain.logInfo(antiAbuseConsoleMessage.format(ip.getHostAddress(), logMessageOf(t), expires));
     }
 
-    private static final AlixMessage consoleMessage = Messages.getAsObject("anti-bot-fail-console-message");
+    private static String logMessageOf(Throwable t) {
+        return t.getMessage(); //t instanceof IndexOutOfBoundsException ? ""
+    }
+
+    private static boolean checkIfLogsExhausted() {
+        long now = System.currentTimeMillis();
+        if (now - LAST_FIREWALL.get() > RECENT_FIREWALL_WINDOW && MESSAGES_LOCKED.get())
+            MESSAGES_LOCKED.set(false);
+
+        LAST_FIREWALL.set(now);
+
+        if (MESSAGES_LOCKED.get())
+            return true;
+
+        recentFirewalls.increment();
+        int sum = (int) recentFirewalls.sum();
+
+        AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.SECONDS);
+
+        if (sum > MAX_RECENT_FIREWALLS && MESSAGES_LOCKED.compareAndSet(false, true)) {
+            AlixCommonMain.logInfo(firewallLogsExhaustedConsoleMessage);
+            return true;
+        }
+        return false;
+    }
+
+    private static final AlixMessage antiBotConsoleMessage = Messages.getAsObject("anti-bot-fail-console-message");
 
     public static boolean add(InetAddress ip, AlgorithmId algorithmId, boolean log) {
         return add(ip, algorithmId, log, NO_TIMEOUT, TimeUnit.SECONDS);
@@ -67,8 +109,8 @@ public final class FireWallManager {
 
     public static boolean add(InetAddress ip, AlgorithmId algorithmId, boolean log, long timeoutIn, TimeUnit unit) {
         boolean added = add(ip, algorithmId.name(), timeoutIn, unit) == null;
-        if (log && added)
-            AlixCommonMain.logInfo(consoleMessage.format(ip.getHostAddress(), algorithmId));
+        if (log && added && !checkIfLogsExhausted())
+            AlixCommonMain.logInfo(antiBotConsoleMessage.format(ip.getHostAddress(), algorithmId));
 
         return added;
     }

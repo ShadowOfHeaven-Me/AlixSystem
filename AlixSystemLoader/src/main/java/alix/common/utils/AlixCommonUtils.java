@@ -47,6 +47,42 @@ public final class AlixCommonUtils {
                 pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
     }
 
+    public static String prettyTime(long seconds) {
+        if (seconds == 0) {
+            return "0 seconds";
+        }
+
+        final int MINUTE = 60;
+        final int HOUR = 60 * MINUTE;
+        final int DAY = 24 * HOUR;
+        final int WEEK = 7 * DAY;
+        final int MONTH = 30 * DAY;
+        final int YEAR = 365 * DAY;
+
+        final int[] divisors = {YEAR, MONTH, WEEK, DAY, HOUR, MINUTE, 1};
+        final String[] unitNames = {"year", "month", "week", "day", "hour", "minute", "second"};
+
+        StringBuilder result = new StringBuilder();
+        long remaining = seconds;
+        int unitsUsed = 0;
+
+        for (int i = 0; i < divisors.length && unitsUsed < 2; i++) {
+            if (remaining >= divisors[i]) {
+                long value = remaining / divisors[i];
+                remaining %= divisors[i];
+                if (unitsUsed++ > 0) {
+                    result.append(", ");
+                }
+                result.append(value).append(" ").append(unitNames[i]);
+                if (value != 1) {
+                    result.append("s");
+                }
+            }
+        }
+
+        return result.toString();
+    }
+
     public static String formatNicely(int i) {
         StringBuilder sb = new StringBuilder();
         String s = Integer.toString(i);

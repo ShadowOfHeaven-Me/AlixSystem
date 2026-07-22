@@ -8,7 +8,7 @@ public enum MTUEnvironment {
     DSL_PPPOE("DSL (PPPoE)", 0),
 
     OLD_ETHERNET("Ethernet (Old)", 25),
-    WIREGUARD_VPN("WireGuard VPN", 45),
+    GENERIC_VPN("Generic VPN", 45),
     GENERIC_TUNNEL_OR_VPN("Generic tunnel or VPN", 45),
     UNKNOWN_LOW_MTU("Unknown (Low - Possible Tunnel/Proxy)", 50),
 

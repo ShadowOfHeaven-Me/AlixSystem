@@ -4,6 +4,7 @@ already-connecting: &cAnother login from the same nickname is registered to be a
 already-logged-in: &cYou're already logged in!
 already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
 already-registered: &cYou're already registered!
+anti-abuse-fail-console-message: Firewalled the IP {0} for the suspicion of performing a server attack. Message: {1}. Expires: {2}
 anti-bot-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a bot attack. Algorithm ID: {1}
 anti-bot-firewalled: &cYour IP has been firewalled!
 anti-bot-invalid-name-blocked: &cInvalid name! Must be within 1-16 characters long!
@@ -57,6 +58,7 @@ flying-player-disabled: Flying for player {0} has been &cdisabled!
 flying-player-enabled: Flying for player {0} has been &aenabled!
 flying-speed-player: &cFlying Speed &7for {0} has been set to &c{1}
 flying-speed-self: Your &cFlying Speed &7has been set to &c{0}
+firewall-exhausted-logs: This server seems to be currently getting attacked, we'll disable firewall logs until things calm down
 format-add-warp: Format: /addwarp <name>
 format-changepassword: Format: /changepassword <new password>
 format-chat: Format: /chat <on/off>

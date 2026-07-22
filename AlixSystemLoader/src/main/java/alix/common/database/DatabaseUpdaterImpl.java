@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static alix.common.database.QueryConstants.*;
+import static ua.nanit.limbo.util.UUIDUtil.getOfflineModeUuid;
 
 final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
@@ -41,10 +42,24 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
             try (var st = connection.createStatement()) {
                 st.execute(CREATE_USERS_SQL(this.getType()));
                 st.execute(CREATE_PASSWORDS_SQL(this.getType()));
+                st.execute(CREATE_TOKENS_SQL(this.getType()));
             }
         });
     }
 
+    @Override
+    public void saveUserToken(Identity identity, String token) {
+        UUID tokenUuid = getOfflineModeUuid(identity.identity());
+        this.queryAsync(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(INSERT_TOKEN_SQL(this.getType()))) {
+                setUuid(ps, 1, tokenUuid);
+                ps.setString(2, token);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
     public PersistentUserData loadUser(String name) {
         AtomicReference<PersistentUserData> result = new AtomicReference<>();
 

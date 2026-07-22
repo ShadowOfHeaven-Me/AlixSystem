@@ -1,6 +1,7 @@
 package alix.common.database;
 
 import alix.common.AlixCommonMain;
+import alix.common.data.Identity;
 import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.security.password.Password;
@@ -42,6 +43,10 @@ public interface DatabaseUpdater {
     void setPremiumData(String name, PremiumData data);
 
     void setPassword(String name, Password newPass, Password oldPass);
+
+    void saveUserToken(Identity identity, String token);
+
+    PersistentUserData loadUser(String name);
 
     DatabaseType getType();
 

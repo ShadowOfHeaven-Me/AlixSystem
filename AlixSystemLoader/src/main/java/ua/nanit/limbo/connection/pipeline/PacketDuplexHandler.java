@@ -161,7 +161,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         try {
             if (cause instanceof IOException) return;
 
-            if (cause instanceof NettySafetyException) {
+            if (cause instanceof NettySafetyException || cause instanceof IndexOutOfBoundsException) {
                 var addr = AlixCommonUtils.getAddress(ctx.channel());
                 FireWallManager.addCauseException(addr, cause, FireWallManager.NO_TIMEOUT);
                 return;

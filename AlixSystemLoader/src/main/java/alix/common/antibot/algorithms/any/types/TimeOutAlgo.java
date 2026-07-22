@@ -1,16 +1,17 @@
 package alix.common.antibot.algorithms.any.types;
 
 import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
-import alix.common.antibot.score.IpScoreAnalysis;
-import alix.common.antibot.score.IpScoreHint;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.utils.AlixClock;
+import alix.common.utils.netty.BufUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelId;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
+import ua.nanit.limbo.protocol.packets.login.PacketLoginPluginRequest;
 
 import java.net.InetAddress;
 import java.util.Map;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class TimeOutAlgo {
 
+    private static final ByteBuf PLUGIN_REQUEST;
     private static final Map<ChannelId, State> STATES = new ConcurrentHashMap<>(1 << 10); // 1024
 
     //todo: remove stale
@@ -30,9 +32,18 @@ public final class TimeOutAlgo {
     private static final long TIME_WINDOW_MS = 60_000L;
     private static final int MAX_TIMEOUTS = 10;
 
+    private static final ByteBuf ONE_ZERO_BYTE;
+
     static {
         var reason = Component.text("Timed Out").color(NamedTextColor.YELLOW);
         TIMED_OUT_BUF = PacketUtils.constLoginDisconnect(reason);
+
+        var pluginRequest = PacketLoginPluginRequest.of(0, "0:0", new byte[0]);
+        PLUGIN_REQUEST = PacketUtils.constClientbound(pluginRequest);
+
+        var buffer = BufUtils.UNPOOLED.buffer(1, 1);
+        buffer.writeByte(0);
+        ONE_ZERO_BYTE = BufUtils.constBuffer(buffer);
     }
 
     static State state(Channel channel) {
@@ -45,6 +56,7 @@ public final class TimeOutAlgo {
 
     static void onConnection0(Channel channel, InetAddress addr, boolean mapped) {
         State state = state(channel);
+        state.setConn();
 
         // login start already won the race, do nothing
         if (state.stage == LOGIN_START)
@@ -53,9 +65,30 @@ public final class TimeOutAlgo {
         // more leeway for mapped addresses
         int timeout = mapped ? 12 : 7;
 
+        //int pluginReq = timeout >> 1;
+
+        //long now = AlixClock.currentTimeMillis();
+
+        /*channel.unsafe().write(ONE_ZERO_BYTE, channel.voidPromise());
+        channel.unsafe().flush();*/
+        /*channel.eventLoop().schedule(() -> {
+
+        }, pluginReq, TimeUnit.SECONDS);*/
+
         var future = channel.eventLoop().schedule(() -> {
             if (!state.compareAndSet(STARTED, TIMED_OUT))
                 return;//login start has already outdone us
+
+            // Inspect socket state at time of expiration
+            /*if (channel instanceof EpollSocketChannel epollChannel) {
+                var tcpInfo = epollChannel.tcpInfo();
+                // If lastAckRecv is very high, client kernel disappeared (dead connection)
+                // If low, connection is alive at L4 but sitting idle at L7
+                long lastAckMs = tcpInfo.lastAckRecv();
+                AlixCommonMain.logInfo("Connection timed out. Last L4 ACK was " + lastAckMs + "ms ago, rtt=" + tcpInfo.rtt() / 1000 +
+                                       "ms rttVar=" + tcpInfo.rttvar() + " rcvRtt=" + tcpInfo.rcvRtt() + " backoff=" + tcpInfo.backoff() +
+                                       "totalRetrans=" + tcpInfo.totalRetrans());
+            }*/
 
             LimboJoinProfiler.update(channel, ConnectionStage.TIMED_OUT);
 
@@ -88,7 +121,11 @@ public final class TimeOutAlgo {
 
     public static void onLoginStart(Channel channel) {
         State state = state(channel);
+        state.setRcvL7();
         state.stage = LOGIN_START;
+
+        //var tcpInfo = ((EpollSocketChannel) channel).tcpInfo();
+        //AlixCommonMain.logInfo("L7: LAST ACK=" + tcpInfo.lastAckRecv() + " rtt=" + tcpInfo.rtt() / 1000);
 
         cancel(state);
     }
@@ -117,6 +154,24 @@ public final class TimeOutAlgo {
             }
             return false;
         }
+
+        long conn, l7;
+
+        void setConn() {
+            this.conn = AlixClock.currentTimeMillis();
+            this.printIfBoth();
+        }
+
+        void setRcvL7() {
+            this.l7 = AlixClock.currentTimeMillis();
+            this.printIfBoth();
+        }
+
+        void printIfBoth() {
+            if (this.conn == 0 || this.l7 == 0) return;
+
+            //AlixCommonMain.logWarning("L7 TOOK=" + (this.l7 - this.conn) + "ms");
+        }
     }
 
     private static final class TimeOutInfo {
@@ -136,7 +191,8 @@ public final class TimeOutAlgo {
 
             long now = System.currentTimeMillis();
             this.lastDisconnects.add(now);
-            IpScoreAnalysis.hint(addr, IpScoreHint.TIMED_OUT);
+            //AlixCommonMain.logWarning("Timed Out=" + addr);
+            //IpScoreAnalysis.hint(addr, IpScoreHint.TIMED_OUT);
 
             /*if (this.lastDisconnects.size() >= MAX_TIMEOUTS) {
                 //FireWallManager.add(addr, AlgorithmId.H2, true);

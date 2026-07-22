@@ -100,7 +100,6 @@ public final class PacketHandshake implements PacketIn {
     @Override
     public void decode(ByteMessage msg, Version version) {
         //WrapperHandshakingClientHandshake
-
         this.version = Version.of(msg.readVarInt());
         this.host = msg.readString();
 
@@ -108,7 +107,10 @@ public final class PacketHandshake implements PacketIn {
             throw NettySafety.MAT_SCAN;
 
         this.port = msg.readUnsignedShort();
+
         this.intention = msg.readVarInt();
+        //validate intention
+        this.getNextState();
     }
 
     @Override

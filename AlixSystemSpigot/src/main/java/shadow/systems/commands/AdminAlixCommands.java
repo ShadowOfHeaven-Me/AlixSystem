@@ -15,6 +15,7 @@ import alix.common.data.security.password.Password;
 import alix.common.database.DatabaseUpdater;
 import alix.common.database.migrate.MigrateManager;
 import alix.common.database.migrate.MigrateType;
+import alix.common.environment.ServerEnvironment;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
@@ -329,6 +330,12 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                                 var extraInfo = accounts.size() > 1 ? " &7(" + String.join(", ", accounts) + ")" : "";
                                 sendMessage(sender, "Accounts: &c" + accounts.size() + extraInfo);
+                            }
+
+                            if (ServerEnvironment.isPaper()) {
+                                var cached = Bukkit.getOfflinePlayerIfCached(arg2);
+                                if (cached != null)
+                                    sendMessage(sender, "UUID Version: &c" + cached.getUniqueId().version());
                             }
 
                             var isEncrypted = SpigotEncryption.isOnlineEncryptionEnabled(channel);

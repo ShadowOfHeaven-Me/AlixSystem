@@ -231,4 +231,47 @@ interface QueryConstants {
             case POSTGRESQL, SQLITE -> UPSERT_PASSWORD_POSTGRES_AND_SQLITE;
         };
     }
+
+    String CREATE_TOKENS_SQL_MYSQL =
+            "CREATE TABLE IF NOT EXISTS alix_user_tokens (" +
+            "  uuid CHAR(36) NOT NULL," +
+            "  token TEXT NOT NULL," +
+            "  PRIMARY KEY (uuid)" +
+            ") ENGINE=InnoDB;";
+
+    String CREATE_TOKENS_SQL_POSTGRES =
+            "CREATE TABLE IF NOT EXISTS alix_user_tokens (" +
+            "  uuid UUID NOT NULL," +
+            "  token TEXT NOT NULL," +
+            "  CONSTRAINT pk_alix_user_tokens PRIMARY KEY (uuid)" +
+            ");";
+
+    String CREATE_TOKENS_SQL_SQLITE =
+            "CREATE TABLE IF NOT EXISTS alix_user_tokens (" +
+            "  uuid TEXT NOT NULL PRIMARY KEY," +
+            "  token TEXT NOT NULL" +
+            ");";
+
+    // Uses INSERT IGNORE / ON CONFLICT DO NOTHING so existing tokens are left untouched
+    String INSERT_TOKEN_MYSQL =
+            "INSERT IGNORE INTO alix_user_tokens (uuid, token) VALUES (?, ?)";
+
+    String INSERT_TOKEN_POSTGRES_AND_SQLITE =
+            "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
+            "ON CONFLICT (uuid) DO NOTHING";
+
+    static String CREATE_TOKENS_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> CREATE_TOKENS_SQL_MYSQL;
+            case POSTGRESQL -> CREATE_TOKENS_SQL_POSTGRES;
+            case SQLITE -> CREATE_TOKENS_SQL_SQLITE;
+        };
+    }
+
+    static String INSERT_TOKEN_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> INSERT_TOKEN_MYSQL;
+            case POSTGRESQL, SQLITE -> INSERT_TOKEN_POSTGRES_AND_SQLITE;
+        };
+    }
 }

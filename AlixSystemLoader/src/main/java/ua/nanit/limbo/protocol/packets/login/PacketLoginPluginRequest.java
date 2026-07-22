@@ -17,7 +17,6 @@
 
 package ua.nanit.limbo.protocol.packets.login;
 
-import io.netty.buffer.ByteBuf;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -26,18 +25,21 @@ public class PacketLoginPluginRequest implements PacketOut {
 
     private int messageId;
     private String channel;
-    private ByteBuf data;
+    private byte[] data;
 
-    public void setMessageId(int messageId) {
+    public PacketLoginPluginRequest setMessageId(int messageId) {
         this.messageId = messageId;
+        return this;
     }
 
-    public void setChannel(String channel) {
+    public PacketLoginPluginRequest setChannel(String channel) {
         this.channel = channel;
+        return this;
     }
 
-    public void setData(ByteBuf data) {
+    public PacketLoginPluginRequest setData(byte[] data) {
         this.data = data;
+        return this;
     }
 
     @Override
@@ -47,9 +49,7 @@ public class PacketLoginPluginRequest implements PacketOut {
         msg.writeBytes(data);
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
+    public static PacketLoginPluginRequest of(int messageId, String channel, byte[] data) {
+        return new PacketLoginPluginRequest().setMessageId(messageId).setChannel(channel).setData(data);
     }
-
 }

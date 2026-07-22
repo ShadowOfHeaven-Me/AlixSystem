@@ -17,6 +17,7 @@ import ua.nanit.limbo.connection.pipeline.compression.CompressionHandler;
 import ua.nanit.limbo.connection.pipeline.compression.CompressionSupplier;
 import ua.nanit.limbo.connection.pipeline.encryption.CipherHandler;
 import ua.nanit.limbo.protocol.Packet;
+import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
@@ -99,7 +100,11 @@ public final class PacketUtils {
     }
 
     public static ByteBuf constLoginDisconnect(Component reason) {
-        return BufUtils.constBuffer(encode(new PacketLoginDisconnect().setReason(reason), true, Version.getMax(), null, false));
+        return constClientbound(new PacketLoginDisconnect().setReason(reason));
+    }
+
+    public static ByteBuf constClientbound(PacketOut packet) {
+        return BufUtils.constBuffer(encode(packet, true, Version.getMax(), null, false));
     }
 
     public static ByteBuf encode(Packet packet, boolean clientbound, Version version, CompressionHandler compression, boolean pooled) {
