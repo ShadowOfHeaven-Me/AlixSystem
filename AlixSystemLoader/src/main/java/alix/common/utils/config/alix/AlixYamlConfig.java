@@ -69,10 +69,12 @@ public final class AlixYamlConfig {
             if (val == null) {
                 AlixCommonMain.logWarning("Config '" + path + "' param not found");
                 list = List.of();
-            } else {
+            } else if (!val.isBlank()) {
                 //tolerate
+                AlixCommonMain.logWarning("List parameter '" + path + "' was defined as a singular, non-list item instead!");
                 list = List.of(val);
-            }
+            } else
+                list = List.of();
         }
         List<T> transformed = new ArrayList<>(list.size());
         for (String s : list)

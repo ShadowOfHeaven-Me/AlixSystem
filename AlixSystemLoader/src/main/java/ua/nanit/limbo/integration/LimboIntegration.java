@@ -1,6 +1,7 @@
 package ua.nanit.limbo.integration;
 
 import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
@@ -58,6 +59,8 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
     public abstract boolean isOnlineMode();
 
+    public abstract boolean isConnected(InetAddress ip);
+
     public final void setHasCompletedCaptcha(InetAddress address, String name) {
         completedCaptchaCache.put(name, address);
     }
@@ -102,6 +105,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
             return;
 
         ConnectRequestAlgoImpl.onConnection(channel, addr);
+        AntiBotStatistics.INSTANCE.incrementJoins(addr);
     }
 
     public void invokeChannelInit(ClientConnection connection) {

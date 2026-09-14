@@ -31,7 +31,7 @@ load-builtin-ips: true
 #Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
 validate-name: true
 #Defines whether a player of an already existing player's nickname, ignoring casing, should be allowed to join pre-register
-# true -> Allow 'Marcos' & 'marcos' to coexist
+# true -> Allow e.g. 'Marcos' & 'marcos' to coexist
 # false -> Disallow
 allow-case-sensitive-nicknames: false
 
@@ -195,5 +195,7 @@ transfer-port:
 debug: false
 #Whether the motd should be cached (and ping responses prepended & sent early), in order to optimize ping requests (currently expires after 6 seconds)
 optimize-pings: true
-#Whether or not user emails should be saved in an encrypted form. You can set this to false in case you need it in raw text
+#Whether user emails should be saved in an encrypted form. You can set this to false in case you need it in raw text
 encrypt-emails: true
+#Whether to support hosting any kind of HTTP service (e.g. a resource pack server) on the same port as the minecraft server
+support-mc-port-http: false

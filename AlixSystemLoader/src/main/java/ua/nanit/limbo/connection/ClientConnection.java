@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection;
 
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.fingerprinting.FingerprintManager;
@@ -141,6 +142,14 @@ public final class ClientConnection {
 
     public void uninjectWithRecoded(PacketIn recodedLoginStartOrStatusReq) {
         this.uninject0(() -> this.resendRecoded(recodedLoginStartOrStatusReq));
+    }
+
+    public void uninjectWithBuf(ByteBuf buf) {
+        this.uninject0(() -> this.resend(buf));
+    }
+
+    private void resend(ByteBuf buf) {
+        this.channel.pipeline().fireChannelRead(buf);
     }
 
     private void uninject0(Runnable resendAction) {
@@ -534,6 +543,7 @@ public final class ClientConnection {
     private static final DisconnectPacket invalidPacket = DisconnectPacket.error("Invalid packet, Alix");
 
     public void closeInvalidPacket() {
+        AdaptiveAnomalyDetector.onInvalidPacket();
         invalidPacket.disconnect(this);
     }
 

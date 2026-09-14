@@ -4,6 +4,7 @@ import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
@@ -583,8 +584,8 @@ public final class AdminAlixCommands implements CommandExecutor {
                     Player player = (Player) sender;
                     if (ABStats.reversePresence(UserManager.getVerifiedUser(player))) {
                         sendMessage(sender, "&aAdded to AntiBot Statistics view!");
-                        if (FireWallManager.isOsFireWallInUse)
-                            sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the OS IpSet FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the OS beforehand.");
+                        if (AlixAtaraxia.isEnabled())
+                            sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the Ataraxia FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the eBPF beforehand.");
                     } else sendMessage(sender, "&cRemoved from AntiBot Statistics view!");
                     break;
                 //Unnecessary since pre-join thread disconnect

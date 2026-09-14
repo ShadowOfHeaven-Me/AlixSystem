@@ -10,6 +10,7 @@ import shadow.systems.netty.AlixChannelHandler;
 import shadow.systems.netty.AlixInterceptor;
 import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.users.UserManager;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.integration.LimboIntegration;
@@ -126,6 +127,11 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
     @Override
     public boolean isOnlineMode() {
         return AlixUtils.ONLINE_MODE;
+    }
+
+    @Override
+    public boolean isConnected(InetAddress ip) {
+        return UserManager.getByAddr(ip) != null;
     }
 
     @Override

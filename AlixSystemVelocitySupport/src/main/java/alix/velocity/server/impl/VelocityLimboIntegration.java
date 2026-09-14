@@ -29,6 +29,7 @@ import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.server.Log;
 
+import java.net.InetAddress;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -138,6 +139,11 @@ public final class VelocityLimboIntegration extends LimboIntegration<ClientConne
     @Override
     public boolean isOnlineMode() {
         return VelocityAlixMain.instance.getServer().getConfiguration().isOnlineMode();
+    }
+
+    @Override
+    public boolean isConnected(InetAddress ip) {
+        return UserManager.getByAddr(ip) != null;
     }
 
     /*@Override

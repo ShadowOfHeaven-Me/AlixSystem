@@ -11,6 +11,7 @@ import io.netty.channel.Channel;
 import lombok.SneakyThrows;
 
 import java.lang.reflect.Field;
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +63,15 @@ public final class UserManager {
             //try to account for the above statement already executing
             return channel.isOpen() ? channel : null;
         });
+    }
+
+    public static Channel getByAddr(InetAddress ip) {
+        for (var channel : CONNECTED_USERS.values()) {
+            if (ip.equals(AlixCommonUtils.getAddress(channel))) {
+                return channel;
+            }
+        }
+        return null;
     }
 
     public static void add(ConnectedPlayer player) {

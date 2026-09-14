@@ -26,6 +26,6 @@ public final class FireWallFile extends AlixFileManager {
                 timeoutAt = FireWallManager.NO_TIMEOUT;
         }
 
-        FireWallManager.add0(IPUtils.fromAddress(s[0]), FireWallEntry.from(reason, timeoutAt));
+        FireWallManager.add0(IPUtils.fromAddress(s[0]), FireWallEntry.from(reason, timeoutAt), true);
     }
 }

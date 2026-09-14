@@ -99,7 +99,8 @@ public final class ClientChannelInitializer {
         pipeline.addFirst(duplexHandlerName, duplexHandler);
         pipeline.addFirst(frameDecoderName, frameDecoder);
 
-        if (proxyProtocol)
+        //addFirst on Velocity, `addAfter("timeout", "haproxy-decoder"` on spigot
+        if (proxyProtocol && !ServerEnvironment.isVelocity())
             pipeline.addFirst(proxyDecoderName, new HAProxyMessageDecoder());
 
         LimboJoinProfiler.update(channel, ConnectionStage.CHANNEL_INIT, "pipeline=" + pipeline.names());
@@ -149,8 +150,9 @@ public final class ClientChannelInitializer {
         if (proxyProtocol) {
             var haDecoderPlatformName = ServerEnvironment.isVelocity() ? "HAProxyMessageDecoder#0" : "haproxy-decoder";
 
-            //nuke velocity's handler, the haProxyMessage should already be decoded by our own handler
-            pipeline.remove(haDecoderPlatformName);
+            //nuke the server's own handler, the haProxyMessage should already be decoded by our own handler (for now disabled on Velocity)
+            if (pipeline.context(haDecoderPlatformName) != null)
+                pipeline.remove(haDecoderPlatformName);
             if (pipeline.context(proxyDecoderName) != null)//well I'll be damned if it isn't
                 Log.warning("proxyDecoder present! Decoded message not null: " + (connection.getFrameDecoder().haProxyMessage != null));
         }

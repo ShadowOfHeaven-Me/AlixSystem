@@ -222,9 +222,12 @@ public final class EmailHandler {
         content = embedTemplateImages(mail, content);
         mail.setHtmlMsg(content);
 
+        var loader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(Session.class.getClassLoader());
 
         mail.send();
+
+        Thread.currentThread().setContextClassLoader(loader);
     }
 
     //matches 'cid:<filename>' references (e.g. <img src="cid:logo.png">), the way a custom HTML email template embeds its own images

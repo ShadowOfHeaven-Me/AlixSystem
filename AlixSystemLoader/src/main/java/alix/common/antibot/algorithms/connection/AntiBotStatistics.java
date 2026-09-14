@@ -1,10 +1,13 @@
 package alix.common.antibot.algorithms.connection;
 
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 
+import java.net.InetAddress;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +46,7 @@ public final class AntiBotStatistics {
 
     public String getFormattedStatistics() {
         int total = getTotalBlocked();
-        String cpsView = FireWallManager.isOsFireWallInUse ? "&7ACPS: " : "&7CPS: ";
+        String cpsView = AlixAtaraxia.isEnabled() ? "&7(excluding blocked) CPS: " : "&7CPS: ";
         return AlixFormatter.translateColors(cpsView + "&c" + getCPS() + " &7Total Blocked: &c" + total + " &7Blocked Since Start: &c" + getBlockedSinceStart(total));
     }
 
@@ -56,15 +59,15 @@ public final class AntiBotStatistics {
     }
 
     //todo: proxyProtocol
-    public void incrementJoins() {
-        //if (viewed)
+    public void incrementJoins(InetAddress addr) {
+        AdaptiveAnomalyDetector.onJoin(addr);
         this.currentCps.increment();
 
         this.panicIfNecessary();
     }
 
     private void panicIfNecessary() {
-        int max = 60;
+        int max = 90;
         if (this.isLastAvgCPSGreaterThan(max))
             PanicModeManager.activate("CPS greater than " + max + "!");
     }

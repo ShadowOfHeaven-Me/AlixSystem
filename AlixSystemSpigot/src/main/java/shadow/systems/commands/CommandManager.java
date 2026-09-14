@@ -1339,22 +1339,6 @@ public final class CommandManager {
         }
     }
 
-    //private static final boolean authCmdAsyncInvoked = PacketBlocker.serverboundNameVersion;
-
-    /*public static void onSyncCaptchaCommand(UnverifiedUser user, Player sender, String captcha) {
-        if (user.isCaptchaCorrect(captcha)) {
-            user.completeCaptcha();
-            sendMessage(sender, captchaComplete);
-            return;
-        }
-        if (kickOnIncorrectCaptcha) {
-            MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
-            //sender.kickPlayer(incorrectCaptcha);
-            return;
-        }
-        sendMessage(sender, incorrectCaptcha);
-    }*/
-
     private static final ByteBuf incorrectCaptchaKickPacket = OutDisconnectPacketConstructor.constAtPlay(incorrectCaptcha);
     public static final ByteBuf
             incorrectCaptchaMessagePacket = OutMessagePacketConstructor.constructConst(incorrectCaptcha),
@@ -1370,15 +1354,6 @@ public final class CommandManager {
         if (++user.captchaAttempts == maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
         else user.writeAndFlushConstSilently(incorrectCaptchaMessagePacket);
     }
-
-/*    private static final class CaptchaVerifyCommand implements CommandExecutor {
-
-        @Override
-        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-            sender.sendMessage(commandUnreachable);
-            return false;
-        }
-    }*/
 
     public static void onPasswordChangeCommand(VerifiedUser user, String[] args) {
         Player sender = user.getPlayer();
@@ -1416,23 +1391,6 @@ public final class CommandManager {
             captchaReminderMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("captcha-reminder-command")),
             registerReminderMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("register-reminder-command"));
 
-/*    public static void onSyncLoginCommand(UnverifiedUser user, String password) {
-        if (!user.hasCompletedCaptcha()) {
-            user.writeAndFlushDuplicateSilently(captchaReminderMessagePacket);
-            return;
-        }
-        if (!user.isRegistered()) {
-            user.writeAndFlushDuplicateSilently(registerReminderMessagePacket);
-            return;
-        }
-        if (user.isPasswordCorrect(password)) {
-            user.logIn();
-            return;
-        }
-        if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
-        else user.writeAndFlushDuplicateSilently(incorrectPasswordMessagePacket);
-    }*/
-
     public static boolean onAsyncLoginCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
             user.writeAndFlushConstSilently(captchaReminderMessagePacket);
@@ -1450,15 +1408,6 @@ public final class CommandManager {
         else user.writeAndFlushConstSilently(incorrectPasswordMessagePacket);
         return false;
     }
-
-/*    private static final class LoginCommand implements CommandExecutor {
-
-        @Override
-        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-            sender.sendMessage(commandUnreachable);
-            return false;
-        }
-    }*/
 
     public static final ByteBuf
             alreadyRegisteredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("already-registered")),

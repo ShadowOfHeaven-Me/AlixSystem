@@ -166,9 +166,14 @@ public final class UserManager {
         return user instanceof VerifiedUser ? (VerifiedUser) user : null;
     }
 
-    /*public static int userCount() {
-        return USERS.size();
-    }*/
+    public static AlixUser getByAddr(InetAddress ip) {
+        for (var user : users()) {
+            if (ip.equals(AlixCommonUtils.getAddress(user.getChannel()))) {
+                return user;
+            }
+        }
+        return null;
+    }
 
     public static Collection<AlixUser> users() {
         return USERS.values();

@@ -11,7 +11,7 @@ public enum FireWallType {
     //unsupported
     //INTERNAL_NIO_INTERCEPTOR,
     FAST_UNSAFE_EPOLL,
-    OS_IPSET;
+    ATARAXIA;
 
     public static final AtomicReference<FireWallType> USED = new AtomicReference<>();
 

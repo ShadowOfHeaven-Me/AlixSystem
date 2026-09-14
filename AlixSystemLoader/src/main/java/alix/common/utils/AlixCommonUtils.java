@@ -19,6 +19,7 @@ import java.awt.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.*;
@@ -125,10 +126,12 @@ public final class AlixCommonUtils {
         }
     }
 
+    public static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     public static String generateCode(int digits) {
         StringBuilder sb = new StringBuilder(digits);
         for (int i = 0; i < digits; i++)
-            sb.append(random.nextInt(10));
+            sb.append(SECURE_RANDOM.nextInt(10));
 
         return sb.toString();
     }

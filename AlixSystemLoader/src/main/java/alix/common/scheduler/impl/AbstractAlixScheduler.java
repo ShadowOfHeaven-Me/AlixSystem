@@ -29,7 +29,7 @@ public abstract class AbstractAlixScheduler implements InterfaceAlixScheduler {
         //new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>()) ://the default returned with Executors.newSingleThreadExecutor, but without the unnecessary extra delegation
         this.asyncExecutor = new ForkJoinPool(parallelisms, ForkJoinPool.defaultForkJoinWorkerThreadFactory, (t, e) -> AlixCommonUtils.logException(e), false);
 
-        this.poolExecutor = new ScheduledThreadPoolExecutor(1);
+        this.poolExecutor = new ScheduledThreadPoolExecutor(2);
         this.poolExecutor.setRemoveOnCancelPolicy(true);
 
         this.asyncBlockingExecutor = AlixCommonHandler.createExecutorForBlockingTasks();

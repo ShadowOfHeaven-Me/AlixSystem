@@ -7,6 +7,9 @@ pluginManagement {
         maven("https://repo.opencollab.dev/main")
         gradlePluginPortal()
     }
+    plugins {
+        kotlin("jvm") version "2.4.20"
+    }
 }
 
 //Lets Gradle download a matching JDK on its own (via the Foojay Disco API) whenever a required toolchain

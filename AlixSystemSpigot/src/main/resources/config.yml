@@ -282,5 +282,7 @@ auto-save: true
 unsafe-firewall: true
 #Defines whether constant buffer writes should be done in order to achieve maximal performance
 write-const-bufs: true
-#Whether or not user emails should be saved in an encrypted form. You can set this to false in case you need it in raw text
+#Whether user emails should be saved in an encrypted form. You can set this to false in case you need it in raw text
 encrypt-emails: true
+#Whether to support hosting any kind of HTTP service (e.g. a resource pack server) on the same port as the minecraft server
+support-mc-port-http: false

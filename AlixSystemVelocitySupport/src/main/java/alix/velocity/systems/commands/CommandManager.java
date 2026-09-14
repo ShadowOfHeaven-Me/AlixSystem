@@ -156,11 +156,9 @@ public final class CommandManager {
                         })
                 );
 
-        // 4. Attach the subcommands to the base command
         accountCmd.then(verifyEmailCmd);
         accountCmd.then(sendVerifyEmailCmd);
 
-        // 5. Register the fully built command tree
         var manager = server.getCommandManager();
         manager.register(
                 manager.metaBuilder("account")
@@ -178,7 +176,7 @@ public final class CommandManager {
             Player player = (Player) ctx.getSource();
             sendMessage(player, Messages.getWithPrefix("changepassword-specify-password"));
             return SINGLE_SUCCESS;
-        }).then(BrigadierCommand.requiredArgumentBuilder("new password", StringArgumentType.word())
+        }).then(BrigadierCommand.requiredArgumentBuilder("password", StringArgumentType.word())
                 .executes(ctx -> {
                     if (isConsole(ctx)) return SINGLE_SUCCESS;
                     Player player = (Player) ctx.getSource();
@@ -189,7 +187,7 @@ public final class CommandManager {
                         AlixUtils.sendMessage(player, Messages.getWithPrefix("account-missing-data"));
                         return SINGLE_SUCCESS;
                     }
-                    String password = ctx.getInput();
+                    String password = StringArgumentType.getString(ctx, "password");
 
                     AlixCommonUtils.getPasswordInvalidityReasonAsync(password, LoginType.ANVIL, reason -> {
                         if (reason != null) {
@@ -201,6 +199,7 @@ public final class CommandManager {
                         if (data.getLoginType() == LoginType.PIN)
                             data.setLoginType(LoginType.ANVIL);
                         data.setPassword(password);
+                        sendMessage(player, Messages.get("password-changed"));
                     });
                     return SINGLE_SUCCESS;
                 })
