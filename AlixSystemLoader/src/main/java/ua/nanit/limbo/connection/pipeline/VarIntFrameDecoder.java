@@ -2,6 +2,8 @@ package ua.nanit.limbo.connection.pipeline;
 
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.throwable.AlixException;
@@ -147,6 +149,10 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (NanoLimbo.debugFrames)
+            Log.error("FRAME=" + msg);
+        //Log.error("PIPELINE= " + ctx.channel().pipeline().names());
+
         //two volatile reads should be good enough perf here, since arriving packets should be large enough to overshadow this minor perf dent
         if (!ctx.channel().isActive() || ctx.isRemoved()) {
             this.cleanUp();
@@ -161,9 +167,6 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
         if (!(msg instanceof ByteBuf buf))
             return;
-
-        if (NanoLimbo.debugFrames)
-            Log.error("FRAME=" + msg);
 
         ByteBuf in = this.tryDecrypt(buf);
 
@@ -200,20 +203,10 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         }
     }
 
+    private static final boolean supportHttp = ConfigProvider.config.getBoolean("support-mc-port-http");
+
     //@Override
     private ByteBuf decode(ByteBuf in) {
-        //uhhh, is this correct? Can this be used to send null data packets without being detected?
-        /*int packetStart = in.forEachByte(ByteProcessor.FIND_NON_NUL);
-        if (packetStart == -1) {
-            in.clear();
-            //in.readerIndex(0);
-            return null;
-        }*/
-        //the name of the var isn't exactly true ;]
-        //pretty sure it returns true, like, always
-        //not sure why
-        //boolean notReadYet = in.readerIndex() == packetStart;
-        //in.readerIndex(packetStart);
         int packetStart = in.readerIndex();
         in.markReaderIndex();
 
@@ -222,9 +215,23 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
         //make sure not to firewall legacy ping, since still sent by modern clients in case of no-response after a 30-second timeout
         if (this.connection.getDecoderState() == State.HANDSHAKING && in.readableBytes() >= 3
-            && in.getByte(packetStart) == 0xFE && in.getByte(packetStart + 1) == 0x01 && in.getByte(packetStart + 2) == 0xFA) {
+            && BufUtils.hasSequence(in, packetStart, 0xFE, 0x01, 0xFA)) {
             this.connection.close();
             return null;
+        }
+
+        //(NanoLimbo.INTEGRATION.isProxyProtocol() ||
+        if (supportHttp && this.connection.getDecoderState() == State.HANDSHAKING
+            && NanoLimbo.INTEGRATION.isConnected(AlixCommonUtils.getAddress(this.connection.getChannel()))) {
+
+            if (in.readableBytes() < 4)
+                return null;
+
+            if (BufUtils.hasSequence(in, packetStart, 'G', 'E', 'T')
+                || BufUtils.hasSequence(in, packetStart, 'H', 'E', 'A', 'D')) {
+                this.connection.uninjectWithBuf(this.cumulation.readerIndex(0).copy());
+                return null;
+            }
         }
 
         int len = readVarIntPacketLength(in);
@@ -232,10 +239,12 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         //uhh, is it possible for this to be the result of fragmentation?
         //if (len < 0) throw NettySafety.INVALID_PACKET_LEN;
 
-        //readVarIntPacketLength(...) returns 0 for partial VarInts with a continuation bit, and for actual VarInts read as a 0
+        //readVarIntPacketLength(...) returns 0 only for actual VarInts read as a 0 (not possible here, needs to include packet id
+        // or be negative in case it's larger than 127 bytes)
         if (len == 0) {
-            in.resetReaderIndex();
-            return null;
+            throw NettySafety.INVALID_PACKET_LEN;
+            /*in.resetReaderIndex();
+            return null;*/
         }
 
         //the packet is said to be larger than what we've cumulated (hehe) so far

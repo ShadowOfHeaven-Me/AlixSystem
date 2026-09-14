@@ -15,7 +15,6 @@ import java.util.function.Function;
 
 public final class InetAddressMap<T> {
 
-
     private final Map<Integer, T> ipv4;
     private final Map<Inet6Address, T> ipv6;
 
@@ -28,8 +27,6 @@ public final class InetAddressMap<T> {
         this.ipv4 = new ConcurrentHashMap<>(v4Size);
         this.ipv6 = new ConcurrentHashMap<>(v6Size);
     }
-
-    // --- Core Map Operations ---
 
     public T put(InetAddress ip, T value) {
         return ip instanceof Inet4Address v4
@@ -75,8 +72,6 @@ public final class InetAddressMap<T> {
                 : this.ipv6.remove(ip, value);
     }
 
-    // --- Atomic & Compute Methods ---
-
     public T putIfAbsent(InetAddress ip, T value) {
         return ip instanceof Inet4Address v4
                 ? this.ipv4.putIfAbsent(addr(v4), value)
@@ -117,8 +112,6 @@ public final class InetAddressMap<T> {
         return null;
     }
 
-    // --- Collection & State Methods ---
-
     public int size() {
         return this.ipv4.size() + this.ipv6.size();
     }
@@ -151,13 +144,11 @@ public final class InetAddressMap<T> {
         return allValues;
     }
 
-    // --- Helpers ---
-
     int addr(Inet4Address address) {
         return IPUtils.ipv4Value(address);
     }
 
-    private static Inet4Address intToInet4Address(int val) {
+    public static Inet4Address intToInet4Address(int val) {
         try {
             byte[] bytes = new byte[]{
                     (byte) (val >>> 24),

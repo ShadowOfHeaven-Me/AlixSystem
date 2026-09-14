@@ -130,4 +130,16 @@ public final class BufUtils {
     public static ByteBuf constCompositeBuffer(List<ByteBuf> bufs) {//Unreleasable(ReadOnly(ByteBuf)))
         return Unpooled.unreleasableBuffer(Unpooled.unmodifiableBuffer(bufs.toArray(new ByteBuf[0])));
     }
+
+    public static boolean hasSequence(ByteBuf in, int idx, int b1, int b2, int b3) {
+        return (in.getByte(idx) & 0xFF) == b1
+               && (in.getByte(idx + 1) & 0xFF) == b2
+               && (in.getByte(idx + 2) & 0xFF) == b3;
+    }
+    public static boolean hasSequence(ByteBuf in, int idx, int b1, int b2, int b3, int b4) {
+        return (in.getByte(idx) & 0xFF) == b1
+               && (in.getByte(idx + 1) & 0xFF) == b2
+               && (in.getByte(idx + 2) & 0xFF) == b3
+                && (in.getByte(idx + 3) & 0xFF) == b4;
+    }
 }

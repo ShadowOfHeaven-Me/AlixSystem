@@ -24,35 +24,50 @@ public final class NanoLimbo {
 
     private static final SnapshotEncodeStrategy STRATEGY = SnapshotEncodeStrategy.RUNTIME_CACHE;
     //@DebugOnly
+    @DebugOnly(false)
     public static final boolean broadcastInvalidPacketFireWallStackTraces = false;
+    @DebugOnly(true)
     public static final boolean suppressInvalidPackets = true;//of(true);
+    @DebugOnly(false)
     public static final boolean debugCipher = false;//of(false);
+    @DebugOnly(false)
     public static final boolean debugPackets = of(false);
-    //@DebugOnly
+    @DebugOnly(false)
     public static final boolean debugPacketSizes = false;
+    @DebugOnly(false)
     public static final boolean debugServerPackets = false;//of(false);
+    @DebugOnly(false)
     public static final boolean debugRawEncodes = false;//of(false);
+    @DebugOnly(false)
     public static final boolean debugBytes = false;//of(false);
+    @DebugOnly(false)
     public static final boolean debugFrames = false;
+    @DebugOnly(false)
     public static final boolean debugSnapshots = false;//of(false);
     public static final boolean usePacketSnapshots = STRATEGY != SnapshotEncodeStrategy.NO_CACHE;
-    //@DebugOnly
     public static final boolean pregenerateSnapshots = STRATEGY == SnapshotEncodeStrategy.PREGENERATE;//true
+
+    @DebugOnly(false)
     public static final boolean allowFreeMovement = false;
-    //@DebugOnly
+    @DebugOnly(true)
     public static final boolean performChecks = true;
-    //@DebugOnly
+    @DebugOnly(false)
     public static final boolean debugAllDisconnects = of(false);
-    //@DebugOnly
+    @DebugOnly(false)
     public static final boolean validateWrites = of(false);
-    //@DebugOnly
+    @DebugOnly(false)
     public static final boolean enableFingerprinting = false;
-    //@DebugOnly
+    @DebugOnly(false)
     public static final boolean logPos = false;//of(false);
+    @DebugOnly(true)
     public static final boolean removeTimeout = true;
+    @DebugOnly(false)
     public static final boolean centerSpawn = false;
+    @DebugOnly(false)
     public static final boolean printCaptchaFailed = of(false);
+    @DebugOnly(true)
     public static final boolean verifyTheDud = true;
+    @DebugOnly(true)
     public static final boolean useTransfer = true;
 
     public static LimboServer LIMBO;
@@ -60,7 +75,14 @@ public final class NanoLimbo {
 
     private static void verifyNotDebug0() throws IllegalAccessException {
         for (var f : NanoLimbo.class.getDeclaredFields()) {
-            if (debugMode || f.isAnnotationPresent(DebugOnly.class)) {
+            boolean debug = debugMode;
+
+            if (f.isAnnotationPresent(DebugOnly.class) && f.getType() == boolean.class) {
+                DebugOnly ann = f.getAnnotation(DebugOnly.class);
+                if (ann.value() != f.getBoolean(null)) debug = true;
+            }
+
+            if (debug) {
                 AlixCommonMain.logWarning("Debug Mode is enabled, per " + f.getName() + "=" + f.get(null) + " annotated as DebugOnly! Contact the developer if you weren't expecting debug to be enabled!");
                 return;
             }

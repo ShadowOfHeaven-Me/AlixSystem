@@ -1,5 +1,6 @@
 package alix.common.connection.filters;
 
+import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.data.file.AllowListFileManager;
 import alix.common.messages.Messages;
 import alix.common.utils.collections.fastutil.InetAddressMap;
@@ -15,7 +16,7 @@ public final class GeoIPTracker implements ConnectionFilter {
     private static final boolean initialized = ConfigParams.maximumTotalAccounts > 0;
     public static final String maxAccountsReached = Messages.get("account-limit-reached", ConfigParams.maximumTotalAccounts);
 
-    private static final InetAddressMap<Integer> EXISTING_ACCOUNTS = new InetAddressMap<>(1 << 11, 1 << 5);//2048, 32
+    public static final InetAddressMap<Integer> EXISTING_ACCOUNTS = new InetAddressMap<>(1 << 11, 1 << 5);//2048, 32
     private static final Map<InetAddress, LongAdder> TEMPORARY_ACCOUNTS = new ConcurrentHashMap<>(1 << 8);
 
     public static boolean disallowJoin(InetAddress ip, String name) {//counts both: existing accounts and unregistered players currently on the server with that ip
@@ -54,6 +55,7 @@ public final class GeoIPTracker implements ConnectionFilter {
         return existingAccounts(ip) + tempAccounts(ip);
     }
 
+    //unregistered user joining
     public static void addTemporary(InetAddress ip) {
         TEMPORARY_ACCOUNTS.computeIfAbsent(ip, w -> new LongAdder()).increment();
     }
@@ -64,14 +66,18 @@ public final class GeoIPTracker implements ConnectionFilter {
             c.decrement();
     }
 
-    //added either on data loading from a file or (on bukkit) unregistered user joining
+    //added on data loading from a file
     public static void addExisting(InetAddress ip) {
-        EXISTING_ACCOUNTS.merge(ip, 1, (current, one) -> current + 1);
+        boolean notYetMapped = 1 == EXISTING_ACCOUNTS.merge(ip, 1, (current, one) -> current + 1);
+        if (notYetMapped)
+            AlixAtaraxia.whitelist(ip);
         //map.compute(ip, (k, v) -> v == null ? 1 : v + 1);
     }
 
-    //removed only on quit of unregistered users (or when data is removed per /as frd <user>)
+    //removed when data is removed per /as frd <user> or on ip updates
     public static void removeIP(InetAddress ip) {
-        EXISTING_ACCOUNTS.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
+        boolean removed = null == EXISTING_ACCOUNTS.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
+        if (removed)
+            AlixAtaraxia.unwhitelist(ip);
     }
 }

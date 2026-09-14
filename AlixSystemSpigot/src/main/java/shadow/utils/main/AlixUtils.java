@@ -230,7 +230,6 @@ public final class AlixUtils {
         random = AlixCommonUtils.random;
         doubledDefaultWalkSpeed = 0.2F;
         doubledDefaultFlySpeed = 0.1F;
-        if (config.getBoolean("ping-before-join")) AlixHandler.initializeServerPingManager();
     }
 
     public static void getMethodTime(Executable method) {

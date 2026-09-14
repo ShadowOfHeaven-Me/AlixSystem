@@ -3,6 +3,7 @@ package alix.velocity.systems.packets;
 import alix.common.data.LoginType;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.Main;
@@ -94,12 +95,12 @@ public final class VerifiedPacketProcessor {
 
     private void logJoin() {
         if (loginInfo.verdict().isAutoLogin()) {
-            Main.logInfo(joinVerified.format(this.user.getName(), this.user.getAddress().getHostAddress(), loginInfo.verdict().readableName()));
+            Main.logInfo(joinVerified.format(this.user.getName(), AlixCommonUtils.getAddress(this.user.getChannel()).getHostAddress(), loginInfo.verdict().readableName()));
             return;
         }
 
         AlixMessage msg = loginInfo.joinedRegistered() ? loginJoinMessage : registerJoinMessage;
-        Main.logInfo(msg.format(this.user.getName(), this.user.getAddress().getHostAddress()));
+        Main.logInfo(msg.format(this.user.getName(), AlixCommonUtils.getAddress(this.user.getChannel()).getHostAddress()));
     }
 
     public void enablePasswordSetting(Consumer<String> onValidConfirmation, Runnable returnOriginalGui, Supplier<LoginType> loginType) {

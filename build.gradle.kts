@@ -1,6 +1,7 @@
 plugins {
     id("java")
     `maven-publish`
+    kotlin("jvm")
 }
 
 group = "AlixSystem"
@@ -22,6 +23,25 @@ publishing {
 }
 
 dependencies {
+    testImplementation(kotlin("test"))
 }
 
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(Integer.parseInt(project.findProperty("toolchain-lang-version").toString())))
+subprojects {
+    apply(plugin = "java")
+
+    plugins.withId("java") {
+        configure<SourceSetContainer> {
+            named("main") {
+                java.srcDir("$rootDir/buildSrc/src/main/kotlin")
+            }
+        }
+    }
+}
+
+java.toolchain.languageVersion.set(
+    JavaLanguageVersion.of(
+        Integer.parseInt(
+            project.findProperty("toolchain-lang-version").toString()
+        )
+    )
+)

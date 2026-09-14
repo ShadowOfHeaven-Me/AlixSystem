@@ -37,7 +37,7 @@ final class AlixYamlConfigFile extends AlixFileManager {
             String[] list = line.split("- ", 2);
 
             if (list.length == 1 || this.mostRecentKey == null) {
-                AlixCommonMain.logError("Line number " + this.linesRead + ", '" + line + "' contains no ':' separator symbol!");
+                AlixCommonMain.logError("Line number " + this.linesRead + ", '" + line + "' contains no ':' separator symbol in " + this.getFile().getName() + "!");
                 return;
             }
             this.lists.computeIfAbsent(this.mostRecentKey, k -> new ArrayList<>()).add(list[1].trim());

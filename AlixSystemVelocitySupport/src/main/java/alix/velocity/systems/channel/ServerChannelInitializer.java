@@ -70,25 +70,22 @@ public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel channel = (Channel) msg;
-        AntiBotStatistics.INSTANCE.incrementJoins();
         if (!PROXY_PROTOCOL) {
             InetAddress address = AlixCommonUtils.getAddress(channel);
-            if (isNettyFireWall) {
-
-                //cuz not enabled in epoll
-                if (Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)
-                    TelemetryProfiler.PROFILER.onConnection(epoll.fd().intValue(), null);
-
-                if (FireWallManager.isBlocked0(address)) {
-                    channel.unsafe().closeForcibly();
-                    return;
-                }
+            AntiBotStatistics.INSTANCE.incrementJoins(address);
+            if (FireWallManager.isBlocked0(address)) {
+                channel.unsafe().closeForcibly();
+                return;
             }
-            //ConnectRequestAlgoImpl.onUnregisteredConnection(channel);
+
+            //cuz not invoked in epoll fw
+            if (isNettyFireWall && Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)
+                TelemetryProfiler.PROFILER.onConnection(epoll.fd().intValue(), null);
         }
 
         AlixVelocityLimbo.initChannel(channel, PROXY_PROTOCOL);
         super.channelRead(ctx, msg);
+        //Log.warning("NOW PIPELINE=" + channel.pipeline().names());
         //channel.parent().eventLoop().parent().next();
     }
 

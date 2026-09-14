@@ -1,7 +1,9 @@
 package alix.common.antibot.firewall;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.antibot.algorithms.any.PanicModeManager;
+import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.antibot.firewall.entry.FireWallEntry;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.messages.AlixMessage;
@@ -10,6 +12,7 @@ import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.AlixMathUtils;
 import alix.common.utils.collections.fastutil.ConcurrentInt62Set;
+import alix.common.utils.collections.fastutil.InetAddressMap;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.AlixFileManager;
 import alix.common.utils.other.throwable.AlixException;
@@ -21,8 +24,11 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,10 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class FireWallManager {
-
-    //Linux IpSet
-    private static final AlixOSFireWall osFireWall = AlixOSFireWall.INSTANCE;
-    public static final boolean isOsFireWallInUse = AlixOSFireWall.isOsFireWallInUse;
 
     //File
     private static final FireWallFile file = new FireWallFile();
@@ -52,31 +54,37 @@ public final class FireWallManager {
 
     public static final String EXCEPTION_CAUGHT_KEY = "ex_ca: ";
     public static final Duration EXCEPTION_TIMEOUT = Duration.of(30, TimeUnit.MINUTES.toChronoUnit());
-    public static final long NO_TIMEOUT = 0;
-
-    public static void addCauseException(InetAddress ip, Throwable t) {
-        addCauseException(ip, t, EXCEPTION_TIMEOUT.getSeconds());
-    }
+    public static final long
+            NO_TIMEOUT = 0,
+            ATARAXIA_TIMEOUT = 30 * 60 * 1000L;//30m
 
     private static final AlixMessage antiAbuseConsoleMessage = Messages.getAsObject("anti-abuse-fail-console-message");
     private static final String firewallLogsExhaustedConsoleMessage = Messages.get("firewall-exhausted-logs");
 
     private static final LongAdder recentFirewalls = new LongAdder();
     private static final int MAX_RECENT_FIREWALLS = 8;
-    private static final long RECENT_FIREWALL_WINDOW = 20;
+    private static final long RECENT_FIREWALL_WINDOW = 20_000L;
     private static final AtomicBoolean MESSAGES_LOCKED = new AtomicBoolean();
     private static final AtomicLong LAST_FIREWALL = new AtomicLong();
 
+    public static void addDynamic(List<InetAddress> list) {
+        list.forEach(ip -> addDynamic(ip, "Ataraxia", ATARAXIA_TIMEOUT));
+    }
+
+    public static void addCauseException(InetAddress ip, Throwable t) {
+        addCauseException(ip, t, EXCEPTION_TIMEOUT.getSeconds());
+    }
+
     public static void addCauseException(InetAddress ip, Throwable t, long timeoutInSeconds) {
-        boolean added = null == add(ip, EXCEPTION_CAUGHT_KEY + t.getMessage(), timeoutInSeconds, TimeUnit.SECONDS);
+        addDynamic(ip, t.getMessage(), timeoutInSeconds);
+    }
+
+    public static void addDynamic(InetAddress ip, String message, long timeoutInSeconds) {
+        boolean added = null == add(ip, EXCEPTION_CAUGHT_KEY + message, timeoutInSeconds, TimeUnit.SECONDS);
         if (!added || checkIfLogsExhausted()) return;
 
         String expires = timeoutInSeconds > 0 ? "in " + AlixCommonUtils.prettyTime(timeoutInSeconds) : "Never";
-        AlixCommonMain.logInfo(antiAbuseConsoleMessage.format(ip.getHostAddress(), logMessageOf(t), expires));
-    }
-
-    private static String logMessageOf(Throwable t) {
-        return t.getMessage(); //t instanceof IndexOutOfBoundsException ? ""
+        AlixCommonMain.logInfo(antiAbuseConsoleMessage.format(ip.getHostAddress(), message, expires));
     }
 
     private static boolean checkIfLogsExhausted() {
@@ -115,22 +123,13 @@ public final class FireWallManager {
         return added;
     }
 
-    private static void osBlacklist0(String ip) {
-        try {
-            osFireWall.blacklist(ip);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
-
     static FireWallEntry add(InetAddress ip, String message, long timeoutIn, TimeUnit unit) {
         long timeoutAt = timeoutIn <= 0 ? 0 : System.currentTimeMillis() + unit.toMillis(timeoutIn);
-        return add0(ip, FireWallEntry.from(message, timeoutAt));
+        return add0(ip, FireWallEntry.from(message, timeoutAt), false);
     }
 
-    static FireWallEntry add0(InetAddress ip, FireWallEntry entry) {
-        if (isOsFireWallInUse)
-            osBlacklist0(ip.getHostAddress());
+    static FireWallEntry add0(InetAddress ip, FireWallEntry entry, boolean loaded) {
+        AlixAtaraxia.blacklist(ip);
 
         // Static
         if (entry == FireWallEntry.BUILT_IN) {
@@ -142,6 +141,8 @@ public final class FireWallManager {
             return entry;
         }
 
+        if (!loaded)
+            AdaptiveAnomalyDetector.onFirewall();
         // Dynamic
         FireWallEntry previous = dynamicMap.putIfAbsent(ip, entry);
         if (ip instanceof Inet4Address ipv4) {
@@ -184,6 +185,10 @@ public final class FireWallManager {
         }
 
         return PanicModeManager.isBlocked(address);
+    }
+
+    public static void removeDynamic(List<InetAddress> list) {
+        list.forEach(FireWallManager::removeDynamic);
     }
 
     public static boolean removeDynamic(InetAddress ip) {
@@ -230,6 +235,13 @@ public final class FireWallManager {
         return dynamicMap.size();
     }
 
+    public static Set<InetAddress> staticBlockedSet() {
+        Set<InetAddress> keys = new HashSet<>(staticBlocked());
+        staticIpv4Tree.stream().forEach(k -> keys.add(InetAddressMap.intToInet4Address(k)));
+        keys.addAll(staticIpv6Set);
+        return keys;
+    }
+
     public static Set<InetAddress> dynamicBlockedSet() {
         return dynamicMap.keySet();
     }
@@ -242,10 +254,14 @@ public final class FireWallManager {
         file.saveKeyAndVal(dynamicMap, FireWallEntry.DELIMITER, FireWallEntry::shouldSave, InetAddress::getHostAddress, null);
     }
 
+    public static final CompletableFuture<Void> AT_LOAD_COMPLETE = new CompletableFuture<>();
+
     public static void init() {
         AlixScheduler.async(() -> {
             if (ConfigParams.loadBuiltInIps) loadWithBuiltIn0();
             else loadWithoutBuiltIn0();
+
+            AT_LOAD_COMPLETE.complete(null);
         });
     }
 
@@ -258,7 +274,7 @@ public final class FireWallManager {
 
     private static void loadWithBuiltIn0() {
         try (var is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
-            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN), false);
+            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN, true), false);
 
             int builtIn = staticBlocked();
             file.load();

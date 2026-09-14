@@ -4,7 +4,6 @@ import alix.api.event.types.AuthReason;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.connection.filters.GeoIPTracker;
-import alix.common.connection.filters.ServerPingManager;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -33,7 +32,6 @@ import org.bukkit.plugin.PluginManager;
 import shadow.Main;
 import shadow.systems.executors.OfflineExecutors;
 import shadow.systems.executors.PaperSpawnExecutors;
-import shadow.systems.executors.ServerPingListener;
 import shadow.systems.executors.SpigotSpawnExecutors;
 import shadow.systems.executors.gui.GUIExecutors;
 import shadow.systems.login.captcha.types.CaptchaVisualType;
@@ -265,8 +263,6 @@ public final class AlixHandler {
                         ? new PaperSpawnExecutors() : new SpigotSpawnExecutors(), Main.plugin);
 
         pm.registerEvents(new GUIExecutors(), Main.plugin);
-        if (ServerPingManager.isRegistered())
-            pm.registerEvents(new ServerPingListener(), Main.plugin);
     }
 
     public static void updateConsoleFilter() {
@@ -288,27 +284,14 @@ public final class AlixHandler {
                 "Poprawnie zaimplementowano AlixConsoleFilter dla konsoli! ");
     }
 
-    public static void initializeServerPingManager() {
-        ServerPingManager.init();
-    }
-
+    //lower version players crash if we send this normally
     private static final ByteBuf
             autoLoginMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.autoLoginMessage),
             autoLoginPremiumMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("auto-login-premium")),
             autoRegisterPremiumMessageBuffer = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("auto-register-premium"));
 
-    //lower version players crash if we send this normally
-    /*private static final String
-            autoLoginMessage = Messages.autoLoginMessage,
-            autoLoginPremiumMessage = Messages.getWithPrefix("auto-login-premium"),
-            autoRegisterPremiumMessage = Messages.getWithPrefix("auto-register-premium");*/
-
     public static UnverifiedUser handleVirtualPlayerJoin(Player p, TemporaryUser user) {
         LoginInfo login = user.getLoginInfo();
-        //Already done in the spawn location event
-        /*if (login.getVerdict().isAutoLogin() && p.getWorld().getUID().equals(AlixWorld.CAPTCHA_WORLD.getUID())) //tp back if there was an issue with the teleportation beforehand
-            OriginalLocationsManager.teleportBack(p);*/
-
         return switch (login.getVerdict()) {//a fast injection based on the login verdict
             case DISALLOWED_NO_DATA -> {
                 GeoIPTracker.addTemporary(login.getIP());

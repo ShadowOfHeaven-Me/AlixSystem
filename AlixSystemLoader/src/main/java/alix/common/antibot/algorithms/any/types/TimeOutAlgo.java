@@ -1,5 +1,6 @@
 package alix.common.antibot.algorithms.any.types;
 
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
@@ -90,8 +91,9 @@ public final class TimeOutAlgo {
                                        "totalRetrans=" + tcpInfo.totalRetrans());
             }*/
 
-            LimboJoinProfiler.update(channel, ConnectionStage.TIMED_OUT);
+            AdaptiveAnomalyDetector.onEmptyClose(addr);
 
+            LimboJoinProfiler.update(channel, ConnectionStage.TIMED_OUT);
             ConnectRequestAlgoImpl.close(channel, TIMED_OUT_BUF);
 
             var info = TIMEOUT_COUNT.computeIfAbsent(addr, w -> new TimeOutInfo());

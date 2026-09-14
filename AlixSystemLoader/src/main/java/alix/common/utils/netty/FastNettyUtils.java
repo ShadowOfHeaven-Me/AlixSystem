@@ -93,7 +93,7 @@ public final class FastNettyUtils {
         }
     }
 
-    public static int readVarIntSlow(ByteBuf buffer) {
+    private static int readVarIntSlow(ByteBuf buffer) {
         int i = 0;
         int i1 = 0;
 

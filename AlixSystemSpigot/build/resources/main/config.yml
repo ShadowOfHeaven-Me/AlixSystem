@@ -128,7 +128,7 @@ max-auth-app-attempts: 3
 # 4 - Uses SHA-256, always saved into a 64 character-long hex
 # 5 - Uses SHA-512, always saved into a 64 character-long hex
 # 6 - Uses BCrypt, Version 2A
-password-hash-type: 3
+password-hash-type: 4
 #Defines whether a user should be shown the "Login automatically?" gui, with the ability to configure their ip autologin preference, right after registering
 auto-ip-autologin-ask: true
 #Defines whether, if the joining player has the nickname of a premium account, it should be required of him to also be the owner of that account - forbid server
@@ -269,5 +269,7 @@ auto-save: true
 unsafe-firewall: true
 #Defines whether constant buffer writes should be done in order to achieve maximal performance
 write-const-bufs: true
-#Whether or not user emails should be saved in an encrypted form. You can set this to false in case you need it in raw text
+#Whether user emails should be saved in an encrypted form. You can set this to false in case you need it in raw text
 encrypt-emails: true
+#Whether to support hosting any kind of HTTP service (e.g. a resource pack server) on the same port as the minecraft server
+support-mc-port-http: false

@@ -5,7 +5,9 @@ import alix.common.MainClass;
 import alix.common.logger.AlixLoggerProvider;
 import alix.common.logger.LoggerAdapter;
 import alix.common.logger.velocity.VelocityLoggerAdapter;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.file.update.FileUpdater;
+import alix.common.utils.other.throwable.AlixException;
 import alix.loaders.classloader.LoaderBootstrap;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
@@ -21,9 +23,10 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.util.Date;
 
 @MainClass
-@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.5.0", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
+@Plugin(id = "alixsystem", name = "AlixSystem", version = "1.5.1 (DEV-1)", description = "AntiBot & Login System", url = "https://builtbybit.com/resources/alixvelocity.61304/",
         authors = "ShadowOfHeaven", dependencies = {@Dependency(id = "floodgate", optional = true), @Dependency(id = "geyser", optional = true)})
 public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
@@ -41,6 +44,10 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
     @SneakyThrows
     @Inject
     public VelocityAlixMain(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
+        long until = 1788817349480L + 7 * 86400 * 1000L;
+        if (System.currentTimeMillis() > until)
+            throw new AlixException("Trial ended!");
+
         instance = this;
         this.server = server;
         this.logger = logger;
@@ -64,6 +71,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         //CommonAlixMain.bootstrap = this.plugin;
 
         FileUpdater.updateFiles();
+        logger.info("Trial finishes at: {}", AlixCommonUtils.getFormattedDate(new Date(until)));
         //this.bootstrap.onLoad();
     }
 

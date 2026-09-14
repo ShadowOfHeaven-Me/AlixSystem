@@ -59,6 +59,11 @@ public final class AlixSystemCommand {
         return builder.buildFuture();
     };
 
+    private static final SuggestionProvider<CommandSource> FIREWALLED_IPS_SUGGESTIONS = (context, builder) -> {
+        FireWallManager.dynamicBlockedSet().forEach(ip -> builder.suggest(ip.getHostAddress()));
+        return builder.buildFuture();
+    };
+
     public static void register(CommandManager commandManager) {
         LiteralArgumentBuilder<CommandSource> root = LiteralArgumentBuilder.literal("as");
         root.requires(source -> source.hasPermission("alixsystem.admin"));
@@ -74,6 +79,7 @@ public final class AlixSystemCommand {
 
         root.then(LiteralArgumentBuilder.<CommandSource>literal("ufw")
                 .then(RequiredArgumentBuilder.<CommandSource, String>argument("ip", StringArgumentType.word())
+                        .suggests(FIREWALLED_IPS_SUGGESTIONS)
                         .executes(context -> {
                             CommandSource sender = context.getSource();
                             String arg2 = StringArgumentType.getString(context, "ip");

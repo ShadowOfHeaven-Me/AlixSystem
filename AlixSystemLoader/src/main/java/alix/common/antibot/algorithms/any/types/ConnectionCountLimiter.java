@@ -25,7 +25,7 @@ public final class ConnectionCountLimiter {
     //private static final Map<InetAddress, Integer> MAPPED_IPS = new ConcurrentHashMap<>(1 << 10);//1024
     private static final Map<InetAddress, LongAdder> CONNECTIONS = new ConcurrentHashMap<>(1 << 10);
 
-    private static final int HARD_LIMIT = 4000;
+    private static final int HARD_LIMIT = 8000;
     private static final LongAdder TOTAL = new LongAdder();
 
     private static final ByteBuf ACCOUNTS_EXCEEDED, TOTAL_EXCEEDED;

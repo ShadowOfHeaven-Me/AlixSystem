@@ -3,9 +3,9 @@ package shadow.systems.netty;
 import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.epoll.AlixEpollConnection;
-import alix.common.antibot.firewall.AlixOSFireWall;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.FireWallType;
+import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.environment.ServerEnvironment;
 import alix.common.utils.AlixCommonUtils;
 import io.netty.channel.Channel;
@@ -40,9 +40,9 @@ public final class AlixInterceptor {
         FireWallType type = FireWallType.NETTY;
 
         if (!AlixUtils.antibotService) type = FireWallType.NOT_USED;
-        else if (AlixOSFireWall.isOsFireWallInUse) {
-            type = FireWallType.OS_IPSET;
-            AlixCommonMain.logInfo("Using the optimized OS IpSet for FireWall Protection.");
+        else if (AlixAtaraxia.isEnabled()) {
+            type = FireWallType.ATARAXIA;
+            AlixCommonMain.logInfo("Using the optimized Alix Ataraxia for FireWall Protection.");
         } else if (!Main.config.getBoolean("unsafe-firewall")) {
             type = FireWallType.NETTY;
             AlixCommonMain.logInfo("Using Netty for FireWall Protection (per config).");
@@ -117,18 +117,13 @@ public final class AlixInterceptor {
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             Channel channel = (Channel) msg;
 
-            //Main.debug("CHANNEL CONNECT=" + channel);
-            AntiBotStatistics.INSTANCE.incrementJoins();
-
             if (!PROXY_PROTOCOL) {
                 InetAddress address = AlixCommonUtils.getAddress(channel);
-                if (isNettyFireWall) {
-                    if (FireWallManager.isBlocked0(address)) {
-                        channel.unsafe().closeForcibly();
-                        return;
-                    }
+                AntiBotStatistics.INSTANCE.incrementJoins(address);
+                if (FireWallManager.isBlocked0(address)) {
+                    channel.unsafe().closeForcibly();
+                    return;
                 }
-                //ConnectRequestAlgoImpl.onUnregisteredConnection(channel);
             }
 
             //always true

@@ -167,9 +167,12 @@ public final class EmailHandler {
 
         mail.setHtmlMsg(content);
 
+        var loader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(Session.class.getClassLoader());
 
         mail.send();
+
+        Thread.currentThread().setContextClassLoader(loader);
     }
 
     static {
