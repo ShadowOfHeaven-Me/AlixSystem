@@ -455,8 +455,9 @@ public final class LoginState implements VerifyState {
             return;
         }
 
-        //Both reachable only via the clickable chat prompt openRecovery() sends when an account has both
-        //email and passkey recovery set up - see there for why this isn't just a single "/recovery" click.
+        //Both also reachable via LimboRecoveryChoiceBuilder's buttons when an account has both email and
+        //passkey recovery set up (see openRecovery()) - kept as chat commands too as an always-available
+        //fallback, same as "/recovery" itself.
         if (cmdName.equals("recoveremail")) {
             this.openRecoveryEmailGui();
             return;
@@ -625,25 +626,15 @@ public final class LoginState implements VerifyState {
 
     //Entry point for the "Recover account?" item (LimboAnvilBuilder/LimboPinBuilder/the bedrock form) -
     //dispatches to whichever recovery method(s) this account actually has available. When both email and a
-    //device passkey are set up, asks which one to use via a clickable chat message rather than opening a
-    //GUI directly, since only one of the two ever needs actual text input (the email address) - the other
-    //is a single action with nothing left to type.
+    //device passkey are set up, opens LimboRecoveryChoiceBuilder to let the player pick which one to use -
+    //previously this only sent a clickable chat message instead of a real GUI, which Shadow asked to have
+    //changed.
     public void openRecovery() {
         boolean canEmail = this.data != null && this.data.canUseEmailRecovery();
         boolean canPasskey = this.data != null && this.data.canUsePasskeyRecovery();
 
         if (canEmail && canPasskey) {
-            Component email = Component.text(Messages.get("recovery-choice-email"))
-                    .clickEvent(ClickEvent.runCommand("/recoveremail"))
-                    .decorate(TextDecoration.UNDERLINED);
-            Component passkey = Component.text(Messages.get("recovery-choice-passkey"))
-                    .clickEvent(ClickEvent.runCommand("/recoverpasskey"))
-                    .decorate(TextDecoration.UNDERLINED);
-            this.duplexHandler.write(PacketPlayOutMessage.withComponent(
-                    LegacyComponentSerializer.legacySection().deserialize(Messages.getWithPrefix("recovery-choice-prompt"))
-                            .append(email).append(Component.text(" ")).append(passkey)
-            ));
-            this.duplexHandler.flush();
+            this.openRecoveryChoiceGui();
         } else if (canEmail) {
             this.openRecoveryEmailGui();
         } else if (canPasskey) {
@@ -654,8 +645,10 @@ public final class LoginState implements VerifyState {
 
     //"/recoverpasskey" - the passkey counterpart to "/recovery <email/code>" (handleRecoveryCommand()),
     //also reachable directly from openRecovery() above when a passkey is this account's only recovery
-    //option.
-    private void handleRecoveryPasskeyCommand() {
+    //option, or via LimboRecoveryChoiceBuilder's passkey button when both methods are available. Public
+    //(rather than the original private) since LimboRecoveryChoiceBuilder, in the "gui" sub-package, needs
+    //to call it too.
+    public void handleRecoveryPasskeyCommand() {
         if (this.data == null || !this.data.canUsePasskeyRecovery()) {
             this.sendMessage(Messages.getWithPrefix("device-fingerprint-mismatch"));
             return;
@@ -671,8 +664,16 @@ public final class LoginState implements VerifyState {
         }));
     }
 
+    public void openRecoveryChoiceGui() {
+        if (this.gui != null && !this.isRecoveryGui(this.gui)) {
+            this.originalGui = this.gui;
+        }
+        this.gui = new LimboRecoveryChoiceBuilder(this.connection, this);
+        this.gui.show();
+    }
+
     public void openRecoveryEmailGui() {
-        if (this.gui != null && !(this.gui instanceof LimboRecoveryAnvilBuilder)) {
+        if (this.gui != null && !this.isRecoveryGui(this.gui)) {
             this.originalGui = this.gui;
         }
         this.gui = new LimboRecoveryAnvilBuilder(this.connection, this, false);
@@ -680,11 +681,19 @@ public final class LoginState implements VerifyState {
     }
 
     public void openRecoveryCodeGui() {
-        if (this.gui != null && !(this.gui instanceof LimboRecoveryAnvilBuilder)) {
+        if (this.gui != null && !this.isRecoveryGui(this.gui)) {
             this.originalGui = this.gui;
         }
         this.gui = new LimboRecoveryAnvilBuilder(this.connection, this, true);
         this.gui.show();
+    }
+
+    //True for any GUI belonging to the recovery flow itself (the initial email/passkey choice, and the
+    //email/code anvil steps) - used by the openRecovery*Gui() methods above so that transitioning between
+    //these doesn't clobber originalGui (the login/PIN/anvil GUI the player was on before starting recovery,
+    //which reopenOriginalGui() returns to on cancel).
+    private boolean isRecoveryGui(LimboGUI gui) {
+        return gui instanceof LimboRecoveryAnvilBuilder || gui instanceof LimboRecoveryChoiceBuilder;
     }
 
     public void reopenOriginalGui() {
