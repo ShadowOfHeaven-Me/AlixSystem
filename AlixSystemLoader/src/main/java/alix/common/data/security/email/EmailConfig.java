@@ -15,6 +15,13 @@ public final class EmailConfig {
     public final boolean enableWebVerification;
     public final String webVerificationBindAddress, webVerificationPublicUrl;
     public final int webVerificationPort, webVerificationTokenExpiryMinutes;
+    //how long a 6-digit verification code (sent by sendVerifyMail()/sendRecoveryMail() - covers email
+    //registration, account recovery, a player's own "/account verifyemail", and the server's own "/as
+    //verifyemail") stays valid for. Previously these never expired at all (bounded only by a 512-entry LRU
+    //cache and the attempt limit) - generous by default since the console/"/as sendverifyemail" flow in
+    //particular has no real time pressure and shouldn't need redoing just because an admin took a while to
+    //check their inbox.
+    public final int verifyCodeExpiryMinutes;
     //the plain-text (no color codes - this renders in a browser, not in-game) title/message shown on each
     //outcome page of the web verification link, configurable since they're seen by a player's browser and
     //an operator may want to reword/rebrand them
@@ -38,6 +45,7 @@ public final class EmailConfig {
         this.webVerificationPort = config.getInt("web-verification-port", 8091);
         this.webVerificationPublicUrl = config.getString("web-verification-public-url", "");
         this.webVerificationTokenExpiryMinutes = config.getInt("web-verification-token-expiry-minutes", 30);
+        this.verifyCodeExpiryMinutes = config.getInt("verify-code-expiry-minutes", 60);
         this.webVerificationPageInvalidTitle = config.getString("web-verification-page-invalid-title", "Link invalid or expired");
         this.webVerificationPageInvalidMessage = config.getString("web-verification-page-invalid-message", "This verification link is no longer valid. Please request a new one in-game via /account sendverifyemail.");
         this.webVerificationPageErrorTitle = config.getString("web-verification-page-error-title", "Something went wrong");

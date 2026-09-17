@@ -83,6 +83,11 @@ require-password-repeat-in-register: false
 #created once the player types "/verifyemail <code>" back. If they never do, no account is created at all, so
 #alix_users2.email never ends up holding an address nobody has actually proven ownership of.
 require-email-in-register: false
+#Defines how long (in seconds) a player is allowed to wait for their registration verification email to
+#arrive and type "/verifyemail <code>", once it's been sent - separate from 'max-login-time' above, since
+#receiving an email can easily take longer than that. Only applies while 'require-email-in-register' is true.
+#Set to 0 to disable this timeout entirely (the player can then wait as long as they need to for the email).
+email-verification-time: 300
 #Defines whether registering users must first accept a set of Terms & Conditions (e.g. for GDPR / personal data collection compliance) before they're allowed to register.
 #Applies to EVERY login/registration type (command, PIN, Anvil GUI, and Bedrock/Geyser-Floodgate) - not just command-based registration.
 #When enabled, players will be shown the link configured below and asked to type '/terms accept' or '/terms decline'. Declining results in a kick.

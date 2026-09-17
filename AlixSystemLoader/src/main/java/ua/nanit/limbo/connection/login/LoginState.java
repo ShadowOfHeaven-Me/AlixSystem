@@ -803,6 +803,17 @@ public final class LoginState implements VerifyState {
             this.pendingRegisterEmail = email;
             EmailHandler.sendVerifyMail(this.connection, email, false, (conn, msg) -> this.sendMessage(msg));
             this.sendMessage(Messages.getWithPrefix("register-email-verification-sent", email));
+
+            //Switch from the general max-login-time countdown to the (typically longer) dedicated
+            //email-verification one - see ConfigParams#emailVerificationTime for why: receiving the email
+            //can easily take longer than max-login-time allows for the rest of the register GUI, and without
+            //this the player could get kicked (losing pendingRegisterPassword/Email, since the account isn't
+            //created yet) before the code even arrives, forcing them to restart registration and wait for a
+            //new email every time.
+            if (ConfigParams.hasEmailVerificationTime) {
+                if (this.countdown != null) this.countdown.cancel();
+                this.countdown = new LimboCountdown(this.connection);
+            }
         }));
     }
 

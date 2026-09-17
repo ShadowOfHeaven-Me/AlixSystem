@@ -3,6 +3,7 @@ package alix.common.data.security.email;
 import alix.common.AlixCommonMain;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Optional;
@@ -37,7 +38,26 @@ final class EmailTemplateLoader {
      * @return the file's content, or empty if the file does not exist or could not be read (in which case the caller should fall back to the default template)
      */
     static Optional<String> load(String fileName) {
-        File file = new File(templatesFolder(), fileName);
+        File templatesFolder = templatesFolder();
+        File file = new File(templatesFolder, fileName);
+
+        //'fileName' is the operator-set 'custom-verify-email-template' value in email-config.yml, not
+        //attacker-controlled - but resolving it outside the templates folder (e.g. "../../secrets.yml", or
+        //an absolute path) would still let it read an arbitrary file on the host and mail its contents back
+        //as the "verification email" body, so it's rejected the same as any other path-traversal input
+        //would be. Canonicalizing (rather than a simple ".." substring check) also catches an absolute path.
+        try {
+            String canonicalTemplatesFolder = templatesFolder.getCanonicalPath();
+            String canonicalFile = file.getCanonicalPath();
+            if (!canonicalFile.equals(canonicalTemplatesFolder) && !canonicalFile.startsWith(canonicalTemplatesFolder + File.separator)) {
+                AlixCommonMain.logWarning("Custom email template '" + fileName + "' resolves outside the '" + TEMPLATES_FOLDER_NAME + "' folder - refusing to load it! Falling back to the default template.");
+                return Optional.empty();
+            }
+        } catch (IOException e) {
+            AlixCommonMain.logWarning("Could not resolve custom email template '" + fileName + "': " + e.getMessage());
+            return Optional.empty();
+        }
+
         if (!file.exists() || !file.isFile()) {
             AlixCommonMain.logWarning("Custom email template '" + fileName + "' was not found in the '" + TEMPLATES_FOLDER_NAME + "' folder! Falling back to the default template.");
             return Optional.empty();

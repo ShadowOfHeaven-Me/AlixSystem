@@ -29,14 +29,21 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class EmailHandler {
 
-    //caller -> code
-    private static final Map<Object, EmailVerificationSession> VERIFY_CODES = AlixCache.newBuilder().maximumSize(512).<Object, EmailVerificationSession>build().asMap();
+    //caller -> code. expireAfterWrite is generous (see EmailConfig#verifyCodeExpiryMinutes) since this cache
+    //is shared by every verification-code flow - email registration, account recovery, a player's own
+    //"/account verifyemail", and the server's own "/as sendverifyemail" - and the last of those in particular
+    //has no real time pressure.
+    private static final Map<Object, EmailVerificationSession> VERIFY_CODES = AlixCache.<Object, EmailVerificationSession>newBuilder()
+            .maximumSize(512)
+            .expireAfterWrite(Math.max(1, EmailConfig.INSTANCE.verifyCodeExpiryMinutes), TimeUnit.MINUTES)
+            .build().asMap();
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     public static boolean isValidEmail(String email) {
