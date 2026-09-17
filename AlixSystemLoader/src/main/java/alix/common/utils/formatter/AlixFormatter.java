@@ -124,6 +124,13 @@ public final class AlixFormatter {
     public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
         if (text == null) return null;
         char[] c = text.toCharArray();
+        //Hex codes ("&#RRGGBB") expand into a longer, multi-character raw sequence ("§x§R§R§G§G§B§B"), unlike
+        //every other code here which is a straight 1-for-1 '&'->'§' swap done in place on the same char[] -
+        //so they need a separate, StringBuilder-based pass. Pre-scanning for one first (cheap, no allocation)
+        //keeps every message that doesn't use hex - still the overwhelming majority - on the exact same
+        //fast, allocation-free path as before hex was supported at all.
+        if (containsHexCode(c)) return translateColorsWithHex(c);
+
         int lM1 = c.length - 1;
         for (int i = 0; i < lM1; i++)
             if (c[i] == '&') {
@@ -131,6 +138,49 @@ public final class AlixFormatter {
                 if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9' || d >= 'k' && d <= 'o' || d == 'r') c[i - 1] = '§';
             }
         return new String(c);
+    }
+
+    private static boolean containsHexCode(char[] c) {
+        int limit = c.length - 8;//last valid start index for an 8-character "&#RRGGBB" sequence
+        for (int i = 0; i <= limit; i++)
+            if (c[i] == '&' && c[i + 1] == '#' && isHex(c, i + 2)) return true;
+        return false;
+    }
+
+    private static boolean isHex(char[] c, int from) {
+        for (int i = from; i < from + 6; i++) {
+            char h = c[i];
+            if (!(h >= '0' && h <= '9' || h >= 'a' && h <= 'f' || h >= 'A' && h <= 'F')) return false;
+        }
+        return true;
+    }
+
+    //Handles both "&#RRGGBB" hex codes (expanded into the raw "§x§R§R§G§G§B§B" sequence Minecraft's legacy
+    //chat component format expects for a hex color) and the regular single-character codes translateColors()
+    //handles above - only reached once containsHexCode() has confirmed at least one hex code is present.
+    private static String translateColorsWithHex(char[] c) {
+        StringBuilder sb = new StringBuilder(c.length + 16);
+        int lM1 = c.length - 1;
+        int i = 0;
+        while (i < c.length) {
+            if (i < lM1 && c[i] == '&') {
+                char d = c[i + 1];
+                if (d == '#' && i <= lM1 - 7 && isHex(c, i + 2)) {
+                    sb.append('§').append('x');
+                    for (int j = i + 2; j < i + 8; j++) sb.append('§').append(c[j]);
+                    i += 8;
+                    continue;
+                }
+                if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9' || d >= 'k' && d <= 'o' || d == 'r') {
+                    sb.append('§').append(d);
+                    i += 2;
+                    continue;
+                }
+            }
+            sb.append(c[i]);
+            i++;
+        }
+        return sb.toString();
     }
 
     private AlixFormatter() {
