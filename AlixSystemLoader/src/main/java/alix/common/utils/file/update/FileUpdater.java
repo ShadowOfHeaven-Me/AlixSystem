@@ -3,6 +3,7 @@ package alix.common.utils.file.update;
 import alix.common.AlixCommonMain;
 import alix.common.environment.ServerEnvironment;
 import alix.common.utils.file.AlixFileManager;
+import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.velocity.VelocityAlixMain;
 import lombok.SneakyThrows;
 
@@ -29,9 +30,23 @@ public final class FileUpdater {
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:
-                //messages.txt
-                File messagesFile = updateFile("messages.txt", DEFAULT_SPLITERATOR);
-                MessagesFileUpdater.updateFormatting(messagesFile);
+                var bukkitParams = BukkitAlixMain.instance.getEngineParams();
+                String bukkitMessagesFile = bukkitParams.messagesFileName();
+
+                if (bukkitMessagesFile.startsWith("langs/")) {
+                    //A bundled, ready-made translation (anything other than the default "messages.txt") is
+                    //NOT a customizable config file - it's fully overwritten with the newest jar-bundled
+                    //version on every update, discarding any direct edits, unlike every other file here. An
+                    //operator who wants to customize player-facing text should edit messages.txt with
+                    //"language: en" instead - that file DOES get the normal merge-preserving treatment below,
+                    //same as Velocity's messages.properties.
+                    File dest = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder(), bukkitMessagesFile);
+                    AlixFileManager.writeJarCompiledFileIntoDest(dest, bukkitMessagesFile);
+                } else {
+                    //messages.txt
+                    File messagesFile = updateFile(bukkitMessagesFile, bukkitParams.messagesSeparator());
+                    MessagesFileUpdater.updateFormatting(messagesFile);
+                }
 
                 //updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;

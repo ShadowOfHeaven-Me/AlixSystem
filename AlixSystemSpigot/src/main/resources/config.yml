@@ -240,8 +240,12 @@ use-this-syntax: false
 
 #Config used for the overall set-up
 
-#(Deprecated)
-#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.txt file)
+#Selects which bundled translation the messages.txt-driven text (i.e. everything actually customizable in
+#that file) uses: "en" (English, the default - and the only one that's still a normal, freely editable
+#config file) or "cs" (Czech - a read-only, jar-bundled translation under langs/cs.txt, like Velocity's own
+#"language" option; edit messages.txt directly instead if you want to customize the English text).
+#(Deprecated) Separately, "pl" (Polski) still switches the older, hardcoded English/Polish messages that
+#were never part of messages.txt to begin with - unaffected by "en"/"cs" above, and not customizable either way.
 language: en
 #Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
 custom-join-log: true

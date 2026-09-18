@@ -63,19 +63,19 @@ public final class AdminAlixCommands implements CommandExecutor {
                             //assumes the user does not input a resolvable domain (cuz that would block, not great)
                             ip = InetAddress.getByName(arg2);
                         } catch (Exception e) {
-                            sendMessage(sender, "'" + arg2 + " is not a valid IP address!");
+                            sendMessage(sender, Messages.get("as-ufw-invalid-ip", arg2));
                             return false;
                         }
 
                         if (FireWallManager.removeDynamic(ip))
-                            sendMessage(sender, "Removed " + arg2 + " from the Firewall Database!");
+                            sendMessage(sender, Messages.get("as-ufw-removed", arg2));
                         else {
                             if (PanicModeManager.isBlocked(ip))
-                                sendMessage(sender, "Ip " + arg2 + " is not firewalled, but is unable to connect, because panic mode is active.");
+                                sendMessage(sender, Messages.get("as-ufw-not-firewalled-panicmode", arg2));
                             else if (FireWallManager.isBlocked0(ip)) {
-                                sendMessage(sender, "Ip " + arg2 + " is blocked statically, cannot remove from firewall. If this is an error, report this immediately!");
+                                sendMessage(sender, Messages.get("as-ufw-blocked-static", arg2));
                             } else {
-                                sendMessage(sender, "Ip " + arg2 + " is not firewalled.");
+                                sendMessage(sender, Messages.get("as-ufw-not-firewalled", arg2));
                             }
                         }
                         break;
@@ -85,7 +85,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                         try {
                             type = MigrateType.valueOf(arg2.toUpperCase());
                         } catch (Exception e) {
-                            sendMessage(sender, "'" + arg2 + " is not a supported migration type!");
+                            sendMessage(sender, Messages.get("as-migrate-invalid-type", arg2));
                             return false;
                         }
                         AlixScheduler.asyncBlocking(() -> MigrateManager.migrate(type));
@@ -95,21 +95,21 @@ public final class AdminAlixCommands implements CommandExecutor {
                     case "bypasslist":
                     case "bypasslimit": {
                         if (AllowListFileManager.has(arg2)) {
-                            sendMessage(sender, "&cName '" + arg2 + " is already on the account limit bypass list!");
+                            sendMessage(sender, Messages.get("as-bypasslimit-already-added", arg2));
                             return true;
                         }
                         AllowListFileManager.add(arg2);
-                        sendMessage(sender, "Added name '" + arg2 + " to the account limit bypass list!");
+                        sendMessage(sender, Messages.get("as-bypasslimit-added", arg2));
                         break;
                     }
                     case "bl-r":
                     case "bypasslist-remove":
                     case "bypasslimit-remove": {
                         if (AllowListFileManager.remove(arg2)) {
-                            sendMessage(sender, "Removed name '" + arg2 + " from the account limit bypass list!");
+                            sendMessage(sender, Messages.get("as-bypasslimit-removed", arg2));
                             return true;
                         }
-                        sendMessage(sender, "&cName '" + arg2 + " is not on the account limit bypass list!");
+                        sendMessage(sender, Messages.get("as-bypasslimit-not-added", arg2));
                         break;
                     }
 
@@ -118,7 +118,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                         PersistentUserData data = UserFileManager.remove(arg2);
 
                         if (AllowListFileManager.remove(arg2)) {
-                            sendMessage(sender, "Removed the name " + arg2 + " from the allow-list!");
+                            sendMessage(sender, Messages.get("as-frd-removed-from-allowlist", arg2));
                         }
 
                         //todo: Also remove from UserTokensFileManager?
@@ -126,7 +126,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, playerDataNotFound.format(arg2));
                             return false;
                         }
-                        sendMessage(sender, "Fully removed the data of the account " + arg2 + "!");
+                        sendMessage(sender, Messages.get("as-frd-success", arg2));
                     }
                     break;
 
@@ -140,13 +140,13 @@ public final class AdminAlixCommands implements CommandExecutor {
                         }
                         data.setPremiumData(PremiumData.UNKNOWN);
 
-                        sendMessage(sender, "The premium status of the player " + arg2 + " has been set to UNKNOWN.");
+                        sendMessage(sender, Messages.get("as-resetstatus-success", arg2));
                         break;
                     }
                     case "fs":
                     case "forcestatus": {
                         if (l != 3) {
-                            sendMessage(sender, "&cFormat: /as fs <player> <status>");
+                            sendMessage(sender, Messages.get("as-forcestatus-format"));
                             return false;
                         }
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -161,18 +161,18 @@ public final class AdminAlixCommands implements CommandExecutor {
                         try {
                             status = PremiumStatus.valueOf(arg3.toUpperCase());
                         } catch (Exception e) {
-                            sendMessage(sender, "&cInvalid status, should be either PREMIUM, NON_PREMIUM or UNKNOWN");
+                            sendMessage(sender, Messages.get("as-forcestatus-invalid-status"));
                             return false;
                         }
 
                         if (data.getPremiumData().getStatus() == status) {
-                            sendMessage(sender, "&cPlayer " + arg2 + " already has the premium status of " + status);
+                            sendMessage(sender, Messages.get("as-forcestatus-already-has-status", arg2, status));
                             return false;
                         }
 
                         if (!status.isPremium()) {
                             data.setPremiumData(status.isNonPremium() ? PremiumData.NON_PREMIUM : PremiumData.UNKNOWN);
-                            sendMessage(sender, "The premium status of the player " + arg2 + " has been set to " + status + ".");
+                            sendMessage(sender, Messages.get("as-forcestatus-success", arg2, status));
                             return true;
                         }
 
@@ -180,43 +180,43 @@ public final class AdminAlixCommands implements CommandExecutor {
                         if (cached.getStatus().isKnown()) {
                             if (cached.getStatus().isPremium()) {
                                 data.setPremiumData(cached);
-                                sendMessage(sender, "The premium status of the player " + arg2 + " has been set to " + cached.getStatus() + ".");
+                                sendMessage(sender, Messages.get("as-forcestatus-success", arg2, cached.getStatus()));
                                 return true;
                             }
-                            sendMessage(sender, "&cPlayer's " + arg2 + " status was determined as NON_PREMIUM, and thus it cannot be set to PREMIUM.");
+                            sendMessage(sender, Messages.get("as-forcestatus-cached-non-premium", arg2));
                             return false;
                         }
                         var player = Bukkit.getPlayer(arg2);
                         if (player != null && !Verifications.has(player)) {
                             var packetUUID = AlixChannelHandler.getLoginAssignedUUID(player);
                             if (packetUUID != null && packetUUID.version() != 4) {
-                                sendMessage(sender, "&ePlayer " + arg2 + " declared himself as NON_PREMIUM, and thus his status cannot be set to PREMIUM.");
+                                sendMessage(sender, Messages.get("as-forcestatus-self-declared-non-premium", arg2));
                                 return false;
                             }
                         }
                         PremiumUtils.getOrRequestAndCacheData(null, arg2, newPremiumData -> {
                             if (newPremiumData.getStatus().isUnknown()) {
-                                sendMessage(sender, "&cCould not determine player's " + arg2 + " premium status in any way, the status cannot be set");
+                                sendMessage(sender, Messages.get("as-forcestatus-unknown", arg2));
                                 return;
                             }
                             if (newPremiumData.getStatus().isNonPremium()) {
-                                sendMessage(sender, "&cPlayer's " + arg2 + " status api request returned NON_PREMIUM, and thus it cannot be set to PREMIUM.");
+                                sendMessage(sender, Messages.get("as-forcestatus-api-non-premium", arg2));
                                 return;
                             }
                             data.setPremiumData(newPremiumData);
-                            sendMessage(sender, "The premium status of the player " + arg2 + " has been set to PREMIUM, premium uuid=" + newPremiumData.premiumUUID());
+                            sendMessage(sender, Messages.get("as-forcestatus-success-api", arg2, newPremiumData.premiumUUID()));
                         });
                         break;
                     }
                     case "rf":
                     case "registerforcefully": {
                         if (UserFileManager.hasName(arg2)) {
-                            sendMessage(sender, "Player data of the user " + arg2 + " already exists!");
+                            sendMessage(sender, Messages.get("as-registerforcefully-already-exists", arg2));
                             return false;
                         }
 
                         if (l == 2) {
-                            sendMessage(sender, "Specify the player's password!");
+                            sendMessage(sender, Messages.get("as-specify-password"));
                             return false;
                         }
 
@@ -227,14 +227,14 @@ public final class AdminAlixCommands implements CommandExecutor {
                             try {
                                 type = LoginType.from(arg4.toUpperCase(), false, false);
                             } catch (Exception e) {
-                                sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg4);
+                                sendMessage(sender, Messages.get("as-invalid-login-type", arg4));
                                 return false;
                             }
                         } else type = LoginType.COMMAND;
 
                         AlixUtils.getPasswordInvalidityReasonAsync(password, type, invalidityReason -> {
                             if (invalidityReason != null) {
-                                sendMessage(sender, "&6Invalid password:");
+                                sendMessage(sender, Messages.get("as-invalid-password-prefix"));
                                 sender.sendMessage(invalidityReason);
                                 return;
                             }
@@ -243,14 +243,14 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                             data.setLoginType(type);
                             String passFormatted = "*".repeat(password.length() - 3) + password.substring(password.length() - 3);
-                            sendMessage(sender, "Successfully registered the player " + data.getName() + " with the password " + passFormatted + ", and login type " + type);
+                            sendMessage(sender, Messages.get("as-registerforcefully-success", data.getName(), passFormatted, type));
                         });
                         return true;
                     }
                     case "cp":
                     case "changepassword": {
                         if (l == 2) {
-                            sendMessage(sender, "Specify the player's password!");
+                            sendMessage(sender, Messages.get("as-specify-password"));
                             return false;
                         }
                         PersistentUserData data = UserFileManager.get(arg2);
@@ -267,14 +267,14 @@ public final class AdminAlixCommands implements CommandExecutor {
                             try {
                                 type = LoginType.from(arg4.toUpperCase(), false, false);
                             } catch (Exception e) {
-                                sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg4);
+                                sendMessage(sender, Messages.get("as-invalid-login-type", arg4));
                                 return false;
                             }
                         } else type = data.getLoginType();
 
                         AlixUtils.getPasswordInvalidityReasonAsync(password, type, invalidityReason -> {
                             if (invalidityReason != null) {
-                                sendMessage(sender, "&eInvalid password:");
+                                sendMessage(sender, Messages.get("as-invalid-password-prefix"));
                                 sender.sendMessage(invalidityReason);
                                 return;
                             }
@@ -282,10 +282,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                             data.setPassword(password);
                             data.setLoginType(type);
                             String passFormatted = "*".repeat(password.length() - 3) + password.substring(password.length() - 3);
-                            sendMessage(sender, "Successfully changed player " + data.getName() + "'s password to " + passFormatted + " with login type " + type);
+                            sendMessage(sender, Messages.get("as-changepassword-success", data.getName(), passFormatted, type));
 
                             if (data.getLoginParams().getExtraLoginType() != null) {
-                                sendMessage(sender, "&eAdditionally setting the player's extra login type to NONE to avoid issues.");
+                                sendMessage(sender, Messages.get("as-changepassword-extra-login-cleared"));
                                 data.getLoginParams().setExtraLoginType(null);
                             }
                         });
@@ -313,26 +313,25 @@ public final class AdminAlixCommands implements CommandExecutor {
                             try {
                                 type = LoginType.from(arg3.toUpperCase(), false, false);
                             } catch (Exception e) {
-                                sendMessage(sender, "Available login types: COMMAND, PIN & ANVIL, but instead got: " + arg3);
+                                sendMessage(sender, Messages.get("as-invalid-login-type", arg3));
                                 return false;
                             }
 
                             data.setLoginType(type);
-                            sendMessage(sender, "Successfully reset the password of the player " + arg2
-                                                + " and set his password type to " + type + "!");
-                        } else sendMessage(sender, "Successfully reset the password of the player " + arg2 + ".");
+                            sendMessage(sender, Messages.get("as-resetpassword-success-with-type", arg2, type));
+                        } else sendMessage(sender, Messages.get("as-resetpassword-success", arg2));
                     }
                     break;
                     case "user": {
                         AlixScheduler.async(() -> {
                             OfflinePlayer offlinePlayer = getOfflinePlayer(arg2);
                             if (offlinePlayer == null) {
-                                sendMessage(sender, "&cPlayer " + arg2 + " has never joined this server before!");
+                                sendMessage(sender, Messages.get("error-player-never-joined", arg2));
                                 return;
                             }
                             PersistentUserData data = UserFileManager.get(offlinePlayer.getName());
                             if (data == null) {
-                                sendMessage(sender, "&cPlayer " + arg2 + " is not in AlixSystem's User DataBase!");
+                                sendMessage(sender, playerDataNotFound.format(arg2));
                                 return;
                             }
 
@@ -340,15 +339,15 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                             boolean dVer = data.getLoginParams().isDoubleVerificationEnabled();
                             sendMessage(sender, "");
-                            sendMessage(sender, "User " + offlinePlayer.getName() + " has the following data:");
-                            sendMessage(sender, "IP: &c" + data.getSavedIP().getHostAddress());
-                            sendMessage(sender, "Premium Status: &c" + data.getPremiumData().getStatus().readableName());
+                            sendMessage(sender, Messages.get("as-user-header", offlinePlayer.getName()));
+                            sendMessage(sender, Messages.get("as-user-ip", data.getSavedIP().getHostAddress()));
+                            sendMessage(sender, Messages.get("as-user-premium-status", data.getPremiumData().getStatus().readableName()));
 
                             if (Telemetry.ENABLED && channel != null) {
                                 var sig = TelemetryProfiler.synSignature(channel);
                                 if (sig != null) {
-                                    sendMessage(sender, "Operating System: &c" + sig.os.getReadableName());
-                                    sendMessage(sender, "Connection Environment: &c" + sig.mtuEnv.getReadableName());
+                                    sendMessage(sender, Messages.get("as-user-os", sig.os.getReadableName()));
+                                    sendMessage(sender, Messages.get("as-user-connection-env", sig.mtuEnv.getReadableName()));
                                 }
                             }
 
@@ -357,50 +356,50 @@ public final class AdminAlixCommands implements CommandExecutor {
                                         .map(PersistentUserData::getName).toList();
 
                                 var extraInfo = accounts.size() > 1 ? " &7(" + String.join(", ", accounts) + ")" : "";
-                                sendMessage(sender, "Accounts: &c" + accounts.size() + extraInfo);
+                                sendMessage(sender, Messages.get("as-user-accounts", accounts.size(), extraInfo));
                             }
 
                             if (ServerEnvironment.isPaper()) {
                                 var cached = Bukkit.getOfflinePlayerIfCached(arg2);
                                 if (cached != null)
-                                    sendMessage(sender, "UUID Version: &c" + cached.getUniqueId().version());
+                                    sendMessage(sender, Messages.get("as-user-uuid-version", cached.getUniqueId().version()));
                             }
 
                             var isEncrypted = SpigotEncryption.isOnlineEncryptionEnabled(channel);
                             if (isEncrypted != null)
-                                sendMessage(sender, "Encryption: &c" + (isEncrypted ? "Enabled" : "Disabled"));
+                                sendMessage(sender, Messages.get("as-user-encryption", isEncrypted ? "Enabled" : "Disabled"));
 
                             boolean isPremium = data.getPremiumData().getStatus().isPremium();
                             if (!isPremium) {
-                                sendMessage(sender, "IP AutoLogin: &c" + (data.getLoginParams().getIpAutoLogin() ? "&cEnabled" : "&cDisabled"));
-                                sendMessage(sender, "Login Type: &c" + data.getLoginType());
+                                sendMessage(sender, Messages.get("as-user-ip-autologin", data.getLoginParams().getIpAutoLogin() ? "Enabled" : "Disabled"));
+                                sendMessage(sender, Messages.get("as-user-login-type", data.getLoginType()));
                                 if (dVer)
-                                    sendMessage(sender, "Second Login Type: &c" + data.getLoginParams().getExtraLoginType());
+                                    sendMessage(sender, Messages.get("as-user-second-login-type", data.getLoginParams().getExtraLoginType()));
 
-                                sendMessage(sender, "Double password verification: &c" + (dVer ? "Enabled" : "Disabled"));
+                                sendMessage(sender, Messages.get("as-user-double-verification", dVer ? "Enabled" : "Disabled"));
 
                                 String authApp;
                                 switch (data.getLoginParams().getAuthSettings()) {
                                     case PASSWORD:
-                                        authApp = "&cDisabled";
+                                        authApp = Messages.get("as-user-auth-app-disabled");
                                         break;
                                     case AUTH_APP:
-                                        authApp = "&aEnabled - Just Auth App";
+                                        authApp = Messages.get("as-user-auth-app-only");
                                         break;
                                     case PASSWORD_AND_AUTH_APP:
-                                        authApp = "&aEnabled - Auth App and " + (dVer ? "two " : "") + "in-game password" + (dVer ? "s" : "");
+                                        authApp = dVer ? Messages.get("as-user-auth-app-and-passwords") : Messages.get("as-user-auth-app-and-password");
                                         break;
                                     default:
                                         throw new AlixError("Invalid - " + data.getLoginParams().getAuthSettings());
                                 }
-                                sendMessage(sender, "TOTP Auth app: " + authApp);
-                                sendMessage(sender, "Has TOTP app linked: " + (data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
+                                sendMessage(sender, Messages.get("as-user-totp", authApp));
+                                sendMessage(sender, Messages.get("as-user-totp-linked", data.getLoginParams().hasProvenAuthAccess() ? "&aYep" : "&cNope"));
                             }
                             long createdAt = data.createdAt();
                             long firstPlayed = offlinePlayer.getFirstPlayed();
 
                             long older = firstPlayed == 0 ? createdAt : Math.min(createdAt, firstPlayed);
-                            sendMessage(sender, "First joined: &c" + getFormattedDate(new Date(older)));
+                            sendMessage(sender, Messages.get("as-user-first-joined", getFormattedDate(new Date(older))));
                             //sendMessage(sender, (offlinePlayer.isOnline() ? "Currently online from: &c" : "Last joined: &c") + getFormattedDate(new Date(offlinePlayer.getLastPlayed())));
                             sendMessage(sender, "");
                         });
@@ -408,7 +407,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     }
                     case "valueof":
                         if (isNumber(arg2)) sendMessage(sender, setAsClearNumber(arg2));
-                        else sendMessage(sender, "&cExpected a number!");
+                        else sendMessage(sender, Messages.get("as-valueof-expected-number"));
                         break;
                     case "calc":
                     case "calculate":
@@ -425,23 +424,23 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, e.getMessage());
                             return false;
                         }
-                        sendMessage(sender, "&c" + toCalculate + " = " + result);
+                        sendMessage(sender, Messages.get("as-calc-result", toCalculate, result));
                         break;
                     case "avg":
                     case "average":
                         String[] array = skipArray(args, 1);
                         String entirety = setAsOne(array);
                         String r = setAsClearNumber(eval(entirety) / array.length);
-                        sendMessage(sender, "&c(" + entirety + ")/" + array.length + " = " + r);
+                        sendMessage(sender, Messages.get("as-avg-result", entirety, array.length, r));
                         break;
                     case "forceop": {
                         if (!(sender instanceof ConsoleCommandSender)) {
-                            sendMessage(sender, "Only the console is allowed to execute this command!");
+                            sendMessage(sender, Messages.get("as-forceop-console-only"));
                             return false;
                         }
                         OfflinePlayer p = getOfflinePlayer(arg1);
                         if (p == null || p.getName() == null) {
-                            sendMessage(sender, "&eWARNING: Player " + arg1 + " has never joined this server before!");
+                            sendMessage(sender, Messages.get("warning-player-never-joined", arg1));
                             AlixHandler.handleOperatorSet(sender, arg1);
                             return false;
                         }
@@ -450,12 +449,12 @@ public final class AdminAlixCommands implements CommandExecutor {
                     }
                     case "forcedeop": {
                         if (!(sender instanceof ConsoleCommandSender)) {
-                            sendMessage(sender, "Only the console is allowed to execute this command!");
+                            sendMessage(sender, Messages.get("as-forceop-console-only"));
                             return false;
                         }
                         OfflinePlayer p = getOfflinePlayer(arg1);
                         if (p == null || p.getName() == null) {
-                            sendMessage(sender, "&eWARNING: Player " + arg1 + " has never joined this server before!");
+                            sendMessage(sender, Messages.get("warning-player-never-joined", arg1));
                             AlixHandler.handleOperatorUnset(sender, arg1);
                             return false;
                         }
@@ -498,7 +497,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                                 break;
                         }*/
                     default:
-                        sendMessage(sender, "&cTry /as help!");
+                        sendMessage(sender, Messages.get("as-unknown-command"));
                         break;
                 }
                 return true;
@@ -506,39 +505,37 @@ public final class AdminAlixCommands implements CommandExecutor {
             switch (arg1) {
                 case "helpmath"://ufw
                     sendMessage(sender, "");
-                    sendMessage(sender, "&c/as calc/calculate <mathematical operation> &7- " +
-                                        "Returns what the given mathematical operation is equal to. " +
-                                        "Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925");
-                    sendMessage(sender, "&c/as avg/average <numbers> &7- " +
-                                        "Returns what the given numbers average is equal to. " +
-                                        "Example: &c/as avg 4 + 67 - 9 + 14 returns 19.");
-                    sendMessage(sender, "&c/as valueof <number> &7- Returns a more readable version of a given number.");
-                    sendMessage(sender, "&c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.");
-                    sendMessage(sender, "&c/as randommath/rmath &7- Gives you random, already solved mathematical operation. " +
-                                        "Example: &c" + AlixUtils.getRandomMathematicalOperation());
+                    sendMessage(sender, Messages.get("as-help-math"));
+                    sendMessage(sender, Messages.get("as-help-avg"));
+                    sendMessage(sender, Messages.get("as-help-valueof"));
+                    sendMessage(sender, Messages.get("as-help-constants"));
+                    sendMessage(sender, Messages.get("as-help-randommath", AlixUtils.getRandomMathematicalOperation()));
                     sendMessage(sender, "");
                     break;
                 case "help":
                     sendMessage(sender, "");
-                    sendMessage(sender, "&c/as user <player> &7- Returns information about the given player.");
-                    sendMessage(sender, "&c/as info &7- Informs about time, memory, and number of currently active server threads.");
-                    sendMessage(sender, "&c/as abstats &7- Enables or disables the ability to view the AntiBot Statistics.");
-                    sendMessage(sender, "&c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list." +
-                                        " Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.");
-                    sendMessage(sender, "&c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.");
-                    sendMessage(sender, "&c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.");
-                    sendMessage(sender, "&c/as rf/registerforcefully <name> <password> [login type] &7- Registers a player of the given username with the given password, and login type (COMMAND if not specified)");
-                    sendMessage(sender, "&c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.");
-                    sendMessage(sender, "&c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium");
-                    sendMessage(sender, "&c/as fs/forcestatus <player> <status> &7- Forcefully sets the player's premium status (if can safely be done)");
-                    sendMessage(sender, "&c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.");
+                    sendMessage(sender, Messages.get("admin-commands-header"));
+                    sendMessage(sender, Messages.get("admin-commands-section-accounts"));
+                    sendMessage(sender, Messages.get("as-help-user"));
+                    sendMessage(sender, Messages.get("as-help-bypasslimit"));
+                    sendMessage(sender, Messages.get("as-help-bypasslimit-remove"));
+                    sendMessage(sender, Messages.get("as-help-resetpassword"));
+                    sendMessage(sender, Messages.get("as-help-registerforcefully"));
+                    sendMessage(sender, Messages.get("as-help-changepassword"));
+                    sendMessage(sender, Messages.get("as-help-resetstatus"));
+                    sendMessage(sender, Messages.get("as-help-forcestatus"));
+                    sendMessage(sender, Messages.get("as-help-fullyremovedata"));
+                    sendMessage(sender, "");
+                    sendMessage(sender, Messages.get("admin-commands-section-server"));
+                    sendMessage(sender, Messages.get("as-help-info"));
+                    sendMessage(sender, Messages.get("as-help-abstats"));
+                    sendMessage(sender, Messages.get("as-help-helpmath"));
                     if (isOperatorCommandRestricted) {
-                        sendMessage(sender, "&c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, " +
-                                            "by executing this command in console.");
-                        sendMessage(sender, "&c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, " +
-                                            "by executing this command in console.");
+                        sendMessage(sender, "");
+                        sendMessage(sender, Messages.get("admin-commands-section-operators"));
+                        sendMessage(sender, Messages.get("as-help-forceop"));
+                        sendMessage(sender, Messages.get("as-help-forcedeop"));
                     }
-                    sendMessage(sender, "&c/as helpmath &7- Lists alix commands related to math.");
                     sendMessage(sender, "");
 /*                        dispatch(sender, "&c/as median <numbers> &7- " +
                                 "Returns the median of the given numbers. " +
@@ -558,19 +555,18 @@ public final class AdminAlixCommands implements CommandExecutor {
                     LimboJoinProfiler.PROFILE_JOINS = !LimboJoinProfiler.PROFILE_JOINS;
 
                     if (LimboJoinProfiler.PROFILE_JOINS)
-                        sendMessage(sender, "Enabled detailed join profiling, re-enter command to disable");
+                        sendMessage(sender, Messages.get("as-profilejoins-enabled"));
                     else
-                        sendMessage(sender, "Disabled detailed join profiling");
+                        sendMessage(sender, Messages.get("as-profilejoins-disabled"));
                     return true;
                 }
                 case "save_all_local_to_db": {
-                    sendMessage(sender, "All user data sync with the connected database has been initiated and should complete soon enough");
+                    sendMessage(sender, Messages.get("as-save-all-local-to-db"));
                     UserFileManager.saveLocalToDb();
                     return true;
                 }
                 case "testdb": {
                     DatabaseUpdater.INSTANCE.testDatabase();
-                    sendMessage(sender, "sex tested, check this shit out");
                     return true;
                 }
                 case "__reset_all_premium_passwords": {
@@ -583,10 +579,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                     if (isConsoleButPlayerRequired(sender)) return false;
                     Player player = (Player) sender;
                     if (ABStats.reversePresence(UserManager.getVerifiedUser(player))) {
-                        sendMessage(sender, "&aAdded to AntiBot Statistics view!");
+                        sendMessage(sender, Messages.get("as-abstats-added"));
                         if (AlixAtaraxia.isEnabled())
-                            sendMessage(sender, "&e[WARNING] The actual CPS can be different, because the Ataraxia FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the eBPF beforehand.");
-                    } else sendMessage(sender, "&cRemoved from AntiBot Statistics view!");
+                            sendMessage(sender, Messages.get("as-abstats-ataraxia-warning"));
+                    } else sendMessage(sender, Messages.get("as-abstats-removed"));
                     break;
                 //Unnecessary since pre-join thread disconnect
                 /*case "connection-setup":
@@ -599,16 +595,16 @@ public final class AdminAlixCommands implements CommandExecutor {
                 case "messages-extract":
                     boolean success = Messages.extract();
                     if (!success)
-                        sendMessage(sender, "The extraction file already exists! Delete it manually if you want to extract the messages again.");
-                    else sendMessage(sender, "The messages have been successfully extracted into another file!");
+                        sendMessage(sender, Messages.get("as-messages-extract-already-exists"));
+                    else sendMessage(sender, Messages.get("as-messages-extract-success"));
                     break;
                 case "m-m":
                 case "messages-merge":
                     boolean succeeded = Messages.merge();
                     if (!succeeded) {
-                        sendMessage(sender, "The extraction file already does not exists! Extract the messages first, before trying to merge them.");
+                        sendMessage(sender, Messages.get("as-messages-merge-not-extracted"));
                     } else
-                        sendMessage(sender, "The messages have been successfully merged into one file! You need to restart your server, for this change to take effect");
+                        sendMessage(sender, Messages.get("as-messages-merge-success"));
                     break;
 /*                case "gui":
                     if (isConsoleButPlayerRequired(sender)) break;
@@ -637,7 +633,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     if (texture == null) texture = parseTexture("Alex");
                     setName(p, null);
                     setSkin(p, texture);
-                    sendMessage(sender, "&6Your identity is now back to original!");
+                    sendMessage(sender, Messages.get("as-incognitooff-success"));
                     break;
                 case "losowerownanie":
                 case "randommath":
@@ -647,14 +643,14 @@ public final class AdminAlixCommands implements CommandExecutor {
                 case "cons":
                 case "constants":
                     sendMessage(sender, "");
-                    sendMessage(sender, "&cRandom &7- Returns random number, for example: " + random.nextDouble());
-                    sendMessage(sender, "&cIpsylon &7- 4.66920160902990");
-                    sendMessage(sender, "&cPi &7- 3.141592653589793");
-                    sendMessage(sender, "&cF &7- 2.807770242028519");
-                    sendMessage(sender, "&cE &7- 2.718281828459045");
-                    sendMessage(sender, "&cK &7- 2.584981759579253");
-                    sendMessage(sender, "&cAlfa &7- 2.502907875095892");
-                    sendMessage(sender, "&cOmega &7- 0.56714329040978");
+                    sendMessage(sender, Messages.get("as-constants-random", random.nextDouble()));
+                    sendMessage(sender, Messages.get("as-constants-ipsylon"));
+                    sendMessage(sender, Messages.get("as-constants-pi"));
+                    sendMessage(sender, Messages.get("as-constants-f"));
+                    sendMessage(sender, Messages.get("as-constants-e"));
+                    sendMessage(sender, Messages.get("as-constants-k"));
+                    sendMessage(sender, Messages.get("as-constants-alfa"));
+                    sendMessage(sender, Messages.get("as-constants-omega"));
                     sendMessage(sender, "");
                     break;
                 /*case "pings":
@@ -685,16 +681,16 @@ public final class AdminAlixCommands implements CommandExecutor {
                     long[] memory = getMemory();
                     float usage = getPercentOfMemoryUsage(memory);
                     sendMessage(sender, "");
-                    sendMessage(sender, "Time: &c" + getTime(new Date()));
-                    sendMessage(sender, "Percent Of Memory Usage: " + getColorizationToMemoryUsage(usage) + usage + "%");
-                    sendMessage(sender, "Free Memory: &c" + memory[0] + "MB");
-                    sendMessage(sender, "Max Memory: &c" + memory[1] + "MB");
-                    sendMessage(sender, "Total Memory: &c" + memory[2] + "MB");
-                    sendMessage(sender, "Currently Active Threads: &c" + Thread.activeCount());
+                    sendMessage(sender, Messages.get("as-info-time", getTime(new Date())));
+                    sendMessage(sender, Messages.get("as-info-memory-usage", getColorizationToMemoryUsage(usage), usage));
+                    sendMessage(sender, Messages.get("as-info-memory-free", memory[0]));
+                    sendMessage(sender, Messages.get("as-info-memory-max", memory[1]));
+                    sendMessage(sender, Messages.get("as-info-memory-total", memory[2]));
+                    sendMessage(sender, Messages.get("as-info-active-threads", Thread.activeCount()));
                     sendMessage(sender, "");
                     break;
                 default:
-                    sendMessage(sender, "&cTry /as help!");
+                    sendMessage(sender, Messages.get("as-unknown-command"));
                     break;
             }
         }
