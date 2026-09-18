@@ -824,7 +824,14 @@ public final class LoginState implements VerifyState {
             //initDoubleVer() already guard their own title writes, since a title packet isn't meaningful
             //while a login GUI (anvil/PIN/bedrock) is covering it instead.
             if (this.gui == null) this.connection.writeTitle(this.currentTitle());
-            EmailHandler.sendVerifyMail(this.connection, email, false, (conn, msg) -> this.sendMessage(msg));
+            //Includes a clickable web-verification link (if 'enable-web-verification' is on) alongside the
+            //6-digit code - clicking it completes this exact same pending registration, gated behind the same
+            //single-use code check "/verifyemail <code>" itself goes through (see
+            //EmailHandler#sendVerifyMailForPendingRegistration and completeEmailRegistration()'s own guard for
+            //why running this from the web server's own thread, possibly racing a concurrent chat-typed code,
+            //is still safe).
+            EmailHandler.sendVerifyMailForPendingRegistration(this.connection, email, (conn, msg) -> this.sendMessage(msg),
+                    () -> this.runOnEventLoop(this::completeEmailRegistration));
             this.sendMessage(Messages.getWithPrefix("register-email-verification-sent", email));
 
             //Switch from the general max-login-time countdown to the (typically longer) dedicated
@@ -867,17 +874,7 @@ public final class LoginState implements VerifyState {
         }
 
         if (EmailHandler.verifyCode(this.connection, args[0].trim())) {
-            String password = this.pendingRegisterPassword;
-            String email = this.pendingRegisterEmail;
-            this.pendingRegisterPassword = null;
-            this.pendingRegisterEmail = null;
-
-            //registerIfValid() re-validates the password and re-checks the terms gate - both already known-good
-            //by this point, but going through the same central choke point as every other registration path
-            //rather than duplicating (or bypassing) its checks is worth the redundant work.
-            this.registerIfValid(password, LoginType.COMMAND, registered -> {
-                if (registered != null) registered.setEmail(email);
-            });
+            this.completeEmailRegistration();
             return;
         }
 
@@ -887,6 +884,30 @@ public final class LoginState implements VerifyState {
         }
 
         this.sendMessage(Messages.getWithPrefix("verify-mail.code-mismatch"));
+    }
+
+    //Finishes a 'require-email-in-register' registration once its code has been confirmed - either typed in
+    //chat (handleRegisterVerifyEmailCommand() above) or via the clickable web-verification link (see
+    //handleRegisterCommandWithEmail()'s onRegisterVerified callback). Must run on this connection's event
+    //loop (both callers already guarantee that - the chat path natively, the web link via runOnEventLoop()).
+    //EmailHandler#verifyCode()'s atomic computeIfPresent() already guarantees at most one of those two paths
+    //ever gets a true result for the same code, so in practice only one of them ever reaches here - the
+    //isEmailRegisterGateBlocking() guard just makes that an explicit, cheap invariant of this method itself
+    //(reachable from two call sites) rather than something callers have to trust holds elsewhere.
+    private void completeEmailRegistration() {
+        if (!this.isEmailRegisterGateBlocking()) return;
+
+        String password = this.pendingRegisterPassword;
+        String email = this.pendingRegisterEmail;
+        this.pendingRegisterPassword = null;
+        this.pendingRegisterEmail = null;
+
+        //registerIfValid() re-validates the password and re-checks the terms gate - both already known-good
+        //by this point, but going through the same central choke point as every other registration path
+        //rather than duplicating (or bypassing) its checks is worth the redundant work.
+        this.registerIfValid(password, LoginType.COMMAND, registered -> {
+            if (registered != null) registered.setEmail(email);
+        });
     }
 
     private void handleLoginCommand(String[] args) {

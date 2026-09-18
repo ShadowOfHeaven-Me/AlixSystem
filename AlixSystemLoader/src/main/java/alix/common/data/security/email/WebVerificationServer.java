@@ -35,6 +35,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 /**
  * Optional built-in webserver that lets a player verify their email by clicking a link in the verification email,
@@ -49,8 +50,12 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Security notes: tokens are single-use, generated via SecureRandom (32 random bytes - not the same, much weaker,
  * generator used for the in-game 6-digit code), and expire automatically after 'web-verification-token-expiry-minutes'.
- * This class only ever attaches an email to an EXISTING account by name - it never creates accounts or changes
- * passwords, and a token only ever maps to the exact (player, email) pair it was generated for.
+ * A token only ever maps to the exact pending verification it was generated for. There are two kinds of link this
+ * class can hand out (see the two createVerificationLink() overloads): one only ever attaches an email to an
+ * EXISTING account by name - it never creates accounts or changes passwords; the other completes a PENDING
+ * registration (see EmailHandler#sendVerifyMailForPendingRegistration) - it never creates an account either on
+ * its own, since that only happens if the underlying verification code (the same one "/verifyemail <code>"
+ * would need) still matches at the moment the link is clicked.
  */
 public final class WebVerificationServer {
 
@@ -126,6 +131,28 @@ public final class WebVerificationServer {
      * @return a full, clickable verification URL, or empty if web verification is disabled or misconfigured (in which case a warning is logged)
      */
     public static Optional<String> createVerificationLink(String playerName, String email) {
+        return createLink(new PendingWebVerification(playerName, email, null));
+    }
+
+    /**
+     * Same as {@link #createVerificationLink(String, String)}, but for a pending registration that has no
+     * account yet - instead of attaching the email to an existing account by name, this runs {@code onVerified}
+     * when the link is clicked, and the response page reflects whatever it returns. See
+     * {@link EmailHandler#sendVerifyMailForPendingRegistration} for how the check itself stays tied to the
+     * same single-use verification code the in-game "/verifyemail <code>" path uses, rather than trusting the
+     * token alone as a separate grant.
+     *
+     * @param email      the email address being verified
+     * @param onVerified called (on this server's own thread) when the link is clicked - should return whether
+     *                    verification actually succeeded, and is responsible for its own thread-safety if it
+     *                    needs to touch state that isn't safe to touch from an arbitrary thread
+     * @return a full, clickable verification URL, or empty if web verification is disabled or misconfigured (in which case a warning is logged)
+     */
+    public static Optional<String> createVerificationLink(String email, BooleanSupplier onVerified) {
+        return createLink(new PendingWebVerification(null, email, onVerified));
+    }
+
+    private static Optional<String> createLink(PendingWebVerification pending) {
         if (!EmailConfig.INSTANCE.enableWebVerification) return Optional.empty();
 
         String publicUrl = EmailConfig.INSTANCE.webVerificationPublicUrl;
@@ -135,7 +162,7 @@ public final class WebVerificationServer {
         }
 
         String token = generateToken();
-        TOKENS.put(token, new PendingWebVerification(playerName, email));
+        TOKENS.put(token, pending);
 
         String base = publicUrl.endsWith("/") ? publicUrl.substring(0, publicUrl.length() - 1) : publicUrl;
         return Optional.of(base + "/verify?token=" + token);
@@ -165,6 +192,17 @@ public final class WebVerificationServer {
 
                 if (pending == null) {
                     respond(ctx, HttpResponseStatus.BAD_REQUEST, page(EmailConfig.INSTANCE.webVerificationPageInvalidTitle, EmailConfig.INSTANCE.webVerificationPageInvalidMessage, false));
+                    return;
+                }
+
+                //Pending-registration case (see EmailHandler#sendVerifyMailForPendingRegistration) - there's no
+                //account to look up yet, so the outcome is whatever onVerified() itself determines (gated behind
+                //the same single-use verification code the in-game "/verifyemail <code>" path consumes).
+                if (pending.onVerified() != null) {
+                    if (pending.onVerified().getAsBoolean())
+                        respond(ctx, HttpResponseStatus.OK, page(EmailConfig.INSTANCE.webVerificationPageSuccessTitle, EmailConfig.INSTANCE.webVerificationPageSuccessMessage, true));
+                    else
+                        respond(ctx, HttpResponseStatus.BAD_REQUEST, page(EmailConfig.INSTANCE.webVerificationPageInvalidTitle, EmailConfig.INSTANCE.webVerificationPageInvalidMessage, false));
                     return;
                 }
 
@@ -208,6 +246,9 @@ public final class WebVerificationServer {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 
-    private record PendingWebVerification(String playerName, String email) {
+    //playerName/email are set (and onVerified is null) for the "attach email to an existing account" case;
+    //onVerified is set (and playerName is null) for the "complete a pending registration" case - see the two
+    //createVerificationLink() overloads above.
+    private record PendingWebVerification(String playerName, String email, BooleanSupplier onVerified) {
     }
 }
