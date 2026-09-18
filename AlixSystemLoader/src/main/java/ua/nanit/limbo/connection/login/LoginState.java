@@ -728,8 +728,13 @@ public final class LoginState implements VerifyState {
     public static final PacketSnapshot
             incorrectPasswordMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("incorrect-password")),
             incorrectPasswordKickPacket = PacketPlayOutDisconnect.snapshot(Messages.getWithPrefix("incorrect-password")),
-            formatRegisterMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("format-register")),
-            formatRegisterEmailMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("format-register-email")),
+            //Must reflect require-password-repeat-in-register too, the same way createRegisterCommand()'s
+            //client-side hint and LimboConfig's register title already do - previously these two were always
+            //built from the plain (non-repeat) key regardless of that setting, so a misformatted /register
+            //(e.g. only one password when a repeat is required) showed a "Format: /register <password>" hint
+            //missing the second <password> argument the server was actually about to require.
+            formatRegisterMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix(requirePasswordRepeatInRegister ? "format-register-repeat" : "format-register")),
+            formatRegisterEmailMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix(requirePasswordRepeatInRegister ? "format-register-repeat-email" : "format-register-email")),
             formatLoginMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("format-login")),
             registerPasswordsDoNotMatchMessagePacket = PacketPlayOutMessage.snapshot(Messages.getWithPrefix("commands-register-passwords-do-not-match")),
             termsDeclinedKickPacket = PacketPlayOutDisconnect.snapshot(Messages.getWithPrefix("terms-declined-kick"));

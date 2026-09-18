@@ -198,6 +198,8 @@ format-op-restricted: Formát: /op <hráč> <heslo>
 format-op-unrestricted: Formát: /op <hráč>
 format-register: Formát: /register <heslo>
 format-register-email: Formát: /register <heslo> <e-mail>
+format-register-repeat: Formát: /register <heslo> <heslo>
+format-register-repeat-email: Formát: /register <heslo> <heslo> <e-mail>
 format-remove-home: Formát: /removehome <jméno>
 format-remove-warp: Formát: /removewarp <jméno>
 format-reply: Formát: /reply <zpráva>

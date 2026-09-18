@@ -199,6 +199,8 @@ format-op-restricted: Format: /op <player> <password>
 format-op-unrestricted: Format: /op <player>
 format-register: Format: /register <password>
 format-register-email: Format: /register <password> <email>
+format-register-repeat: Format: /register <password> <password>
+format-register-repeat-email: Format: /register <password> <password> <email>
 format-remove-home: Format: /removehome <name>
 format-remove-warp: Format: /removewarp <name>
 format-reply: Format: /reply <message>
