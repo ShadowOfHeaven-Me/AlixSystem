@@ -57,6 +57,7 @@ import java.util.function.Consumer;
 
 import static alix.common.utils.config.ConfigProvider.config;
 import static ua.nanit.limbo.connection.login.gui.LimboPinBuilder.maxLoginAttempts;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.EMAIL_VERIFY_TITLE;
 import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.LOGIN_TITLE;
 import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.REGISTER_TITLE;
 import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.TERMS_TITLE;
@@ -186,6 +187,7 @@ public final class LoginState implements VerifyState {
     //until they typed "/terms accept" first (that prompt only ever showed up in chat, via sendTermsPrompt()).
     private TitlePacketSnapshot currentTitle() {
         if (this.isTermsGateBlocking()) return TERMS_TITLE;
+        if (this.isEmailRegisterGateBlocking()) return EMAIL_VERIFY_TITLE;
         return this.isRegistered ? LOGIN_TITLE : REGISTER_TITLE;
     }
 
@@ -817,6 +819,11 @@ public final class LoginState implements VerifyState {
 
             this.pendingRegisterPassword = password;
             this.pendingRegisterEmail = email;
+            //Swap the hotbar title to "Verify your email with /verifyemail <code>" now that the gate is
+            //active - see currentTitle()/isEmailRegisterGateBlocking(). Guarded the same way sendInitial()/
+            //initDoubleVer() already guard their own title writes, since a title packet isn't meaningful
+            //while a login GUI (anvil/PIN/bedrock) is covering it instead.
+            if (this.gui == null) this.connection.writeTitle(this.currentTitle());
             EmailHandler.sendVerifyMail(this.connection, email, false, (conn, msg) -> this.sendMessage(msg));
             this.sendMessage(Messages.getWithPrefix("register-email-verification-sent", email));
 

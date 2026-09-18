@@ -66,7 +66,7 @@ public final class PacketSnapshots {
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK;
     public static final PacketSnapshot PACKET_PLAYER_POS_AND_LOOK_VALID;
 
-    public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, TERMS_TITLE, EMPTY_TITLE;
+    public static final TitlePacketSnapshot LOGIN_TITLE, REGISTER_TITLE, TERMS_TITLE, EMAIL_VERIFY_TITLE, EMPTY_TITLE;
 
     public static final PacketSnapshot PACKET_REGISTRY_DATA;
     public static final PacketSnapshot PACKET_INFO_UPDATE;
@@ -226,6 +226,7 @@ public final class PacketSnapshots {
         LOGIN_TITLE = new TitlePacketSnapshot(server.getConfig().getLoginTitle());
         REGISTER_TITLE = new TitlePacketSnapshot(server.getConfig().getRegisterTitle());
         TERMS_TITLE = new TitlePacketSnapshot(server.getConfig().getTermsTitle());
+        EMAIL_VERIFY_TITLE = new TitlePacketSnapshot(server.getConfig().getEmailVerifyTitle());
         EMPTY_TITLE = new TitlePacketSnapshot(new Title().setTitle("").setSubtitle("").setStay(999999999));
 
         PacketKnownPacks packetKnownPacks = new PacketKnownPacks();

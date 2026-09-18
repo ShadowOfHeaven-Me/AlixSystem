@@ -411,6 +411,8 @@ reminder-register-subtitle-repeat-email: &e/register <heslo> <heslo> <e-mail>
 reminder-register-title: Zaregistruj se pomocí
 reminder-terms-subtitle: &e/terms accept
 reminder-terms-title: Přijmi podmínky pomocí
+reminder-verifyemail-subtitle: &e/verifyemail <kód>
+reminder-verifyemail-title: Ověř svůj email pomocí
 remove-warp: &6Úspěšně odstraněn warp {0}!
 renamed-item: &6Úspěšně přejmenován držený předmět.
 server-is-full: &cServer je plný!

@@ -412,6 +412,8 @@ reminder-register-subtitle-repeat-email: &e/register <password> <password> <emai
 reminder-register-title: Register with
 reminder-terms-subtitle: &e/terms accept
 reminder-terms-title: Accept the terms with
+reminder-verifyemail-subtitle: &e/verifyemail <code>
+reminder-verifyemail-title: Verify your email with
 remove-warp: &6Successfully removed the warp {0}!
 renamed-item: &6Successfully renamed held item.
 server-is-full: &cThe server is full!

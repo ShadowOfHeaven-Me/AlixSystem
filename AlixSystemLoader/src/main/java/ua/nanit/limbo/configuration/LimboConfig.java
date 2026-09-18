@@ -18,7 +18,7 @@ public final class LimboConfig {
 
     private final String brandName;
     private final String joinMessage;
-    private final Title loginTitle, registerTitle, termsTitle;
+    private final Title loginTitle, registerTitle, termsTitle, emailVerifyTitle;
 
     private final String playerListHeader;
     private final String playerListFooter;
@@ -53,6 +53,11 @@ public final class LimboConfig {
         //(see LoginState#isTermsGateBlocking()) - otherwise the title kept telling players to "Register with
         ///register <password>" even while registration was actually still gated behind "/terms accept" first.
         termsTitle = new Title().setTitle(Messages.get("reminder-terms-title")).setSubtitle(Messages.get("reminder-terms-subtitle")).setStay(registerStayTicks);
+        //Shown instead of registerTitle while a 'require-email-in-register' registration is pending email
+        //confirmation (see LoginState#isEmailRegisterGateBlocking()) - the account isn't created until
+        //"/verifyemail <code>" succeeds, so the title should say that instead of "Register with /register ...",
+        //which would otherwise still show even though re-submitting /register at this point does nothing.
+        emailVerifyTitle = new Title().setTitle(Messages.get("reminder-verifyemail-title")).setSubtitle(Messages.get("reminder-verifyemail-subtitle")).setStay(registerStayTicks);
 
         playerListHeader = Colors.of("none");
         playerListFooter = Colors.of("none");
@@ -131,6 +136,10 @@ public final class LimboConfig {
 
     public Title getTermsTitle() {
         return termsTitle;
+    }
+
+    public Title getEmailVerifyTitle() {
+        return emailVerifyTitle;
     }
 
     public String getPlayerListUsername() {
