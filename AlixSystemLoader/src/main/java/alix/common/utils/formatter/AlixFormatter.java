@@ -72,6 +72,7 @@ public final class AlixFormatter {
      */
 
     public static String formatSingle(String s, String replacement) {//For {<digit>} = 1, specifically for {0} = 1
+        replacement = escapeMiniMessage(replacement);
         char[] a = s.toCharArray();
         int l = a.length;
         int lM2 = l - 2;
@@ -110,11 +111,33 @@ public final class AlixFormatter {
             if (c == '{' && a[i + 2] == '}') {
                 int index = a[i + 1] - 48;//48 is '0' in ascii
                 if (index < args.length && index >= 0) {//the given index is valid
-                    sb.append(args[index]);
+                    sb.append(escapeMiniMessage(String.valueOf(args[index])));
                     i += 2;//skipping '<digit>}' in the text, as the first '{' is already skipped by the default for(i) iterator
                     continue;//continue to the next loop and stop this
                 }//continue, the index was invalid
             }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    //Escapes MiniMessage's own special characters ('\' and '<' - '>' alone can never start a tag, so leaving
+    //it as-is avoids a spurious visible backslash for the rare value that happens to contain one, without any
+    //loss of safety) in a value about to be substituted into a message template via {0}-style formatting - a
+    //nickname, an IP, an email, or any other data pulled in at runtime - so it can never be interpreted as
+    //MiniMessage tag syntax once the finished string reaches MessageWrapper's MiniMessage parsing step. A
+    //player naming themselves e.g. "<click:run_command:'/x'>" (or any other real, recognized tag) must never
+    //become a live tag in someone else's client just because that name got substituted into a message. The
+    //STATIC template text itself (e.g. a literal "<player>" placeholder already baked into
+    //messages.properties/messages.txt) is deliberately left unescaped instead - see MessageWrapper's own
+    //comment for why that's handled safely a different way (non-strict parsing).
+    private static String escapeMiniMessage(String s) {
+        if (s.indexOf('\\') < 0 && s.indexOf('<') < 0)
+            return s;//fast path - the overwhelming majority of substituted values (numbers, statuses, IPs...) contain neither
+        StringBuilder sb = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\\' || c == '<') sb.append('\\');
             sb.append(c);
         }
         return sb.toString();
