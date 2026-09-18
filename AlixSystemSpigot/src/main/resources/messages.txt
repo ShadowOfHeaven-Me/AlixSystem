@@ -408,6 +408,8 @@ reminder-login-title: Log in with
 reminder-register-subtitle: &e/register <password>
 reminder-register-subtitle-repeat: &e/register <password> <password>
 reminder-register-title: Register with
+reminder-terms-subtitle: &e/terms accept
+reminder-terms-title: Accept the terms with
 remove-warp: &6Successfully removed the warp {0}!
 renamed-item: &6Successfully renamed held item.
 server-is-full: &cThe server is full!

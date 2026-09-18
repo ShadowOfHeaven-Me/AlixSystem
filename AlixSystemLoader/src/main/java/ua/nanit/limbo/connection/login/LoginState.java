@@ -50,6 +50,7 @@ import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshots;
+import ua.nanit.limbo.server.data.TitlePacketSnapshot;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -58,6 +59,7 @@ import static alix.common.utils.config.ConfigProvider.config;
 import static ua.nanit.limbo.connection.login.gui.LimboPinBuilder.maxLoginAttempts;
 import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.LOGIN_TITLE;
 import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.REGISTER_TITLE;
+import static ua.nanit.limbo.protocol.snapshot.PacketSnapshots.TERMS_TITLE;
 
 public final class LoginState implements VerifyState {
 
@@ -176,6 +178,15 @@ public final class LoginState implements VerifyState {
 
     private boolean isTermsGateBlocking() {
         return !this.isRegistered && requireTermsAcceptance && !this.termsAccepted;
+    }
+
+    //The title/subtitle shown above the hotbar should always reflect whatever step is actually required next -
+    //previously it was picked solely off isRegistered, so an unregistered player still blocked by the Terms &
+    //Conditions gate saw "Register with /register <password>" even though registering would still be refused
+    //until they typed "/terms accept" first (that prompt only ever showed up in chat, via sendTermsPrompt()).
+    private TitlePacketSnapshot currentTitle() {
+        if (this.isTermsGateBlocking()) return TERMS_TITLE;
+        return this.isRegistered ? LOGIN_TITLE : REGISTER_TITLE;
     }
 
     private PersistentUserData register0(String password) {
@@ -379,7 +390,7 @@ public final class LoginState implements VerifyState {
             if (this.gui != null && !isSecondaryGui) {
                 this.write(CLOSE_INV);
                 this.writeCommands();
-                this.connection.writeTitle(this.isRegistered ? LOGIN_TITLE : REGISTER_TITLE);
+                this.connection.writeTitle(this.currentTitle());
             }
 
             if (data.getLoginType() == extraLoginType)
@@ -412,7 +423,7 @@ public final class LoginState implements VerifyState {
 
         if (this.gui == null) {
             this.writeCommands();
-            this.connection.writeTitle(this.isRegistered ? LOGIN_TITLE : REGISTER_TITLE);
+            this.connection.writeTitle(this.currentTitle());
         }
         //DO NOT SEND THIS, BREAKS GUIS
         //this.write(Entities.SAME_ID);
@@ -564,6 +575,11 @@ public final class LoginState implements VerifyState {
             //confirming the acceptance itself - unlike "/terms decline" (which kicks with a clear reason),
             //a player typing "/terms accept" had no visible confirmation that anything happened at all.
             this.writeMessage(Messages.getWithPrefix("terms-accepted"));
+            //Swap the hotbar title from "Accept the terms with /terms accept" back to the normal register
+            //prompt now that the gate is actually cleared - see currentTitle()/isTermsGateBlocking(). Guarded
+            //the same way sendInitial()/initDoubleVer() already guard their own title writes, since a title
+            //packet isn't meaningful while a login GUI (anvil/PIN/bedrock) is covering it instead.
+            if (this.gui == null) this.connection.writeTitle(this.currentTitle());
             this.duplexHandler.writeAndFlush(requireEmailInRegister ? formatRegisterEmailMessagePacket : formatRegisterMessagePacket);
             return;
         }

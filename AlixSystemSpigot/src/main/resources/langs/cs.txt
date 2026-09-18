@@ -407,6 +407,8 @@ reminder-login-title: Přihlas se pomocí
 reminder-register-subtitle: &e/register <heslo>
 reminder-register-subtitle-repeat: &e/register <heslo> <heslo>
 reminder-register-title: Zaregistruj se pomocí
+reminder-terms-subtitle: &e/terms accept
+reminder-terms-title: Přijmi podmínky pomocí
 remove-warp: &6Úspěšně odstraněn warp {0}!
 renamed-item: &6Úspěšně přejmenován držený předmět.
 server-is-full: &cServer je plný!

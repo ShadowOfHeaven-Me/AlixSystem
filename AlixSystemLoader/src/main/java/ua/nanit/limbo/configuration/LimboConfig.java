@@ -17,7 +17,7 @@ public final class LimboConfig {
 
     private final String brandName;
     private final String joinMessage;
-    private final Title loginTitle, registerTitle;
+    private final Title loginTitle, registerTitle, termsTitle;
 
     private final String playerListHeader;
     private final String playerListFooter;
@@ -40,6 +40,10 @@ public final class LimboConfig {
         int loginStayTicks = 999999999;
         registerTitle = new Title().setTitle(Messages.get("reminder-register-title")).setSubtitle(requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle")).setStay(registerStayTicks);
         loginTitle = new Title().setTitle(Messages.get("reminder-login-title")).setSubtitle(Messages.get("reminder-login-subtitle")).setStay(loginStayTicks);
+        //Shown instead of registerTitle while an unregistered player still hasn't accepted the Terms & Conditions
+        //(see LoginState#isTermsGateBlocking()) - otherwise the title kept telling players to "Register with
+        ///register <password>" even while registration was actually still gated behind "/terms accept" first.
+        termsTitle = new Title().setTitle(Messages.get("reminder-terms-title")).setSubtitle(Messages.get("reminder-terms-subtitle")).setStay(registerStayTicks);
 
         playerListHeader = Colors.of("none");
         playerListFooter = Colors.of("none");
@@ -114,6 +118,10 @@ public final class LimboConfig {
 
     public Title getRegisterTitle() {
         return registerTitle;
+    }
+
+    public Title getTermsTitle() {
+        return termsTitle;
     }
 
     public String getPlayerListUsername() {
