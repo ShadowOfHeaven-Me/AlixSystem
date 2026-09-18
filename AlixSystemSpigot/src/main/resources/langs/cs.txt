@@ -26,7 +26,7 @@ as-bypasslimit-not-added: &cJméno '{0}' není na seznamu výjimek z limitu úč
 as-bypasslimit-removed: Jméno '{0}' bylo odebráno ze seznamu výjimek z limitu účtů!
 as-calc-result: &c{0} = {1}
 as-changepassword-extra-login-cleared: &eDruhý typ přihlášení hráče byl kvůli tomu dodatečně nastaven na NONE.
-as-changepassword-success: Heslo hráče {0} bylo úspěšně změněno na {1}, s typem přihlášení {2}
+as-changepassword-success: Heslo hráče {0} bylo úspěšně změněno na {1} s typem přihlášení {2}
 as-constants-alfa: &cAlfa &7- 2.502907875095892
 as-constants-e: &cE &7- 2.718281828459045
 as-constants-f: &cF &7- 2.807770242028519
@@ -43,7 +43,7 @@ as-forcestatus-format: &cFormát: /as fs <hráč> <status>
 as-forcestatus-invalid-status: &cNeplatný status, musí být PREMIUM, NON_PREMIUM nebo UNKNOWN
 as-forcestatus-self-declared-non-premium: &eHráč {0} se sám prohlásil za NON_PREMIUM, jeho status tedy nelze nastavit na PREMIUM.
 as-forcestatus-success: Premiový status hráče {0} byl nastaven na {1}.
-as-forcestatus-success-api: Premiový status hráče {0} byl nastaven na PREMIUM, přes API požadavek. Premium uuid={1}
+as-forcestatus-success-api: Premiový status hráče {0} byl nastaven na PREMIUM přes API požadavek. Premium UUID={1}
 as-forcestatus-unknown: &cStatus hráče {0} se nepodařilo žádným způsobem zjistit, status nelze nastavit
 as-frd-removed-from-allowlist: Jméno {0} bylo odebráno z allow-listu!
 as-frd-success: Data účtu {0} byla kompletně odstraněna!
@@ -89,10 +89,10 @@ as-resetpassword-success-with-type: Heslo hráče {0} bylo úspěšně resetová
 as-resetstatus-success: Premiový status hráče {0} byl nastaven na UNKNOWN.
 as-save-all-local-to-db: Synchronizace všech lokálních dat s připojenou databází byla zahájena a měla by být brzy dokončena
 as-specify-password: Zadej heslo hráče!
-as-ufw-blocked-static: Ip {0} je blokovaná staticky, nelze ji odebrat z firewallu. Pokud je tohle chyba, nahlas to ihned!
+as-ufw-blocked-static: IP {0} je blokovaná staticky, nelze ji odebrat z firewallu. Pokud je tohle chyba, nahlas to ihned!
 as-ufw-invalid-ip: '{0}' není platná IP adresa!
-as-ufw-not-firewalled: Ip {0} není zafirewallovaná.
-as-ufw-not-firewalled-panicmode: Ip {0} není zafirewallovaná, ale nemůže se připojit, protože je aktivní panic mode.
+as-ufw-not-firewalled: IP {0} není zafirewallovaná.
+as-ufw-not-firewalled-panicmode: IP {0} není zafirewallovaná, ale nemůže se připojit, protože je aktivní panic mode.
 as-ufw-removed: {0} byla odebrána z Firewall databáze!
 as-unknown-command: &cZkus /as help!
 as-user-accounts: Účty: &c{0}{1}
@@ -145,7 +145,7 @@ chat-already-off: &cChat je již VYPNUTÝ!
 chat-already-on: &cChat je již ZAPNUTÝ!
 chat-clear: Chat byl vyčištěn hráčem &c{0}
 chat-is-off: Chat je momentálně vypnutý!
-chat-message-delay: Počkej ještě {0} sekund(y)!
+chat-message-delay: Počkej ještě {0} s!
 chat-set-off: Chat byl &cVYPNUT &7hráčem {0}
 chat-set-on: Chat byl &aZAPNUT &7hráčem {0}
 command-does-not-exist: &cZadaný příkaz neexistuje!
@@ -261,7 +261,7 @@ gui-google-auth-what-is-this-name: &eCo to je?
 gui-invalid-password: &cNeplatné heslo
 gui-ip-autologin-accept: &aPŘIJMOUT
 gui-ip-autologin-lore-accept: &7Přijetí je obvykle bezpečné, protože -nl &7každá IP adresa je jedinečně přidělena -nl &7tvým poskytovatelem internetu.
-gui-ip-autologin-lore-reject: &7Odmítnutí je také v pořádku, protože -nl &7i když je to zanedbatelné, stále -nl &7existuje šance, že se někdo -nl &7pokusí připojit na tento server -nl &7pod tvojí přezdívkou a bude mít -nl &7stejnou IP adresu jako při tvém -nl &7posledním úspěšném přihlášení -nl &7(například při použití VPN, -nl &7dynamické IP adresy přidělené -nl &7stejným poskytovatelem internetu -nl &7nebo při použití stejného routeru).
+gui-ip-autologin-lore-reject: &7Odmítnutí je taky v pořádku - sdílená -nl &7IP adresa (VPN, stejný poskytovatel -nl &7nebo router) může výjimečně -nl &7umožnit někomu jinému přihlášení, -nl &7ale to riziko je malé.
 gui-ip-autologin-question-mark: &eCo to je?
 gui-ip-autologin-reject: &cODMÍTNOUT
 gui-ip-autologin-what-is-this: &7Tato nabídka se ptá, zda chceš -nl &7být automaticky přihlášen, -nl &7pokud se připojíš ze stejné IP adresy -nl &7jako při předchozím úspěšném přihlášení
@@ -424,8 +424,8 @@ spawn-teleport: &6Úspěšně teleportováno na spawn!
 speed-invalid-arg: &cČtvrtý argument by měl být walk nebo fly, ale místo toho bylo nalezeno '{0}'!
 successfully-removed: &6Úspěšně odstraněn tvůj domov {0}.
 successfully-unmuted: Hráči {0} bylo úspěšně zrušeno umlčení.
-sudoed-player-chat: Přes sudo přinuceno napsat hráčem {0} do chatu:
-sudoed-player-command: Přes sudo přinuceno napsat hráčem {0} příkaz {1}
+sudoed-player-chat: Hráč {0} byl přes sudo přinucen napsat do chatu:
+sudoed-player-command: Hráč {0} byl přes sudo přinucen napsat příkaz {1}
 system-unsure-op-password-tip: &cPokud si nejsi jistý, jaké je heslo, zkontroluj prosím soubor config.yml tohoto pluginu, nebo tento příkaz použij pouze z konzole.
 terms-accepted: &aPodmínky používání akceptovány!
 terms-declined-kick: &cPro dokončení registrace musíš přijmout Podmínky používání.

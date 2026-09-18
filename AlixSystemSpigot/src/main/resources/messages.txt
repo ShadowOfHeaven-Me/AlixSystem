@@ -262,7 +262,7 @@ gui-google-auth-what-is-this-name: &eWhat is this?
 gui-invalid-password: &cInvalid password
 gui-ip-autologin-accept: &aACCEPT
 gui-ip-autologin-lore-accept: &7Accepting is usually safe, since -nl &7each IP is unique as assigned -nl &7by the ISP.
-gui-ip-autologin-lore-reject: &7Rejecting is also valid, since -nl &7even tho negligible, there still -nl &7exists a chance that someone -nl &7tries to join this server -nl &7using your nickname, and -nl &7has the same ip as your -nl &7last successful login -nl &7(for example when using a VPN, -nl &7having their dynamic IP -nl &7be provided by the same ISP or -nl &7when using the same router).
+gui-ip-autologin-lore-reject: &7Rejecting is fine too - a shared -nl &7IP (VPN, same ISP, or router) -nl &7could occasionally let someone -nl &7else log in as you, but that -nl &7risk is small.
 gui-ip-autologin-question-mark: &eWhat is this?
 gui-ip-autologin-reject: &cREJECT
 gui-ip-autologin-what-is-this: &7This gui asks whether you'd -nl &7like to be automatically logged in -nl &7if you join with the same IP, -nl &7 as your previous successful login.
