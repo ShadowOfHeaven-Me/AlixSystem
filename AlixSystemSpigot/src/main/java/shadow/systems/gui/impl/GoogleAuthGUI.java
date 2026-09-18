@@ -3,6 +3,7 @@ package shadow.systems.gui.impl;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginParams;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.list.LoopList;
 import org.bukkit.Bukkit;
@@ -56,7 +57,7 @@ public final class GoogleAuthGUI extends AlixGUI {
     //private final VerifiedUser user;
 
     private GoogleAuthGUI(Player player) {
-        super(Bukkit.createInventory(player, 27, guiTitle), player);
+        super(Bukkit.createInventory(player, 27, MessageWrapper.parseToLegacyString(guiTitle)), player);
         //this.user = UserManager.getVerifiedUser(player);
     }
 

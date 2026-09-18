@@ -21,6 +21,7 @@ import alix.common.environment.ServerEnvironment;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
 import com.google.gson.JsonObject;
@@ -616,7 +617,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                         UserDataFormatter f = JavaFormatter.formatPersistentData(data);
                         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
                         SkullMeta meta = (SkullMeta) item.getItemMeta();
-                        meta.setDisplayName(translateColors("&e" + data.getName() + "'s Data:"));
+                        meta.setDisplayName(MessageWrapper.parseToLegacyString(translateColors("&e" + data.getName() + "'s Data:")));
                         meta.setLore(getItemLore("&7Password Hash: &c" + f.getPasswordFormat(),
                                 "&7IP: &c" + f.getIPFormat(), "&7Muted: &c" + f.getMutedFormat()));
                         meta.setOwningPlayer(p);

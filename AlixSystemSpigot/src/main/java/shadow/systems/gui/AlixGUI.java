@@ -2,6 +2,7 @@ package shadow.systems.gui;
 
 import alix.common.login.skull.SkullTextures;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixException;
 import org.bukkit.Material;
@@ -60,7 +61,7 @@ public abstract class AlixGUI implements AbstractAlixGUI {
 
     protected static ItemStack rename(ItemStack i, String s) {
         ItemMeta meta = i.getItemMeta();
-        meta.setDisplayName(AlixFormatter.translateColors(s));
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(AlixFormatter.translateColors(s)));
         i.setItemMeta(meta);
         return i;
     }
@@ -95,7 +96,7 @@ public abstract class AlixGUI implements AbstractAlixGUI {
 
     protected static ItemStack create(ItemStack item, String displayName, String... lore) {
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(AlixFormatter.translateColors(displayName));
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(AlixFormatter.translateColors(displayName)));
         meta.setLore(AlixUtils.getItemLore(lore));
         item.setItemMeta(meta);
         return item;

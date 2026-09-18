@@ -13,6 +13,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerCh
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -39,6 +40,32 @@ public final class MessageWrapper {
     //every createWrapper(String, ...) call (see PacketPlayOutMessage).
     public static Component parseLegacy(String message) {
         return MINI_MESSAGE.deserialize(legacyToMiniMessageTags(message));
+    }
+
+    //hexColors() is required here, not the legacySection() convenience default - confirmed by testing against
+    //the real library that without it, any hex/gradient color (including one that came from a genuine
+    //MiniMessage <gradient>/<#RRGGBB> tag, not just "&#RRGGBB") silently downsamples to the nearest of the 16
+    //named legacy colors instead of round-tripping as "§x§R§R..." - the exact same class of bug the hex-color
+    //fix (see AdventureSerializer.legacy()'s own use of .hexColors(), which this whole pipeline replaced) was
+    //about in the first place. useUnusualXRepeatedCharacterHexFormat() is equally required - without it,
+    //hexColors() alone emits the newer, compact "§#RRGGBB" form instead, which isHexSequence()/
+    //legacyToMiniMessageTags() above (and AlixFormatter.translateColorsWithHex(), and Bukkit's own NMS
+    //conversion) all expect NOT to see - confirmed by testing that it's the "§x§R§R§G§G§B§B" repeated form
+    //("unusual" is Adventure's own naming for it, despite it being the one every other hex-aware code path in
+    //this project already relies on) both sides of this round-trip need to agree on.
+    private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.builder()
+            .character(LegacyComponentSerializer.SECTION_CHAR).hexColors().useUnusualXRepeatedCharacterHexFormat().build();
+
+    //For the handful of Bukkit-native APIs (ItemMeta#setDisplayName(String)/setLore(List<String>)) that only
+    //ever accept a raw legacy '§'-coded String, never a Component, on any supported Spigot/Paper version -
+    //round-trips the string through the same MiniMessage-aware parse as parseLegacy() above (so legacy codes
+    //AND genuine MiniMessage tags both resolve), then serializes the result back to a legacy string, which
+    //Bukkit's own NMS conversion already understands, hex codes included. Any hover/click event a MiniMessage
+    //tag might have added is necessarily dropped, since legacy text has no representation for either -
+    //harmless here, since a GUI item's own name/lore text never carried interactivity of its own (a slot's
+    //click behavior is wired up separately, in Java).
+    public static String parseToLegacyString(String message) {
+        return LEGACY_SERIALIZER.serialize(parseLegacy(message));
     }
 
     private static final Map<Character, String> LEGACY_TAG_NAMES = Map.ofEntries(

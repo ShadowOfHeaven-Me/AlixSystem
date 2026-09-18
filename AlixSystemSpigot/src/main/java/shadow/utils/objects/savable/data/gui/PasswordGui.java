@@ -267,7 +267,7 @@ public final class PasswordGui {
     private static ItemStack rename(ItemStack i, String s) {
         ItemMeta meta = i.getItemMeta();
         if (meta == null) return i;//ignore air
-        meta.setDisplayName(AlixFormatter.translateColors(s));
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(AlixFormatter.translateColors(s)));
         i.setItemMeta(meta);
         return i;
     }

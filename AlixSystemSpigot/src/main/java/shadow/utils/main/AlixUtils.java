@@ -2,6 +2,7 @@ package shadow.utils.main;
 
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.formatter.AlixFormatter;
@@ -413,7 +414,7 @@ public final class AlixUtils {
     public static ItemStack getSkull(String name, String url) {
         ItemStack head = skullSupplier.createSkull(url);
         ItemMeta meta = head.getItemMeta();
-        meta.setDisplayName(AlixFormatter.translateColors(name));
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(AlixFormatter.translateColors(name)));
         head.setItemMeta(meta);
         return head;
     }
@@ -1243,7 +1244,7 @@ public final class AlixUtils {
     }
 
     public static String[] translateArrayColorsAndTrimEach(String... texts) {
-        for (int i = 0; i < texts.length; i++) texts[i] = translateColors(texts[i]).trim();
+        for (int i = 0; i < texts.length; i++) texts[i] = MessageWrapper.parseToLegacyString(translateColors(texts[i]).trim());
         return texts;
     }
 

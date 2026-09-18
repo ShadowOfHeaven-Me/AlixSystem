@@ -1,6 +1,7 @@
 package shadow.systems.gui.impl;
 
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import org.bukkit.Bukkit;
@@ -25,7 +26,7 @@ public abstract class AccountGUI extends AlixGUI {
             PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_14) ? new AccountGUIModern() : new AccountGUIOlder();
 
     private AccountGUI() {
-        super(Bukkit.createInventory(null, InventoryType.DROPPER, Messages.get("gui-title-account")));
+        super(Bukkit.createInventory(null, InventoryType.DROPPER, MessageWrapper.parseToLegacyString(Messages.get("gui-title-account"))));
     }
 
     private static final class AccountGUIModern extends AccountGUI {

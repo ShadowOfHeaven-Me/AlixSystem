@@ -3,6 +3,7 @@ package shadow.systems.gui.impl;
 import alix.common.data.PersistentUserData;
 import alix.common.data.fingerprinting.FingerprintGateway;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.config.ConfigParams;
 import org.bukkit.Bukkit;
@@ -39,7 +40,7 @@ public final class LoginSettingsGUI extends AlixGUI {
     private final AbstractAlixGUI originalGui;
 
     private LoginSettingsGUI(Player player, AbstractAlixGUI originalGui) {
-        super(Bukkit.createInventory(player, 9, loginSettingsTitle), player);
+        super(Bukkit.createInventory(player, 9, MessageWrapper.parseToLegacyString(loginSettingsTitle)), player);
         this.originalGui = originalGui;
     }
 
