@@ -406,7 +406,9 @@ register-time-passed: &cYou took too long to register!
 reminder-login-subtitle: &e/login <password>
 reminder-login-title: Log in with
 reminder-register-subtitle: &e/register <password>
+reminder-register-subtitle-email: &e/register <password> <email>
 reminder-register-subtitle-repeat: &e/register <password> <password>
+reminder-register-subtitle-repeat-email: &e/register <password> <password> <email>
 reminder-register-title: Register with
 reminder-terms-subtitle: &e/terms accept
 reminder-terms-title: Accept the terms with
