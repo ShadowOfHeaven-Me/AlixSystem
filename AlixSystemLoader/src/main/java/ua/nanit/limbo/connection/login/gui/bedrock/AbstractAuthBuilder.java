@@ -8,6 +8,7 @@ import alix.common.login.skull.SkullTextures;
 import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.packets.inventory.InventoryWrapper;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
@@ -18,7 +19,6 @@ import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
 import com.github.retrooper.packetevents.protocol.nbt.*;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.play.disconnect.PacketPlayOutDisconnect;
@@ -146,8 +146,12 @@ public abstract class AbstractAuthBuilder {
         return builderOf(type, name, lore).build();
     }
 
+    //Was Arrays.stream(lore).map(Component::text) - callers pass already-translateColors()'d strings (e.g.
+    //via Messages.get()), so a plain Component::text left any "&#RRGGBB" hex code in there as literal,
+    //unparsed '§x§...' characters instead of an actual color. parseLegacy() is the same hex-aware Adventure
+    //legacy parser chat messages already use (see PacketPlayOutMessage#withMessage()).
     public static ItemLore getItemLore(String... lore) {
-        return new ItemLore(Arrays.stream(lore).map(Component::text).map(t -> (Component) t).toList());
+        return new ItemLore(Arrays.stream(lore).map(MessageWrapper::parseLegacy).toList());
     }
 
     public static ItemStack.Builder builderOf(ItemType type, String name, String... lore) {
@@ -161,7 +165,8 @@ public abstract class AbstractAuthBuilder {
     private static ItemStack.Builder name(ItemStack.Builder builder, String name) {
         name = AlixFormatter.translateColors(name);
 
-        builder.component(ComponentTypes.CUSTOM_NAME, Component.text(name));
+        //Was Component.text(name) - see getItemLore() above for why that breaks hex codes.
+        builder.component(ComponentTypes.CUSTOM_NAME, MessageWrapper.parseLegacy(name));
 
         NBTCompound display = new NBTCompound();
         display.setTag("Name", new NBTString("{\"text\":\"" + name + "\"}"));
@@ -228,7 +233,7 @@ public abstract class AbstractAuthBuilder {
         int index = 6 - this.digits.length();
 
         String title = START_TEXT + this.digits + EMPTY_SLOTS_TEXTS[index];
-        var invOpen = InventoryWrapper.createInvOpen(AlixInventoryType.GENERIC_9X4, Component.text(title), this.getClientVersion());
+        var invOpen = InventoryWrapper.createInvOpen(AlixInventoryType.GENERIC_9X4, MessageWrapper.parseLegacy(title), this.getClientVersion());
 
         this.writeAndFlush(new PacketPlayOutInventoryOpen(invOpen, AlixInventoryType.GENERIC_9X4));
     }

@@ -1,7 +1,7 @@
 package ua.nanit.limbo.protocol.packets.login;
 
+import alix.common.packets.message.MessageWrapper;
 import com.github.retrooper.packetevents.wrapper.configuration.server.WrapperConfigServerDisconnect;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
@@ -11,8 +11,9 @@ public class PacketConfigDisconnect extends OutRetrooperPacket<WrapperConfigServ
         super(WrapperConfigServerDisconnect.class);
     }
 
+    //Was Component.text(reason) - see PacketPlayOutDisconnect#setReason(String) for why that breaks hex codes.
     public PacketConfigDisconnect setReason(String reason) {
-        this.wrapper().setReason(Component.text(reason));
+        this.wrapper().setReason(MessageWrapper.parseLegacy(reason));
         return this;
     }
 

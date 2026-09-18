@@ -21,6 +21,7 @@ import alix.common.database.DatabaseUpdater;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
@@ -34,7 +35,6 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandSource;
 import io.netty.channel.Channel;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.login.LoginState;
 
 import java.net.InetAddress;
@@ -302,7 +302,7 @@ public final class AlixSystemCommand {
                                             }
                                             data.resetPasswords();
                                             Main.PLUGIN.getServer().getPlayer(data.getName()).ifPresent(p ->
-                                                    p.disconnect(Component.text(passwordResetMessage))
+                                                    p.disconnect(MessageWrapper.parseLegacy(passwordResetMessage))
                                             );
                                             LoginType type;
                                             try {
@@ -327,7 +327,7 @@ public final class AlixSystemCommand {
                             }
                             data.resetPasswords();
                             Main.PLUGIN.getServer().getPlayer(data.getName()).ifPresent(p ->
-                                    p.disconnect(Component.text(passwordResetMessage))
+                                    p.disconnect(MessageWrapper.parseLegacy(passwordResetMessage))
                             );
                             sendMessage(sender, Messages.get("as-resetpassword-success", target));
                             return SINGLE_SUCCESS;

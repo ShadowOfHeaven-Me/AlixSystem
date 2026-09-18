@@ -1,6 +1,7 @@
 package alix.velocity.systems.packets.gui;
 
 import alix.common.packets.inventory.AlixInventoryType;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.other.throwable.AlixException;
 import alix.velocity.systems.packets.gui.inv.AbstractInventory;
@@ -13,7 +14,6 @@ import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.enchantment.type.EnchantmentTypes;
 import com.github.retrooper.packetevents.protocol.item.type.ItemType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.login.gui.LimboAnvilBuilder;
 import ua.nanit.limbo.connection.login.gui.LimboAuthBuilder;
 import ua.nanit.limbo.connection.login.gui.bedrock.AbstractAuthBuilder;
@@ -73,9 +73,10 @@ public abstract class AlixGUI implements AbstractAlixGUI {
         return ItemStack.builder().type(i.getType()).components(copy.getComponents()).nbt(copy.getNBT()).legacyData(i.getLegacyData()).amount(i.getAmount());
     }
 
+    //Was Component.text(...) - see AlixUtils#sendMessage(CommandSource, String) for why that breaks hex codes.
     protected static ItemStack rename(ItemStack i, String name) {
         return builderCopy(i)
-                .component(ComponentTypes.CUSTOM_NAME, Component.text(AlixFormatter.translateColors(name))).build();
+                .component(ComponentTypes.CUSTOM_NAME, MessageWrapper.parseLegacy(AlixFormatter.translateColors(name))).build();
     }
 
     protected static ItemStack enchant(ItemStack i) {

@@ -4,11 +4,11 @@ import alix.common.data.PersistentUserData;
 import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.other.throwable.AlixError;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
-import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.objects.savable.data.gui.AlixJavaVerificationGui;
@@ -53,7 +53,8 @@ public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
             noteBlockHarpSoundPacket = OutSoundPacketConstructor.constructConst(Sounds.BLOCK_NOTE_BLOCK_HARP, retrooperTpLoc);*/
     private static final VirtualItem[] ITEMS;
     private static final ByteBuf invItemsByteBuf, invItemsByteBufNoLeave;
-    private static final ByteBuf invOpenBuffer = CachingVirtualInventory.constInvOpenByteBuf(36, Component.text(START_TEXT + "______"));
+    //Was Component.text(...) - see OutMessagePacketConstructor for why that breaks hex codes.
+    private static final ByteBuf invOpenBuffer = CachingVirtualInventory.constInvOpenByteBuf(36, MessageWrapper.parseLegacy(START_TEXT + "______"));
     private static final int LEAVE_BUTTON_INDEX = 33;
     private final AlixUser user;
     private final String hexSecretKey;
@@ -142,7 +143,7 @@ public abstract class VirtualAuthBuilder implements AlixJavaVerificationGui {
         int index = 6 - this.digits.length();
 
         String title = START_TEXT + this.digits + EMPTY_SLOTS_TEXTS[index];
-        ByteBuf invOpen = CachingVirtualInventory.invOpenByteBuf(AlixInventoryType.GENERIC_9X4, Component.text(title));
+        ByteBuf invOpen = CachingVirtualInventory.invOpenByteBuf(AlixInventoryType.GENERIC_9X4, MessageWrapper.parseLegacy(title));
         this.user.writeAndFlushSilently(invOpen);
     }
 

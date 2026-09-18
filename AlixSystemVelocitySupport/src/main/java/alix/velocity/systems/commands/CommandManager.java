@@ -6,6 +6,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.security.email.EmailHandler;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
 import alix.velocity.server.impl.VelocityLimboIntegration;
@@ -23,7 +24,6 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 
 import static alix.velocity.utils.AlixUtils.sendMessage;
@@ -192,7 +192,7 @@ public final class CommandManager {
                     AlixCommonUtils.getPasswordInvalidityReasonAsync(password, LoginType.ANVIL, reason -> {
                         if (reason != null) {
                             user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));
-                            player.sendMessage(Component.text(reason));
+                            player.sendMessage(MessageWrapper.parseLegacy(reason));
                             return;
                         }
 
