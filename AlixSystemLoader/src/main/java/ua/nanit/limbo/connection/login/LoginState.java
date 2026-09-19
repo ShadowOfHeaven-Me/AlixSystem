@@ -614,7 +614,7 @@ public final class LoginState implements VerifyState {
     private static final int
             MAX_EMAIL_ATTEMPTS = EmailConfig.getConfig().getInt("max-email-attempts"),
             MAX_CODE_ATTEMPTS = EmailConfig.getConfig().getInt("max-code-attempts");
-    private int invalidEmailAttempts, invalidCodeAttempts;
+    private int invalidEmailAttempts, invalidCodeAttempts, invalidRecoveryCodeAttempts;
 
     public void onInvalidCode() {
 
@@ -696,11 +696,27 @@ public final class LoginState implements VerifyState {
 
         this.data.tryConsumeRecoveryCode(args[0], matched -> this.runOnEventLoop(() -> {
             if (!matched) {
+                //Same attempt-cap treatment every other guessable code in this class already gets
+                //(email-recovery code, register-email-verify code) - unguessable given the keyspace alone,
+                //but there's no reason this specific guess loop should be the one exception left unbounded.
+                if (++this.invalidRecoveryCodeAttempts == MAX_CODE_ATTEMPTS) {
+                    this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("recovery-code-invalid")));
+                    return;
+                }
                 this.sendMessage(Messages.getWithPrefix("recovery-code-invalid"));
                 return;
             }
 
             this.sendMessage(Messages.getWithPrefix("recovery-code-success"));
+            //A correctly-typed recovery code is at least as strong a proof of device/account ownership as
+            //a live TOTP code - marking it here lets a player who reset their 2FA in-game (see
+            //shadow.utils.objects.savable.data.AuthDataChanges / the Velocity port, both now gated behind
+            //hasProvenAuthAccess the same way changing the auth TYPE already was) actually get past that
+            //gate on their very next in-game visit, even though they have no working TOTP code to re-enter
+            //there - which is exactly the situation that led them to use a recovery code to log in in the
+            //first place. Without this, a player who genuinely lost their device would be stuck unable to
+            //ever regenerate it in-game.
+            this.data.getLoginParams().setHasProvenAuthAccess(true);
             if (this.initDoubleVer()) return;
             this.logIn();
         }));

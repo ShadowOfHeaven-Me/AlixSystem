@@ -6,6 +6,7 @@ import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
@@ -23,6 +24,7 @@ import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.throwable.AlixError;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
@@ -48,6 +50,7 @@ import static shadow.utils.main.AlixUtils.*;
 public final class AdminAlixCommands implements CommandExecutor {
 
     private final String passwordResetMessage = Messages.get("password-reset-forcefully");
+    private final String twoFactorResetMessage = Messages.get("auth-app-reset-forcefully");
     private final AlixMessage playerDataNotFound = Messages.getAsObject("player-data-not-found");
 
     @Override
@@ -323,6 +326,58 @@ public final class AdminAlixCommands implements CommandExecutor {
                         } else sendMessage(sender, Messages.get("as-resetpassword-success", arg2));
                     }
                     break;
+                    //Emergency recovery for a player who lost BOTH their Authenticator device AND every
+                    //recovery code - neither /recoverycode nor the in-game reset/view buttons can help them
+                    //at that point (both need something they no longer have), so this is the only way back
+                    //in short of a full /as resetpassword (which also works, but needlessly wipes their
+                    //password too). Deliberately keeps the password untouched, only drops the app
+                    //requirement back to PASSWORD-only - the player can set 2FA up again fresh once they're
+                    //back in, same as any first-time setup.
+                    case "r2fa":
+                    case "reset2fa": {
+                        PersistentUserData data = UserFileManager.get(arg2);
+
+                        if (data == null) {
+                            sendMessage(sender, playerDataNotFound.format(arg2));
+                            return false;
+                        }
+
+                        AuthSetting authSettings = data.getLoginParams().getAuthSettings();
+
+                        if (authSettings == AuthSetting.AUTH_APP) {
+                            //No password at all to fall back on for an app-only account - clearing the app
+                            //requirement here without also setting a real password would leave them with
+                            //nothing to log in with at all. /as resetpassword already both sets a fresh
+                            //password AND drops AuthSettings back to PASSWORD (see
+                            //PersistentUserData#resetPasswords()), so it fully covers this case on its own.
+                            sendMessage(sender, Messages.get("as-reset2fa-app-only", arg2));
+                            return false;
+                        }
+
+                        if (authSettings != AuthSetting.PASSWORD_AND_AUTH_APP) {
+                            sendMessage(sender, Messages.get("as-reset2fa-not-enabled", arg2));
+                            return false;
+                        }
+
+                        data.getLoginParams().setAuthSettings(AuthSetting.PASSWORD);
+                        data.getLoginParams().setHasProvenAuthAccess(false);
+
+                        //Also invalidates the old secret/recovery codes - if the app requirement is later
+                        //re-enabled, a device or codes that may have caused this lockout in the first place
+                        //(theft, not just loss) can't still be used to satisfy it.
+                        try {
+                            data.regenerateAuthToken();
+                        } catch (Exception e) {
+                            AlixCommonUtils.logException(e);
+                        }
+                        data.regenerateRecoveryCodes();
+
+                        Player p = Bukkit.getPlayerExact(data.getName());
+                        if (p != null) p.kickPlayer(twoFactorResetMessage);
+
+                        sendMessage(sender, Messages.get("as-reset2fa-success", arg2));
+                        return true;
+                    }
                     case "user": {
                         AlixScheduler.async(() -> {
                             OfflinePlayer offlinePlayer = getOfflinePlayer(arg2);
@@ -521,6 +576,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, Messages.get("as-help-bypasslimit"));
                     sendMessage(sender, Messages.get("as-help-bypasslimit-remove"));
                     sendMessage(sender, Messages.get("as-help-resetpassword"));
+                    sendMessage(sender, Messages.get("as-help-reset2fa"));
                     sendMessage(sender, Messages.get("as-help-registerforcefully"));
                     sendMessage(sender, Messages.get("as-help-changepassword"));
                     sendMessage(sender, Messages.get("as-help-resetstatus"));

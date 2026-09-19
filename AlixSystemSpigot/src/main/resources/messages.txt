@@ -62,6 +62,7 @@ as-help-info:   &c/as info &7- Informs about time, memory, and number of current
 as-help-math:   &c/as calc/calculate <mathematical operation> &7- Returns what the given mathematical operation is equal to. Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925
 as-help-randommath:   &c/as randommath/rmath &7- Gives you a random, already solved mathematical operation. Example: &c{0}
 as-help-registerforcefully:   &c/as rf/registerforcefully <name> <password> [login type] &7- Registers a player of the given username with the given password, and login type (COMMAND if not specified)
+as-help-reset2fa:   &c/as r2fa/reset2fa <player> &7- Turns off a PASSWORD_AND_AUTH_APP player's Authenticator app requirement (password untouched) - for someone locked out with no device and no recovery codes left. AUTH_APP-only accounts need /as resetpassword instead.
 as-help-resetpassword:   &c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.
 as-help-resetstatus:   &c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium
 as-help-user:   &c/as user <player> &7- Returns information about the given player.
@@ -84,6 +85,9 @@ as-profilejoins-disabled: Disabled detailed join profiling
 as-profilejoins-enabled: Enabled detailed join profiling, re-enter command to disable
 as-registerforcefully-already-exists: Player data of the user {0} already exists!
 as-registerforcefully-success: Successfully registered the player {0} with the password {1}, and login type {2}
+as-reset2fa-app-only: &cThe player {0}'s account uses AUTH_APP only (no password) - use /as resetpassword instead, which also clears the app requirement.
+as-reset2fa-not-enabled: &cThe player {0} doesn't currently require the Authenticator app, nothing to reset.
+as-reset2fa-success: Successfully turned off the Authenticator app requirement for the player {0}. Their password was not changed.
 as-resetpassword-success: Successfully reset the password of the player {0}.
 as-resetpassword-success-with-type: Successfully reset the password of the player {0} and set his password type to {1}!
 as-resetstatus-success: The premium status of the player {0} has been set to UNKNOWN.
@@ -379,6 +383,7 @@ password-invalid-too-long: Too long!
 password-invalid-too-short: Too short!
 password-register: &aYour password has been successfully registered!
 password-reset-forcefully: &cYour password has been reset by an admin
+auth-app-reset-forcefully: &cYour Authenticator app requirement has been turned off by an admin. Your password was not changed.
 personal-message-receive: &6[&c{0} &6-> &cMe&6]: &7
 personal-message-send: &6[&cMe &6-> &c{0}&6]: &7
 pin-confirm: &aCONFIRM

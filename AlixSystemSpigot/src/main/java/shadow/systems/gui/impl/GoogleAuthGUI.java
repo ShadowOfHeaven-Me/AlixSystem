@@ -118,7 +118,14 @@ public final class GoogleAuthGUI extends AlixGUI {
 
             this.resetArmed = false;
             MAP.remove(player.getUniqueId());
-            AlixScheduler.async(() -> {
+            //Resetting the secret hands whoever's sitting at the keyboard right now a brand new QR code -
+            //someone who briefly gets at an already-logged-in, unattended session could otherwise steal the
+            //2FA factor outright by scanning it onto their own device, without ever knowing the password or
+            //the current code. Gated the exact same way AuthDataChanges already gates changing the auth
+            //TYPE (hasProvenAuthAccess / verifyAuthAccess re-prompting for the CURRENT code) - see
+            //LoginState#handleRecoveryCodeCommand() for why a player who reset via a recovery code (because
+            //they lost their device) isn't locked out of this by having no current code to re-enter.
+            runGatedByAuthAccess(user, () -> AlixScheduler.async(() -> {
                 //regenerateAuthToken() throws if it couldn't safely re-encrypt the stored email under the
                 //new token (see its own docs) - caught here so the player gets a clear failure message
                 //instead of the reset silently doing nothing (the old token/QR code stays valid either way).
@@ -144,13 +151,17 @@ public final class GoogleAuthGUI extends AlixGUI {
                 //where it actually needs to (the teleport), so it's left running on THIS async thread rather
                 //than nested inside the sync() block above.
                 GoogleAuth.showQRCode(user, player);
-            });
+            }));
         });
 
         items[22] = new GUIItem(viewRecoveryCodesItem, event -> {
             MAP.remove(player.getUniqueId());
             player.closeInventory();
-            user.getData().loadRecoveryCodes(codes -> {
+            //Recovery codes are plaintext, fully-usable-remotely substitutes for the app code (see
+            ///recoverycode) - anyone who reads them off an unattended session can log in as this player
+            //from anywhere afterward, same severity as reading the password itself. Same gate as the reset
+            //button above.
+            runGatedByAuthAccess(user, () -> user.getData().loadRecoveryCodes(codes -> {
                 //Covers an account that enabled 2FA before recovery codes existed at all, or one that
                 //somehow otherwise has none yet - generates them here rather than showing an empty list,
                 //since regenerateRecoveryCodes() itself is cheap (in-memory generation + a fire-and-forget
@@ -158,11 +169,23 @@ public final class GoogleAuthGUI extends AlixGUI {
                 //just to get backup codes.
                 String[] toShow = codes.length > 0 ? codes : user.getData().regenerateRecoveryCodes();
                 AlixScheduler.sync(() -> sendRecoveryCodes(player, toShow));
-            });
+            }));
         });
 
         items[26] = new GUIItem(applyChangesItem, event -> changes.tryApply(user));
         return items;
+    }
+
+    //Runs action immediately if this account already proved app-code access once before (the common case -
+    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams), otherwise prompts for
+    //the CURRENT code first via the same VerifiedVirtualAuthBuilder GUI/flow AuthDataChanges already uses
+    //for changing the auth TYPE, running action only if that's entered correctly.
+    private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
+        if (user.getData().getLoginParams().hasProvenAuthAccess()) {
+            action.run();
+            return;
+        }
+        user.getDuplexProcessor().verifyAuthAccess(action);
     }
 
     private static void sendRecoveryCodes(Player player, String[] codes) {
