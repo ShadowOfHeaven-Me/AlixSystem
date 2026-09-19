@@ -66,6 +66,11 @@ public interface DatabaseUpdater {
     //in QueryConstants for why this must stay a separate, explicit method rather than a flag on the other one.
     void overwriteUserToken(Identity identity, String token);
 
+    //Atomic token+email commit for a 2FA reset - see DatabaseUpdaterImpl's implementation for why a plain
+    //overwriteUserToken() + updateEmailByName() pair isn't good enough here. savableEmail may be null (no
+    //email to update).
+    void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail);
+
     void saveRecoveryCodes(Identity identity, String joinedCodes);
 
     void loadRecoveryCodes(Identity identity, Consumer<String> consumer);

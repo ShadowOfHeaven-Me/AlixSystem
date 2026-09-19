@@ -17,17 +17,19 @@ public final class UserTokensFileManager {
         return getTokenOrSupply0(identity, GoogleAuthUtils::generateSecretKey);
     }
 
-    //Unlike getTokenOrSupply() above, ALWAYS overwrites whatever token was there before (locally and in the
-    //external database) with the GIVEN value - used for an explicit 2FA reset (lost/compromised device),
-    //never for the normal lazy-create-on-first-use path. Split out from generating the token (see
-    //PersistentUserData#regenerateAuthToken()) so a caller that also needs to re-encrypt something keyed
-    //off the old token (namely the player's email) can do that re-encryption FIRST, using the new value,
-    //and only commit it here once that's known to have succeeded - never leaving a token committed that
-    //something else failed to actually adopt.
-    public static void commitToken(Identity identity, String newToken) {
+    //Unlike getTokenOrSupply() above, ALWAYS overwrites whatever LOCAL token was there before (the file/
+    //in-memory map only - NOT the external database, see below) with the given value - used for an
+    //explicit 2FA reset (lost/compromised device), never for the normal lazy-create-on-first-use path.
+    //
+    //Deliberately does NOT also write the external database here, unlike an earlier version of this
+    //method: PersistentUserData#regenerateAuthToken() needs the new token committed to the database in
+    //the SAME transaction as the player's re-encrypted email (see DatabaseUpdater#commitTokenAndEmail()),
+    //so that a linked website's own periodic sync can never read the row in a split state (new token,
+    //still-old-token-encrypted email, or vice versa) - a plain overwriteUserToken() call from here,
+    //separate from the email write, couldn't guarantee that.
+    public static void commitTokenLocally(Identity identity, String newToken) {
         tokenMap().put(identity.tokenKey(), newToken);
         save();
-        database.overwriteUserToken(identity, newToken);
     }
 
     static String getTokenOrSupply0(Identity identity, Supplier<String> tokenSupplier) {

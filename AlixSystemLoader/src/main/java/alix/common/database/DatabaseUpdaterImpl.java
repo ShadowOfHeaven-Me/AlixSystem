@@ -125,6 +125,50 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
+    //Commits a regenerated 2FA token and its accompanying re-encrypted email (savableEmail may be null -
+    //an account with no email set yet just skips that half) as ONE database transaction - both writes
+    //share the same connection with autocommit off, and only alix_user_tokens.token gets touched at all
+    //if savableEmail is null. Without this, a reader with its own connection (e.g. a linked website's own
+    //periodic sync job) could - under READ COMMITTED, the default isolation level on both MySQL/InnoDB and
+    //PostgreSQL - observe the row in the brief window between two SEPARATE writes and see a token that
+    //doesn't match the email it's meant to decrypt (or vice versa). One transaction means an outside
+    //reader only ever sees the fully-old or the fully-new pairing, never a mix.
+    //
+    //autoCommit is always restored in the finally block, and HikariCP itself also resets a returned
+    //connection's autoCommit back to the pool's configured default (true here - see finishConfigSetUp())
+    //as a second safety net, so a bug here couldn't leak a "manual commit" connection back into the pool
+    //for an unrelated query to silently use.
+    @Override
+    public void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = connection.prepareStatement(UPSERT_TOKEN_SQL(this.getType()))) {
+                    setUuid(ps, 1, tokenUuid);
+                    ps.setString(2, token);
+                    ps.executeUpdate();
+                }
+
+                if (savableEmail != null) {
+                    try (PreparedStatement ps = connection.prepareStatement(UPDATE_EMAIL_BY_NAME)) {
+                        ps.setString(1, savableEmail);
+                        ps.setString(2, name);
+                        ps.executeUpdate();
+                    }
+                }
+
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
+            }
+        });
+    }
+
     @Override
     public void saveRecoveryCodes(Identity identity, String joinedCodes) {
         UUID tokenUuid = identity.tokenKey().key();

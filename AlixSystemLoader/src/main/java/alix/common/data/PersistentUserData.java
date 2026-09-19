@@ -203,14 +203,21 @@ public final class PersistentUserData implements AlixUserData {
     //OLD (still-matching) encrypted email both untouched is strictly safer than committing a new token
     //first and then discovering the email can't be re-encrypted to match it.
     //
-    //NOT fully solved by this reordering: UserTokensFileManager.commitToken() and
-    //database.updateEmailByName() below can each still fail on their own (e.g. the database being
-    //unreachable) without either being detectable here - DatabaseUpdaterImpl's DB calls are all wrapped in
+    //The token and the re-encrypted email are committed to the DATABASE together, as one transaction, via
+    //commitTokenAndEmail() - not as two separate writes. This matters for anything ELSE reading this row
+    //with its own connection (a linked website's own periodic sync, for instance): under ordinary READ
+    //COMMITTED isolation (MySQL/InnoDB and PostgreSQL's default), two separate writes would let such a
+    //reader observe the row in the brief window between them and see a token that doesn't match the email
+    //it's meant to decrypt. One transaction means it only ever sees the fully-old or the fully-new pairing.
+    //
+    //Still NOT solved by this: the transaction itself can fail outright (e.g. the database being
+    //unreachable) without that being detectable here - DatabaseUpdaterImpl's DB calls are all wrapped in
     //AutoErrorReport, which deliberately logs and swallows every failure rather than propagating it, the
     //same fire-and-log reliability model every OTHER write in this codebase already has (setPassword(),
     //updateAuthSettingsByName(), etc.) - this method doesn't weaken that, but doesn't strengthen it either.
     //A DB outage at the exact moment of a reset can still leave the stored email encrypted under a token
-    //that's no longer the active one; there is no cheap way to detect or roll that back from here.
+    //that's no longer the active one; there is no cheap way to detect or roll that back from here. What IS
+    //guaranteed is that no reader ever sees a HALF-applied reset, only "not applied yet" or "fully applied".
     public String regenerateAuthToken() {
         String newToken = GoogleAuthUtils.generateSecretKey();
         Email oldEmail = this.email;
@@ -224,12 +231,10 @@ public final class PersistentUserData implements AlixUserData {
             }
         }
 
-        UserTokensFileManager.commitToken(this.identity, newToken);
+        UserTokensFileManager.commitTokenLocally(this.identity, newToken);
         this.email = newEmail;
 
-        if (oldEmail != null) {
-            database.updateEmailByName(this.name, this.emailSavable());
-        }
+        database.commitTokenAndEmail(this.identity, newToken, this.name, oldEmail != null ? this.emailSavable() : null);
 
         return newToken;
     }
