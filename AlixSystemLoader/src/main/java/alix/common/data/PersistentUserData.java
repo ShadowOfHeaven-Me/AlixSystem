@@ -155,7 +155,7 @@ public final class PersistentUserData implements AlixUserData {
     public boolean setEmail(String email) {
         try {
             this.email = Email.fromEmail(email, this.getToken());
-            database.updateEmailByName(this.name, this.emailSavable());
+            database.updateEmailByName(this.identity, this.name, this.emailSavable());
             return true;
         } catch (Exception e) {
             AlixCommonUtils.logException(e);

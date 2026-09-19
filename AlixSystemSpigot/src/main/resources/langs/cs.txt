@@ -172,6 +172,7 @@ recovery-code-hint: &7Ztratil jsi aplikaci pro dvoufázové ověření? Napiš &
 recovery-code-invalid: &cNeplatný nebo už použitý obnovovací kód!
 recovery-code-invalid-input: &cPoužití: /recoverycode <kód>
 recovery-code-not-applicable: &cTvůj účet nepoužívá ověřovací aplikaci, tady tedy není co obnovovat.
+recovery-code-password-required: &cNejdřív zadej heslo, obnovovací kód pak použiješ místo kódu z aplikace.
 recovery-code-success: &aObnovovací kód přijat! Přihlašuji tě...
 error-player-never-joined: &cCHYBA: Hráč {0} se na tento server ještě nikdy nepřipojil!
 feed-self: Byl jsi nakrmen!

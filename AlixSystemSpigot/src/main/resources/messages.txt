@@ -173,6 +173,7 @@ recovery-code-hint: &7Lost your Authenticator app? Type &f/recoverycode <code>&7
 recovery-code-invalid: &cInvalid or already-used recovery code!
 recovery-code-invalid-input: &cUsage: /recoverycode <code>
 recovery-code-not-applicable: &cYour account doesn't use the Authenticator app, so there's nothing to recover here.
+recovery-code-password-required: &cEnter your password first, then use a recovery code instead of the app code.
 recovery-code-success: &aRecovery code accepted! Logging in...
 error-player-never-joined: &cERROR: Player {0} has never joined this server before!
 feed-self: You have been fed!

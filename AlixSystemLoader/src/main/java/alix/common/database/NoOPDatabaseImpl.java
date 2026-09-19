@@ -131,7 +131,7 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
-    public void updateEmailByName(String name, String email) {
+    public void updateEmailByName(Identity identity, String name, String email) {
 
     }
 

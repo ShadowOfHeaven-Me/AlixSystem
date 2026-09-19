@@ -88,7 +88,9 @@ public interface DatabaseUpdater {
 
     void updateExtraLoginTypeByName(String name, LoginType extraLoginType);
 
-    void updateEmailByName(String name, String email);
+    //identity is only used to key this write onto the same per-player execution chain commitTokenAndEmail()
+    //uses - see DatabaseUpdaterImpl's implementation for why.
+    void updateEmailByName(Identity identity, String name, String email);
 
     void removeByName(String name);
 

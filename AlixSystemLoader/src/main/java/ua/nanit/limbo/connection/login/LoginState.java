@@ -666,6 +666,17 @@ public final class LoginState implements VerifyState {
     //effect afterward (tryLogIn() -> init2FA()) - here the code IS the 2FA factor itself, so re-running
     //init2FA() after a successful match would just show the same GUI again and strand the player. Only
     //initDoubleVer() (an unrelated secondary-password step) still applies.
+    //
+    //SECURITY: a recovery code must NEVER be accepted as a substitute for the PASSWORD on a
+    //PASSWORD_AND_AUTH_APP account - it only ever stands in for the app/TOTP factor. The command-dispatch
+    //gate in handleCommand() lets "recoverycode" through at ANY point while a login GUI is showing,
+    //including the very first (password) GUI, before any password has been checked - so this method itself
+    //must verify the password step already happened, or a leaked/guessed single recovery code would let an
+    //attacker skip the password entirely on a two-factor account. this.gui is only ever the 2FA
+    //(LimboAuthBuilder) GUI for such an account after init2FA() - which is only ever reached via
+    //tryLogIn(), itself only ever reached after a correct password (or a fresh registration) - so "we are
+    //currently showing the 2FA GUI" is exactly "the password step already succeeded". An AUTH_APP-only
+    //account has no password to bypass in the first place, so this check doesn't apply to it.
     private void handleRecoveryCodeCommand(String[] args) {
         if (this.data == null || args.length != 1) {
             this.sendMessage(Messages.getWithPrefix("recovery-code-invalid-input"));
@@ -675,6 +686,11 @@ public final class LoginState implements VerifyState {
         var authSettings = this.data.getLoginParams().getAuthSettings();
         if (authSettings != AuthSetting.AUTH_APP && authSettings != AuthSetting.PASSWORD_AND_AUTH_APP) {
             this.sendMessage(Messages.getWithPrefix("recovery-code-not-applicable"));
+            return;
+        }
+
+        if (authSettings == AuthSetting.PASSWORD_AND_AUTH_APP && !(this.gui instanceof LimboAuthBuilder)) {
+            this.sendMessage(Messages.getWithPrefix("recovery-code-password-required"));
             return;
         }
 

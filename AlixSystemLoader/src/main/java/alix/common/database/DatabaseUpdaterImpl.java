@@ -679,9 +679,13 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
+    //Keyed by identity.identity() (not a plain query()) so this can never interleave with
+    //commitTokenAndEmail() for the SAME player - both now go through that player's own execution chain,
+    //so a 2FA reset and an unrelated "/account verifyemail" completing at nearly the same moment can no
+    //longer race and leave alix_users2.email encrypted under a token that isn't the one actually committed.
     @Override
-    public void updateEmailByName(String name, String email) {
-        this.query(connection -> {
+    public void updateEmailByName(Identity identity, String name, String email) {
+        this.queryAsync(identity.identity(), connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_EMAIL_BY_NAME)) {
                 ps.setString(1, email);
                 ps.setString(2, name);
