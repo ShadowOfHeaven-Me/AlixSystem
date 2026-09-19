@@ -8,6 +8,7 @@ import alix.common.antibot.firewall.FireWallManager;
 import alix.common.commands.file.CommandsFileManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.AllowListFileManager;
@@ -48,6 +49,7 @@ public final class AlixSystemCommand {
 
     private static final boolean devMode = false;
     private static final String passwordResetMessage = Messages.get("password-reset-forcefully");
+    private static final String twoFactorResetMessage = Messages.get("auth-app-reset-forcefully");
     private static final AlixMessage playerDataNotFound = Messages.getAsObject("player-data-not-found");
 
     private static final SuggestionProvider<CommandSource> USERNAME_SUGGESTIONS = (context, builder) -> {
@@ -334,6 +336,59 @@ public final class AlixSystemCommand {
                         })
         );
 
+        //Emergency recovery for a player who lost BOTH their Authenticator device AND every recovery code -
+        //see AdminAlixCommands's Spigot-side "r2fa"/"reset2fa" case for the full reasoning (this mirrors it
+        //exactly, just registered through Brigadier instead of a raw switch). Deliberately keeps the
+        //password untouched, only drops the app requirement back to PASSWORD-only.
+        addSubcommand(root, Arrays.asList("r2fa", "reset2fa"),
+                argument("name", StringArgumentType.word())
+                        .suggests(USERNAME_SUGGESTIONS)
+                        .executes(context -> {
+                            String target = StringArgumentType.getString(context, "name");
+                            CommandSource sender = context.getSource();
+                            PersistentUserData data = UserFileManager.get(target);
+                            if (data == null) {
+                                sendMessage(sender, playerDataNotFound.format(target));
+                                return SINGLE_SUCCESS;
+                            }
+
+                            AuthSetting authSettings = data.getLoginParams().getAuthSettings();
+
+                            if (authSettings == AuthSetting.AUTH_APP) {
+                                //No password at all to fall back on for an app-only account - /as
+                                //resetpassword already both sets a fresh password AND drops AuthSettings
+                                //back to PASSWORD, so it fully covers this case on its own.
+                                sendMessage(sender, Messages.get("as-reset2fa-app-only", target));
+                                return SINGLE_SUCCESS;
+                            }
+
+                            if (authSettings != AuthSetting.PASSWORD_AND_AUTH_APP) {
+                                sendMessage(sender, Messages.get("as-reset2fa-not-enabled", target));
+                                return SINGLE_SUCCESS;
+                            }
+
+                            data.getLoginParams().setAuthSettings(AuthSetting.PASSWORD);
+                            data.getLoginParams().setHasProvenAuthAccess(false);
+
+                            //Also invalidates the old secret/recovery codes - if the app requirement is
+                            //later re-enabled, a device or codes that may have caused this lockout in the
+                            //first place (theft, not just loss) can't still be used to satisfy it.
+                            try {
+                                data.regenerateAuthToken();
+                            } catch (Exception e) {
+                                AlixCommonUtils.logException(e);
+                            }
+                            data.regenerateRecoveryCodes();
+
+                            Main.PLUGIN.getServer().getPlayer(data.getName()).ifPresent(p ->
+                                    p.disconnect(MessageWrapper.parseLegacy(twoFactorResetMessage))
+                            );
+
+                            sendMessage(sender, Messages.get("as-reset2fa-success", target));
+                            return SINGLE_SUCCESS;
+                        })
+        );
+
         // Subcommand: User data ("user")
         addSubcommand(root, Arrays.asList("user"),
                 argument("name", StringArgumentType.word())
@@ -616,6 +671,7 @@ public final class AlixSystemCommand {
         sendMessage(sender, Messages.get("admin-commands-user"));
         sendMessage(sender, Messages.get("admin-commands-resetpassword"));
         sendMessage(sender, Messages.get("admin-commands-resetpassword-type"));
+        sendMessage(sender, Messages.get("admin-commands-reset2fa"));
         sendMessage(sender, Messages.get("admin-commands-changepassword"));
         sendMessage(sender, Messages.get("admin-commands-fullyremovedata"));
         sendMessage(sender, Messages.get("admin-commands-resetstatus"));
