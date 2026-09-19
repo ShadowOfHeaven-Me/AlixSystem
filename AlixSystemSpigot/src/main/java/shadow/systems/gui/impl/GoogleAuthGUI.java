@@ -126,15 +126,23 @@ public final class GoogleAuthGUI extends AlixGUI {
                     user.getData().regenerateAuthToken();
                 } catch (Exception e) {
                     AlixCommonUtils.logException(e);
-                    player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-failed-chat")));
+                    //Player#sendMessage() isn't guaranteed thread-safe off the main thread - AlixScheduler.sync()
+                    //here, same as the "View Recovery Codes" handler below and Velocity's port of this handler.
+                    AlixScheduler.sync(() -> player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-failed-chat"))));
                     return;
                 }
 
                 String[] codes = user.getData().regenerateRecoveryCodes();
 
-                player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat")));
-                sendRecoveryCodes(player, codes);
+                AlixScheduler.sync(() -> {
+                    player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat")));
+                    sendRecoveryCodes(player, codes);
+                });
 
+                //showQRCode() is already designed to be called from an async context, same as the
+                //pre-existing "Show QR Code" button above - it hops back to the main thread internally only
+                //where it actually needs to (the teleport), so it's left running on THIS async thread rather
+                //than nested inside the sync() block above.
                 GoogleAuth.showQRCode(user, player);
             });
         });

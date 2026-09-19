@@ -25,8 +25,8 @@ public final class UserTokensFileManager {
     //method: PersistentUserData#regenerateAuthToken() needs the new token committed to the database in
     //the SAME transaction as the player's re-encrypted email (see DatabaseUpdater#commitTokenAndEmail()),
     //so that a linked website's own periodic sync can never read the row in a split state (new token,
-    //still-old-token-encrypted email, or vice versa) - a plain overwriteUserToken() call from here,
-    //separate from the email write, couldn't guarantee that.
+    //still-old-token-encrypted email, or vice versa) - a plain token-only write from here, separate from
+    //the email write, couldn't guarantee that.
     public static void commitTokenLocally(Identity identity, String newToken) {
         tokenMap().put(identity.tokenKey(), newToken);
         save();

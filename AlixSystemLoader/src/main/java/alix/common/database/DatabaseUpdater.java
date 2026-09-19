@@ -62,13 +62,9 @@ public interface DatabaseUpdater {
 
     void saveUserToken(Identity identity, String token);
 
-    //Unlike saveUserToken() above, overwrites an already-existing token - see UPSERT_TOKEN_SQL's docblock
-    //in QueryConstants for why this must stay a separate, explicit method rather than a flag on the other one.
-    void overwriteUserToken(Identity identity, String token);
-
     //Atomic token+email commit for a 2FA reset - see DatabaseUpdaterImpl's implementation for why a plain
-    //overwriteUserToken() + updateEmailByName() pair isn't good enough here. savableEmail may be null (no
-    //email to update).
+    //UPSERT_TOKEN_SQL upsert followed by a separate updateEmailByName() call isn't good enough here.
+    //savableEmail may be null (no email to update).
     void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail);
 
     void saveRecoveryCodes(Identity identity, String joinedCodes);

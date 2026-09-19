@@ -81,11 +81,6 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
-    public void overwriteUserToken(Identity identity, String token) {
-
-    }
-
-    @Override
     public void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail) {
 
     }

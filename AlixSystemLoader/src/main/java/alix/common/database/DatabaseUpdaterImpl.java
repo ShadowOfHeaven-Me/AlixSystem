@@ -113,18 +113,6 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
-    @Override
-    public void overwriteUserToken(Identity identity, String token) {
-        UUID tokenUuid = identity.tokenKey().key();
-        this.queryAsync(identity.identity(), connection -> {
-            try (PreparedStatement ps = connection.prepareStatement(UPSERT_TOKEN_SQL(this.getType()))) {
-                setUuid(ps, 1, tokenUuid);
-                ps.setString(2, token);
-                ps.executeUpdate();
-            }
-        });
-    }
-
     //Commits a regenerated 2FA token and its accompanying re-encrypted email (savableEmail may be null -
     //an account with no email set yet just skips that half) as ONE database transaction - both writes
     //share the same connection with autocommit off, and only alix_user_tokens.token gets touched at all
