@@ -17,17 +17,17 @@ public final class UserTokensFileManager {
         return getTokenOrSupply0(identity, GoogleAuthUtils::generateSecretKey);
     }
 
-    //Unlike getTokenOrSupply() above, ALWAYS generates a fresh secret and overwrites whatever was there
-    //before (locally and in the external database) - used for an explicit 2FA reset (lost/compromised
-    //device), never for the normal lazy-create-on-first-use path. The caller (PersistentUserData) is
-    //responsible for re-encrypting anything that was keyed off the OLD token (namely the player's email)
-    //before this old value is gone for good.
-    public static String regenerateToken(Identity identity) {
-        String newToken = GoogleAuthUtils.generateSecretKey();
+    //Unlike getTokenOrSupply() above, ALWAYS overwrites whatever token was there before (locally and in the
+    //external database) with the GIVEN value - used for an explicit 2FA reset (lost/compromised device),
+    //never for the normal lazy-create-on-first-use path. Split out from generating the token (see
+    //PersistentUserData#regenerateAuthToken()) so a caller that also needs to re-encrypt something keyed
+    //off the old token (namely the player's email) can do that re-encryption FIRST, using the new value,
+    //and only commit it here once that's known to have succeeded - never leaving a token committed that
+    //something else failed to actually adopt.
+    public static void commitToken(Identity identity, String newToken) {
         tokenMap().put(identity.tokenKey(), newToken);
         save();
         database.overwriteUserToken(identity, newToken);
-        return newToken;
     }
 
     static String getTokenOrSupply0(Identity identity, Supplier<String> tokenSupplier) {

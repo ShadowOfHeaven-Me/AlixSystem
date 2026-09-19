@@ -5,6 +5,7 @@ import alix.common.data.LoginParams;
 import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.formatter.AlixFormatter;
 import org.bukkit.Bukkit;
@@ -118,7 +119,17 @@ public final class GoogleAuthGUI extends AlixGUI {
             this.resetArmed = false;
             MAP.remove(player.getUniqueId());
             AlixScheduler.async(() -> {
-                user.getData().regenerateAuthToken();
+                //regenerateAuthToken() throws if it couldn't safely re-encrypt the stored email under the
+                //new token (see its own docs) - caught here so the player gets a clear failure message
+                //instead of the reset silently doing nothing (the old token/QR code stays valid either way).
+                try {
+                    user.getData().regenerateAuthToken();
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                    player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-failed-chat")));
+                    return;
+                }
+
                 String[] codes = user.getData().regenerateRecoveryCodes();
 
                 player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat")));
@@ -131,7 +142,15 @@ public final class GoogleAuthGUI extends AlixGUI {
         items[22] = new GUIItem(viewRecoveryCodesItem, event -> {
             MAP.remove(player.getUniqueId());
             player.closeInventory();
-            user.getData().loadRecoveryCodes(codes -> AlixScheduler.sync(() -> sendRecoveryCodes(player, codes)));
+            user.getData().loadRecoveryCodes(codes -> {
+                //Covers an account that enabled 2FA before recovery codes existed at all, or one that
+                //somehow otherwise has none yet - generates them here rather than showing an empty list,
+                //since regenerateRecoveryCodes() itself is cheap (in-memory generation + a fire-and-forget
+                //DB write) and there's no good reason to make the player go reset their whole 2FA secret
+                //just to get backup codes.
+                String[] toShow = codes.length > 0 ? codes : user.getData().regenerateRecoveryCodes();
+                AlixScheduler.sync(() -> sendRecoveryCodes(player, toShow));
+            });
         });
 
         items[26] = new GUIItem(applyChangesItem, event -> changes.tryApply(user));

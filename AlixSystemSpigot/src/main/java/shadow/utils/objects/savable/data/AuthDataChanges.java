@@ -2,6 +2,9 @@ package shadow.utils.objects.savable.data;
 
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginParams;
+import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
+import alix.common.utils.formatter.AlixFormatter;
 import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
@@ -37,10 +40,34 @@ public final class AuthDataChanges {
 
     private void apply0(VerifiedUser user) {
         LoginParams params = user.getData().getLoginParams();
+        boolean wasRequired = requiresApp(params.getAuthSettings());
 
         user.writeAndFlushConstSilently(appliedChangesMessagePacket);
         //VerifiedVirtualAuthBuilder.
         params.setAuthSettings(authSetting);
+
+        //The app is newly becoming required (it wasn't a moment ago) - generate this account's first set
+        //of recovery codes right now, same as a "Reset Code" does, rather than leaving the player with
+        //none until they happen to click "Recovery Codes" or "Reset Code" separately. RecoveryCodes.generate()
+        //is cheap in-memory work and saveRecoveryCodes() is a fire-and-forget async DB write (see
+        //DatabaseUpdaterImpl), so this is safe to do directly here without offloading to another thread.
+        if (!wasRequired && requiresApp(this.authSetting)) {
+            String[] codes = user.getData().regenerateRecoveryCodes();
+            sendRecoveryCodes(user, codes);
+        }
+    }
+
+    private static boolean requiresApp(AuthSetting setting) {
+        return setting == AuthSetting.AUTH_APP || setting == AuthSetting.PASSWORD_AND_AUTH_APP;
+    }
+
+    private static void sendRecoveryCodes(VerifiedUser user, String[] codes) {
+        var player = user.getPlayer();
+        player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-header")));
+        for (String code : codes) {
+            player.sendMessage(MessageWrapper.parseLegacy(AlixFormatter.translateColors("&e" + code)));
+        }
+        player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-footer")));
     }
 
     public void setAuthSetting(AuthSetting authSetting) {

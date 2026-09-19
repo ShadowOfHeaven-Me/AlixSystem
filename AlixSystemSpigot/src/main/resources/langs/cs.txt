@@ -264,6 +264,7 @@ gui-google-auth-recovery-codes-chat-header: &eTvoje obnovovací kódy (každý f
 gui-google-auth-reset-token-confirm-lore: &7Tvůj současný QR kód i obnovovací -nl &7kódy okamžitě přestanou platit.
 gui-google-auth-reset-token-confirm-name: &c&lOpravdu si tím jsi jistý? Klikni znovu pro potvrzení!
 gui-google-auth-reset-token-lore: &7Kliknutím vygeneruješ úplně nový QR kód -nl &7a zneplatníš ten starý, spolu s tvými -nl &7současnými obnovovacími kódy. -nl &7&oPoužij, pokud jsi přišel o zařízení nebo -nl &7&omáš podezření, že tvůj kód zná někdo jiný.
+gui-google-auth-reset-token-failed-chat: &cPři resetu kódu se něco pokazilo - kód NEBYL změněn. Zkus to prosím znovu.
 gui-google-auth-reset-token-name: &cResetovat kód
 gui-google-auth-reset-token-success-chat: &aTvůj kód pro dvoufázové ověření byl resetován! Naskenuj nový QR kód.
 gui-google-auth-show-qr-code-lore: &7Kliknutím se zobrazí QR kód, který můžeš naskenovat -nl &7svojí aplikací Google Authenticator, čímž -nl &7propojíš svůj účet na tomto serveru s aplikací. -nl &f&nKód uvidíš pouze ty.

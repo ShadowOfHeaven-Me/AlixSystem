@@ -70,6 +70,11 @@ public interface DatabaseUpdater {
 
     void loadRecoveryCodes(Identity identity, Consumer<String> consumer);
 
+    //Atomic read-check-write, unlike a caller doing loadRecoveryCodes() then saveRecoveryCodes() itself -
+    //see DatabaseUpdaterImpl's implementation for why that split would race a concurrent attempt for the
+    //same player.
+    void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback);
+
     void loadUser(String name, Consumer<PersistentUserData> consumer);
 
     void updateAuthSettingsByName(String name, AuthSetting authSettings);

@@ -17,6 +17,7 @@ import alix.common.data.security.password.Password;
 import alix.common.data.settings.ServerSettingsManager;
 import alix.common.data.settings.Setting;
 import alix.common.database.DatabaseUpdater;
+import alix.common.login.auth.GoogleAuthUtils;
 import alix.common.login.auth.RecoveryCodes;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
@@ -195,17 +196,39 @@ public final class PersistentUserData implements AlixUserData {
     //codes are only meant as a backup for the secret being replaced here) call
     //regenerateRecoveryCodes() themselves and get the plaintext codes back directly, instead of this method
     //silently doing it internally with no way to hand the new codes back without an extra async DB read.
+    //
+    //Re-encrypts BEFORE committing the new token (rather than after, as an earlier version of this method
+    //did): Email.fromEmail() is pure computation (PBKDF2+AES, no I/O) and can only realistically fail on a
+    //genuine crypto/JVM error, not a transient one - if it does, throwing here and leaving the OLD token and
+    //OLD (still-matching) encrypted email both untouched is strictly safer than committing a new token
+    //first and then discovering the email can't be re-encrypted to match it.
+    //
+    //NOT fully solved by this reordering: UserTokensFileManager.commitToken() and
+    //database.updateEmailByName() below can each still fail on their own (e.g. the database being
+    //unreachable) without either being detectable here - DatabaseUpdaterImpl's DB calls are all wrapped in
+    //AutoErrorReport, which deliberately logs and swallows every failure rather than propagating it, the
+    //same fire-and-log reliability model every OTHER write in this codebase already has (setPassword(),
+    //updateAuthSettingsByName(), etc.) - this method doesn't weaken that, but doesn't strengthen it either.
+    //A DB outage at the exact moment of a reset can still leave the stored email encrypted under a token
+    //that's no longer the active one; there is no cheap way to detect or roll that back from here.
     public String regenerateAuthToken() {
+        String newToken = GoogleAuthUtils.generateSecretKey();
         Email oldEmail = this.email;
-        String newToken = UserTokensFileManager.regenerateToken(this.identity);
+        Email newEmail = oldEmail;
 
         if (oldEmail != null) {
             try {
-                this.email = Email.fromEmail(oldEmail.email(), newToken);
-                database.updateEmailByName(this.name, this.emailSavable());
+                newEmail = Email.fromEmail(oldEmail.email(), newToken);
             } catch (Exception e) {
-                AlixCommonUtils.logException(e);
+                throw new RuntimeException("Failed to re-encrypt the stored email under a freshly generated 2FA token - aborting the reset so the old token/email pairing is left intact", e);
             }
+        }
+
+        UserTokensFileManager.commitToken(this.identity, newToken);
+        this.email = newEmail;
+
+        if (oldEmail != null) {
+            database.updateEmailByName(this.name, this.emailSavable());
         }
 
         return newToken;
@@ -223,33 +246,15 @@ public final class PersistentUserData implements AlixUserData {
 
     //Checks a player-submitted recovery code against this account's stored codes and, if it matches,
     //consumes it (single-use, same as Azuriom's own native recovery codes) before calling back with the
-    //result. The callback runs on whatever thread the database query completes on (see DatabaseUpdater) -
-    //callers touching connection/session state must hop back onto their own event loop first, same
-    //requirement as EmailHandler's async callbacks.
+    //result. Delegates the whole read-check-write to the database layer as ONE atomic operation (see
+    //DatabaseUpdaterImpl#tryConsumeRecoveryCode()) rather than doing a separate load then save here -
+    //otherwise a second concurrent attempt for the same player (e.g. a laggy client double-sending
+    //"/recoverycode <code>") could read the same pre-write code list and consume it twice. The callback
+    //runs on whatever thread the database query completes on (see DatabaseUpdater) - callers touching
+    //connection/session state must hop back onto their own event loop first, same requirement as
+    //EmailHandler's async callbacks.
     public void tryConsumeRecoveryCode(String typedCode, Consumer<Boolean> callback) {
-        database.loadRecoveryCodes(this.identity, joined -> {
-            String[] codes = RecoveryCodes.split(joined);
-            int matchIndex = -1;
-
-            for (int i = 0; i < codes.length; i++) {
-                if (RecoveryCodes.matches(codes[i], typedCode)) {
-                    matchIndex = i;
-                    break;
-                }
-            }
-
-            if (matchIndex < 0) {
-                callback.accept(false);
-                return;
-            }
-
-            String[] remaining = new String[codes.length - 1];
-            System.arraycopy(codes, 0, remaining, 0, matchIndex);
-            System.arraycopy(codes, matchIndex + 1, remaining, matchIndex, codes.length - matchIndex - 1);
-            database.saveRecoveryCodes(this.identity, RecoveryCodes.join(remaining));
-
-            callback.accept(true);
-        });
+        database.tryConsumeRecoveryCode(this.identity, typedCode, callback);
     }
 
     public void saveToDatabase() {

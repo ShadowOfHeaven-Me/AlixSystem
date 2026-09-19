@@ -96,6 +96,11 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
+    public void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback) {
+        callback.accept(false);
+    }
+
+    @Override
     public void loadUser(String name, Consumer<PersistentUserData> consumer) {
         throw new AlixError("loadUser called on NOOP db impl");
     }

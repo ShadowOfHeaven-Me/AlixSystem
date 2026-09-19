@@ -10,6 +10,7 @@ import alix.common.data.security.email.Email;
 import alix.common.data.security.password.Password;
 import alix.common.database.connect.DatabaseConnector;
 import alix.common.database.connect.DatabaseType;
+import alix.common.login.auth.RecoveryCodes;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.keys.secret.MapSecretKey;
@@ -139,7 +140,12 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     @Override
     public void loadRecoveryCodes(Identity identity, Consumer<String> consumer) {
         UUID tokenUuid = identity.tokenKey().key();
-        this.query(connection -> {
+        //queryAsync (not query!) - this is called directly from GUI click handlers/the main login thread,
+        //and query() blocks the calling thread on a real DB round-trip; queryAsync offloads it to a
+        //background thread, same as every write method above. Also chains onto this player's own
+        //execution queue (keyed by identity.identity(), same key saveRecoveryCodes()/tryConsumeRecoveryCode()
+        //below use), so a read here can never interleave with a concurrent write for the SAME player.
+        this.queryAsync(identity.identity(), connection -> {
             try (PreparedStatement ps = connection.prepareStatement(LOAD_RECOVERY_CODES_SQL)) {
                 setUuid(ps, 1, tokenUuid);
 
@@ -147,6 +153,53 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                     consumer.accept(rs.next() ? rs.getString(1) : null);
                 }
             }
+        });
+    }
+
+    //Reads, checks and (on a match) rewrites the recovery-codes row all within ONE queryAsync task (one
+    //connection, one entry in this player's execution chain) - unlike doing loadRecoveryCodes() then a
+    //separate saveRecoveryCodes() call from the caller, this can't be interleaved by a second concurrent
+    //attempt for the same player (e.g. a laggy client double-sending "/recoverycode <code>"): the second
+    //attempt is queued behind this ENTIRE read-check-write, not just behind the read half of it, so it
+    //always sees this attempt's result (code removed if consumed) rather than racing it.
+    @Override
+    public void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            String joined;
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_RECOVERY_CODES_SQL)) {
+                setUuid(ps, 1, tokenUuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    joined = rs.next() ? rs.getString(1) : null;
+                }
+            }
+
+            String[] codes = RecoveryCodes.split(joined);
+            int matchIndex = -1;
+
+            for (int i = 0; i < codes.length; i++) {
+                if (RecoveryCodes.matches(codes[i], typedCode)) {
+                    matchIndex = i;
+                    break;
+                }
+            }
+
+            if (matchIndex < 0) {
+                callback.accept(false);
+                return;
+            }
+
+            String[] remaining = new String[codes.length - 1];
+            System.arraycopy(codes, 0, remaining, 0, matchIndex);
+            System.arraycopy(codes, matchIndex + 1, remaining, matchIndex, codes.length - matchIndex - 1);
+
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_RECOVERY_CODES_SQL)) {
+                ps.setString(1, RecoveryCodes.join(remaining));
+                setUuid(ps, 2, tokenUuid);
+                ps.executeUpdate();
+            }
+
+            callback.accept(true);
         });
     }
 

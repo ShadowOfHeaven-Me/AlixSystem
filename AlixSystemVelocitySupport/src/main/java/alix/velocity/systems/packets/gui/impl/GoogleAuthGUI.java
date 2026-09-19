@@ -10,6 +10,7 @@ import alix.common.packets.inventory.click.AlixClickType;
 import alix.common.packets.inventory.click.ContainerClickWrapper;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.image.ImageGenerator;
@@ -101,21 +102,44 @@ public final class GoogleAuthGUI extends AlixGUI {
             }
 
             this.resetArmed = false;
-            this.user.getChannel().eventLoop().execute(() -> {
-                this.user.getData().regenerateAuthToken();
+            //regenerateAuthToken()/regenerateRecoveryCodes() do real blocking work (re-encrypting the
+            //email is a deliberately slow PBKDF2 KDF, and UserTokensFileManager commits synchronously
+            //rewrite the local tokens file to disk) - AlixScheduler.async() off the event loop first,
+            //same as the Spigot GUI's equivalent handler, then hop back for anything touching the
+            //connection/GUI (showQrCode() and packetevents' User#sendMessage() both need to run there).
+            AlixScheduler.async(() -> {
+                //regenerateAuthToken() throws if it couldn't safely re-encrypt the stored email under the
+                //new token (see its own docs) - caught here so the player gets a clear failure message
+                //instead of the reset silently doing nothing (the old token/QR code stays valid either way).
+                try {
+                    this.user.getData().regenerateAuthToken();
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                    this.user.getChannel().eventLoop().execute(() ->
+                            this.user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-reset-token-failed-chat")));
+                    return;
+                }
+
                 String[] codes = this.user.getData().regenerateRecoveryCodes();
 
-                this.user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat"));
-                sendRecoveryCodes(this.user, codes);
+                this.user.getChannel().eventLoop().execute(() -> {
+                    this.user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat"));
+                    sendRecoveryCodes(this.user, codes);
 
-                this.showQrCode();
+                    this.showQrCode();
+                });
             });
         });
 
         GUIItem viewRecoveryCodesGuiItem = new GUIItem(viewRecoveryCodesItem, event -> {
             this.user.closeInventory();
-            this.user.getData().loadRecoveryCodes(codes ->
-                    this.user.getChannel().eventLoop().execute(() -> sendRecoveryCodes(this.user, codes)));
+            this.user.getData().loadRecoveryCodes(codes -> {
+                //Covers an account that enabled 2FA before recovery codes existed at all, or one that
+                //somehow otherwise has none yet - generates them here rather than showing an empty list,
+                //see the Spigot GoogleAuthGUI's equivalent handler for the full reasoning.
+                String[] toShow = codes.length > 0 ? codes : this.user.getData().regenerateRecoveryCodes();
+                this.user.getChannel().eventLoop().execute(() -> sendRecoveryCodes(this.user, toShow));
+            });
         });
 
         int[] authTypeSlots = menu.getSlotsForInternal("auth-type");
