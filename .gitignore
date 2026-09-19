@@ -2,4 +2,11 @@
 /out/
 gradle.properties
 
+# Local Gradle tooling caches (daemon/build/configuration-cache state) - not build outputs, purely
+# derived/regenerable local state that shouldn't be tracked.
+.gradle/
+**/.gradle/
+build/reports/configuration-cache/
+build/reports/problems/
+
 #AlixSystemVelocitySupport
