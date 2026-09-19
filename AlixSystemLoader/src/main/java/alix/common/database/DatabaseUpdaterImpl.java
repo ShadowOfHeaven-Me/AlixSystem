@@ -56,6 +56,13 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 } catch (SQLException ignored) {
                     //older engine without "ADD COLUMN IF NOT EXISTS" support and the column already exists
                 }
+
+                //same reasoning as fingerprint above, for the 'recovery_codes' column on alix_user_tokens
+                try {
+                    st.execute(ADD_RECOVERY_CODES_COLUMN_SQL(this.getType()));
+                } catch (SQLException ignored) {
+                    //older engine without "ADD COLUMN IF NOT EXISTS" support and the column already exists
+                }
             }
         });
     }
@@ -101,6 +108,44 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 setUuid(ps, 1, tokenUuid);
                 ps.setString(2, token);
                 ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public void overwriteUserToken(Identity identity, String token) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(UPSERT_TOKEN_SQL(this.getType()))) {
+                setUuid(ps, 1, tokenUuid);
+                ps.setString(2, token);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public void saveRecoveryCodes(Identity identity, String joinedCodes) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_RECOVERY_CODES_SQL)) {
+                ps.setString(1, joinedCodes);
+                setUuid(ps, 2, tokenUuid);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public void loadRecoveryCodes(Identity identity, Consumer<String> consumer) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.query(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_RECOVERY_CODES_SQL)) {
+                setUuid(ps, 1, tokenUuid);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    consumer.accept(rs.next() ? rs.getString(1) : null);
+                }
             }
         });
     }

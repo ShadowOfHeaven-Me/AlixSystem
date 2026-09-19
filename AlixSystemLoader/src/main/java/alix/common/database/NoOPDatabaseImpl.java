@@ -81,6 +81,21 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
+    public void overwriteUserToken(Identity identity, String token) {
+
+    }
+
+    @Override
+    public void saveRecoveryCodes(Identity identity, String joinedCodes) {
+
+    }
+
+    @Override
+    public void loadRecoveryCodes(Identity identity, Consumer<String> consumer) {
+        consumer.accept(null);
+    }
+
+    @Override
     public void loadUser(String name, Consumer<PersistentUserData> consumer) {
         throw new AlixError("loadUser called on NOOP db impl");
     }

@@ -72,10 +72,20 @@ tasks.shadowJar {
     destinationDirectory = file(project.findProperty("build-dir") as String)
     archiveBaseName.set("AlixSystem")
     archiveClassifier.set("")//w pizde z z tym "-all" suffixem
-    //mergeServiceFiles() below only gets a chance to merge a META-INF/services/* file (e.g. java.sql.Driver,
-    //registering both mariadb-java-client's and postgresql's JDBC drivers) if a duplicate copy of it even
-    //reaches the transformer - the task's own default DuplicatesStrategy (EXCLUDE) silently drops every
-    //duplicate before that, which would leave only one of the two drivers registered via ServiceLoader.
+    //Kept as the task-level DEFAULT only for the sake of mergeServiceFiles() below: without
+    //DuplicatesStrategy.INCLUDE, Shadow's own duplicate-filtering drops every duplicate copy of a path
+    //before the ServiceFileTransformer that mergeServiceFiles() installs ever gets to see it - confirmed by
+    //actually building both ways and inspecting META-INF/services/java.sql.Driver in the output jar: with
+    //EXCLUDE, only mariadb-java-client's driver entry survived and postgresql's was silently lost, breaking
+    //DriverManager's automatic PostgreSQL support even though the driver's classes were still shaded in.
+    //INCLUDE is overridden back to the default (EXCLUDE, "first one wins") for every OTHER path below via
+    //filesMatching(), since applying it jar-wide has its own bug: packetevents-spigot is shaded in further
+    //down (relocated, so its CLASSES don't collide with the standalone packetevents plugin players also
+    //run), but its own bundled plugin.yml (declaring name: packetevents) is NOT relocated - it lands at the
+    //exact same "plugin.yml" path as this plugin's own generated one. Under a jar-wide INCLUDE, both copies
+    //were written into the final jar back-to-back, and Paper's ModernPluginLoadingStrategy read that as
+    //this jar ALSO claiming to be "packetevents", logging "Ambiguous plugin name 'packetevents'" against
+    //the real standalone packetevents jar - also confirmed by building and inspecting the jar directly.
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
     val prefix = "alix.libs"
     var list = listOf(
@@ -90,6 +100,14 @@ tasks.shadowJar {
         relocate(s, "$prefix.$s")
     }
     mergeServiceFiles()
+
+    //Narrows the task-level INCLUDE (see the comment on duplicatesStrategy above) back down to ONLY
+    //META-INF/services/* - every other duplicate path (plugin.yml being the concrete case that matters)
+    //falls back to EXCLUDE ("first one wins") instead.
+    eachFile {
+        if (!this.path.startsWith("META-INF/services/"))
+            this.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 
     /*relocate("io.github.retrooper.packetevents", "$prefix.io.github.retrooper.packetevents")
     relocate("com.github.retrooper.packetevents", "$prefix.com.github.retrooper.packetevents")

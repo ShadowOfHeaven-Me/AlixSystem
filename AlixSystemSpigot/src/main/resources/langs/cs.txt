@@ -168,6 +168,11 @@ email-recovery-no-email: &cNemáš nastavený obnovovací e-mail!
 email-recovery-reminder: &7Svůj účet můžeš obnovit pomocí /recovery {0}
 email-recovery-subject: Kód pro obnovení účtu
 email-recovery-success: &aObnovení úspěšné! Přihlašuji tě...
+recovery-code-hint: &7Ztratil jsi aplikaci pro dvoufázové ověření? Napiš &f/recoverycode <kód>&7 pro přihlášení pomocí záložního kódu.
+recovery-code-invalid: &cNeplatný nebo už použitý obnovovací kód!
+recovery-code-invalid-input: &cPoužití: /recoverycode <kód>
+recovery-code-not-applicable: &cTvůj účet nepoužívá ověřovací aplikaci, tady tedy není co obnovovat.
+recovery-code-success: &aObnovovací kód přijat! Přihlašuji tě...
 error-player-never-joined: &cCHYBA: Hráč {0} se na tento server ještě nikdy nepřipojil!
 feed-self: Byl jsi nakrmen!
 firewall-exhausted-logs: Vypadá to, že je tento server právě napadán, dokud se situace neuklidní, budou zprávy z firewallu dočasně vypnuty
@@ -254,8 +259,17 @@ gui-google-auth-config-auth-name: &aPouze dvoufázové ověření
 gui-google-auth-config-password-lore: &7Budeš muset projít -nl &7běžným ověřením heslem, -nl &7nastavitelným v nabídce &aHesla
 gui-google-auth-config-password-name: &aPouze heslo
 gui-google-auth-save-changes: &aUložit změny
+gui-google-auth-recovery-codes-chat-footer: &7Ulož si je na bezpečné místo. Pokud někdy přijdeš o zařízení, -nl &7použij jeden z nich místo 6místného kódu příkazem &f/recoverycode <kód>&7.
+gui-google-auth-recovery-codes-chat-header: &eTvoje obnovovací kódy (každý funguje jen jednou):
+gui-google-auth-reset-token-confirm-lore: &7Tvůj současný QR kód i obnovovací -nl &7kódy okamžitě přestanou platit.
+gui-google-auth-reset-token-confirm-name: &c&lOpravdu si tím jsi jistý? Klikni znovu pro potvrzení!
+gui-google-auth-reset-token-lore: &7Kliknutím vygeneruješ úplně nový QR kód -nl &7a zneplatníš ten starý, spolu s tvými -nl &7současnými obnovovacími kódy. -nl &7&oPoužij, pokud jsi přišel o zařízení nebo -nl &7&omáš podezření, že tvůj kód zná někdo jiný.
+gui-google-auth-reset-token-name: &cResetovat kód
+gui-google-auth-reset-token-success-chat: &aTvůj kód pro dvoufázové ověření byl resetován! Naskenuj nový QR kód.
 gui-google-auth-show-qr-code-lore: &7Kliknutím se zobrazí QR kód, který můžeš naskenovat -nl &7svojí aplikací Google Authenticator, čímž -nl &7propojíš svůj účet na tomto serveru s aplikací. -nl &f&nKód uvidíš pouze ty.
 gui-google-auth-show-qr-code-name: &aZobrazit QR kód
+gui-google-auth-view-recovery-codes-lore: &7Kliknutím zobrazíš svoje záložní kódy - jeden -nl &7z nich použij místo 6místného kódu, pokud -nl &7někdy přijdeš o zařízení. -nl &7&oKaždý kód funguje jen jednou.
+gui-google-auth-view-recovery-codes-name: &aObnovovací kódy
 gui-google-auth-what-is-this: &7Tato nabídka umožňuje propojit -nl &7aplikaci Google Authenticator -nl &7s tvým účtem na tomto serveru
 gui-google-auth-what-is-this-name: &eCo to je?
 gui-invalid-password: &cNeplatné heslo

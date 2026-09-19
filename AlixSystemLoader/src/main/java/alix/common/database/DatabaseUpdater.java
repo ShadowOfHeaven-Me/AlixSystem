@@ -62,6 +62,14 @@ public interface DatabaseUpdater {
 
     void saveUserToken(Identity identity, String token);
 
+    //Unlike saveUserToken() above, overwrites an already-existing token - see UPSERT_TOKEN_SQL's docblock
+    //in QueryConstants for why this must stay a separate, explicit method rather than a flag on the other one.
+    void overwriteUserToken(Identity identity, String token);
+
+    void saveRecoveryCodes(Identity identity, String joinedCodes);
+
+    void loadRecoveryCodes(Identity identity, Consumer<String> consumer);
+
     void loadUser(String name, Consumer<PersistentUserData> consumer);
 
     void updateAuthSettingsByName(String name, AuthSetting authSettings);

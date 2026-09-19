@@ -3,6 +3,7 @@ package alix.common.data;
 import alix.api.user.data.AlixUserData;
 import alix.api.user.data.PremiumStatus;
 import alix.common.AlixCommonMain;
+import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.file.AllowListFileManager;
@@ -16,6 +17,7 @@ import alix.common.data.security.password.Password;
 import alix.common.data.settings.ServerSettingsManager;
 import alix.common.data.settings.Setting;
 import alix.common.database.DatabaseUpdater;
+import alix.common.login.auth.RecoveryCodes;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.SaveUtils;
@@ -26,6 +28,7 @@ import ua.nanit.limbo.util.UUIDUtil;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public final class PersistentUserData implements AlixUserData {
 
@@ -181,6 +184,72 @@ public final class PersistentUserData implements AlixUserData {
 
     public String getToken() {
         return this.identity.getToken();
+    }
+
+    //Resets this player's Google Authenticator secret (lost/compromised device: invalidates the old QR
+    //code and issues a new one) and, in the same step, re-encrypts their stored email with the new token -
+    //this token doubles as the email's own encryption key (see readEmail()/setEmail() above), so a reset
+    //that didn't also re-encrypt would silently make the existing email undecryptable. Returns the new
+    //secret (the caller needs it to render a fresh QR code). Deliberately does NOT also touch recovery
+    //codes - callers that want those regenerated too (normally: every caller of this method, since old
+    //codes are only meant as a backup for the secret being replaced here) call
+    //regenerateRecoveryCodes() themselves and get the plaintext codes back directly, instead of this method
+    //silently doing it internally with no way to hand the new codes back without an extra async DB read.
+    public String regenerateAuthToken() {
+        Email oldEmail = this.email;
+        String newToken = UserTokensFileManager.regenerateToken(this.identity);
+
+        if (oldEmail != null) {
+            try {
+                this.email = Email.fromEmail(oldEmail.email(), newToken);
+                database.updateEmailByName(this.name, this.emailSavable());
+            } catch (Exception e) {
+                AlixCommonUtils.logException(e);
+            }
+        }
+
+        return newToken;
+    }
+
+    public String[] regenerateRecoveryCodes() {
+        String[] codes = RecoveryCodes.generate();
+        database.saveRecoveryCodes(this.identity, RecoveryCodes.join(codes));
+        return codes;
+    }
+
+    public void loadRecoveryCodes(Consumer<String[]> consumer) {
+        database.loadRecoveryCodes(this.identity, joined -> consumer.accept(RecoveryCodes.split(joined)));
+    }
+
+    //Checks a player-submitted recovery code against this account's stored codes and, if it matches,
+    //consumes it (single-use, same as Azuriom's own native recovery codes) before calling back with the
+    //result. The callback runs on whatever thread the database query completes on (see DatabaseUpdater) -
+    //callers touching connection/session state must hop back onto their own event loop first, same
+    //requirement as EmailHandler's async callbacks.
+    public void tryConsumeRecoveryCode(String typedCode, Consumer<Boolean> callback) {
+        database.loadRecoveryCodes(this.identity, joined -> {
+            String[] codes = RecoveryCodes.split(joined);
+            int matchIndex = -1;
+
+            for (int i = 0; i < codes.length; i++) {
+                if (RecoveryCodes.matches(codes[i], typedCode)) {
+                    matchIndex = i;
+                    break;
+                }
+            }
+
+            if (matchIndex < 0) {
+                callback.accept(false);
+                return;
+            }
+
+            String[] remaining = new String[codes.length - 1];
+            System.arraycopy(codes, 0, remaining, 0, matchIndex);
+            System.arraycopy(codes, matchIndex + 1, remaining, matchIndex, codes.length - matchIndex - 1);
+            database.saveRecoveryCodes(this.identity, RecoveryCodes.join(remaining));
+
+            callback.accept(true);
+        });
     }
 
     public void saveToDatabase() {

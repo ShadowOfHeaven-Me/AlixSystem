@@ -11,10 +11,13 @@
 # applying changes), so their appearance stays built-in - each just needs "internal" + "slot".
 #
 # Valid internal ids:
-#   show-qr          - generates and shows the Google Authenticator QR code
-#   auth-type         - cycles the 2FA requirement (password / authenticator app / both)
-#   apply-changes      - applies the selected changes
-#   back                - returns to the menu that opened this one
+#   show-qr              - generates and shows the Google Authenticator QR code
+#   auth-type             - cycles the 2FA requirement (password / authenticator app / both)
+#   apply-changes          - applies the selected changes
+#   back                    - returns to the menu that opened this one
+#   reset-token              - generates a brand new secret/QR code (and new recovery codes), invalidating
+#                              the old ones - click once to arm, click again to confirm
+#   view-recovery-codes        - shows the player's current backup codes in chat
 #
 # background.material / background.name - the filler item shown in every slot with no item assigned.
 #
@@ -39,6 +42,8 @@ item-order:
   - auth-type
   - apply-changes
   - back
+  - reset-token
+  - view-recovery-codes
 
 items.what-is-this.slot: default_of(10)
 items.what-is-this.head-texture: default_of("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZmMyNzEwNTI3MTllZjY0MDc5ZWU4YzE0OTg5NTEyMzhhNzRkYWM0YzI3Yjk1NjQwZGI2ZmJkZGMyZDZiNWI2ZSJ9fX0=")
@@ -59,3 +64,9 @@ items.apply-changes.internal: apply-changes
 
 items.back.slot: default_of(8)
 items.back.internal: back
+
+items.reset-token.slot: default_of(4)
+items.reset-token.internal: reset-token
+
+items.view-recovery-codes.slot: default_of(22)
+items.view-recovery-codes.internal: view-recovery-codes

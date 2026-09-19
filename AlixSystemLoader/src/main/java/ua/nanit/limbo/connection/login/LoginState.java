@@ -328,6 +328,12 @@ public final class LoginState implements VerifyState {
     }
 
     private LimboGUI newBuilder2FA() {
+        //Told once, in chat, rather than as a GUI button (unlike the email/passkey "Recover account?" item,
+        //which LimboAuthBuilder only shows when canUseAnyRecovery() - recovery codes are generated
+        //automatically alongside the token itself, see PersistentUserData#regenerateAuthToken(), so there's
+        //no equivalent "has this been set up at all" check to gate a button on without an async DB call).
+        this.sendMessage(Messages.getWithPrefix("recovery-code-hint"));
+
         return new LimboAuthBuilder(this.connection, this.data, correct -> {
             if (correct) {
                 this.logIn();
@@ -453,18 +459,29 @@ public final class LoginState implements VerifyState {
         String[] args = Arrays.copyOfRange(split, 1, split.length);
 
         //While a login GUI (anvil/PIN/bedrock/2FA/recovery) is showing, the only commands still allowed
-        //through chat are "recovery"/"recoveremail"/"recoverpasskey" (to start/continue account recovery),
-        //"terms" (to accept/decline the Terms & Conditions, since that's chat-only and has no GUI of its
-        //own) and "verifyemail" (to complete a 'require-email-in-register' registration, also chat-only) -
-        //everything else must go through the GUI itself. This is enforced once here so it applies
-        //uniformly to every command source: signed and unsigned 1.19+ command packets and legacy
-        //pre-1.19 chat-as-command alike.
+        //through chat are "recovery"/"recoveremail"/"recoverpasskey"/"recoverycode" (to start/continue
+        //account recovery), "terms" (to accept/decline the Terms & Conditions, since that's chat-only and
+        //has no GUI of its own) and "verifyemail" (to complete a 'require-email-in-register' registration,
+        //also chat-only) - everything else must go through the GUI itself. This is enforced once here so
+        //it applies uniformly to every command source: signed and unsigned 1.19+ command packets and
+        //legacy pre-1.19 chat-as-command alike.
         if (this.gui != null && !cmdName.equals("recovery") && !cmdName.equals("recoveremail")
-                && !cmdName.equals("recoverpasskey") && !cmdName.equals("terms") && !cmdName.equals("verifyemail"))
+                && !cmdName.equals("recoverpasskey") && !cmdName.equals("recoverycode")
+                && !cmdName.equals("terms") && !cmdName.equals("verifyemail"))
             return;
 
         if (cmdName.equals("recovery")) {
             this.handleRecoveryCommand(args);
+            return;
+        }
+
+        //"I lost my authenticator app/device" - a backup code takes the place of the 6-digit TOTP code
+        //specifically (see PersistentUserData#tryConsumeRecoveryCode()), not the password: unlike
+        //"recovery"/"recoveremail" above (which recover a forgotten PASSWORD), this only ever makes sense
+        //for an account that currently requires the auth app at all (AUTH_APP or PASSWORD_AND_AUTH_APP) -
+        //handleRecoveryCodeCommand() itself guards against being used otherwise.
+        if (cmdName.equals("recoverycode")) {
+            this.handleRecoveryCodeCommand(args);
             return;
         }
 
@@ -640,6 +657,37 @@ public final class LoginState implements VerifyState {
             }
             this.sendMessage(Messages.getWithPrefix("email-recovery-invalid-email"));
         }
+    }
+
+    //"/recoverycode <code>" - consumes one of this account's Google Authenticator backup codes in place of
+    //the 6-digit TOTP code, for a player who still has their password but has lost the device/app that
+    //generates it. Deliberately NOT routed through openRecovery()/tryLogIn() like the email/passkey
+    //recovery methods above: those recover a forgotten PASSWORD and still leave 2FA (a separate factor) in
+    //effect afterward (tryLogIn() -> init2FA()) - here the code IS the 2FA factor itself, so re-running
+    //init2FA() after a successful match would just show the same GUI again and strand the player. Only
+    //initDoubleVer() (an unrelated secondary-password step) still applies.
+    private void handleRecoveryCodeCommand(String[] args) {
+        if (this.data == null || args.length != 1) {
+            this.sendMessage(Messages.getWithPrefix("recovery-code-invalid-input"));
+            return;
+        }
+
+        var authSettings = this.data.getLoginParams().getAuthSettings();
+        if (authSettings != AuthSetting.AUTH_APP && authSettings != AuthSetting.PASSWORD_AND_AUTH_APP) {
+            this.sendMessage(Messages.getWithPrefix("recovery-code-not-applicable"));
+            return;
+        }
+
+        this.data.tryConsumeRecoveryCode(args[0], matched -> this.runOnEventLoop(() -> {
+            if (!matched) {
+                this.sendMessage(Messages.getWithPrefix("recovery-code-invalid"));
+                return;
+            }
+
+            this.sendMessage(Messages.getWithPrefix("recovery-code-success"));
+            if (this.initDoubleVer()) return;
+            this.logIn();
+        }));
     }
 
     //Entry point for the "Recover account?" item (LimboAnvilBuilder/LimboPinBuilder/the bedrock form) -

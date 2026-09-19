@@ -6,6 +6,7 @@ import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.list.LoopList;
+import alix.common.utils.formatter.AlixFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -25,7 +26,7 @@ import java.util.Arrays;
 public final class GoogleAuthGUI extends AlixGUI {
 
     private static final GUIItem whatIsThis, GO_BACK_GUI_ITEM;
-    private static final ItemStack showQRCodeItem, applyChangesItem;
+    private static final ItemStack showQRCodeItem, applyChangesItem, resetTokenItem, resetTokenConfirmItem, viewRecoveryCodesItem;
     private static final AuthItemType PASSWORD, AUTH, AUTH_AND_PASSWORD;
     private static final String guiTitle;
 
@@ -52,9 +53,21 @@ public final class GoogleAuthGUI extends AlixGUI {
         setLore(showQRCodeItem, loreQRCode);
 
         applyChangesItem = rename(AlixMaterials.GREEN_CONCRETE.getItemCloned(), Messages.get("gui-google-auth-apply-changes"));
+
+        resetTokenItem = setLore(rename(AlixMaterials.RED_CONCRETE.getItemCloned(), Messages.get("gui-google-auth-reset-token-name")),
+                Messages.get("gui-google-auth-reset-token-lore").split(" -nl "));
+
+        resetTokenConfirmItem = create(Material.TNT, Messages.get("gui-google-auth-reset-token-confirm-name"),
+                Messages.get("gui-google-auth-reset-token-confirm-lore").split(" -nl "));
+
+        viewRecoveryCodesItem = create(Material.PAPER, Messages.get("gui-google-auth-view-recovery-codes-name"),
+                Messages.get("gui-google-auth-view-recovery-codes-lore").split(" -nl "));
     }
 
     //private final VerifiedUser user;
+    //Armed by a first click on resetTokenItem, cleared on a second (confirming) click - a fresh instance is
+    //created per GUI open (see add() below), so this naturally resets whenever the player reopens the menu.
+    private boolean resetArmed;
 
     private GoogleAuthGUI(Player player) {
         super(Bukkit.createInventory(player, 27, MessageWrapper.parseToLegacyString(guiTitle)), player);
@@ -95,8 +108,42 @@ public final class GoogleAuthGUI extends AlixGUI {
             }
         });
 
+        items[4] = new GUIItem(resetTokenItem, event -> {
+            if (!this.resetArmed) {
+                this.resetArmed = true;
+                gui.setItem(4, resetTokenConfirmItem);
+                return;
+            }
+
+            this.resetArmed = false;
+            MAP.remove(player.getUniqueId());
+            AlixScheduler.async(() -> {
+                user.getData().regenerateAuthToken();
+                String[] codes = user.getData().regenerateRecoveryCodes();
+
+                player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat")));
+                sendRecoveryCodes(player, codes);
+
+                GoogleAuth.showQRCode(user, player);
+            });
+        });
+
+        items[22] = new GUIItem(viewRecoveryCodesItem, event -> {
+            MAP.remove(player.getUniqueId());
+            player.closeInventory();
+            user.getData().loadRecoveryCodes(codes -> AlixScheduler.sync(() -> sendRecoveryCodes(player, codes)));
+        });
+
         items[26] = new GUIItem(applyChangesItem, event -> changes.tryApply(user));
         return items;
+    }
+
+    private static void sendRecoveryCodes(Player player, String[] codes) {
+        player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-header")));
+        for (String code : codes) {
+            player.sendMessage(MessageWrapper.parseLegacy(AlixFormatter.translateColors("&e" + code)));
+        }
+        player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-footer")));
     }
 
     public static void add(Player player) {

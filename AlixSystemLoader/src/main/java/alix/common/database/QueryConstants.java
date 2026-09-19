@@ -301,7 +301,41 @@ interface QueryConstants {
             "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
             "ON CONFLICT (uuid) DO NOTHING";
 
+    //Unlike INSERT_TOKEN_* above, this DOES overwrite an existing token - used only by an explicit 2FA
+    //reset/regenerate (in-game or from a trusted external source such as a linked website), never by the
+    //normal lazy-create-on-first-use path (getTokenOrSupply()), which must never silently invalidate an
+    //already-working secret.
+    String UPSERT_TOKEN_MYSQL =
+            "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
+            "ON DUPLICATE KEY UPDATE token = VALUES(token)";
+
+    String UPSERT_TOKEN_POSTGRES_AND_SQLITE =
+            "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
+            "ON CONFLICT (uuid) DO UPDATE SET token = EXCLUDED.token";
+
     String LOAD_ALL_TOKENS = "SELECT * FROM alix_user_tokens";
+
+    //Adds the 'recovery_codes' column to a pre-existing alix_user_tokens table from before it was
+    //introduced - CREATE TABLE IF NOT EXISTS above is a no-op against such a table, same reasoning as
+    //ADD_FINGERPRINT_COLUMN_SQL. NULL (not empty string) means "no recovery codes generated yet", same
+    //convention as alix_users2.email.
+    String ADD_RECOVERY_CODES_COLUMN_MYSQL =
+            "ALTER TABLE alix_user_tokens ADD COLUMN IF NOT EXISTS recovery_codes TEXT NULL";
+
+    String ADD_RECOVERY_CODES_COLUMN_POSTGRES =
+            "ALTER TABLE alix_user_tokens ADD COLUMN IF NOT EXISTS recovery_codes TEXT NULL";
+
+    String ADD_RECOVERY_CODES_COLUMN_SQLITE =
+            "ALTER TABLE alix_user_tokens ADD COLUMN IF NOT EXISTS recovery_codes TEXT NULL";
+
+    //Comma-separated, plaintext (never hashed - same tradeoff the token/email columns already make, and
+    //necessary so a player can have them shown again later, same as Azuriom's own native 2FA recovery
+    //codes - see AlixTotp/AlixTokenCrypto in the Azuriom-side plugin for the reasoning this mirrors).
+    String UPDATE_RECOVERY_CODES_SQL =
+            "UPDATE alix_user_tokens SET recovery_codes = ? WHERE uuid = ?";
+
+    String LOAD_RECOVERY_CODES_SQL =
+            "SELECT recovery_codes FROM alix_user_tokens WHERE uuid = ?";
 
     static String CREATE_TOKENS_SQL(DatabaseType type) {
         return switch (type) {
@@ -315,6 +349,21 @@ interface QueryConstants {
         return switch (type) {
             case MYSQL -> INSERT_TOKEN_MYSQL;
             case POSTGRESQL, SQLITE -> INSERT_TOKEN_POSTGRES_AND_SQLITE;
+        };
+    }
+
+    static String UPSERT_TOKEN_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> UPSERT_TOKEN_MYSQL;
+            case POSTGRESQL, SQLITE -> UPSERT_TOKEN_POSTGRES_AND_SQLITE;
+        };
+    }
+
+    static String ADD_RECOVERY_CODES_COLUMN_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> ADD_RECOVERY_CODES_COLUMN_MYSQL;
+            case POSTGRESQL -> ADD_RECOVERY_CODES_COLUMN_POSTGRES;
+            case SQLITE -> ADD_RECOVERY_CODES_COLUMN_SQLITE;
         };
     }
 
