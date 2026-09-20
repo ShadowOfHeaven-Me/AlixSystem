@@ -1,5 +1,6 @@
 package alix.common.reflection;
 
+import alix.common.utils.other.throwable.AlixError;
 import alix.common.utils.other.throwable.AlixException;
 
 import java.lang.reflect.Field;
@@ -107,7 +108,7 @@ public final class CommonReflection {
         } catch (NoSuchFieldException ex) {
             return null;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new AlixException(e);
         }
     }
 
@@ -115,7 +116,7 @@ public final class CommonReflection {
         try {
             return Class.forName(name);
         } catch (ClassNotFoundException e) {
-            throw new ExceptionInInitializerError(e);
+            throw new AlixError(e);
         }
     }
 
@@ -127,6 +128,6 @@ public final class CommonReflection {
 
             }
         }
-        throw new ExceptionInInitializerError("Not found: " + Arrays.toString(names));
+        throw new AlixError("Not found: " + Arrays.toString(names));
     }
 }

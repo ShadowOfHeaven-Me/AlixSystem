@@ -5,7 +5,10 @@
 * Added back packet length validation
 * Fixed one vpn check provider not working correctly
 * Fixed HAProxy support not working properly
-* Added the option to 
+* Added the option to support MC port http traffic
+* Fixed errors on newer Geyser versions
+* Invalid packets now firewall for up to 30 minutes, 15s for mapped ips
+* Tuned PanicModeManager
 
 Spigot:
 * Try fix excessive chunk loading in the alix world

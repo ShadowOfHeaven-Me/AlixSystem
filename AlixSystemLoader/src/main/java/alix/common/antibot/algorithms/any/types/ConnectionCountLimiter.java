@@ -1,10 +1,8 @@
 package alix.common.antibot.algorithms.any.types;
 
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
 import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
-import alix.common.antibot.epoll.Telemetry;
-import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.utils.AlixCommonUtils;
@@ -53,7 +51,7 @@ public final class ConnectionCountLimiter {
     public static boolean onConnection(Channel channel, InetAddress ip, boolean mapped) {
         if (TOTAL.sum() >= HARD_LIMIT && !mapped) {
             LimboJoinProfiler.update(channel, ConnectionStage.TOTAL_CONNECTIONS_CNT_LIMIT_REACHED);
-            ConnectRequestAlgoImpl.close(channel, TOTAL_EXCEEDED);
+            RegisteredConnectionAlgoImpl.close(channel, TOTAL_EXCEEDED);
             PanicModeManager.activate(HARD_LIMIT + " connections exceeded!");
             return true;
         }
@@ -66,7 +64,7 @@ public final class ConnectionCountLimiter {
         if (!mapped && (sum = c.sum()) >= (maxConnections = maxConnections())) {
             if (LimboJoinProfiler.PROFILE_JOINS)
                 LimboJoinProfiler.update(channel, ConnectionStage.LOCAL_CONNECTIONS_CNT_LIMIT_REACHED, "sum=" + sum + " maxConnections=" + maxConnections);
-            ConnectRequestAlgoImpl.close(channel, ACCOUNTS_EXCEEDED);
+            RegisteredConnectionAlgoImpl.close(channel, ACCOUNTS_EXCEEDED);
             return true;
         }
 
@@ -74,11 +72,8 @@ public final class ConnectionCountLimiter {
         TOTAL.increment();
 
         channel.closeFuture().addListener(f -> {
-            if (Telemetry.ENABLED)
-                TelemetryProfiler.removeClosed(channel);
             c.decrement();
             TOTAL.decrement();
-            LimboJoinProfiler.update(channel, ConnectionStage.CLOSE_FUTURE_FINISHED);
         });
         return false;
     }

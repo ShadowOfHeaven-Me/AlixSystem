@@ -349,6 +349,12 @@ public final class LoginState implements VerifyState {
     }
 
     public void handleCommand(String rawCmd) {
+        //fix for mods automatically allowing for arbitrary register with PIN
+        if (this.gui != null) {
+            this.sendMessage("&cError - Cannot input command cuz you're using a GUI for login!");
+            return;
+        }
+
         if (rawCmd == null || rawCmd.isEmpty()) return;
         if (rawCmd.charAt(0) == '/') rawCmd = rawCmd.substring(1);
         String[] split = rawCmd.split(" ");

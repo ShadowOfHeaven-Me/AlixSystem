@@ -129,8 +129,6 @@ public final class FireWallManager {
     }
 
     static FireWallEntry add0(InetAddress ip, FireWallEntry entry, boolean loaded) {
-        AlixAtaraxia.blacklist(ip);
-
         // Static
         if (entry == FireWallEntry.BUILT_IN) {
             if (ip instanceof Inet4Address ipv4) {
@@ -141,21 +139,24 @@ public final class FireWallManager {
             return entry;
         }
 
-        if (!loaded)
+        if (!loaded) {
             AdaptiveAnomalyDetector.onFirewall();
+            AlixAtaraxia.blacklist(ip);
+        }
         // Dynamic
         FireWallEntry previous = dynamicMap.putIfAbsent(ip, entry);
+
+        // Fast Look-Up
         if (ip instanceof Inet4Address ipv4) {
             long val = Integer.toUnsignedLong(IPUtils.ipv4Value(ipv4));
             dynamicIpv4SetFastLookUp.add(val);
-
-            if (entry.timeoutAt() > 0) {
-                long timeoutIn = entry.timeoutAt() - System.currentTimeMillis();
-                if (timeoutIn > 0)
-                    AlixScheduler.runLaterAsync(() -> removeDynamic0(ip), timeoutIn, TimeUnit.MILLISECONDS);
-                else
-                    removeDynamic0(ip);
-            }
+        }
+        if (entry.timeoutAt() > 0) {
+            long timeoutIn = entry.timeoutAt() - System.currentTimeMillis();
+            if (timeoutIn > 0)
+                AlixScheduler.runLaterAsync(() -> removeDynamic0(ip), timeoutIn, TimeUnit.MILLISECONDS);
+            else
+                removeDynamic0(ip);
         }
         return previous;
     }
@@ -179,9 +180,7 @@ public final class FireWallManager {
             if (timeoutAt > 0 && System.currentTimeMillis() > timeoutAt) {
                 // Expired. Lazily remove
                 removeDynamic0(address);
-                return PanicModeManager.isBlocked(address);
-            }
-            return true;
+            } else return true;//present and not stale
         }
 
         return PanicModeManager.isBlocked(address);

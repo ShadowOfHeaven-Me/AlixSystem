@@ -20,8 +20,8 @@ public final class PanicModeManager {
         Log.warning(reason + " Activating panic mode! Only non-suspicious IPs may connect!");
 
         AlixScheduler.runLaterAsync(() -> {
-            deactivate("10 minutes have passed!");
-        }, 10, TimeUnit.MINUTES);
+            deactivate("2 minutes have passed!");
+        }, 2, TimeUnit.MINUTES);
         return true;
     }
 

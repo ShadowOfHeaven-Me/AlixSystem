@@ -1,6 +1,6 @@
 package ua.nanit.limbo.integration;
 
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.AntiVPN;
@@ -101,11 +101,11 @@ public abstract class LimboIntegration<T extends ClientConnection> {
             return;
         }
 
-        if (ConnectRequestAlgoImpl.isInvalidPort(channel, address))
-            return;
+        /*if (ConnectRequestAlgoImpl.isInvalidPort(channel, address))
+            return;*/
 
-        ConnectRequestAlgoImpl.onConnection(channel, addr);
-        AntiBotStatistics.INSTANCE.incrementJoins(addr);
+        RegisteredConnectionAlgoImpl.onConnection(channel, addr);
+        AntiBotStatistics.INSTANCE.incrementConnections(addr);
     }
 
     public void invokeChannelInit(ClientConnection connection) {

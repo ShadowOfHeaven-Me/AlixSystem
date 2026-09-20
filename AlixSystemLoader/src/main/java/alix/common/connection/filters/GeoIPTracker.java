@@ -67,9 +67,9 @@ public final class GeoIPTracker implements ConnectionFilter {
     }
 
     //added on data loading from a file
-    public static void addExisting(InetAddress ip) {
+    public static void addExisting(InetAddress ip, boolean updateAtaraxia) {
         boolean notYetMapped = 1 == EXISTING_ACCOUNTS.merge(ip, 1, (current, one) -> current + 1);
-        if (notYetMapped)
+        if (notYetMapped && updateAtaraxia)
             AlixAtaraxia.whitelist(ip);
         //map.compute(ip, (k, v) -> v == null ? 1 : v + 1);
     }

@@ -136,6 +136,7 @@ gui-google-auth-show-qr-code-lore: &7Clicking this will show a QR code you can s
 gui-google-auth-show-qr-code-name: &aShow QR Code
 gui-google-auth-what-is-this: &7This gui allows you to set up the integration -nl &7between the Google Authenticator app -nl &7and your account on this server
 gui-google-auth-what-is-this-name: &eWhat is this?
+gui-recover-account= &eRecover account?
 gui-ip-autologin-accept: &aACCEPT
 gui-ip-autologin-lore-accept: &7Accepting is usually safe, since -nl &7each IP is unique as assigned -nl &7by the ISP.
 gui-ip-autologin-lore-reject: &7Rejecting is also valid, since -nl &7even tho negligible, there still -nl &7exists a chance that someone -nl &7tries to join this server -nl &7using your nickname, and -nl &7has the same ip as your -nl &7last successful login -nl &7(for example when using a VPN, -nl &7having their dynamic IP -nl &7be provided by the same ISP or -nl &7when using the same router).

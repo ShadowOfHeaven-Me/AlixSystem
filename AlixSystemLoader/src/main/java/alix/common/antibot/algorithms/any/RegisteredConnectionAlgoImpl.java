@@ -13,9 +13,9 @@ import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.server.Log;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
-public final class ConnectRequestAlgoImpl {
+//requires Channel in EventLoop
+public final class RegisteredConnectionAlgoImpl {
 
     /*static final ChannelRegisteredListener ON_CONNECTION = ChannelRegisteredListener.of(ctx -> {
         var channel = ctx.channel();
@@ -28,8 +28,8 @@ public final class ConnectRequestAlgoImpl {
         channel.pipeline().addFirst("--alix-on-connection", ON_CONNECTION);
     }*/
 
-    public static boolean isInvalidPort(Channel channel, InetSocketAddress address) {
-        /*int minPort = 32768, maxPort = 65535;
+    /*public static boolean isInvalidPort(Channel channel, InetSocketAddress address) {
+        *//*int minPort = 32768, maxPort = 65535;
 
         var sig = TelemetryProfiler.synSignature(channel);
         OS os = null;
@@ -49,22 +49,23 @@ public final class ConnectRequestAlgoImpl {
         if (port < minPort || port > maxPort) {
             //AlixCommonMain.logWarning("Invalid port, ip=" + address.getAddress().getHostAddress() + " port=" + port + " OS= " + (os != null ? os.getReadableName() : null));
 
-            *//*if (channel.isRegistered())
+            *//**//*if (channel.isRegistered())
                 channel.close();
             else
                 channel.unsafe().closeForcibly();
 
             FireWallManager.add(address.getAddress(), AlgorithmId.I1, true);
-            return true;*//*
-        }*/
+            return true;*//**//*
+        }*//*
         return false;
-    }
+    }*/
 
     //true on disconnect
     public static boolean onConnection(Channel channel, InetAddress ip) {
         boolean mapped = GeoIPTracker.isMapped(ip);
         TimeOutAlgo.onConnection(channel, ip, mapped);
-        return ConnectionCountLimiter.onConnection(channel, ip, mapped);
+        //disabled for now
+        return false;//ConnectionCountLimiter.onConnection(channel, ip, mapped);
     }
 
     public static void onLoginStartOrStatusRequest(Channel channel, InetAddress ip) {

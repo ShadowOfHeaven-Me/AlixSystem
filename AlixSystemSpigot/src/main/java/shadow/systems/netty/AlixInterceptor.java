@@ -119,11 +119,11 @@ public final class AlixInterceptor {
 
             if (!PROXY_PROTOCOL) {
                 InetAddress address = AlixCommonUtils.getAddress(channel);
-                AntiBotStatistics.INSTANCE.incrementJoins(address);
                 if (FireWallManager.isBlocked0(address)) {
                     channel.unsafe().closeForcibly();
                     return;
                 }
+                AntiBotStatistics.INSTANCE.incrementConnections(address);
             }
 
             //always true

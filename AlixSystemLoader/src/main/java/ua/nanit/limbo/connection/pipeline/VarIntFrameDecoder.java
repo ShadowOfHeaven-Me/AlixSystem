@@ -2,7 +2,6 @@ package ua.nanit.limbo.connection.pipeline;
 
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
-import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.safety.NettySafety;
@@ -221,14 +220,15 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         }
 
         //(NanoLimbo.INTEGRATION.isProxyProtocol() ||
-        if (supportHttp && this.connection.getDecoderState() == State.HANDSHAKING
-            && NanoLimbo.INTEGRATION.isConnected(AlixCommonUtils.getAddress(this.connection.getChannel()))) {
-
+        //cannot do this \/
+        /*&& NanoLimbo.INTEGRATION.isConnected(AlixCommonUtils.getAddress(this.connection.getChannel()))*/
+        if (supportHttp && this.connection.getDecoderState() == State.HANDSHAKING) {
             if (in.readableBytes() < 4)
                 return null;
 
-            if (BufUtils.hasSequence(in, packetStart, 'G', 'E', 'T')
+            if (BufUtils.hasSequence(in, packetStart, 'G', 'E', 'T')//this is actually sent by an mc client
                 || BufUtils.hasSequence(in, packetStart, 'H', 'E', 'A', 'D')) {
+                //Log.info("Passthrough of HTTP traffic");
                 this.connection.uninjectWithBuf(this.cumulation.readerIndex(0).copy());
                 return null;
             }

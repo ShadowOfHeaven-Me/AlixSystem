@@ -5,6 +5,7 @@ public enum AlgorithmId {
     C2,
     G1,
     H2,
-    I1,
-    J1
+    //I1,
+    J1,
+    K1
 }

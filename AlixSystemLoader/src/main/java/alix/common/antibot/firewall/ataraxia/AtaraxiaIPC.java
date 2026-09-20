@@ -4,21 +4,25 @@ import alix.common.AlixCommonMain;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.GeoIPTracker;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerDomainSocketChannel;
-import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import lombok.SneakyThrows;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.util.Collection;
+import java.util.logging.Logger;
 
 import static alix.common.antibot.firewall.ataraxia.AtaraxiaProtocol.encodeJ2RMapUpdate;
 
 final class AtaraxiaIPC {
 
+    private static final Logger LOGGER = Logger.getLogger("AlixAtaraxia");
     private static final File ATARAXIA_FOLDER, SOCKET_FILE;
 
     static {
@@ -39,6 +43,10 @@ final class AtaraxiaIPC {
         });
     }
 
+    static void mapUpdate_writeAndFlush(boolean isBlacklist, boolean add, Collection<InetAddress> ips) {
+        ServerHandler.INSTANCE.writeAndFlush(encodeJ2RMapUpdate(isBlacklist, add, ips));
+    }
+
     @SneakyThrows
     static void start0() {
         SOCKET_FILE.delete();
@@ -49,15 +57,15 @@ final class AtaraxiaIPC {
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
                 .channel(EpollServerDomainSocketChannel.class)
-                .childHandler(new ChannelInitializer<EpollSocketChannel>() {
+                .childHandler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(EpollSocketChannel ch) {
+                    protected void initChannel(Channel ch) {
                         ch.pipeline().addLast(ServerHandler.INSTANCE);
                     }
                 });
 
         ChannelFuture f = b.bind(new DomainSocketAddress(SOCKET_FILE)).sync();
-        AlixCommonMain.logWarning("Java server listening on " + SOCKET_FILE);
+        LOGGER.info("Listening on " + SOCKET_FILE);
 
         f.channel().closeFuture().addListener(sex -> {
             bossGroup.shutdownGracefully();

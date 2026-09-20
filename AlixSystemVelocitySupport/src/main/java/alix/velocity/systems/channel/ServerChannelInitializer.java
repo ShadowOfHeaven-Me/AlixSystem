@@ -72,11 +72,11 @@ public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter
         Channel channel = (Channel) msg;
         if (!PROXY_PROTOCOL) {
             InetAddress address = AlixCommonUtils.getAddress(channel);
-            AntiBotStatistics.INSTANCE.incrementJoins(address);
             if (FireWallManager.isBlocked0(address)) {
                 channel.unsafe().closeForcibly();
                 return;
             }
+            AntiBotStatistics.INSTANCE.incrementConnections(address);
 
             //cuz not invoked in epoll fw
             if (isNettyFireWall && Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)

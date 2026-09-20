@@ -69,7 +69,7 @@ public final class PersistentUserData implements AlixUserData {
         this.createdAt = createdAtStr.equals(NO_VALUE) ? System.currentTimeMillis() : Long.parseLong(createdAtStr);
         this.readEmail(splitData[11]);
 
-        GeoIPTracker.addExisting(this.ip);//Add it here, as it was loaded
+        GeoIPTracker.addExisting(this.ip, false);//Add it here, as it was loaded
         UserFileManager.putData(this);
     }
 
@@ -83,7 +83,7 @@ public final class PersistentUserData implements AlixUserData {
         this.createdAt = System.currentTimeMillis();
         this.identity = Identity.newIdentity(name);
 
-        GeoIPTracker.addExisting(ip);
+        GeoIPTracker.addExisting(ip, false);
         GeoIPTracker.removeTemporary(ip);
 
         UserFileManager.putData(this);
@@ -219,7 +219,7 @@ public final class PersistentUserData implements AlixUserData {
         UserFileManager.putData(this);
 
         if (!this.ip.equals(UNKNOWN_IP)) {
-            GeoIPTracker.addExisting(this.ip);
+            GeoIPTracker.addExisting(this.ip, false);
         }
 
         if (this.premiumData.getStatus().isPremium()) {
@@ -433,7 +433,7 @@ public final class PersistentUserData implements AlixUserData {
         if (oldIp.equals(ip))
             return this;
 
-        GeoIPTracker.addExisting(ip);
+        GeoIPTracker.addExisting(ip, true);
         GeoIPTracker.removeIP(oldIp);
 
         this.ip = ip;

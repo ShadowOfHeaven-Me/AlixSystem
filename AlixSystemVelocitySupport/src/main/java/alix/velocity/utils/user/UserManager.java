@@ -47,6 +47,7 @@ public final class UserManager {
         return channel == CONNECTED_USERS.compute(username, (u, c) -> {
             if (c != null && c.isOpen()) {
                 //if same-nickname, same-ip connects
+                //still not sure about this - why do real users get this? And this logic is actually at least a bit dangerous
                 if (AlixCommonUtils.getAddress(c).equals(AlixCommonUtils.getAddress(channel))) {
                     c.close();//close the previously "open" channel
                     //since it's very likely to be the same user just actually trying to (re)connect

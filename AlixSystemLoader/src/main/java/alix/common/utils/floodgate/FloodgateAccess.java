@@ -69,7 +69,10 @@ final class FloodgateAccess {
 
     private static final class LazyLoad {
 
-        private static final Class<?> CHANNEL_WRAPPER_CLAZZ = CommonReflection.forName("org.geysermc.geyser.network.netty.ChannelWrapper");
+        //https://github.com/GeyserMC/Geyser/blob/be6749dfbb233aaf3a428afcfc5b5905a38169a4/core/src/main/java/org/geysermc/geyser/network/java/ChannelWrapper.java
+        private static final Class<?> CHANNEL_WRAPPER_CLAZZ = CommonReflection.forName(
+                "org.geysermc.geyser.network.java.ChannelWrapper",//newest version
+                "org.geysermc.geyser.network.netty.ChannelWrapper");
     }
 
     /*public static String getName(Channel channel, String name) {
