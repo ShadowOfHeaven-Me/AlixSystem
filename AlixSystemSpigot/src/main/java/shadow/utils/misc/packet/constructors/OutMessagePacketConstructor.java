@@ -37,22 +37,27 @@ public final class OutMessagePacketConstructor {
         return constructDynamic(message, false);
     }
 
+    //Were Component.text(message) - that treats the already-color-translated 'message' as flat, unparsed
+    //text, so a "&#RRGGBB" hex code ended up as literal '§x§...' characters instead of an actual color.
+    //parseLegacy() is the same hex-aware Adventure legacy parser used elsewhere (see
+    //PacketPlayOutMessage#withMessage()) - these are the central message-sending methods virtually every
+    //Spigot-side command routes through, so this fix covers the vast majority of post-login player messages.
     public static ByteBuf constructDynamic(String message, boolean actionBar) {
-        return NettyUtils.createBuffer(packetWrapper(Component.text(message), actionBar));
+        return NettyUtils.createBuffer(packetWrapper(MessageWrapper.parseLegacy(message), actionBar));
         //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 
     public static ByteBuf constructConst(String message) {
-        return constructConst(Component.text(message), false);
+        return constructConst(MessageWrapper.parseLegacy(message), false);
     }
 
     public static ByteBuf constructConst(String message, boolean actionBar) {
-        return constructConst(Component.text(message), actionBar);
+        return constructConst(MessageWrapper.parseLegacy(message), actionBar);
         //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 
     public static ByteBuf constructConst(String message, boolean actionBar, boolean direct) {
-        return constructConst(Component.text(message), actionBar, direct);
+        return constructConst(MessageWrapper.parseLegacy(message), actionBar, direct);
         //return newerConstructor ? construct_1_19(message, actionBar) : construct_old(message, actionBar);
     }
 

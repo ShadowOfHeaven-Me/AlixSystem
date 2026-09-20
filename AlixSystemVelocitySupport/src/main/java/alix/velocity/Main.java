@@ -1,6 +1,7 @@
 package alix.velocity;
 
 import alix.common.MainClass;
+import alix.common.data.security.email.WebVerificationServer;
 import alix.common.logger.velocity.VelocityLoggerAdapter;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
@@ -12,6 +13,7 @@ import alix.velocity.server.AlixVelocityLimbo;
 import alix.velocity.systems.commands.CommandManager;
 import alix.velocity.systems.events.Events;
 import alix.velocity.systems.packets.PacketEventsManager;
+import alix.velocity.systems.packets.gui.menu.MenuConfig;
 import alix.velocity.utils.AlixUtils;
 import alix.velocity.utils.file.FileManager;
 import alix.velocity.utils.user.UserManager;
@@ -63,15 +65,18 @@ public final class Main implements LoaderBootstrap {
         //AlixChannelInitInterceptor.initializeInterceptor();
 
         CommandManager.register(this.server);
+        MenuConfig.preloadAll();
         FileManager.loadFiles();
         AlixUtils.init();
         UserManager.init(this.server);
+        WebVerificationServer.startIfEnabled();
         //server.getBackendChannelInitializer();
         //VelocityServerConnection
     }
 
     @Override
     public void onDisable() {
+        WebVerificationServer.stop();
         AlixScheduler.shutdown();
         FileManager.saveFiles();
     }

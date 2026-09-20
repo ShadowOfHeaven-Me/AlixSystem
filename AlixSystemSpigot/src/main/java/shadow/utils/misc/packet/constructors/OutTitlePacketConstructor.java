@@ -1,5 +1,6 @@
 package shadow.utils.misc.packet.constructors;
 
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.netty.WrapperTransformer;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
@@ -25,9 +26,10 @@ public final class OutTitlePacketConstructor {
         return construct(titleText, subtitleText, fadeInTicks, stayTicks, fadeOutTicks, WrapperTransformer.DYNAMIC);
     }
 
+    //Were Component.text(...) - see OutMessagePacketConstructor for why that breaks hex codes.
     public static ByteBuf[] construct(String titleText, String subtitleText, int fadeInTicks, int stayTicks, int fadeOutTicks, WrapperTransformer transformer) {
-        Component title = titleText != null ? Component.text(titleText) : null;
-        Component subtitle = subtitleText != null ? Component.text(subtitleText) : null;
+        Component title = titleText != null ? MessageWrapper.parseLegacy(titleText) : null;
+        Component subtitle = subtitleText != null ? MessageWrapper.parseLegacy(subtitleText) : null;
         PacketWrapper<?> setTitle = null;
         PacketWrapper<?> setSubtitle = null;
         PacketWrapper<?> animation;

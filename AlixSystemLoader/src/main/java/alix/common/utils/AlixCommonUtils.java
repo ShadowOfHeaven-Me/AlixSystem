@@ -4,6 +4,7 @@ import alix.common.AlixCommonMain;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.premium.PremiumData;
+import alix.common.data.security.password.HibpChecker;
 import alix.common.data.security.password.Password;
 import alix.common.messages.Messages;
 import alix.common.utils.collections.RandomCharIterator;
@@ -26,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static alix.common.utils.config.ConfigParams.checkBreachedPasswords;
 import static alix.common.utils.config.ConfigParams.defaultLoginType;
 
 public final class AlixCommonUtils {
@@ -46,7 +48,8 @@ public final class AlixCommonUtils {
                 tooShortMessage = Messages.getWithPrefix("password-invalid-too-short"),
                 invalidCharacterMessage = Messages.getWithPrefix("password-invalid-character"),
                 invalidCharacterBlankMessage = Messages.getWithPrefix("password-invalid-character-blank"),
-                pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid");
+                pinTypeInvalid = Messages.getWithPrefix("gui-pin-type-invalid"),
+                passwordBreachedMessage = Messages.getWithPrefix("password-invalid-breached");
     }
 
     public static <T> void debug(T[] message, Function<T, String> formatting, char separator) {
@@ -219,11 +222,44 @@ public final class AlixCommonUtils {
         return numbersOnly.toString();
     }
 
-    public static String getPasswordInvalidityReason(String password, LoginType type) {
-        if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin
+    /**
+     * Local-only validation - never makes a network call. Use this for live, as-you-type feedback (e.g. an
+     * Anvil GUI's per-keystroke valid/invalid item spoofing), where a real HaveIBeenPwned HTTP call on every
+     * keystroke would be disastrous even off the calling thread. The actual point of commit (register/
+     * change password) always re-validates via getPasswordInvalidityReasonAsync() regardless, so nothing is
+     * lost by skipping the breach check here.
+     */
+    public static String getPasswordInvalidityReasonSync(String password, LoginType type) {
+        if (type == LoginType.PIN) //if the login type is pin, ensure the password is also a pin - HIBP has no meaningful data on bare 4-digit PINs, so it's never checked for this type
             return isPIN(password) ? null : DoNotThrow.pinTypeInvalid;
 
         return getInvalidityReason(password, false);
+    }
+
+    /**
+     * Full validation, including the (network-bound, if 'check-breached-passwords' is enabled)
+     * HaveIBeenPwned breach check - use this at the actual point of commit (register/change password).
+     * Never blocks the calling thread: callback is invoked immediately, on the calling thread, whenever the
+     * breach check isn't needed (a PIN type, an already-invalid password, or the check disabled in
+     * config.yml - the overwhelming majority of calls), and otherwise asynchronously once the HTTP call
+     * completes - see HibpChecker#isBreachedAsync.
+     */
+    public static void getPasswordInvalidityReasonAsync(String password, LoginType type, Consumer<String> callback) {
+        if (type == LoginType.PIN) {
+            callback.accept(isPIN(password) ? null : DoNotThrow.pinTypeInvalid);
+            return;
+        }
+
+        String reason = getInvalidityReason(password, false);
+        if (reason != null) {
+            callback.accept(reason);
+            return;
+        }
+
+        if (checkBreachedPasswords)
+            HibpChecker.isBreachedAsync(password, breached -> callback.accept(breached ? DoNotThrow.passwordBreachedMessage : null));
+        else
+            callback.accept(null);
     }
 
     public static boolean isPIN(String password) {

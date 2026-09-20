@@ -28,12 +28,11 @@ final class LimboCommandImpl implements LimboCommand {
     @Override
     public void encode(ByteMessage msg, Version version) {
         ServerVersion ver = version.getRetrooperVersion();
-        ByteBuf encodedNoId;
-
-        if (argNames.length == 1)
-            encodedNoId = CommandsWrapperConstructor.constructOneArg(aliases, argNames[0], WrapperTransformer.DYNAMIC_NO_ID, ver);
-        else
-            encodedNoId = CommandsWrapperConstructor.constructTwoArg(aliases, argNames[0], argNames[1], WrapperTransformer.DYNAMIC_NO_ID, ver);
+        ByteBuf encodedNoId = switch (argNames.length) {
+            case 1 -> CommandsWrapperConstructor.constructOneArg(aliases, argNames[0], WrapperTransformer.DYNAMIC_NO_ID, ver);
+            case 2 -> CommandsWrapperConstructor.constructTwoArg(aliases, argNames[0], argNames[1], WrapperTransformer.DYNAMIC_NO_ID, ver);
+            default -> CommandsWrapperConstructor.constructArgs(aliases, List.of(argNames), WrapperTransformer.DYNAMIC_NO_ID, ver);
+        };
 
         msg.writeBytes(encodedNoId, 0, encodedNoId.readableBytes());
         encodedNoId.release();
@@ -51,6 +50,10 @@ final class LimboCommandImpl implements LimboCommand {
 
     static LimboCommandImpl construct0(List<String> aliases, String arg1Name, String arg2Name) {
         return new LimboCommandImpl(aliases, arg1Name, arg2Name);
+    }
+
+    static LimboCommandImpl construct0(List<String> aliases, String arg1Name, String arg2Name, String arg3Name) {
+        return new LimboCommandImpl(aliases, arg1Name, arg2Name, arg3Name);
     }
 
     /*private static final class OneArg extends AbstractLimboCommand {

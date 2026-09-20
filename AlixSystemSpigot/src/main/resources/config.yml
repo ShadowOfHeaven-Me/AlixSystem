@@ -187,6 +187,19 @@ after-any-premium-join-commands:
 # anvil (1.14+) - The user registers/logs in using an anvil rename gui
 # pin (1.14+) - The user registers/logs in using a pin gui
 password-type: command
+#Defines whether a new/changed password is checked against the HaveIBeenPwned breached-password database
+#(https://haveibeenpwned.com/API/v3#PwnedPasswords) before being accepted, rejecting it if it's already
+#known to be publicly breached. Uses their "k-anonymity" range API: only the first 5 characters of the
+#password's SHA-1 hash are ever sent over the network - the real password, and even its full hash, never
+#leave this server. Off by default, since it adds a network round-trip (bounded to ~2 seconds, and it
+#fails open - a slow/unreachable API never blocks registration, it just skips the check for that attempt)
+#to every registration and password change while enabled. Not checked for PIN-type logins (a bare 4-digit
+#PIN has no meaningful breach data to check against).
+check-breached-passwords: false
+#The port AlixSystem's device-fingerprinting ("Device PassKey") service listens on. 0 disables the feature
+#entirely - no "Create a Device PassKey" option is shown in /account's login settings, and no passkey
+#recovery option is offered during login - since there's no port to talk to a client on.
+fingerprinting-port: 0
 #Defines whether the player should have his pin checked the moment he types the last digit, without the need of clicking the CONFIRM button
 pin-auto-confirm: true
 #Defines the background item in all guis
@@ -227,8 +240,12 @@ use-this-syntax: false
 
 #Config used for the overall set-up
 
-#(Deprecated)
-#Available: en (English) & pl (Polski) - Only used for system messages (the messages that are not customizable in the messages.txt file)
+#Selects which bundled translation the messages.txt-driven text (i.e. everything actually customizable in
+#that file) uses: "en" (English, the default - and the only one that's still a normal, freely editable
+#config file) or "cs" (Czech - a read-only, jar-bundled translation under langs/cs.txt, like Velocity's own
+#"language" option; edit messages.txt directly instead if you want to customize the English text).
+#(Deprecated) Separately, "pl" (Polski) still switches the older, hardcoded English/Polish messages that
+#were never part of messages.txt to begin with - unaffected by "en"/"cs" above, and not customizable either way.
 language: en
 #Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
 custom-join-log: true

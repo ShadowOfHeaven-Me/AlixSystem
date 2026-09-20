@@ -2,6 +2,7 @@ package shadow.systems.gui.impl;
 
 import alix.common.data.LoginType;
 import alix.common.messages.AlixMessage;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.other.throwable.AlixError;
@@ -69,7 +70,7 @@ public final class PasswordsGUI extends AlixGUI {
     private final AbstractAlixGUI originalGui;
 
     private PasswordsGUI(Player player, AbstractAlixGUI originalGui) {
-        super(Bukkit.createInventory(player, 18, guiTitle), player);
+        super(Bukkit.createInventory(player, 18, MessageWrapper.parseToLegacyString(guiTitle)), player);
         this.originalGui = originalGui;
     }
 
@@ -156,14 +157,14 @@ public final class PasswordsGUI extends AlixGUI {
         });
 
         ItemStack i5 = SAVE_CHANGES;
-        items[17] = new GUIItem(i5, event -> {
-            if (changes.tryApply(player)) {
+        items[17] = new GUIItem(i5, event -> changes.tryApply(player, success -> {
+            if (success) {
                 player.sendRawMessage(appliedChanges);
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
                 player.closeInventory();
             } else
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1, 1);//the tryApply method will provide the text feedback
-        });
+        }));
 
         return items;
     }

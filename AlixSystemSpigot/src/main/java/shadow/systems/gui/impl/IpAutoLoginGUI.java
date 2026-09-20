@@ -3,6 +3,7 @@ package shadow.systems.gui.impl;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -25,7 +26,7 @@ public final class IpAutoLoginGUI extends AlixGUI {
             messageReject = Messages.getWithPrefix("ip-autologin-reject");
 
     private IpAutoLoginGUI() {
-        super(Bukkit.createInventory(null, InventoryType.DROPPER, Messages.get("gui-title-ip-autologin")));
+        super(Bukkit.createInventory(null, InventoryType.DROPPER, MessageWrapper.parseToLegacyString(Messages.get("gui-title-ip-autologin"))));
     }
 
     @Override

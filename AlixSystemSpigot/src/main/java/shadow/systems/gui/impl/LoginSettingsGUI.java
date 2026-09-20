@@ -1,14 +1,18 @@
 package shadow.systems.gui.impl;
 
 import alix.common.data.PersistentUserData;
+import alix.common.data.fingerprinting.FingerprintGateway;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.config.ConfigParams;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import shadow.systems.gui.AbstractAlixGUI;
 import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
+import shadow.systems.login.autoin.premium.SpigotEncryption;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.users.UserManager;
@@ -22,8 +26,11 @@ public final class LoginSettingsGUI extends AlixGUI {
     private static final String loginSettingsTitle = Messages.get("gui-title-login-settings");
     private static final ItemStack
             IP_AUTOLOGIN_ON = create(AlixMaterials.GREEN_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-ip-autologin-on")),
-            IP_AUTOLOGIN_OFF = create(AlixMaterials.RED_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-ip-autologin-off"));
+            IP_AUTOLOGIN_OFF = create(AlixMaterials.RED_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-ip-autologin-off")),
+            DEVICE_PASSKEY_ON = create(AlixMaterials.GREEN_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-device-passkey-on")),
+            DEVICE_PASSKEY_OFF = create(AlixMaterials.RED_CONCRETE.getItemCloned(), Messages.get("gui-login-settings-device-passkey-off"));
     private static final Function<PersistentUserData, ItemStack> IP_AUTOLOGIN_GET = data -> data.getLoginParams().getIpAutoLogin() ? IP_AUTOLOGIN_ON : IP_AUTOLOGIN_OFF;
+    private static final Function<PersistentUserData, ItemStack> DEVICE_PASSKEY_GET = data -> data.hasFingerprint() ? DEVICE_PASSKEY_ON : DEVICE_PASSKEY_OFF;
 
     static {
         if (AlixUtils.forcefullyDisableIpAutoLogin)
@@ -33,7 +40,7 @@ public final class LoginSettingsGUI extends AlixGUI {
     private final AbstractAlixGUI originalGui;
 
     private LoginSettingsGUI(Player player, AbstractAlixGUI originalGui) {
-        super(Bukkit.createInventory(player, 9, loginSettingsTitle), player);
+        super(Bukkit.createInventory(player, 9, MessageWrapper.parseToLegacyString(loginSettingsTitle)), player);
         this.originalGui = originalGui;
     }
 
@@ -50,6 +57,14 @@ public final class LoginSettingsGUI extends AlixGUI {
             data.getLoginParams().setIpAutoLogin(!data.getLoginParams().getIpAutoLogin());
             gui.setItem(0, IP_AUTOLOGIN_GET.apply(data));
         });
+
+        if (ConfigParams.fingerprintingEnabled) {
+            items[1] = new GUIItem(DEVICE_PASSKEY_GET.apply(data), event ->
+                    FingerprintGateway.sendFingerprintingPacks(SpigotEncryption.channel(data), success -> {
+                        if (!success) return;
+                        gui.setItem(1, DEVICE_PASSKEY_GET.apply(data));
+                    }));
+        }
 
         items[8] = new GUIItem(GO_BACK_ITEM, event -> {
             MAP.put(user.getUUID(), this.originalGui);//set this gui as used

@@ -72,6 +72,21 @@ tasks.shadowJar {
     destinationDirectory = file(project.findProperty("build-dir") as String)
     archiveBaseName.set("AlixSystem")
     archiveClassifier.set("")//w pizde z z tym "-all" suffixem
+    //Kept as the task-level DEFAULT only for the sake of mergeServiceFiles() below: without
+    //DuplicatesStrategy.INCLUDE, Shadow's own duplicate-filtering drops every duplicate copy of a path
+    //before the ServiceFileTransformer that mergeServiceFiles() installs ever gets to see it - confirmed by
+    //actually building both ways and inspecting META-INF/services/java.sql.Driver in the output jar: with
+    //EXCLUDE, only mariadb-java-client's driver entry survived and postgresql's was silently lost, breaking
+    //DriverManager's automatic PostgreSQL support even though the driver's classes were still shaded in.
+    //INCLUDE is overridden back to the default (EXCLUDE, "first one wins") for every OTHER path below via
+    //filesMatching(), since applying it jar-wide has its own bug: packetevents-spigot is shaded in further
+    //down (relocated, so its CLASSES don't collide with the standalone packetevents plugin players also
+    //run), but its own bundled plugin.yml (declaring name: packetevents) is NOT relocated - it lands at the
+    //exact same "plugin.yml" path as this plugin's own generated one. Under a jar-wide INCLUDE, both copies
+    //were written into the final jar back-to-back, and Paper's ModernPluginLoadingStrategy read that as
+    //this jar ALSO claiming to be "packetevents", logging "Ambiguous plugin name 'packetevents'" against
+    //the real standalone packetevents jar - also confirmed by building and inspecting the jar directly.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     val prefix = "alix.libs"
     var list = listOf(
         "io.github.retrooper.packetevents",
@@ -85,6 +100,14 @@ tasks.shadowJar {
         relocate(s, "$prefix.$s")
     }
     mergeServiceFiles()
+
+    //Narrows the task-level INCLUDE (see the comment on duplicatesStrategy above) back down to ONLY
+    //META-INF/services/* - every other duplicate path (plugin.yml being the concrete case that matters)
+    //falls back to EXCLUDE ("first one wins") instead.
+    eachFile {
+        if (!this.path.startsWith("META-INF/services/"))
+            this.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 
     /*relocate("io.github.retrooper.packetevents", "$prefix.io.github.retrooper.packetevents")
     relocate("com.github.retrooper.packetevents", "$prefix.com.github.retrooper.packetevents")
@@ -138,13 +161,18 @@ dependencies {
     implementation("net.kyori:adventure-api:4.19.0")
     implementation("net.kyori:adventure-nbt:4.19.0")
 
-    compileOnlyApi("org.projectlombok:lombok:1.18.36")
-    annotationProcessor("org.projectlombok:lombok:1.18.36")
+    compileOnlyApi("org.projectlombok:lombok:1.18.48")
+    annotationProcessor("org.projectlombok:lombok:1.18.48")
 
     implementation("io.papermc:paperlib:1.0.7")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    //Newer Gradle no longer bundles this implicitly - without it, the test task can't even start the JUnit
+    //Platform test executor ("Failed to load JUnit Platform... including the JUnit Platform launcher"),
+    //regardless of whether there's anything to actually run (src/test/java here only holds SpigotMessagesMaker,
+    //a standalone dev script with main(), not a real JUnit test - see failOnNoDiscoveredTests below).
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     paperweight.paperDevBundle("1.21.4-R0.1-SNAPSHOT")
 
@@ -172,6 +200,17 @@ if (project.findProperty("enable-preview")!! == "true") {
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(Integer.parseInt(project.findProperty("toolchain-lang-version").toString())))
+
+//AlixAPISpigot's shadowJar is configured (archiveClassifier = "") to overwrite its own plain jar's output
+//file - that's the artifact this project actually needs on its compile classpath, but Gradle only knows to
+//wait for AlixAPISpigot's plain ":jar" task (the project dependency's default outgoing artifact), not its
+//shadowJar. Without this, Gradle 9's stricter validation flags it as an undeclared implicit dependency
+//("uses this output of task ':AlixAPI:AlixAPISpigot:shadowJar' without declaring..."), since nothing here
+//tells it that compileJava must wait for shadowJar to finish rewriting that file first.
+tasks.compileJava {
+    dependsOn(":AlixAPI:AlixAPISpigot:shadowJar")
+}
 tasks.test {
     useJUnitPlatform()
+    failOnNoDiscoveredTests = false
 }

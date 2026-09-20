@@ -23,11 +23,11 @@ public final class IPApiIsImpl implements ProxyCheck {
         JsonObject root = out.getAsJsonObject();
         IPInfo.Builder builder = new IPInfo.Builder(address, "ipapi.is");
 
-        boolean isTor = root.has("is_tor") && root.get("is_tor").getAsBoolean();
-        boolean isVpn = root.has("is_vpn") && root.get("is_vpn").getAsBoolean();
-        boolean isHosting = root.has("is_datacenter") && root.get("is_datacenter").getAsBoolean();
-        boolean isAbuser = root.has("is_abuser") && root.get("is_abuser").getAsBoolean();
-        boolean isProxyFlag = (root.has("is_proxy") && root.get("is_proxy").getAsBoolean()) || isTor || isVpn || isHosting;
+        boolean isTor = ProxyCheck.has(root, "is_tor") && root.get("is_tor").getAsBoolean();
+        boolean isVpn = ProxyCheck.has(root, "is_vpn") && root.get("is_vpn").getAsBoolean();
+        boolean isHosting = ProxyCheck.has(root, "is_datacenter") && root.get("is_datacenter").getAsBoolean();
+        boolean isAbuser = ProxyCheck.has(root, "is_abuser") && root.get("is_abuser").getAsBoolean();
+        boolean isProxyFlag = (ProxyCheck.has(root, "is_proxy") && root.get("is_proxy").getAsBoolean()) || isTor || isVpn || isHosting;
 
         builder.proxy(isProxyFlag)
                 .isTor(isTor)
@@ -42,17 +42,17 @@ public final class IPApiIsImpl implements ProxyCheck {
 
         if (root.has("location") && root.get("location").isJsonObject()) {
             JsonObject loc = root.getAsJsonObject("location");
-            if (loc.has("country")) builder.country(loc.get("country").getAsString());
+            if (ProxyCheck.has(loc, "country")) builder.country(loc.get("country").getAsString());
         }
 
         if (root.has("company") && root.get("company").isJsonObject()) {
             JsonObject comp = root.getAsJsonObject("company");
-            if (comp.has("name")) builder.isp(comp.get("name").getAsString());
+            if (ProxyCheck.has(comp, "name")) builder.isp(comp.get("name").getAsString());
         }
 
         if (root.has("asn") && root.get("asn").isJsonObject()) {
             JsonObject asnObj = root.getAsJsonObject("asn");
-            if (asnObj.has("asn")) builder.asn("AS" + asnObj.get("asn").getAsInt());
+            if (ProxyCheck.has(asnObj, "asn")) builder.asn("AS" + asnObj.get("asn").getAsInt());
         }
 
         ProxyType type = ProxyType.NOT_A_PROXY;

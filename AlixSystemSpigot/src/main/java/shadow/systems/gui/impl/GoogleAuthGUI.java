@@ -3,8 +3,11 @@ package shadow.systems.gui.impl;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginParams;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.list.LoopList;
+import alix.common.utils.formatter.AlixFormatter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -24,7 +27,7 @@ import java.util.Arrays;
 public final class GoogleAuthGUI extends AlixGUI {
 
     private static final GUIItem whatIsThis, GO_BACK_GUI_ITEM;
-    private static final ItemStack showQRCodeItem, applyChangesItem;
+    private static final ItemStack showQRCodeItem, applyChangesItem, resetTokenItem, resetTokenConfirmItem, viewRecoveryCodesItem;
     private static final AuthItemType PASSWORD, AUTH, AUTH_AND_PASSWORD;
     private static final String guiTitle;
 
@@ -51,12 +54,24 @@ public final class GoogleAuthGUI extends AlixGUI {
         setLore(showQRCodeItem, loreQRCode);
 
         applyChangesItem = rename(AlixMaterials.GREEN_CONCRETE.getItemCloned(), Messages.get("gui-google-auth-apply-changes"));
+
+        resetTokenItem = setLore(rename(AlixMaterials.RED_CONCRETE.getItemCloned(), Messages.get("gui-google-auth-reset-token-name")),
+                Messages.get("gui-google-auth-reset-token-lore").split(" -nl "));
+
+        resetTokenConfirmItem = create(Material.TNT, Messages.get("gui-google-auth-reset-token-confirm-name"),
+                Messages.get("gui-google-auth-reset-token-confirm-lore").split(" -nl "));
+
+        viewRecoveryCodesItem = create(Material.PAPER, Messages.get("gui-google-auth-view-recovery-codes-name"),
+                Messages.get("gui-google-auth-view-recovery-codes-lore").split(" -nl "));
     }
 
     //private final VerifiedUser user;
+    //Armed by a first click on resetTokenItem, cleared on a second (confirming) click - a fresh instance is
+    //created per GUI open (see add() below), so this naturally resets whenever the player reopens the menu.
+    private boolean resetArmed;
 
     private GoogleAuthGUI(Player player) {
-        super(Bukkit.createInventory(player, 27, guiTitle), player);
+        super(Bukkit.createInventory(player, 27, MessageWrapper.parseToLegacyString(guiTitle)), player);
         //this.user = UserManager.getVerifiedUser(player);
     }
 
@@ -94,8 +109,91 @@ public final class GoogleAuthGUI extends AlixGUI {
             }
         });
 
+        items[4] = new GUIItem(resetTokenItem, event -> {
+            if (!this.resetArmed) {
+                this.resetArmed = true;
+                gui.setItem(4, resetTokenConfirmItem);
+                return;
+            }
+
+            this.resetArmed = false;
+            MAP.remove(player.getUniqueId());
+            //Resetting the secret hands whoever's sitting at the keyboard right now a brand new QR code -
+            //someone who briefly gets at an already-logged-in, unattended session could otherwise steal the
+            //2FA factor outright by scanning it onto their own device, without ever knowing the password or
+            //the current code. Gated the exact same way AuthDataChanges already gates changing the auth
+            //TYPE (hasProvenAuthAccess / verifyAuthAccess re-prompting for the CURRENT code) - see
+            //LoginState#handleRecoveryCodeCommand() for why a player who reset via a recovery code (because
+            //they lost their device) isn't locked out of this by having no current code to re-enter.
+            runGatedByAuthAccess(user, () -> AlixScheduler.async(() -> {
+                //regenerateAuthToken() throws if it couldn't safely re-encrypt the stored email under the
+                //new token (see its own docs) - caught here so the player gets a clear failure message
+                //instead of the reset silently doing nothing (the old token/QR code stays valid either way).
+                try {
+                    user.getData().regenerateAuthToken();
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                    //Player#sendMessage() isn't guaranteed thread-safe off the main thread - AlixScheduler.sync()
+                    //here, same as the "View Recovery Codes" handler below and Velocity's port of this handler.
+                    AlixScheduler.sync(() -> player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-failed-chat"))));
+                    return;
+                }
+
+                String[] codes = user.getData().regenerateRecoveryCodes();
+
+                AlixScheduler.sync(() -> {
+                    player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat")));
+                    sendRecoveryCodes(player, codes);
+                });
+
+                //showQRCode() is already designed to be called from an async context, same as the
+                //pre-existing "Show QR Code" button above - it hops back to the main thread internally only
+                //where it actually needs to (the teleport), so it's left running on THIS async thread rather
+                //than nested inside the sync() block above.
+                GoogleAuth.showQRCode(user, player);
+            }));
+        });
+
+        items[22] = new GUIItem(viewRecoveryCodesItem, event -> {
+            MAP.remove(player.getUniqueId());
+            player.closeInventory();
+            //Recovery codes are plaintext, fully-usable-remotely substitutes for the app code (see
+            ///recoverycode) - anyone who reads them off an unattended session can log in as this player
+            //from anywhere afterward, same severity as reading the password itself. Same gate as the reset
+            //button above.
+            runGatedByAuthAccess(user, () -> user.getData().loadRecoveryCodes(codes -> {
+                //Covers an account that enabled 2FA before recovery codes existed at all, or one that
+                //somehow otherwise has none yet - generates them here rather than showing an empty list,
+                //since regenerateRecoveryCodes() itself is cheap (in-memory generation + a fire-and-forget
+                //DB write) and there's no good reason to make the player go reset their whole 2FA secret
+                //just to get backup codes.
+                String[] toShow = codes.length > 0 ? codes : user.getData().regenerateRecoveryCodes();
+                AlixScheduler.sync(() -> sendRecoveryCodes(player, toShow));
+            }));
+        });
+
         items[26] = new GUIItem(applyChangesItem, event -> changes.tryApply(user));
         return items;
+    }
+
+    //Runs action immediately if this account already proved app-code access once before (the common case -
+    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams), otherwise prompts for
+    //the CURRENT code first via the same VerifiedVirtualAuthBuilder GUI/flow AuthDataChanges already uses
+    //for changing the auth TYPE, running action only if that's entered correctly.
+    private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
+        if (user.getData().getLoginParams().hasProvenAuthAccess()) {
+            action.run();
+            return;
+        }
+        user.getDuplexProcessor().verifyAuthAccess(action);
+    }
+
+    private static void sendRecoveryCodes(Player player, String[] codes) {
+        player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-header")));
+        for (String code : codes) {
+            player.sendMessage(MessageWrapper.parseLegacy(AlixFormatter.translateColors("&e" + code)));
+        }
+        player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-footer")));
     }
 
     public static void add(Player player) {

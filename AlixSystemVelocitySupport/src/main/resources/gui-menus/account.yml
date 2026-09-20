@@ -1,0 +1,80 @@
+#--------------------------------------------------------------------------------------------#
+#                    /account menu - fully configurable appearance & actions                  #
+#--------------------------------------------------------------------------------------------#
+#
+# This file controls the /account menu: item order/position, material or texture, name, lore,
+# and what happens when each item is clicked.
+#
+# The menu's SIZE (9 slots, a 3x3 grid) is fixed; item position/appearance/actions within that
+# grid are what's configurable here.
+#
+# Available settings per item, as "items.<id>.<setting>":
+#   slot               - which slot(s) this item occupies (0-8): a single number, a comma list
+#                         (e.g. "0,2,4"), and/or a range (e.g. "0-2") - can be combined, e.g. "0,3-5"
+#   material           - a vanilla Minecraft item id, e.g. IRON_BARS, NETHER_STAR, PLAYER_HEAD...
+#   head-texture       - (optional) a base64 skin texture value (e.g. copied from minecraft-heads.com)
+#                         to show a custom player-head icon instead of "material"
+#   item-model         - (optional) a resource-pack custom item model, e.g. "mypack:account_icon"
+#                         (needs Minecraft 1.21.2+ and a matching resource pack)
+#   custom-model-data  - (optional) a plain number, for older resource-pack custom-model-data setups
+#   name               - the item's display name. Supports "&"-color codes (e.g. &e, &l), raw
+#                         texture-pack "glyph" unicode characters (typed/pasted directly or as a
+#                         "\uXXXX" escape), and language-file references: a value starting with "@"
+#                         (e.g. "@gui-account-passwords") is looked up in the plugin's messages.properties/
+#                         langs/*.properties files instead of being literal text, so it follows the selected "language"
+#                         and works for every language you add a translation for.
+#   lore               - a list of lore lines (same rules as name; a single "@key" entry pulls a
+#                         whole multi-line lore block from the language file)
+#   actions            - a list of things that happen on click, e.g.:
+#                          "[open-menu] passwords"        - opens another menu (valid ids: passwords,
+#                                                             login-settings, google-auth, ip-autologin)
+#                          "[message] &aHello!"            - sends a chat message
+#                          "[player-command] spawn"        - runs a command as the player
+#                          "[console-command] some cmd"    - runs a command as console
+#                          "[sound] ENTITY_PLAYER_LEVELUP" - plays a sound
+#                          "[close]"                       - closes the menu
+#                          "[none]"                        - no action (purely decorative item)
+#
+# background.material / background.name - the filler item shown in every slot with no item assigned.
+#
+# item-order decides both WHICH items exist and in what order they're processed - remove an id from
+# this list (and its items.<id>.* lines, if you like) to remove that button entirely, or add a new id
+# with its own items.<new-id>.* lines (and an action) to add a brand new one anywhere in the grid.
+#
+# DEFAULT_OF(...) VALUES
+# Some values below are written as "default_of(x)" instead of a plain "x" - this marks x as the
+# plugin's own bundled default rather than something you've deliberately chosen. It's read exactly
+# like a plain "x" today, but a future update may silently change what's inside the parentheses (e.g.
+# reposition an item, swap a default icon/texture) even on a server that's already running this exact
+# file. A plain, unwrapped value (no matter what it's set to) is treated as YOUR deliberate choice and
+# is never touched by an update, for as long as the setting it belongs to still exists.
+# To lock a "default_of(...)" value in place so it never changes on you again, just delete the
+# "default_of(" and its matching ")", keeping the value itself.
+
+title: "@gui-title-account"
+
+background.material: default_of(GRAY_STAINED_GLASS_PANE)
+background.name: "&f"
+
+item-order:
+  - passwords
+  - login-settings
+  - google-auth
+
+items.passwords.slot: default_of(0)
+items.passwords.material: default_of(IRON_BARS)
+items.passwords.name: "@gui-account-passwords"
+items.passwords.actions:
+  - "[open-menu] passwords"
+
+items.login-settings.slot: default_of(1)
+items.login-settings.material: default_of(NETHER_STAR)
+items.login-settings.name: "@gui-account-login-settings"
+items.login-settings.actions:
+  - "[open-menu] login-settings"
+
+items.google-auth.slot: default_of(2)
+items.google-auth.head-texture: default_of("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWE2ZDYxZjQ1M2MwMTU5ZWU3Y2Q4MWE0YzNlMDUzZTlkYTdkYzE0ODYzMTg4OTBhZDRhZDlhY2Y2MTE5NmI4NSJ9fX0=")
+items.google-auth.name: "@gui-account-google-authenticator"
+items.google-auth.actions:
+  - "[open-menu] google-auth"

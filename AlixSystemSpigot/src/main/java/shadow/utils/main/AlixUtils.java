@@ -2,6 +2,7 @@ package shadow.utils.main;
 
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.formatter.AlixFormatter;
@@ -39,6 +40,7 @@ import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public final class AlixUtils {
@@ -374,8 +376,12 @@ public final class AlixUtils {
         return data != null ? data.getPasswordType() == PasswordType.PIN : fancyPasswordGui || defaultPasswordType == PasswordType.PIN;
     }*/
 
-    public static String getPasswordInvalidityReason(String password, LoginType type) {
-        return AlixCommonUtils.getPasswordInvalidityReason(password, type);
+    public static void getPasswordInvalidityReasonAsync(String password, LoginType type, Consumer<String> callback) {
+        AlixCommonUtils.getPasswordInvalidityReasonAsync(password, type, callback);
+    }
+
+    public static String getPasswordInvalidityReasonSync(String password, LoginType type) {
+        return AlixCommonUtils.getPasswordInvalidityReasonSync(password, type);
     }
 
     public static String formatMillis(long millis) {
@@ -408,7 +414,7 @@ public final class AlixUtils {
     public static ItemStack getSkull(String name, String url) {
         ItemStack head = skullSupplier.createSkull(url);
         ItemMeta meta = head.getItemMeta();
-        meta.setDisplayName(AlixFormatter.translateColors(name));
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(AlixFormatter.translateColors(name)));
         head.setItemMeta(meta);
         return head;
     }
@@ -1238,7 +1244,7 @@ public final class AlixUtils {
     }
 
     public static String[] translateArrayColorsAndTrimEach(String... texts) {
-        for (int i = 0; i < texts.length; i++) texts[i] = translateColors(texts[i]).trim();
+        for (int i = 0; i < texts.length; i++) texts[i] = MessageWrapper.parseToLegacyString(translateColors(texts[i]).trim());
         return texts;
     }
 

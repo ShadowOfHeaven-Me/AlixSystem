@@ -38,4 +38,18 @@ public final class ServerSettings extends AlixFileManager {
 
         this.data[idx] = Setting.of(idx).parse(line);
     }
+
+    /**
+     * v1.5.2 ("/as reload"): re-reads server-settings from disk in place. loadLine() above is
+     * POSITIONAL (it assigns to data[idx] using a running counter, not a named key), so simply calling
+     * loadExceptionless() a second time without resetting idx back to 0 first would keep counting up
+     * from wherever the first load left off - writing settings into the wrong slots and eventually
+     * throwing ArrayIndexOutOfBoundsException once idx runs past Setting.count(). Resetting idx here is
+     * what makes a second load actually equivalent to the first one.
+     */
+    @SneakyThrows
+    void reload() {
+        this.idx = 0;
+        this.loadExceptionless();
+    }
 }

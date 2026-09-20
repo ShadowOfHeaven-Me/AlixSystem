@@ -1,7 +1,7 @@
 package ua.nanit.limbo.protocol.packets.play;
 
+import alix.common.packets.message.MessageWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetTitleText;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 
 public class PacketTitleSetTitle extends OutRetrooperPacket<WrapperPlayServerSetTitleText> {
@@ -10,8 +10,9 @@ public class PacketTitleSetTitle extends OutRetrooperPacket<WrapperPlayServerSet
         super(WrapperPlayServerSetTitleText.class);
     }
 
+    //Was Component.text(title) - see PacketPlayOutDisconnect#setReason(String) for why that breaks hex codes.
     public PacketTitleSetTitle setTitle(String title) {
-        this.wrapper().setTitle(Component.text(title));
+        this.wrapper().setTitle(MessageWrapper.parseLegacy(title));
         return this;
     }
 }

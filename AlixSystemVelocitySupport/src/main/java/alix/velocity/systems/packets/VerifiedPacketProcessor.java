@@ -3,6 +3,7 @@ package alix.velocity.systems.packets;
 import alix.common.data.LoginType;
 import alix.common.messages.AlixMessage;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigParams;
 import alix.common.utils.other.throwable.AlixException;
@@ -132,7 +133,7 @@ public final class VerifiedPacketProcessor {
                 IpAutoLoginGUI.add(this.user);
                 this.sentAutoLoginAsk = true;
             }
-            this.user.getPlayer().sendMessage(Component.text(this.joinMessage()));
+            this.user.getPlayer().sendMessage(MessageWrapper.parseLegacy(this.joinMessage()));
             this.sentJoinMessage = true;
         }
 

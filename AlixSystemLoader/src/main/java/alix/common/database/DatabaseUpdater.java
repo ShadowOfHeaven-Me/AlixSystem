@@ -52,6 +52,8 @@ public interface DatabaseUpdater {
 
     void updateIpByName(String name, String ip);
 
+    void updateFingerprintByName(String name, int fingerprint);
+
     void updatePasswordByOwner(String ownerName, Password password);
 
     void setPremiumData(String name, PremiumData data);
@@ -59,6 +61,20 @@ public interface DatabaseUpdater {
     void setPassword(String name, Password newPass, boolean isMain);
 
     void saveUserToken(Identity identity, String token);
+
+    //Atomic token+email commit for a 2FA reset - see DatabaseUpdaterImpl's implementation for why a plain
+    //UPSERT_TOKEN_SQL upsert followed by a separate updateEmailByName() call isn't good enough here.
+    //savableEmail may be null (no email to update).
+    void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail);
+
+    void saveRecoveryCodes(Identity identity, String joinedCodes);
+
+    void loadRecoveryCodes(Identity identity, Consumer<String> consumer);
+
+    //Atomic read-check-write, unlike a caller doing loadRecoveryCodes() then saveRecoveryCodes() itself -
+    //see DatabaseUpdaterImpl's implementation for why that split would race a concurrent attempt for the
+    //same player.
+    void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback);
 
     void loadUser(String name, Consumer<PersistentUserData> consumer);
 
@@ -72,7 +88,9 @@ public interface DatabaseUpdater {
 
     void updateExtraLoginTypeByName(String name, LoginType extraLoginType);
 
-    void updateEmailByName(String name, String email);
+    //identity is only used to key this write onto the same per-player execution chain commitTokenAndEmail()
+    //uses - see DatabaseUpdaterImpl's implementation for why.
+    void updateEmailByName(Identity identity, String name, String email);
 
     void removeByName(String name);
 

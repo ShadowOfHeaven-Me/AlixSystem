@@ -6,6 +6,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.security.email.EmailHandler;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
 import alix.velocity.server.impl.VelocityLimboIntegration;
@@ -23,7 +24,6 @@ import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 
 import static alix.velocity.utils.AlixUtils.sendMessage;
@@ -39,9 +39,57 @@ public final class CommandManager {
         //EmailCommand.register_VerifyEmail(server);
         //EmailCommand.register_SendVerifyEmail(server);
         register_Premium(server.getCommandManager());
+        register_Help(server);
 
         registerPlaceholderCommand("confirm");
         registerPlaceholderCommand("cancel");
+
+        warnIfNoPermissionPluginDetected(server);
+    }
+
+    //Unlike Bukkit/Spigot, Velocity has no built-in "server operator" concept - a player has NO permissions
+    //at all (console is the only source that always passes every check) unless some plugin on the proxy
+    //explicitly grants them, normally via a permissions plugin (e.g. LuckPerms) hooking Velocity's
+    //PermissionsSetupEvent. "/as" (and thus "/alix") is gated behind the "alixsystem.admin" permission
+    //(see AlixSystemCommand#register), so on a proxy with no permissions plugin installed, "/as" will look
+    //to every player as if it doesn't exist at all - Brigadier hides/rejects a command entirely for any
+    //source that fails its "requires()" check, which is indistinguishable, from the player's perspective,
+    //from the command never having registered in the first place. This is very likely what was actually
+    //happening when "/as" was reported as "not registering" - the command registration itself was already
+    //correct (verified by launching a real Velocity proxy with this plugin installed and confirming "/as",
+    //its "alix" alias, "/as commands" and "/alixhelp" all register and respond correctly from the console,
+    //which always has every permission). Logged once at startup, at INFO level, so operators who haven't
+    //set this up yet get a clear pointer instead of silently wondering why an admin command "doesn't work".
+    private static void warnIfNoPermissionPluginDetected(ProxyServer server) {
+        boolean permissionPluginPresent = server.getPluginManager().getPlugins().stream()
+                .anyMatch(p -> {
+                    String id = p.getDescription().getId().toLowerCase();
+                    return id.contains("luckperms") || id.contains("permission");
+                });
+
+        if (!permissionPluginPresent) {
+            Main.logInfo("&e[Alix] > Note: '/as' (and its 'alix' alias) require the 'alixsystem.admin' permission. " +
+                         "Velocity has no built-in operator system like Spigot/Bukkit does - unlike there, simply " +
+                         "being the server owner does NOT grant it. No permissions plugin (e.g. LuckPerms) was " +
+                         "detected on this proxy, so right now NO player can use '/as', even you. Install one and " +
+                         "grant 'alixsystem.admin' to your admins, or players will see '/as' as if it doesn't exist.");
+        }
+    }
+
+    //A genuinely separate, non-admin-gated command listing only player-facing commands (reusing
+    //AlixSystemCommand#sendPlayerCommandsList()) - "/as commands" (an "/as ..." subcommand) intentionally
+    //stays admin-only, since "/as" as a whole is an admin command tree and shouldn't have any part of it
+    //runnable by, or exposing admin command names to, a non-admin player. Anyone (including console) can
+    //run this one; its base name and any additional aliases are configured in commands.txt like every other
+    //command here, under the "alixhelp" key.
+    private static void register_Help(ProxyServer server) {
+        var cmd = command("alixhelp", ctx -> {
+            AlixSystemCommand.sendPlayerCommandsList(ctx.getSource());
+            return SINGLE_SUCCESS;
+        }).build();
+
+        var manager = server.getCommandManager();
+        manager.register(manager.metaBuilder("alixhelp").aliases(CommandsFileManager.getAliases("alixhelp")).plugin(Main.PLUGIN).build(), new BrigadierCommand(cmd));
     }
 
     private static void registerPlaceholderCommand(String commandName) {
@@ -65,7 +113,7 @@ public final class CommandManager {
 
                     var data = user.getData();
                     if (data == null) {
-                        player.sendRichMessage("<red>Error - Missing persistent data");
+                        AlixUtils.sendMessage(player, Messages.getWithPrefix("account-missing-data"));
                         return SINGLE_SUCCESS;
                     }
                     AccountGUI.add(user);
@@ -77,7 +125,7 @@ public final class CommandManager {
                 .executes(ctx -> {
                     if (isConsole(ctx)) return SINGLE_SUCCESS;
                     Player player = (Player) ctx.getSource();
-                    AlixUtils.sendMessage(player, "&eSpecify the verify code!");
+                    AlixUtils.sendMessage(player, Messages.getWithPrefix("account-verifyemail-specify-code"));
                     return SINGLE_SUCCESS;
                 })
                 .then(BrigadierCommand.requiredArgumentBuilder("verify-code", StringArgumentType.word())
@@ -94,7 +142,7 @@ public final class CommandManager {
                 .executes(ctx -> {
                     if (isConsole(ctx)) return SINGLE_SUCCESS;
                     Player player = (Player) ctx.getSource();
-                    AlixUtils.sendMessage(player, "&eUsage: /account sendverifyemail <email>");
+                    AlixUtils.sendMessage(player, Messages.getWithPrefix("account-sendverifyemail-usage"));
                     return SINGLE_SUCCESS;
                 })
                 .then(BrigadierCommand.requiredArgumentBuilder("email", StringArgumentType.greedyString())
@@ -103,7 +151,7 @@ public final class CommandManager {
                             Player player = (Player) ctx.getSource();
                             String email = StringArgumentType.getString(ctx, "email");
 
-                            EmailHandler.sendVerifyMail(player, email, false, AlixUtils::sendMessage);
+                            EmailHandler.sendVerifyMail(player, player.getUsername(), email, false, AlixUtils::sendMessage);
                             return SINGLE_SUCCESS;
                         })
                 );
@@ -126,7 +174,7 @@ public final class CommandManager {
             if (isConsole(ctx)) return SINGLE_SUCCESS;
 
             Player player = (Player) ctx.getSource();
-            sendMessage(player, "&eSpecify your new password!");
+            sendMessage(player, Messages.getWithPrefix("changepassword-specify-password"));
             return SINGLE_SUCCESS;
         }).then(BrigadierCommand.requiredArgumentBuilder("password", StringArgumentType.word())
                 .executes(ctx -> {
@@ -136,22 +184,23 @@ public final class CommandManager {
 
                     var data = user.getData();
                     if (data == null) {
-                        player.sendRichMessage("<red>Error - missing persistent data");
+                        AlixUtils.sendMessage(player, Messages.getWithPrefix("account-missing-data"));
                         return SINGLE_SUCCESS;
                     }
                     String password = StringArgumentType.getString(ctx, "password");
 
-                    String reason = AlixCommonUtils.getPasswordInvalidityReason(password, LoginType.ANVIL);
-                    if (reason != null) {
-                        user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));
-                        player.sendMessage(Component.text(reason));
-                        return SINGLE_SUCCESS;
-                    }
+                    AlixCommonUtils.getPasswordInvalidityReasonAsync(password, LoginType.ANVIL, reason -> {
+                        if (reason != null) {
+                            user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));
+                            player.sendMessage(MessageWrapper.parseLegacy(reason));
+                            return;
+                        }
 
-                    if (data.getLoginType() == LoginType.PIN)
-                        data.setLoginType(LoginType.ANVIL);
-                    data.setPassword(password);
-                    sendMessage(player, Messages.get("password-changed"));
+                        if (data.getLoginType() == LoginType.PIN)
+                            data.setLoginType(LoginType.ANVIL);
+                        data.setPassword(password);
+                        sendMessage(player, Messages.get("password-changed"));
+                    });
                     return SINGLE_SUCCESS;
                 })
         ).build();

@@ -2,9 +2,9 @@ package ua.nanit.limbo.protocol.packets.play.inventory;
 
 import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.packets.inventory.InventoryWrapper;
+import alix.common.packets.message.MessageWrapper;
 import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
@@ -34,7 +34,8 @@ public final class PacketPlayOutInventoryOpen extends OutRetrooperPacket<Wrapper
         return create(type, title).toSnapshot();
     }
 
+    //Was Component.text(title) - see PacketPlayOutDisconnect#setReason(String) for why that breaks hex codes.
     public static PacketPlayOutInventoryOpen create(AlixInventoryType type, String title) {
-        return new PacketPlayOutInventoryOpen(InventoryWrapper.createInvOpen(type, Component.text(title), ClientVersion.getLatest()), type);
+        return new PacketPlayOutInventoryOpen(InventoryWrapper.createInvOpen(type, MessageWrapper.parseLegacy(title), ClientVersion.getLatest()), type);
     }
 }

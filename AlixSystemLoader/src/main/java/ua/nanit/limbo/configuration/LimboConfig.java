@@ -7,6 +7,7 @@ import ua.nanit.limbo.server.data.Title;
 import ua.nanit.limbo.util.Colors;
 import ua.nanit.limbo.world.DimensionType;
 
+import static ua.nanit.limbo.connection.login.LoginState.requireEmailInRegister;
 import static ua.nanit.limbo.connection.login.LoginState.requirePasswordRepeatInRegister;
 
 public final class LimboConfig {
@@ -17,7 +18,7 @@ public final class LimboConfig {
 
     private final String brandName;
     private final String joinMessage;
-    private final Title loginTitle, registerTitle;
+    private final Title loginTitle, registerTitle, termsTitle, emailVerifyTitle;
 
     private final String playerListHeader;
     private final String playerListFooter;
@@ -38,8 +39,25 @@ public final class LimboConfig {
 
         int registerStayTicks = 999999999;
         int loginStayTicks = 999999999;
-        registerTitle = new Title().setTitle(Messages.get("reminder-register-title")).setSubtitle(requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle")).setStay(registerStayTicks);
+        //Mirrors LoginState#createRegisterCommand()'s 4-way combination of these same two toggles, so the
+        //title's subtitle always shows every argument /register actually needs right now, not just the
+        //password - previously this only ever toggled the password-repeat wording and silently dropped the
+        //<email> argument entirely whenever 'require-email-in-register' was on.
+        String registerSubtitleKey = requirePasswordRepeatInRegister && requireEmailInRegister ? "reminder-register-subtitle-repeat-email"
+                : requirePasswordRepeatInRegister ? "reminder-register-subtitle-repeat"
+                : requireEmailInRegister ? "reminder-register-subtitle-email"
+                : "reminder-register-subtitle";
+        registerTitle = new Title().setTitle(Messages.get("reminder-register-title")).setSubtitle(Messages.get(registerSubtitleKey)).setStay(registerStayTicks);
         loginTitle = new Title().setTitle(Messages.get("reminder-login-title")).setSubtitle(Messages.get("reminder-login-subtitle")).setStay(loginStayTicks);
+        //Shown instead of registerTitle while an unregistered player still hasn't accepted the Terms & Conditions
+        //(see LoginState#isTermsGateBlocking()) - otherwise the title kept telling players to "Register with
+        ///register <password>" even while registration was actually still gated behind "/terms accept" first.
+        termsTitle = new Title().setTitle(Messages.get("reminder-terms-title")).setSubtitle(Messages.get("reminder-terms-subtitle")).setStay(registerStayTicks);
+        //Shown instead of registerTitle while a 'require-email-in-register' registration is pending email
+        //confirmation (see LoginState#isEmailRegisterGateBlocking()) - the account isn't created until
+        //"/verifyemail <code>" succeeds, so the title should say that instead of "Register with /register ...",
+        //which would otherwise still show even though re-submitting /register at this point does nothing.
+        emailVerifyTitle = new Title().setTitle(Messages.get("reminder-verifyemail-title")).setSubtitle(Messages.get("reminder-verifyemail-subtitle")).setStay(registerStayTicks);
 
         playerListHeader = Colors.of("none");
         playerListFooter = Colors.of("none");
@@ -114,6 +132,14 @@ public final class LimboConfig {
 
     public Title getRegisterTitle() {
         return registerTitle;
+    }
+
+    public Title getTermsTitle() {
+        return termsTitle;
+    }
+
+    public Title getEmailVerifyTitle() {
+        return emailVerifyTitle;
     }
 
     public String getPlayerListUsername() {

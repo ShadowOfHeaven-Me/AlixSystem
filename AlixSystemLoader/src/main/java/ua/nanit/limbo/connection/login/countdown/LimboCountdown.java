@@ -16,22 +16,38 @@ public final class LimboCountdown {//shows xp countdown and kicks out
 
     private static final PacketSnapshot
             registerTimePassedKickPacket = PacketPlayOutDisconnect.snapshot(Messages.get("register-time-passed")),
-            loginTimePassedKickPacket = PacketPlayOutDisconnect.snapshot(Messages.get("login-time-passed"));
+            loginTimePassedKickPacket = PacketPlayOutDisconnect.snapshot(Messages.get("login-time-passed")),
+            emailVerificationTimePassedKickPacket = PacketPlayOutDisconnect.snapshot(Messages.get("register-email-verification-time-passed"));
 
     //private final ChannelHandlerContext ctx;
     private final ClientConnection connection;
     private final PacketDuplexHandler duplexHandler;
     private final PacketSnapshot[] packets;
-    private final boolean isRegistered;
+    private final PacketSnapshot kickPacket;
     private final ScheduledFuture<?> task;
     private int index;
 
     public LimboCountdown(ClientConnection connection, boolean isRegistered) {
+        this(connection, ExperiencePackets.PACKETS, ExperiencePackets.PACKET_COUNT,
+                isRegistered ? loginTimePassedKickPacket : registerTimePassedKickPacket);
+    }
+
+    //A separate entry point used only while a 'require-email-in-register' registration is waiting on the
+    //verification email to arrive (see LoginState#handleRegisterCommandWithEmail()) - uses the
+    //independently-configurable 'email-verification-time' duration/packet set (ConfigParams#emailVerificationTime)
+    //instead of the general login/register one, since receiving an email can easily take longer than
+    //max-login-time allows for the rest of the login/register GUI.
+    public LimboCountdown(ClientConnection connection) {
+        this(connection, ExperiencePackets.EMAIL_VERIFICATION_PACKETS, ExperiencePackets.EMAIL_VERIFICATION_PACKET_COUNT,
+                emailVerificationTimePassedKickPacket);
+    }
+
+    private LimboCountdown(ClientConnection connection, PacketSnapshot[] packets, int count, PacketSnapshot kickPacket) {
         this.connection = connection;
         this.duplexHandler = connection.getDuplexHandler();
-        this.index = ExperiencePackets.PACKET_COUNT;
-        this.packets = ExperiencePackets.PACKETS;
-        this.isRegistered = isRegistered;
+        this.index = count;
+        this.packets = packets;
+        this.kickPacket = kickPacket;
         this.task = this.connection.getChannel().eventLoop().scheduleWithFixedDelay(this::tick, 500, ExperiencePackets.UPDATE_PERIOD_MILLI, TimeUnit.MILLISECONDS);
     }
 
@@ -62,6 +78,6 @@ public final class LimboCountdown {//shows xp countdown and kicks out
             this.duplexHandler.writeAndFlush(this.packets[--this.index]);
             return;
         }
-        this.connection.sendPacketAndClose(this.isRegistered ? loginTimePassedKickPacket : registerTimePassedKickPacket);
+        this.connection.sendPacketAndClose(this.kickPacket);
     }
 }
