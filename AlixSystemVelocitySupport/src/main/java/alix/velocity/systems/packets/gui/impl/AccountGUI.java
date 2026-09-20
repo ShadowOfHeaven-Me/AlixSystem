@@ -1,51 +1,37 @@
 package alix.velocity.systems.packets.gui.impl;
 
-import alix.common.login.skull.SkullTextures;
-import alix.common.messages.Messages;
 import alix.common.packets.inventory.AlixInventoryType;
 import alix.velocity.systems.packets.gui.AlixGUI;
 import alix.velocity.systems.packets.gui.GUIItem;
 import alix.velocity.systems.packets.gui.inv.InventoryGui;
+import alix.velocity.systems.packets.gui.menu.MenuBuilder;
+import alix.velocity.systems.packets.gui.menu.MenuConfig;
 import alix.velocity.utils.user.VerifiedUser;
-import com.github.retrooper.packetevents.protocol.item.ItemStack;
-import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
-import ua.nanit.limbo.connection.login.gui.LimboAuthBuilder;
-import ua.nanit.limbo.connection.login.gui.bedrock.AbstractAuthBuilder;
 
-import java.util.Arrays;
+import java.util.Map;
 
+/**
+ * The /account menu. Its title, item positions/appearance, and click actions are configurable via
+ * "gui-menus/account.yml" (auto-created with defaults on first use). See the "menu" sibling package
+ * for the shared config-driven GUI engine reused by this and the other account menus.
+ */
+public final class AccountGUI extends AlixGUI {
 
-public abstract class AccountGUI extends AlixGUI {
+    private static final String MENU_NAME = "account";
 
     private AccountGUI(InventoryGui inv) {
         super(inv);
     }
 
     public static void add(VerifiedUser user) {
-        new AccountGUIModern(new InventoryGui(user, AlixInventoryType.GENERIC_3X3, Messages.get("gui-title-account"))).map();
+        MenuConfig menu = MenuConfig.get(MENU_NAME);
+        new AccountGUI(new InventoryGui(user, AlixInventoryType.GENERIC_3X3, menu.getTitle())).map();
     }
 
-    private static final class AccountGUIModern extends AccountGUI {
-
-        private AccountGUIModern(InventoryGui inv) {
-            super(inv);
-        }
-
-        @Override
-        protected GUIItem[] create(InventoryGui unusedNull) {
-            GUIItem[] items = new GUIItem[9];
-            Arrays.fill(items, BACKGROUND_ITEM);
-
-            ItemStack i1 = create(ItemTypes.IRON_BARS, Messages.get("gui-account-passwords"));
-            items[0] = new GUIItem(i1, inv -> PasswordsGUI.add(this.user, this));
-
-            ItemStack i2 = create(ItemTypes.NETHER_STAR, Messages.get("gui-account-login-settings"));
-            items[1] = new GUIItem(i2, inv -> LoginSettingsGUI.add(this.user, this));
-
-            ItemStack i3 = AbstractAuthBuilder.ofSkull(Messages.get("gui-account-google-authenticator"), SkullTextures.GOOGLE_AUTH);
-            items[2] = new GUIItem(i3, inv -> GoogleAuthGUI.add(this.user, this));
-
-            return items;
-        }
+    @Override
+    protected GUIItem[] create(InventoryGui inv) {
+        MenuConfig menu = MenuConfig.get(MENU_NAME);
+        int size = AlixInventoryType.GENERIC_3X3.size();
+        return MenuBuilder.build(menu, size, this.user, Map.of());
     }
 }

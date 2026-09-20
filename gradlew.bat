@@ -70,19 +70,31 @@ goto fail
 :execute
 @rem Setup the command line
 
-
+@rem Double-clicked with no arguments at all (Explorer passes none) - default to "build" instead of
+@rem Gradle's own no-op ("nothing to do") behavior, and remember to pause before the window closes so the
+@rem output/error is actually readable. Not applied when called with real arguments (e.g. from a terminal,
+@rem or "gradlew.bat build --stacktrace > build-log.txt 2>&1"), since a pause there would just hang waiting
+@rem for a keypress that redirected/scripted output never provides.
+set GRADLE_ARGS=%*
+set GRADLE_PAUSE_ON_EXIT=0
+if "%~1"=="" (
+    set GRADLE_ARGS=build
+    set GRADLE_PAUSE_ON_EXIT=1
+)
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -jar "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" %*
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -jar "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" %GRADLE_ARGS%
+set GRADLE_WRAPPER_EXIT_CODE=%ERRORLEVEL%
+if "%GRADLE_PAUSE_ON_EXIT%"=="1" pause
 
 :end
 @rem End local scope for the variables with windows NT shell
-if %ERRORLEVEL% equ 0 goto mainEnd
+if %GRADLE_WRAPPER_EXIT_CODE% equ 0 goto mainEnd
 
 :fail
 rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
-set EXIT_CODE=%ERRORLEVEL%
+set EXIT_CODE=%GRADLE_WRAPPER_EXIT_CODE%
 if %EXIT_CODE% equ 0 set EXIT_CODE=1
 if not ""=="%GRADLE_EXIT_CONSOLE%" exit %EXIT_CODE%
 exit /b %EXIT_CODE%

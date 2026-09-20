@@ -3,6 +3,7 @@ package alix.common.utils.file.update;
 import alix.common.AlixCommonMain;
 import alix.common.environment.ServerEnvironment;
 import alix.common.utils.file.AlixFileManager;
+import alix.loaders.bukkit.BukkitAlixMain;
 import alix.loaders.velocity.VelocityAlixMain;
 import lombok.SneakyThrows;
 
@@ -29,20 +30,62 @@ public final class FileUpdater {
         switch (ServerEnvironment.getEnvironment()) {
             case SPIGOT:
             case PAPER:
-                //messages.txt
-                File messagesFile = updateFile("messages.txt", DEFAULT_SPLITERATOR);
-                MessagesFileUpdater.updateFormatting(messagesFile);
+                var bukkitParams = BukkitAlixMain.instance.getEngineParams();
+                String bukkitMessagesFile = bukkitParams.messagesFileName();
+
+                if (bukkitMessagesFile.startsWith("langs/")) {
+                    //A bundled, ready-made translation (anything other than the default "messages.txt") is
+                    //NOT a customizable config file - it's fully overwritten with the newest jar-bundled
+                    //version on every update, discarding any direct edits, unlike every other file here. An
+                    //operator who wants to customize player-facing text should edit messages.txt with
+                    //"language: en" instead - that file DOES get the normal merge-preserving treatment below,
+                    //same as Velocity's messages.properties.
+                    File dest = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder(), bukkitMessagesFile);
+                    AlixFileManager.writeJarCompiledFileIntoDest(dest, bukkitMessagesFile);
+                } else {
+                    //messages.txt
+                    File messagesFile = updateFile(bukkitMessagesFile, bukkitParams.messagesSeparator());
+                    MessagesFileUpdater.updateFormatting(messagesFile);
+                }
 
                 //updateFile("secrets/secrets", Validation.VALIDATE_TRIMMED_DASH_START);
                 break;
             case VELOCITY:
                 var params = VelocityAlixMain.instance.getEngineParams();
+                String velocityMessagesFile = params.messagesFileName();
 
-                //messages.properties
-                updateFile(params.messagesFileName(), params.messagesSeparator());
+                if (velocityMessagesFile.startsWith("langs/")) {
+                    //A bundled, ready-made translation (anything other than the default "messages.properties")
+                    //is NOT a customizable config file - it's fully overwritten with the newest jar-bundled
+                    //version on every update, discarding any direct edits, unlike every other file here. An
+                    //operator who wants to customize player-facing text should edit messages.properties with
+                    //"language: en" instead (see its own header comment) - that file DOES get the normal
+                    //merge-preserving treatment just below.
+                    File dest = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder(), velocityMessagesFile);
+                    AlixFileManager.writeJarCompiledFileIntoDest(dest, velocityMessagesFile);
+                } else {
+                    //messages.properties
+                    updateFile(velocityMessagesFile, params.messagesSeparator());
+                }
+
+                //gui-menus/*.yml - each menu's config lives as flat "items.<id>.<setting>"-style keys (see
+                //the files themselves), the exact same shape as config.yml's "key: value" + dash-list lines,
+                //so the same generic merge below is enough to add any new/changed keys a future plugin update
+                //introduces (new item, new setting on an existing item, etc.) while fully preserving everything
+                //the operator has already customized - matching how config.yml/email-config.yml/commands.txt
+                //already stay up to date across updates instead of only ever being copied once. A line removed
+                //from a future default (e.g. a deprecated item) is likewise dropped from the operator's file the
+                //same way an outdated config.yml parameter would be. This resolves the "how would GUI layout
+                //changes reach already-existing, user-customized gui-menus/*.yml files" question - previously
+                //these files were only ever copied once (on first creation) and never touched again afterward.
+                for (String menu : GUI_MENU_NAMES)
+                    updateFile("gui-menus/" + menu + ".yml", DEFAULT_SPLITERATOR, Validation.VALIDATE_TRIMMED_DASH_START);
                 break;
         }
     }
+
+    //Keep in sync with MenuRegistry's valid "[open-menu] <id>" ids
+    private static final String[] GUI_MENU_NAMES = {"account", "passwords", "login-settings", "google-auth", "ip-autologin"};
 
     /**
      * Updates the file - Adds the missing lines and removes the outdated ones, by comparing it to the file compiled with the plugin
@@ -64,13 +107,24 @@ public final class FileUpdater {
         File file = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder(), name);
 
         if (!file.exists()) {
-            file.createNewFile();
-
+            //note: don't call file.createNewFile() here - it fails with an IOException on Windows
+            //("system cannot find the path specified") whenever the file lives in a subdirectory
+            //(e.g. "gui-menus/account.yml") that hasn't been created yet, since createNewFile() never makes
+            //parent directories. writeJarCompiledFileIntoDest() below already does the equivalent
+            //(parent.mkdirs() + createNewFile()) safely, so just let it create the file too.
             AlixFileManager.writeJarCompiledFileIntoDest(file, name);//writes the newest info into the file
             return file;//no need to continue, the file must be up to date
         }
 
-        File tempFile = new File(file.getParent(), splitName[0] + "-copy." + splitName[1]); //<file name>-copy.<extension>
+        //Was built from splitName[0] (derived from the full, possibly-subdirectory-containing 'name' argument,
+        //e.g. "gui-menus/account" for "gui-menus/account.yml") - since file.getParent() is ALREADY that
+        //subdirectory, that produced a doubled-up path ("<data folder>/gui-menus/gui-menus/account-copy.yml")
+        //whose own parent ("<data folder>/gui-menus/gui-menus/") doesn't exist, so tempFile.createNewFile() below threw "system cannot
+        //find the path specified" on every restart once the real per-language file had been created once (a
+        //fresh install never hit this, since a missing file takes the branch above instead). Use the file's
+        //own simple name instead, which is already relative to the correct parent either way.
+        String[] splitFileName = file.getName().split("\\.");
+        File tempFile = new File(file.getParent(), splitFileName[0] + "-copy." + splitFileName[1]); //<file name>-copy.<extension>
         tempFile.createNewFile();
 
         File newestFile = AlixFileManager.writeJarCompiledFileIntoDest(tempFile, name);//temp file is the exact same thing as the 'newest file'
@@ -236,7 +290,12 @@ public final class FileUpdater {
 
                 if (isHashtagStartValid && removeHashtagStart(existingLineStart).equals(removeHashtagStart(newestLineStart))//the line exists with hashtag start ignore config
                         || existingLineStart.equals(newestLineStart)) {//the line exists
-                    newestLines.set(i, existingLine);//we copy the line's config after confirming it's existence
+                    //"default_of(x)" marks x as the bundled default rather than a deliberate choice (see
+                    //AlixYamlConfig#unwrapDefaultOf) - as long as the operator hasn't stripped the wrapper,
+                    //this line isn't a customization to preserve, so let the newest bundled line (with
+                    //whatever new default it now carries) stand instead of copying the stale one over it.
+                    if (!isUntouchedDefaultOf(existingLine, splitWith))
+                        newestLines.set(i, existingLine);//we copy the line's config after confirming it's existence
                     break;
                 }
             }
@@ -250,6 +309,18 @@ public final class FileUpdater {
                 String newestLineStart = newestLine.split(splitWith)[0];
                 List<String> list = map.get(newestLineStart);
                 if (list != null) {
+                    //Remove the newest default's OWN dash-list entries that already follow this header before
+                    //splicing in the preserved existing ones below - previously these were never removed, so
+                    //the newest file's own list entries stayed right where they were (just shifted down by the
+                    //insertion), ending up duplicated (or, after further updates, triplicated etc.) alongside
+                    //the preserved ones on every single restart. This path was never actually exercised by
+                    //config.yml (it has no dash-lists at all), only newly exposed by routing gui-menus/*.yml
+                    //through this same merge mechanism - caught by actually restarting a real proxy against a
+                    //customized gui-menus file rather than assuming reusing this code was automatically safe.
+                    int removeFrom = i + 1;
+                    while (removeFrom < newestLines.size() && newestLines.get(removeFrom).trim().startsWith("-"))
+                        newestLines.remove(removeFrom);
+
                     newestLines.addAll(i + 1, list);//since 'i' is the index of the list header we have to add 1 to have the list's parameters added below it
                     i += list.size();//skip the indexes we know are the list parameters
                 }
@@ -276,6 +347,15 @@ public final class FileUpdater {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    //True if 'line's value (the part after the first spliterator) is still exactly "default_of(...)",
+    //i.e. the operator never overrode it - see the "default_of(x)" handling above.
+    private static boolean isUntouchedDefaultOf(String line, String splitWith) {
+        String[] parts = line.split(splitWith, 2);
+        if (parts.length < 2) return false;
+        String value = parts[1].trim();
+        return value.startsWith("default_of(") && value.endsWith(")");
     }
 
     private static String removeHashtagStart(String s) {

@@ -23,6 +23,15 @@ host: smtp.gmail.com
 # Usually either 587 (TLS) or 465 (SSL)
 #Can also be set custom (will have SSL enabled)
 port: 587
+#
+# REQUIRED ONE-TIME STEP: filling in the settings above is not enough by itself - the SERVER'S OWN outgoing
+# address above must also be verified once, in-game, as a real console admin (or any account with the
+# 'alixsystem.admin' permission), by running:
+#   /as sendverifyemail          (sends a code to the 'email' address configured above)
+#   /as verifyemail <code>       (confirms it, using the code you just received)
+# Until this is done, every player-facing feature that depends on email (account recovery via email,
+# the "email-recovery" button in /account's Login Settings menu, etc.) stays unavailable, even if a player
+# already has an email saved on their own account - this is a server-wide switch, not a per-player one.
 
 #------------------------------------------------#
 #                USER EXPERIENCE                 #
@@ -33,3 +42,66 @@ port: 587
 max-email-attempts: 5
 # Defines how many attempts does the user get when entering the recovery code, before being kicked out
 max-code-attempts: 3
+
+
+#------------------------------------------------#
+#            VERIFICATION EMAIL HTML             #
+#------------------------------------------------#
+
+
+# Defines the file name of a custom HTML template to use for the verification email sent to players (found in this plugin's "email-templates" folder, created automatically).
+# Leave empty to use the default, built-in plain-text template.
+# Within the template file, you may use the following placeholders, which will be replaced automatically:
+#  {code} - the 6-digit verification code
+#  {command} - the full command the player needs to run to verify (e.g. /account verifyemail 123456)
+#  {verification_link} - a one-click web verification link (see the WEB VERIFICATION LINK section below); empty string if that feature is disabled
+# Images (e.g. a logo) can be included in two ways:
+#  - a remotely-hosted image: just use a normal <img src="https://your-site.com/logo.png"> tag, no extra steps needed
+#  - a locally embedded image: place the image file in this plugin's "email-templates/images" folder (created automatically),
+#    then reference it as <img src="cid:yourimage.png"> (using the exact file name) - it will be attached to the email directly
+custom-verify-email-template: ""
+
+
+#------------------------------------------------#
+#             WEB VERIFICATION LINK              #
+#------------------------------------------------#
+
+
+# Defines whether verification emails additionally include a one-click web link that verifies the player's email the
+# moment it's opened in a browser, instead of requiring them to type a code into the game. This runs a small built-in
+# webserver that must be reachable from the internet (typically behind your own reverse proxy/domain) - if you're not
+# sure what that means, leave this disabled; the in-game code (/account verifyemail <code>) still always works either way.
+enable-web-verification: false
+# The local address/port the built-in webserver binds to
+web-verification-bind-address: "0.0.0.0"
+web-verification-port: 8091
+# The externally-reachable base URL players' browsers will actually hit when they click the link in their email, e.g.
+# "https://verify.your-domain.com" if reverse-proxied, or "http://your.server.ip:8091" if exposed directly.
+# This MUST be set correctly, or the links included in outgoing emails will not work.
+web-verification-public-url: ""
+# How many minutes a verification link stays valid for before it expires (each link can also only ever be used once)
+web-verification-token-expiry-minutes: 30
+#
+# HOW TO CHECK THIS IS ACTUALLY WORKING, without waiting for a real verification email:
+# after starting/reloading the proxy with 'enable-web-verification: true', open "<web-verification-public-url>/verify"
+# in a browser (e.g. "https://verify.your-domain.com/verify") - with no real token, you should see an
+# "Link invalid or expired" page. That page IS the expected/correct result here (it just means no matching
+# token was found, which no browser visit without a real email link ever will) - what actually matters is that
+# you see THAT page at all, instead of the browser failing to connect/timing out. If it fails to connect:
+# the port isn't reachable from the internet (firewall/router port-forwarding) or 'web-verification-public-url'
+# doesn't actually point at 'web-verification-bind-address'/'web-verification-port' (check your reverse proxy
+# config, if you're using one). The real end-to-end test is still to actually register/request a verification
+# email and click the real link it contains.
+#
+# The title/message shown on each outcome page below are plain text (no color codes) - this is a page
+# rendered in the player's own web browser, not an in-game message, so it isn't part of messages.properties/
+# the langs/*.properties files.
+web-verification-page-invalid-title: "Link invalid or expired"
+web-verification-page-invalid-message: "This verification link is no longer valid. Please request a new one in-game via /account sendverifyemail."
+web-verification-page-error-title: "Something went wrong"
+web-verification-page-error-not-found-message: "Your account could not be found or the email could not be saved. Please try again in-game."
+web-verification-page-error-generic-message: "Please try again in-game."
+web-verification-page-success-title: "Email verified!"
+web-verification-page-success-message: "Your email has been successfully verified. You can now close this page."
+web-verification-page-method-not-allowed-title: "Method not allowed"
+web-verification-page-method-not-allowed-message: "Only GET requests are supported."

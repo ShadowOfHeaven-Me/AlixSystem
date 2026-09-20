@@ -2,11 +2,11 @@ package alix.velocity.systems.packets.gui.inv;
 
 import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.packets.inventory.InventoryWrapper;
+import alix.common.packets.message.MessageWrapper;
 import alix.velocity.utils.user.VerifiedUser;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOpenWindow;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWindowItems;
-import net.kyori.adventure.text.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +21,11 @@ public final class InventoryGui implements AbstractInventory {
         this(items(type.size()), user, type, title);
     }
 
+    //Was Component.text(title) - see AlixUtils#sendMessage(CommandSource, String) for why that breaks hex codes.
     public InventoryGui(List<ItemStack> items, VerifiedUser user, AlixInventoryType type, String title) {
         this.items = items;
         this.user = user;
-        this.openWrapper = InventoryWrapper.createInvOpen(type, Component.text(title), user.user.getClientVersion());
+        this.openWrapper = InventoryWrapper.createInvOpen(type, MessageWrapper.parseLegacy(title), user.user.getClientVersion());
     }
 
     public static List<ItemStack> items(int len) {

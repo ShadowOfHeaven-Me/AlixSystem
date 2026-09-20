@@ -1,6 +1,7 @@
 package shadow.utils.objects.savable.data.gui.builders;
 
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -21,8 +22,8 @@ public final class BukkitAnvilPasswordBuilder extends AnvilBuilderBase implement
     //private static final Object ALL_ITEMS_LIST, INVALID_INDICATE_ITEMS_LIST;
 
     private static final Inventory
-            pinChangeGUI = Bukkit.createInventory(null, InventoryType.ANVIL, Messages.get("gui-title-password-changing-pin")),
-            passwordChangeGUI = Bukkit.createInventory(null, InventoryType.ANVIL, Messages.get("gui-title-password-changing"));
+            pinChangeGUI = Bukkit.createInventory(null, InventoryType.ANVIL, MessageWrapper.parseToLegacyString(Messages.get("gui-title-password-changing-pin"))),
+            passwordChangeGUI = Bukkit.createInventory(null, InventoryType.ANVIL, MessageWrapper.parseToLegacyString(Messages.get("gui-title-password-changing")));
 
     private final Inventory gui;
     private final Consumer<String> onValidPasswordConfirmation;

@@ -10,13 +10,17 @@ import alix.common.packets.inventory.click.AlixClickType;
 import alix.common.packets.inventory.click.ContainerClickWrapper;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.collections.list.LoopList;
+import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.image.ImageGenerator;
 import alix.velocity.systems.packets.gui.AbstractAlixGUI;
 import alix.velocity.systems.packets.gui.AlixGUI;
 import alix.velocity.systems.packets.gui.GUIItem;
 import alix.velocity.systems.packets.gui.changes.AuthDataChanges;
 import alix.velocity.systems.packets.gui.inv.InventoryGui;
+import alix.velocity.systems.packets.gui.menu.MenuBuilder;
+import alix.velocity.systems.packets.gui.menu.MenuConfig;
 import alix.velocity.utils.user.VerifiedUser;
 import com.github.retrooper.packetevents.protocol.component.ComponentTypes;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
@@ -28,17 +32,16 @@ import ua.nanit.limbo.connection.login.gui.bedrock.AbstractAuthBuilder;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
+import java.util.Map;
 
 public final class GoogleAuthGUI extends AlixGUI {
 
-    private static final GUIItem whatIsThis;
-    private static final ItemStack showQRCodeItem, applyChangesItem;
+    private static final String MENU_NAME = "google-auth";
+
+    private static final ItemStack showQRCodeItem, applyChangesItem, resetTokenItem, resetTokenConfirmItem, viewRecoveryCodesItem;
     private static final AuthItemType PASSWORD, AUTH, AUTH_AND_PASSWORD;
-    private static final String guiTitle;
 
     static {
-        guiTitle = Messages.get("gui-title-google-auth");
         PASSWORD = new AuthItemType(setLore(create(ItemTypes.OBSIDIAN, Messages.get("gui-google-auth-config-password-name")), Messages.getSplit("gui-google-auth-config-password-lore")), AuthSetting.PASSWORD);
         AUTH = new AuthItemType(setLore(create(ItemTypes.NETHER_STAR, Messages.get("gui-google-auth-config-auth-name")), Messages.getSplit("gui-google-auth-config-auth-lore")), AuthSetting.AUTH_APP);
         AUTH_AND_PASSWORD = new AuthItemType(setLore(create(ItemTypes.BEACON, Messages.get("gui-google-auth-config-auth-and-password-name")), Messages.getSplit("gui-google-auth-config-auth-and-password-lore")), AuthSetting.PASSWORD_AND_AUTH_APP);
@@ -49,30 +52,36 @@ public final class GoogleAuthGUI extends AlixGUI {
     };
 
     static {
-        whatIsThis = new GUIItem(AbstractAuthBuilder.ofSkull(Messages.get("gui-google-auth-what-is-this-name"), "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZmMyNzEwNTI3MTllZjY0MDc5ZWU4YzE0OTg5NTEyMzhhNzRkYWM0YzI3Yjk1NjQwZGI2ZmJkZGMyZDZiNWI2ZSJ9fX0="));
-        String[] loreWhatIsThis = Messages.get("gui-google-auth-what-is-this").split(" -nl ");
-        setLore(whatIsThis.getItem(), loreWhatIsThis);
-
         showQRCodeItem = AbstractAuthBuilder.ofSkull(Messages.get("gui-google-auth-show-qr-code-name"), "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTUzYzE0OTUwZmMzNjQ2NzhiNzU1NDRhY2IxZGEwYzk0MjBiNTA2ZTU4NzEyMDM5M2IzZDFhZDQ4OThlNzRmIn19fQ==");
         String[] loreQRCode = Messages.get("gui-google-auth-show-qr-code-lore").split(" -nl ");
         setLore(showQRCodeItem, loreQRCode);
 
         applyChangesItem = create(ItemTypes.GREEN_CONCRETE, Messages.get("gui-google-auth-apply-changes"));
+
+        resetTokenItem = create(ItemTypes.RED_CONCRETE, Messages.get("gui-google-auth-reset-token-name"),
+                Messages.get("gui-google-auth-reset-token-lore").split(" -nl "));
+
+        resetTokenConfirmItem = create(ItemTypes.TNT, Messages.get("gui-google-auth-reset-token-confirm-name"),
+                Messages.get("gui-google-auth-reset-token-confirm-lore").split(" -nl "));
+
+        viewRecoveryCodesItem = create(ItemTypes.PAPER, Messages.get("gui-google-auth-view-recovery-codes-name"),
+                Messages.get("gui-google-auth-view-recovery-codes-lore").split(" -nl "));
     }
 
     private final AbstractAlixGUI originalGui;
-
-    //private final VerifiedUser user;
+    //Armed by a first click on the "reset-token" item, cleared on a second (confirming) click - a fresh
+    //instance is created per GUI open (see add() below), so this naturally resets on reopen.
+    private boolean resetArmed;
 
     private GoogleAuthGUI(VerifiedUser user, AbstractAlixGUI originalGui) {
-        super(user, AlixInventoryType.GENERIC_9X3, guiTitle);
+        super(user, AlixInventoryType.GENERIC_9X3, MenuConfig.get(MENU_NAME).getTitle());
         this.originalGui = originalGui;
     }
 
     @Override
     protected GUIItem[] create(InventoryGui inv) {
-        GUIItem[] items = new GUIItem[27];
-        Arrays.fill(items, BACKGROUND_ITEM);
+        MenuConfig menu = MenuConfig.get(MENU_NAME);
+        int size = AlixInventoryType.GENERIC_9X3.size();
         AuthDataChanges changes = new AuthDataChanges();
 
         LoginParams params = user.getData().getLoginParams();
@@ -80,57 +89,145 @@ public final class GoogleAuthGUI extends AlixGUI {
         LoopList<AuthItemType> authList = LoopList.of(AUTH_TYPES);
         authList.setCurrentIndex(authList.indexOfFirst(t -> t.authSetting.equals(params.getAuthSettings())));
 
-        items[8] = new GUIItem(GO_BACK_ITEM, event -> {
-            this.originalGui.map(); //set the originalGui gui as used
+        GUIItem backGuiItem = new GUIItem(GO_BACK_ITEM, event -> this.originalGui.map());//set the originalGui gui as used
+
+        GUIItem showQRGuiItem = new GUIItem(showQRCodeItem, e -> this.user.getChannel().eventLoop().execute(this::showQrCode));
+
+        int[] resetTokenSlots = menu.getSlotsForInternal("reset-token");
+        GUIItem resetTokenGuiItem = new GUIItem(resetTokenItem, event -> {
+            if (!this.resetArmed) {
+                this.resetArmed = true;
+                for (int slot : resetTokenSlots) gui.setItem(slot, resetTokenConfirmItem);
+                return;
+            }
+
+            this.resetArmed = false;
+            //Resetting the secret hands whoever's sitting at the keyboard right now a brand new QR code -
+            //gated the same way AuthDataChanges already gates changing the auth TYPE (hasProvenAuthAccess /
+            //verifyAuthAccess re-prompting for the CURRENT code) - see the Spigot GoogleAuthGUI's equivalent
+            //for the full reasoning, and LoginState#handleRecoveryCodeCommand() for why a player who reset
+            //via a recovery code isn't locked out of this by having no current code to re-enter.
+            runGatedByAuthAccess(this.user, () -> AlixScheduler.async(() -> {
+                //regenerateAuthToken()/regenerateRecoveryCodes() do real blocking work (re-encrypting the
+                //email is a deliberately slow PBKDF2 KDF, and UserTokensFileManager commits synchronously
+                //rewrite the local tokens file to disk) - off the event loop first, same as the Spigot GUI's
+                //equivalent handler, then hop back for anything touching the connection/GUI (showQrCode()
+                //and packetevents' User#sendMessage() both need to run there).
+                //regenerateAuthToken() throws if it couldn't safely re-encrypt the stored email under the
+                //new token (see its own docs) - caught here so the player gets a clear failure message
+                //instead of the reset silently doing nothing (the old token/QR code stays valid either way).
+                try {
+                    this.user.getData().regenerateAuthToken();
+                } catch (Exception e) {
+                    AlixCommonUtils.logException(e);
+                    this.user.getChannel().eventLoop().execute(() ->
+                            this.user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-reset-token-failed-chat")));
+                    return;
+                }
+
+                String[] codes = this.user.getData().regenerateRecoveryCodes();
+
+                this.user.getChannel().eventLoop().execute(() -> {
+                    this.user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat"));
+                    sendRecoveryCodes(this.user, codes);
+
+                    this.showQrCode();
+                });
+            }));
         });
 
-        items[10] = whatIsThis;
+        GUIItem viewRecoveryCodesGuiItem = new GUIItem(viewRecoveryCodesItem, event -> {
+            this.user.closeInventory();
+            //Recovery codes are plaintext, fully-usable-remotely substitutes for the app code - same gate
+            //as the reset button above, see Spigot GoogleAuthGUI's equivalent for the full reasoning.
+            runGatedByAuthAccess(this.user, () -> this.user.getData().loadRecoveryCodes(codes -> {
+                //Covers an account that enabled 2FA before recovery codes existed at all, or one that
+                //somehow otherwise has none yet - generates them here rather than showing an empty list,
+                //see the Spigot GoogleAuthGUI's equivalent handler for the full reasoning.
+                String[] toShow = codes.length > 0 ? codes : this.user.getData().regenerateRecoveryCodes();
+                this.user.getChannel().eventLoop().execute(() -> sendRecoveryCodes(this.user, toShow));
+            }));
+        });
 
-        items[13] = new GUIItem(showQRCodeItem, e -> this.user.getChannel().eventLoop().execute(() -> {
-            var token = this.user.getData().getToken();
-            try {
-                byte[] imgBytes = GoogleAuthUtils.createQRCode(
-                        GoogleAuthUtils.getGoogleAuthenticatorBarCode(token, "#1", "AlixVelocity"),
-                        128, 128
-                );
-
-                BufferedImage image = ImageIO.read(new ByteArrayInputStream(imgBytes));
-                //Main.logInfo("image w=" + image.getWidth() + " h=" + image.getHeight());
-
-                byte[] serialized = ImageGenerator.imageToBytes(image);
-
-                ItemStack mapItem = ItemStack.builder().type(ItemTypes.FILLED_MAP).amount(1).component(ComponentTypes.MAP_ID, 0).build();
-
-                WrapperPlayServerSetSlot setSlotPacket = new WrapperPlayServerSetSlot(0, 0, 45, mapItem);
-
-                WrapperPlayServerMapData mapDataPacket = new WrapperPlayServerMapData(0, (byte) 3, false, true,
-                        null, image.getWidth(), image.getHeight(), 0, 0, serialized);
-
-                this.user.getDuplexProcessor().startQrCodeShow();
-
-                this.user.writePacketSilently(setSlotPacket);
-                this.user.writePacketSilently(mapDataPacket);
-                this.user.writePacketSilently(MessageWrapper.createWrapper(GoogleAuthExplanation.COMBINED, false, this.user.user.getClientVersion().toServerVersion()));
-                this.user.closeInventory();//flush
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
-        }));
-
-        items[16] = new GUIItem(authList.current().item, event -> {
+        int[] authTypeSlots = menu.getSlotsForInternal("auth-type");
+        GUIItem authTypeGuiItem = new GUIItem(authList.current().item, event -> {
             var type = ContainerClickWrapper.getAlixClickType(event);
             switch (type) {
                 case LEFT_CLICK:
                 case RIGHT_CLICK:
                     AuthItemType c = type == AlixClickType.RIGHT_CLICK ? authList.previous() : authList.next();
                     changes.setAuthSetting(c.authSetting);
-                    gui.setItem(16, c.item);
+                    for (int slot : authTypeSlots) gui.setItem(slot, c.item);
                     break;
             }
         });
 
-        items[26] = new GUIItem(applyChangesItem, event -> changes.tryApply(user));
-        return items;
+        GUIItem applyChangesGuiItem = new GUIItem(applyChangesItem, event -> changes.tryApply(user));
+
+        Map<String, GUIItem> internalItems = Map.of(
+                "back", backGuiItem,
+                "show-qr", showQRGuiItem,
+                "auth-type", authTypeGuiItem,
+                "apply-changes", applyChangesGuiItem,
+                "reset-token", resetTokenGuiItem,
+                "view-recovery-codes", viewRecoveryCodesGuiItem
+        );
+
+        return MenuBuilder.build(menu, size, this.user, internalItems);
+    }
+
+    //Renders and shows the current Google Authenticator QR code - shared by the "show-qr" button and by a
+    //successful "reset-token" confirmation (which needs to show the BRAND NEW code right after generating
+    //it). Must run on this.user's event loop - callers are responsible for that (see the two call sites).
+    private void showQrCode() {
+        var token = this.user.getData().getToken();
+        try {
+            byte[] imgBytes = GoogleAuthUtils.createQRCode(
+                    GoogleAuthUtils.getGoogleAuthenticatorBarCode(token, "#1", "AlixVelocity"),
+                    128, 128
+            );
+
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(imgBytes));
+            //Main.logInfo("image w=" + image.getWidth() + " h=" + image.getHeight());
+
+            byte[] serialized = ImageGenerator.imageToBytes(image);
+
+            ItemStack mapItem = ItemStack.builder().type(ItemTypes.FILLED_MAP).amount(1).component(ComponentTypes.MAP_ID, 0).build();
+
+            WrapperPlayServerSetSlot setSlotPacket = new WrapperPlayServerSetSlot(0, 0, 45, mapItem);
+
+            WrapperPlayServerMapData mapDataPacket = new WrapperPlayServerMapData(0, (byte) 3, false, true,
+                    null, image.getWidth(), image.getHeight(), 0, 0, serialized);
+
+            this.user.getDuplexProcessor().startQrCodeShow();
+
+            this.user.writePacketSilently(setSlotPacket);
+            this.user.writePacketSilently(mapDataPacket);
+            this.user.writePacketSilently(MessageWrapper.createWrapper(GoogleAuthExplanation.COMBINED, false, this.user.user.getClientVersion().toServerVersion()));
+            this.user.closeInventory();//flush
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    //Runs action immediately if this account already proved app-code access once before (the common case -
+    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams), otherwise prompts for
+    //the CURRENT code first via the same VerifiedPacketProcessor#verifyAuthAccess() flow AuthDataChanges
+    //already uses for changing the auth TYPE, running action only if that's entered correctly.
+    private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
+        if (user.getData().getLoginParams().hasProvenAuthAccess()) {
+            action.run();
+            return;
+        }
+        user.getDuplexProcessor().verifyAuthAccess(action);
+    }
+
+    private static void sendRecoveryCodes(VerifiedUser user, String[] codes) {
+        user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-header"));
+        for (String code : codes) {
+            user.user.sendMessage(AlixFormatter.translateColors("&e" + code));
+        }
+        user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-recovery-codes-chat-footer"));
     }
 
     public static void add(VerifiedUser user, AbstractAlixGUI originalGui) {

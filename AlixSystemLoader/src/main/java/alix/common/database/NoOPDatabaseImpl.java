@@ -56,6 +56,11 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
+    public void updateFingerprintByName(String name, int fingerprint) {
+
+    }
+
+    @Override
     public void updatePasswordByOwner(String ownerName, Password password) {
 
     }
@@ -73,6 +78,26 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     @Override
     public void saveUserToken(Identity identity, String token) {
 
+    }
+
+    @Override
+    public void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail) {
+
+    }
+
+    @Override
+    public void saveRecoveryCodes(Identity identity, String joinedCodes) {
+
+    }
+
+    @Override
+    public void loadRecoveryCodes(Identity identity, Consumer<String> consumer) {
+        consumer.accept(null);
+    }
+
+    @Override
+    public void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback) {
+        callback.accept(false);
     }
 
     @Override
@@ -106,7 +131,7 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
-    public void updateEmailByName(String name, String email) {
+    public void updateEmailByName(Identity identity, String name, String email) {
 
     }
 

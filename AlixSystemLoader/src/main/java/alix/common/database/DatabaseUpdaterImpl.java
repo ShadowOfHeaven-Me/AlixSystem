@@ -10,6 +10,7 @@ import alix.common.data.security.email.Email;
 import alix.common.data.security.password.Password;
 import alix.common.database.connect.DatabaseConnector;
 import alix.common.database.connect.DatabaseType;
+import alix.common.login.auth.RecoveryCodes;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.keys.secret.MapSecretKey;
@@ -48,6 +49,21 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 st.execute(CREATE_USERS_SQL(this.getType()));
                 st.execute(CREATE_PASSWORDS_SQL(this.getType()));
                 st.execute(CREATE_TOKENS_SQL(this.getType()));
+
+                //a fresh table already has the column via CREATE_USERS_SQL above - this only matters for a
+                //table that pre-dates the 'fingerprint' column being introduced
+                try {
+                    st.execute(ADD_FINGERPRINT_COLUMN_SQL(this.getType()));
+                } catch (SQLException ignored) {
+                    //older engine without "ADD COLUMN IF NOT EXISTS" support and the column already exists
+                }
+
+                //same reasoning as fingerprint above, for the 'recovery_codes' column on alix_user_tokens
+                try {
+                    st.execute(ADD_RECOVERY_CODES_COLUMN_SQL(this.getType()));
+                } catch (SQLException ignored) {
+                    //older engine without "ADD COLUMN IF NOT EXISTS" support and the column already exists
+                }
             }
         });
     }
@@ -94,6 +110,128 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 ps.setString(2, token);
                 ps.executeUpdate();
             }
+        });
+    }
+
+    //Commits a regenerated 2FA token and its accompanying re-encrypted email (savableEmail may be null -
+    //an account with no email set yet just skips that half) as ONE database transaction - both writes
+    //share the same connection with autocommit off, and only alix_user_tokens.token gets touched at all
+    //if savableEmail is null. Without this, a reader with its own connection (e.g. a linked website's own
+    //periodic sync job) could - under READ COMMITTED, the default isolation level on both MySQL/InnoDB and
+    //PostgreSQL - observe the row in the brief window between two SEPARATE writes and see a token that
+    //doesn't match the email it's meant to decrypt (or vice versa). One transaction means an outside
+    //reader only ever sees the fully-old or the fully-new pairing, never a mix.
+    //
+    //autoCommit is always restored in the finally block, and HikariCP itself also resets a returned
+    //connection's autoCommit back to the pool's configured default (true here - see finishConfigSetUp())
+    //as a second safety net, so a bug here couldn't leak a "manual commit" connection back into the pool
+    //for an unrelated query to silently use.
+    @Override
+    public void commitTokenAndEmail(Identity identity, String token, String name, String savableEmail) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = connection.prepareStatement(UPSERT_TOKEN_SQL(this.getType()))) {
+                    setUuid(ps, 1, tokenUuid);
+                    ps.setString(2, token);
+                    ps.executeUpdate();
+                }
+
+                if (savableEmail != null) {
+                    try (PreparedStatement ps = connection.prepareStatement(UPDATE_EMAIL_BY_NAME)) {
+                        ps.setString(1, savableEmail);
+                        ps.setString(2, name);
+                        ps.executeUpdate();
+                    }
+                }
+
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
+            }
+        });
+    }
+
+    @Override
+    public void saveRecoveryCodes(Identity identity, String joinedCodes) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_RECOVERY_CODES_SQL)) {
+                ps.setString(1, joinedCodes);
+                setUuid(ps, 2, tokenUuid);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public void loadRecoveryCodes(Identity identity, Consumer<String> consumer) {
+        UUID tokenUuid = identity.tokenKey().key();
+        //queryAsync (not query!) - this is called directly from GUI click handlers/the main login thread,
+        //and query() blocks the calling thread on a real DB round-trip; queryAsync offloads it to a
+        //background thread, same as every write method above. Also chains onto this player's own
+        //execution queue (keyed by identity.identity(), same key saveRecoveryCodes()/tryConsumeRecoveryCode()
+        //below use), so a read here can never interleave with a concurrent write for the SAME player.
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_RECOVERY_CODES_SQL)) {
+                setUuid(ps, 1, tokenUuid);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    consumer.accept(rs.next() ? rs.getString(1) : null);
+                }
+            }
+        });
+    }
+
+    //Reads, checks and (on a match) rewrites the recovery-codes row all within ONE queryAsync task (one
+    //connection, one entry in this player's execution chain) - unlike doing loadRecoveryCodes() then a
+    //separate saveRecoveryCodes() call from the caller, this can't be interleaved by a second concurrent
+    //attempt for the same player (e.g. a laggy client double-sending "/recoverycode <code>"): the second
+    //attempt is queued behind this ENTIRE read-check-write, not just behind the read half of it, so it
+    //always sees this attempt's result (code removed if consumed) rather than racing it.
+    @Override
+    public void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            String joined;
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_RECOVERY_CODES_SQL)) {
+                setUuid(ps, 1, tokenUuid);
+                try (ResultSet rs = ps.executeQuery()) {
+                    joined = rs.next() ? rs.getString(1) : null;
+                }
+            }
+
+            String[] codes = RecoveryCodes.split(joined);
+            int matchIndex = -1;
+
+            for (int i = 0; i < codes.length; i++) {
+                if (RecoveryCodes.matches(codes[i], typedCode)) {
+                    matchIndex = i;
+                    break;
+                }
+            }
+
+            if (matchIndex < 0) {
+                callback.accept(false);
+                return;
+            }
+
+            String[] remaining = new String[codes.length - 1];
+            System.arraycopy(codes, 0, remaining, 0, matchIndex);
+            System.arraycopy(codes, matchIndex + 1, remaining, matchIndex, codes.length - matchIndex - 1);
+
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_RECOVERY_CODES_SQL)) {
+                ps.setString(1, RecoveryCodes.join(remaining));
+                setUuid(ps, 2, tokenUuid);
+                ps.executeUpdate();
+            }
+
+            callback.accept(true);
         });
     }
 
@@ -175,6 +313,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
         int premiumStatus = rs.getInt(i++);
         String premiumUuid = rs.getString(i++);
+        int fingerprint = rs.getInt(i++);
 
         Password mainPassword = readPassword(rs, i);
         i += 4;
@@ -203,7 +342,8 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 homes,
                 premiumData,
                 mainPassword,
-                extraPassword
+                extraPassword,
+                fingerprint
         );
     }
 
@@ -375,6 +515,8 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 setUuid(ps, i++, null);
             }
 
+            ps.setInt(i++, data.getFingerprint());
+
             ps.executeUpdate();
         }
     }
@@ -467,6 +609,17 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     }
 
     @Override
+    public void updateFingerprintByName(String name, int fingerprint) {
+        this.queryAsync(name, connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(UPDATE_FINGERPRINT_BY_NAME)) {
+                ps.setInt(1, fingerprint);
+                ps.setString(2, name);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
     public void updatePasswordByOwner(String ownerName, Password password) {
         this.queryAsync(ownerName, connection -> upsertPassword(connection, ownerName, MAIN_PASSWORD_SLOT, password));
     }
@@ -526,9 +679,13 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
+    //Keyed by identity.identity() (not a plain query()) so this can never interleave with
+    //commitTokenAndEmail() for the SAME player - both now go through that player's own execution chain,
+    //so a 2FA reset and an unrelated "/account verifyemail" completing at nearly the same moment can no
+    //longer race and leave alix_users2.email encrypted under a token that isn't the one actually committed.
     @Override
-    public void updateEmailByName(String name, String email) {
-        this.query(connection -> {
+    public void updateEmailByName(Identity identity, String name, String email) {
+        this.queryAsync(identity.identity(), connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_EMAIL_BY_NAME)) {
                 ps.setString(1, email);
                 ps.setString(2, name);

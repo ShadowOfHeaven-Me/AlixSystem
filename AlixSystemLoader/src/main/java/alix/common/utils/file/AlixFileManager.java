@@ -219,9 +219,26 @@ public abstract class AlixFileManager {
         return writeJarCompiledFileIntoDest(getPluginFile(s, type), s);
     }
 
+    /**
+     * Opens a bundled resource straight from the jar, without ever copying it onto disk - unlike every
+     * other lookup in this class, which materializes a plugin file on disk first. Used where only the
+     * bundled default's own content is needed for a one-off comparison (see Messages' startup check
+     * against a reference/default language file that may not be the operator's selected one, and thus
+     * has no reason to ever exist on disk).
+     *
+     * @return the resource's stream, or null if no such bundled resource exists
+     */
+    public static InputStream getBundledResourceStream(String s) {
+        Class<?> clazz = AlixCommonMain.MAIN_CLASS_INSTANCE.getClass();
+        InputStream in = clazz.getResourceAsStream(s);
+        return in != null ? in : clazz.getClassLoader().getResourceAsStream(s);
+    }
+
     @SneakyThrows
     public static File writeJarCompiledFileIntoDest(File copyInto, String s) {
         Class<?> clazz = AlixCommonMain.MAIN_CLASS_INSTANCE.getClass();
+        File parent = copyInto.getParentFile();
+        if (parent != null) parent.mkdirs();//ensure any subdirectories (e.g. for namespaced/nested resources such as language files) exist before creating the file
         copyInto.createNewFile();
 
         boolean written = writeJarCompiledFileIntoDest(copyInto, clazz.getResourceAsStream(s)) != null;

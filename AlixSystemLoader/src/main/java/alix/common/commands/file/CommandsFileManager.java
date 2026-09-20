@@ -62,6 +62,23 @@ public final class CommandsFileManager {
     public static void init() {
     }
 
+    /**
+     * v1.5.2 ("/as reload"): re-reads commands.txt in place - safe to call again as-is (loadLine()
+     * above only ever does Map#put()/Set#add(), both overwrite-safe), UNLIKE ServerSettings#reload()
+     * or AlixYamlConfigFile#reload(), which needed extra care first.
+     * <p>
+     * IMPORTANT LIMITATION: this refreshes what getCommand()/isPasswordChangeCommand()/etc. return, but
+     * NOT which command names/aliases are actually registered with the platform's command dispatcher
+     * (Velocity's Brigadier tree is built once, at plugin startup, from whatever commands.txt said back
+     * then - see AlixSystemCommand#register()). Adding/renaming an alias in commands.txt still needs a
+     * real proxy restart to take effect; toggling an existing command's "#" (registered) prefix does
+     * too, for the same reason. Only settings this file stores that are actually re-read AFTER startup
+     * (e.g. isPasswordChangeCommand() checks) benefit from a reload without a restart.
+     */
+    public static void reload() {
+        commandsFile.loadExceptionless();
+    }
+
     private CommandsFileManager() {
     }
 

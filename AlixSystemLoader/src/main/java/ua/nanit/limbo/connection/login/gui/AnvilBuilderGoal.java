@@ -17,11 +17,16 @@ public enum AnvilBuilderGoal {
     RECOVERY_EMAIL,
     RECOVERY_CODE;
 
+    //These titles are the actual anvil inventory window titles shown to the player, and previously bypassed
+    //the Messages/i18n system entirely with hardcoded English literals (unlike anvilInvOpenRecoveryEmail/Code
+    //just below, which were already correctly routed through Messages.get) - this was the root cause of the
+    //"untranslated text in the Change Password GUI" report (and affected the Login/Register/Change PIN anvil
+    //titles the exact same way, just not yet noticed/reported).
     private static final PacketSnapshot
-            anvilInvOpenLogin = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, "Login"),
-            anvilInvOpenRegister = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, "Register"),
-            anvilInvOpenPasswordChange = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, "Change password"),
-            anvilInvOpenPinChange = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, "Change PIN"),
+            anvilInvOpenLogin = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, Messages.get("gui-title-login")),
+            anvilInvOpenRegister = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, Messages.get("gui-title-register")),
+            anvilInvOpenPasswordChange = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, Messages.get("anvil-title-change-password")),
+            anvilInvOpenPinChange = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, Messages.get("anvil-title-change-pin")),
             anvilInvOpenRecoveryEmail = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, Messages.get("email-recovery-anvil-email-title")),
             anvilInvOpenRecoveryCode = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.ANVIL, Messages.get("email-recovery-anvil-code-title"));
 
@@ -44,8 +49,10 @@ public enum AnvilBuilderGoal {
         }
     }
 
+    //Live, per-keystroke feedback (see AbstractAnvilBuilder#updateText) - checkBreach=false, since a real
+    //HIBP network call on every keystroke would be disastrous; the actual commit re-validates fully anyway.
     public String getInvalidityReason(String input) {
-        return AlixCommonUtils.getPasswordInvalidityReason(input, this.getLoginType());
+        return AlixCommonUtils.getPasswordInvalidityReasonSync(input, this.getLoginType());
     }
 
     public boolean indicateInvalid() {

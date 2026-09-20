@@ -21,6 +21,10 @@ public interface LimboCommand {
         return LimboCommandImpl.construct0(aliases, arg1Name, arg2Name);
     }
 
+    static LimboCommand construct(List<String> aliases, String arg1Name, String arg2Name, String arg3Name) {
+        return LimboCommandImpl.construct0(aliases, arg1Name, arg2Name, arg3Name);
+    }
+
     static LimboCommand constructMultiCommand(List<CustomCommand> commands) {
         return new LimboMultiCommandImpl(commands);
     }

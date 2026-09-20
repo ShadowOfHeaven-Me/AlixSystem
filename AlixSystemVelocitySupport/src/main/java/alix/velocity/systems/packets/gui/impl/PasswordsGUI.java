@@ -7,10 +7,13 @@ import alix.common.packets.inventory.AlixInventoryType;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.list.LoopList;
 import alix.common.utils.other.throwable.AlixError;
+import alix.velocity.systems.packets.gui.AbstractAlixGUI;
 import alix.velocity.systems.packets.gui.AlixGUI;
 import alix.velocity.systems.packets.gui.GUIItem;
 import alix.velocity.systems.packets.gui.changes.DataChanges;
 import alix.velocity.systems.packets.gui.inv.InventoryGui;
+import alix.velocity.systems.packets.gui.menu.MenuBuilder;
+import alix.velocity.systems.packets.gui.menu.MenuConfig;
 import alix.velocity.utils.user.VerifiedUser;
 import com.github.retrooper.packetevents.protocol.item.ItemStack;
 import com.github.retrooper.packetevents.protocol.item.type.ItemTypes;
@@ -18,15 +21,15 @@ import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import ua.nanit.limbo.connection.login.gui.LimboAuthBuilder;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
 
-import java.util.Arrays;
+import java.util.Map;
 
 import static alix.common.messages.Messages.*;
 
 public final class PasswordsGUI extends AlixGUI {
 
-    private static final String
-            guiTitle = get("gui-title-passwords"),
-            appliedChanges = getWithPrefix("gui-passwords-applied-changes");
+    private static final String MENU_NAME = "passwords";
+
+    private static final String appliedChanges = getWithPrefix("gui-passwords-applied-changes");
 
     private static final AlixMessage
             mainPasswordChange = getAsObject("gui-passwords-changed-main"),
@@ -56,15 +59,18 @@ public final class PasswordsGUI extends AlixGUI {
             NO_LOGIN_TYPE_SECONDARY, COMMAND_LOGIN_TYPE_SECONDARY, PIN_LOGIN_TYPE_SECONDARY, ANVIL_LOGIN_TYPE_SECONDARY
     };
 
-    private final AlixGUI originalGui;
+    private final AbstractAlixGUI originalGui;
 
-    private PasswordsGUI(VerifiedUser user, AlixGUI originalGui) {
-        super(user, AlixInventoryType.GENERIC_9X2, guiTitle);
+    private PasswordsGUI(VerifiedUser user, AbstractAlixGUI originalGui) {
+        super(user, AlixInventoryType.GENERIC_9X2, MenuConfig.get(MENU_NAME).getTitle());
         this.originalGui = originalGui;
     }
 
     @Override
     protected GUIItem[] create(InventoryGui inv) {
+        MenuConfig menu = MenuConfig.get(MENU_NAME);
+        int size = AlixInventoryType.GENERIC_9X2.size();
+
         PersistentUserData data = inv.getData();
         DataChanges changes = new DataChanges(data);
 
@@ -77,46 +83,45 @@ public final class PasswordsGUI extends AlixGUI {
         loginTypeItemList.setCurrentIndex(loginTypeItemList.indexOf(loginTypeItem0));
         extraLoginTypeItemList.setCurrentIndex(extraLoginTypeItemList.indexOf(extraLoginTypeItem0));
 
-        GUIItem[] items = new GUIItem[18];
-        Arrays.fill(items, BACKGROUND_ITEM);
-
-        ItemStack i1 = loginTypeItem0.item;
-        items[0] = new GUIItem(i1, event -> {
+        int[] loginTypeSlots = menu.getSlotsForInternal("login-type");
+        GUIItem loginTypeGuiItem = new GUIItem(loginTypeItem0.item, event -> {
             switch (event.getButton()) {
                 case 0://LEFT
                     LoginTypeItem c = loginTypeItemList.next();
                     changes.setLoginType(c.loginType);
-                    gui.setItem(0, c.item);
+                    for (int slot : loginTypeSlots) gui.setItem(slot, c.item);
                     break;
                 case 1://RIGHT
                     LoginTypeItem c2 = loginTypeItemList.previous();
                     changes.setLoginType(c2.loginType);
-                    gui.setItem(0, c2.item);
+                    for (int slot : loginTypeSlots) gui.setItem(slot, c2.item);
                     break;
             }
         });
 
-        ItemStack i2 = extraLoginTypeItem0.item;
-        items[1] = new GUIItem(i2, event -> {
+        int[] extraLoginTypeSlots = menu.getSlotsForInternal("extra-login-type");
+        GUIItem extraLoginTypeGuiItem = new GUIItem(extraLoginTypeItem0.item, event -> {
             switch (event.getButton()) {
                 case 0://LEFT
                     LoginTypeItem c = extraLoginTypeItemList.next();
                     changes.setExtraLoginType(c.loginType);
-                    gui.setItem(1, c.item);
+                    for (int slot : extraLoginTypeSlots) gui.setItem(slot, c.item);
                     break;
                 case 1://RIGHT
                     LoginTypeItem c2 = extraLoginTypeItemList.previous();
                     changes.setExtraLoginType(c2.loginType);
-                    gui.setItem(1, c2.item);
+                    for (int slot : extraLoginTypeSlots) gui.setItem(slot, c2.item);
                     break;
             }
         });
 
         ItemStack i3 = INPUT_PASSWORD.copy();
-        items[9] = new GUIItem(i3, event -> user.getDuplexProcessor().enablePasswordSetting(password -> {
+        int[] inputPasswordSlots = menu.getSlotsForInternal("input-password");
+        GUIItem inputPasswordGuiItem = new GUIItem(i3, event -> user.getDuplexProcessor().enablePasswordSetting(password -> {
             user.getDuplexProcessor().disablePasswordSetting();
             changes.setPassword(password);
-            gui.setItem(9, setLore(enchant(i3), mainPasswordChange.format(password)));
+            ItemStack updated = setLore(enchant(i3), mainPasswordChange.format(password));
+            for (int slot : inputPasswordSlots) gui.setItem(slot, updated);
             this.map(); //set this gui as used
         }, () -> {
             user.getDuplexProcessor().disablePasswordSetting();
@@ -124,31 +129,38 @@ public final class PasswordsGUI extends AlixGUI {
         }, changes::getLoginType));
 
         ItemStack i4 = INPUT_SECONDARY_PASSWORD.copy();
-        items[10] = new GUIItem(i4, event -> user.getDuplexProcessor().enablePasswordSetting(password -> {
+        int[] inputSecondaryPasswordSlots = menu.getSlotsForInternal("input-secondary-password");
+        GUIItem inputSecondaryPasswordGuiItem = new GUIItem(i4, event -> user.getDuplexProcessor().enablePasswordSetting(password -> {
             user.getDuplexProcessor().disablePasswordSetting();
             changes.setExtraPassword(password);
-            gui.setItem(10, setLore(enchant(i4), secondaryPasswordChange.format(password)));
+            ItemStack updated = setLore(enchant(i4), secondaryPasswordChange.format(password));
+            for (int slot : inputSecondaryPasswordSlots) gui.setItem(slot, updated);
             this.map();//set this gui as used
         }, () -> {
             user.getDuplexProcessor().disablePasswordSetting();
             this.map();//set this gui as used
         }, changes::getExtraLoginType));
 
-        items[8] = new GUIItem(GO_BACK_ITEM, event -> {
-            this.originalGui.map();//set the original gui as used
-        });
+        GUIItem backGuiItem = new GUIItem(GO_BACK_ITEM, event -> this.originalGui.map());//set the original gui as used
 
-        ItemStack i5 = SAVE_CHANGES;
-        items[17] = new GUIItem(i5, event -> {
-            if (changes.tryApply(this.user.user)) {
-                //this.user.write(SoundPackets.PLAYER_LEVELUP);
+        GUIItem saveChangesGuiItem = new GUIItem(SAVE_CHANGES, event -> changes.tryApply(this.user.user, success -> {
+            if (success) {
                 this.user.writePacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_PLAYER_LEVELUP));
                 user.user.sendMessage(appliedChanges);
                 user.closeInventory();
-            } else this.user.sendPacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));//this.user.write(SoundPackets.VILLAGER_NO);//the tryApply method will provide the text feedback
-        });
+            } else this.user.sendPacketSilently(SoundPackets.wrapperOf(Sounds.ENTITY_VILLAGER_NO));//the tryApply method will provide the text feedback
+        }));
 
-        return items;
+        Map<String, GUIItem> internalItems = Map.of(
+                "login-type", loginTypeGuiItem,
+                "extra-login-type", extraLoginTypeGuiItem,
+                "input-password", inputPasswordGuiItem,
+                "input-secondary-password", inputSecondaryPasswordGuiItem,
+                "back", backGuiItem,
+                "save-changes", saveChangesGuiItem
+        );
+
+        return MenuBuilder.build(menu, size, this.user, internalItems);
     }
 
     private static LoginTypeItem getItemFromLoginType(LoginType type, boolean extra) {
@@ -168,7 +180,7 @@ public final class PasswordsGUI extends AlixGUI {
         }
     }
 
-    public static void add(VerifiedUser user, AlixGUI originalGui) {
+    public static void add(VerifiedUser user, AbstractAlixGUI originalGui) {
         AlixScheduler.async(() -> new PasswordsGUI(user, originalGui).map());
     }
 
@@ -182,8 +194,4 @@ public final class PasswordsGUI extends AlixGUI {
             this.loginType = loginType;
         }
     }
-
-/*    public static void remove(Player player) {
-        MAP.remove(player.getUniqueId());
-    }*/
 }

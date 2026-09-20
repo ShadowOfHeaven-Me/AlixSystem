@@ -23,31 +23,31 @@ public final class KauriImpl implements ProxyCheck {
         JsonObject obj = out.getAsJsonObject();
 
         // Sync our local rate limit counter with the definitive API value
-        if (obj.has("queriesLeft") && !obj.get("queriesLeft").isJsonNull()) {
+        if (ProxyCheck.has(obj, "queriesLeft")) {
             rateLimiter.sync(obj.get("queriesLeft").getAsInt());
         }
 
-        if (!obj.has("proxy")) return CheckResultHolder.UNAVAILABLE;
+        if (!ProxyCheck.has(obj, "proxy")) return CheckResultHolder.UNAVAILABLE;
 
         boolean isProxy = obj.get("proxy").getAsBoolean();
         IPInfo.Builder builder = new IPInfo.Builder(address, "Kauri (Funkemunky)")
                 .proxy(isProxy);
 
-        if (obj.has("countryName") && !obj.get("countryName").isJsonNull()) {
+        if (ProxyCheck.has(obj, "countryName")) {
             String country = obj.get("countryName").getAsString();
             if (!"unknown".equalsIgnoreCase(country)) builder.country(country);
         }
 
-        if (obj.has("isp") && !obj.get("isp").isJsonNull()) {
+        if (ProxyCheck.has(obj, "isp")) {
             String isp = obj.get("isp").getAsString();
             if (!"unknown".equalsIgnoreCase(isp)) builder.isp(isp);
-        } else if (obj.has("organization") && !obj.get("organization").isJsonNull()) {
+        } else if (ProxyCheck.has(obj, "organization")) {
             // Fallback to organization if ISP is missing or 'unknown'
             String org = obj.get("organization").getAsString();
             if (!"unknown".equalsIgnoreCase(org)) builder.isp(org);
         }
 
-        if (obj.has("asn") && !obj.get("asn").isJsonNull()) {
+        if (ProxyCheck.has(obj, "asn")) {
             String asn = obj.get("asn").getAsString();
             if (!"unknown".equalsIgnoreCase(asn)) {
                 builder.asn(asn.startsWith("AS") ? asn : "AS" + asn);

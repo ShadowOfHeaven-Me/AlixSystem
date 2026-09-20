@@ -49,3 +49,6 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+//Same gap as AlixAPI's own build.gradle.kts had - see its comment on this exact line.
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(Integer.parseInt(project.findProperty("toolchain-lang-version").toString())))

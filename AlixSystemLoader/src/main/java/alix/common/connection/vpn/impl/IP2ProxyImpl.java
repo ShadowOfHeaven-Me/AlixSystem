@@ -24,25 +24,25 @@ public final class IP2ProxyImpl implements ProxyCheck {
         JsonObject obj = out.getAsJsonObject();
 
         // If the API rate limit is exceeded on their end, they might return an error json without this key
-        if (!obj.has("is_proxy")) return CheckResultHolder.UNAVAILABLE;
+        if (!ProxyCheck.has(obj, "is_proxy")) return CheckResultHolder.UNAVAILABLE;
 
         boolean isProxy = obj.get("is_proxy").getAsBoolean();
         IPInfo.Builder builder = new IPInfo.Builder(address, "IP2Location")
                 .proxy(isProxy);
 
-        if (obj.has("country_name")) builder.country(obj.get("country_name").getAsString());
+        if (ProxyCheck.has(obj, "country_name")) builder.country(obj.get("country_name").getAsString());
 
         // The API returns the company/ISP under the "as" key
-        if (obj.has("as")) builder.isp(obj.get("as").getAsString());
+        if (ProxyCheck.has(obj, "as")) builder.isp(obj.get("as").getAsString());
 
         // ASN is returned as just the number (e.g., "13335")
-        if (obj.has("asn")) {
+        if (ProxyCheck.has(obj, "asn")) {
             String asn = obj.get("asn").getAsString();
             builder.asn(asn.startsWith("AS") ? asn : "AS" + asn);
         }
 
         // Only premium/higher tier queries or certain proxy IPs return the specific proxy_type string
-        if (obj.has("proxy_type") && !obj.get("proxy_type").isJsonNull() && !obj.get("proxy_type").getAsString().isEmpty()) {
+        if (ProxyCheck.has(obj, "proxy_type") && !obj.get("proxy_type").getAsString().isEmpty()) {
             String pType = obj.get("proxy_type").getAsString();
             ProxyType type = switch (pType) {
                 case "VPN" -> ProxyType.VPN;

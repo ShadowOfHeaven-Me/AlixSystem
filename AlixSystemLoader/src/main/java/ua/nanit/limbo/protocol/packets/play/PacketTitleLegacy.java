@@ -1,7 +1,7 @@
 package ua.nanit.limbo.protocol.packets.play;
 
+import alix.common.packets.message.MessageWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTitle;
-import net.kyori.adventure.text.Component;
 import ua.nanit.limbo.protocol.packets.retrooper.OutRetrooperPacket;
 import ua.nanit.limbo.server.data.Title;
 
@@ -16,9 +16,10 @@ public class PacketTitleLegacy extends OutRetrooperPacket<WrapperPlayServerTitle
         return this;
     }
 
+    //Was Component.text(...) - see PacketPlayOutDisconnect#setReason(String) for why that breaks hex codes.
     public PacketTitleLegacy setTitle(Title title) {
-        this.wrapper().setTitle(Component.text(title.getTitle()));
-        this.wrapper().setSubtitle(Component.text(title.getSubtitle()));
+        this.wrapper().setTitle(MessageWrapper.parseLegacy(title.getTitle()));
+        this.wrapper().setSubtitle(MessageWrapper.parseLegacy(title.getSubtitle()));
         this.wrapper().setFadeInTicks(title.getFadeIn());
         this.wrapper().setStayTicks(title.getStay());
         this.wrapper().setFadeOutTicks(title.getFadeOut());

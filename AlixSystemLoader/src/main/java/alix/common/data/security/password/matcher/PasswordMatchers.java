@@ -7,7 +7,18 @@ import alix.common.database.migrate.util.CryptoUtil;
 import alix.common.utils.other.throwable.AlixError;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 public final class PasswordMatchers {
+
+    //A plain String#equals() here would short-circuit on the first differing byte, making the comparison
+    //time depend on how many leading characters of a guessed hash happen to match the real one - a
+    //textbook (if hard to exploit over a real network's jitter) timing side-channel for password hashes.
+    //MessageDigest.isEqual() is the standard constant-time byte-array comparison for exactly this case.
+    private static boolean hashesMatch(String a, String b) {
+        return MessageDigest.isEqual(a.getBytes(StandardCharsets.UTF_8), b.getBytes(StandardCharsets.UTF_8));
+    }
 
     private static final PasswordMatcher[] matchers = createMatchers();
     public static final PasswordMatcher ALIX_FORMAT = matchers[0];
@@ -30,7 +41,7 @@ public final class PasswordMatchers {
             String hashedInput = this.hash(unhashedInput, algorithm, salt);
             //AlixCommonMain.logError("hashedInput='" + hashedInput + "' hashedPassword='" + hashedPassword + "'");
 
-            return hashedPassword.equals(hashedInput);
+            return hashesMatch(hashedPassword, hashedInput);
         }
 
         @Override
@@ -56,7 +67,7 @@ public final class PasswordMatchers {
             //https://github.com/kyngs/LibreLogin/blob/master/Plugin/src/main/java/xyz/kyngs/librelogin/common/crypto/MessageDigestCryptoProvider.java#L63
             String hashedInput = this.hash(unhashedInput, algorithm, salt);
 
-            return hashedPassword.equals(hashedInput);
+            return hashesMatch(hashedPassword, hashedInput);
         }
 
         @Override

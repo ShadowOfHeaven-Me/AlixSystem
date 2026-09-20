@@ -6,6 +6,7 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.packets.command.CommandsWrapperConstructor;
 import alix.common.utils.formatter.AlixFormatter;
 import alix.common.utils.multiengine.ban.BukkitBanList;
@@ -2032,7 +2033,7 @@ public final class CommandManager {
                 sendMessage(sender, itemAbsentDuringRenaming);
                 return false;
             }
-            im.setDisplayName(translateColors(setAsOneAndAddAfter(args, " ")));
+            im.setDisplayName(MessageWrapper.parseToLegacyString(translateColors(setAsOneAndAddAfter(args, " "))));
             i.setItemMeta(im);
             sendMessage(sender, renamedItem);
             return false;
@@ -3532,7 +3533,7 @@ public final class CommandManager {
                 sendMessage(sender, "&cMusisz trzymać przedmiot który chesz nazwać!");
                 return false;
             }
-            im.setDisplayName(translateColors(setAsOneAndAddAfter(args, " ")));
+            im.setDisplayName(MessageWrapper.parseToLegacyString(translateColors(setAsOneAndAddAfter(args, " "))));
             i.setItemMeta(im);
             sendMessage(sender, "&6Poprawnie nazwano przedmiot.");
             return false;

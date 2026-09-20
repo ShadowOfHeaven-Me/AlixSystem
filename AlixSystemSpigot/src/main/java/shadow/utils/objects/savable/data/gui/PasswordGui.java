@@ -4,12 +4,12 @@ import alix.common.data.LoginType;
 import alix.common.login.skull.SkullTextureType;
 import alix.common.login.skull.SkullTextures;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.utils.formatter.AlixFormatter;
 import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -58,10 +58,11 @@ public final class PasswordGui {
             noteBlockSnareSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.BLOCK_NOTE_BLOCK_SNARE),
             noteBlockHarpSoundPacket = OutSoundPacketConstructor.constructConstUnverified(Sounds.BLOCK_NOTE_BLOCK_HARP);
 
-    public static final TextComponent
+    //Were Component.text(Messages.get(...)) - see OutMessagePacketConstructor for why that breaks hex codes.
+    public static final Component
             //pinGUITitle = Component.text(Messages.get("pin-gui-title")),
-            guiTitleLogin = Component.text(Messages.get("gui-title-login")),
-            guiTitleRegister = Component.text(Messages.get("gui-title-register"));
+            guiTitleLogin = MessageWrapper.parseLegacy(Messages.get("gui-title-login")),
+            guiTitleRegister = MessageWrapper.parseLegacy(Messages.get("gui-title-register"));
 
     public static final String
             pinConfirm = Messages.get("pin-confirm"),
@@ -266,7 +267,7 @@ public final class PasswordGui {
     private static ItemStack rename(ItemStack i, String s) {
         ItemMeta meta = i.getItemMeta();
         if (meta == null) return i;//ignore air
-        meta.setDisplayName(AlixFormatter.translateColors(s));
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(AlixFormatter.translateColors(s)));
         i.setItemMeta(meta);
         return i;
     }
