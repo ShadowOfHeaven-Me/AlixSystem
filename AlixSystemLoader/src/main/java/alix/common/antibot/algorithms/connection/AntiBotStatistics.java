@@ -58,9 +58,8 @@ public final class AntiBotStatistics {
         return FireWallManager.getTotalBlocked();
     }
 
-    //todo: proxyProtocol
-    public void incrementJoins(InetAddress addr) {
-        AdaptiveAnomalyDetector.onJoin(addr);
+    public void incrementConnections(InetAddress addr) {
+        AdaptiveAnomalyDetector.onConnection(addr);
         this.currentCps.increment();
 
         this.panicIfNecessary();

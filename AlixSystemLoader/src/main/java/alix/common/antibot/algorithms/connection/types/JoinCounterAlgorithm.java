@@ -15,11 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static alix.common.antibot.firewall.AlgorithmId.C2;
-
 public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
 
-    private static final AlgorithmId ALGORITHM_ID = C2;
     private static final long WINDOW_MS = 60_000L;
     private static final Map<InetAddress, IpStats> MAP = AlixCache.newBuilder().expireAfterAccess(WINDOW_MS, TimeUnit.MILLISECONDS).<InetAddress, IpStats>build().asMap();
 
@@ -80,7 +77,7 @@ public final class JoinCounterAlgorithm implements ConnectionAlgorithm {
 
             int total = this.violationScore;
             if (total > 100) {
-                FireWallManager.add(ip, ALGORITHM_ID, true);
+                FireWallManager.add(ip, AlgorithmId.C2, true);
                 return true;
             }
             return false;

@@ -1,7 +1,9 @@
 package alix.common.antibot.algorithms.any.types;
 
 import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
+import alix.common.antibot.epoll.Telemetry;
+import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.utils.AlixClock;
@@ -52,7 +54,10 @@ public final class TimeOutAlgo {
     }
 
     public static void onConnection(Channel channel, InetAddress addr, boolean mapped) {
-        channel.eventLoop().execute(() -> onConnection0(channel, addr, mapped));
+        if (channel.eventLoop().inEventLoop())
+            onConnection0(channel, addr, mapped);
+        else
+            channel.eventLoop().execute(() -> onConnection0(channel, addr, mapped));
     }
 
     static void onConnection0(Channel channel, InetAddress addr, boolean mapped) {
@@ -94,7 +99,7 @@ public final class TimeOutAlgo {
             AdaptiveAnomalyDetector.onEmptyClose(addr);
 
             LimboJoinProfiler.update(channel, ConnectionStage.TIMED_OUT);
-            ConnectRequestAlgoImpl.close(channel, TIMED_OUT_BUF);
+            RegisteredConnectionAlgoImpl.close(channel, TIMED_OUT_BUF);
 
             var info = TIMEOUT_COUNT.computeIfAbsent(addr, w -> new TimeOutInfo());
             if (info.addTimeout(addr))
@@ -110,7 +115,12 @@ public final class TimeOutAlgo {
             return;
         }
 
-        channel.closeFuture().addListener(f -> remove0(channel));
+        channel.closeFuture().addListener(f -> {
+            if (Telemetry.ENABLED)
+                TelemetryProfiler.removeClosed(channel);
+            remove0(channel);
+            LimboJoinProfiler.update(channel, ConnectionStage.CLOSE_FUTURE_FINISHED);
+        });
     }
 
     private static void remove0(Channel channel) {

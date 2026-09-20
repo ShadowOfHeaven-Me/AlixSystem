@@ -1,7 +1,8 @@
 package ua.nanit.limbo.connection.pipeline;
 
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
 import alix.common.antibot.firewall.FireWallManager;
+import alix.common.connection.filters.GeoIPTracker;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.netty.safety.NettySafetyException;
@@ -167,8 +168,9 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
                     cause.printStackTrace();
                 }
                 var addr = AlixCommonUtils.getAddress(ctx.channel());
-                //if (!GeoIPTracker.isMapped(addr))
-                FireWallManager.addCauseException(addr, cause, FireWallManager.NO_TIMEOUT);
+                //forever for unknown ips, 30m for known
+                long timeout = !GeoIPTracker.isMapped(addr) ? FireWallManager.NO_TIMEOUT : 30 * 60;
+                FireWallManager.addCauseException(addr, cause, timeout);
                 return;
             }
 
@@ -473,11 +475,11 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         //Log.error("channelRegistered");
         if (!NanoLimbo.INTEGRATION.isProxyProtocol()) {
             var addr = AlixCommonUtils.getSocketAddress(this.channel);
-            if (ConnectRequestAlgoImpl.onConnection(this.channel, addr.getAddress()))
+            if (RegisteredConnectionAlgoImpl.onConnection(this.channel, addr.getAddress()))
                 return;
 
-            if (ConnectRequestAlgoImpl.isInvalidPort(this.channel, addr))
-                return;
+            /*if (ConnectRequestAlgoImpl.isInvalidPort(this.channel, addr))
+                return;*/
         }
 
         if (this.passRegistration())

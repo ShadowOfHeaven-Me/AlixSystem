@@ -569,11 +569,17 @@ public class PacketBlocker implements PacketProcessor {
 
     //long t;
 
-    private static final ByteBuf invalidProtocolError = OutDisconnectPacketConstructor.constAtPlay("§cInvalid Protocol [Alix]");
+    //private static final ByteBuf invalidProtocolError = OutDisconnectPacketConstructor.constAtPlay("§cInvalid Protocol [Alix]");
 
     //we execute it async because the password hashing
     //algorithms could be somewhat heavy
     private void processCommand(char[] cmd) {
+        if (this.user.isGUIUser()) {
+            this.user.writeDynamicMessageSilently(Component.text("&cError - Cannot input command cuz you're using a GUI for login!"));
+            this.user.flush();
+            return;
+
+        }
         AlixScheduler.async(() -> AlixCommandManager.handleVerificationCommand(cmd, this.user));
     }
 

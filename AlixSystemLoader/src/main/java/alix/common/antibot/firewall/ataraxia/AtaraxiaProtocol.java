@@ -19,7 +19,6 @@ final class AtaraxiaProtocol {
             R2J_HANDSHAKE_REPLY = 0,
             R2J_UPDATE_MAP = 1;
 
-
     static ByteBuf encodeJ2RHandshake() {
         ByteBuf buf = ServerHandler.buffer();
 

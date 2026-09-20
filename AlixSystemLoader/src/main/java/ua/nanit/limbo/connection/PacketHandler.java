@@ -1,6 +1,6 @@
 package ua.nanit.limbo.connection;
 
-import alix.common.antibot.algorithms.any.ConnectRequestAlgoImpl;
+import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.AlgorithmId;
@@ -80,7 +80,7 @@ public final class PacketHandler {
             TelemetryProfiler.PROFILER.onStatusRequest(conn.getChannel());
 
         LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.STATUS_REQUEST);
-        ConnectRequestAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), conn.getAddress());
+        RegisteredConnectionAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), conn.getAddress());
 
         if (MotdHandler.sendCachedResponse(conn))
             return;
@@ -185,7 +185,7 @@ public final class PacketHandler {
             return;
         }
 
-        ConnectRequestAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), addr);
+        RegisteredConnectionAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), addr);
 
         conn.sentLogin = true;
         conn.getFrameDecoder().stopResendCollection();

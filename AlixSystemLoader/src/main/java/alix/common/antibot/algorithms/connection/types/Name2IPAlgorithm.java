@@ -13,11 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static alix.common.antibot.firewall.AlgorithmId.B3;
-
 public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
-    private static final AlgorithmId ALGORITHM_ID = B3;
     private static final long WINDOW_MS = 4000;
     private static final Map<InetAddress, Bucket> MAP = AlixCache.newBuilder().expireAfterAccess(WINDOW_MS, TimeUnit.MILLISECONDS).<InetAddress, Bucket>build().asMap();
 
@@ -92,7 +89,7 @@ public final class Name2IPAlgorithm implements ConnectionAlgorithm {
 
             if (this.tokens < 0) {
                 if (++this.overrun > 1) {
-                    FireWallManager.add(ip, ALGORITHM_ID, true);
+                    FireWallManager.add(ip, AlgorithmId.B3, true);
                     return true;
                 }
             } else
