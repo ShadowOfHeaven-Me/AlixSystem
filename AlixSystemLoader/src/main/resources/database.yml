@@ -35,6 +35,11 @@ external-sync: false
 #  including account creation - Beware: This allows for a possible abuse of overloading database queries in case of attacks.
 #  I'll try to stop this in the future, but know that for now this opens up a vulnerability)
 caching-strategy: preload
+# Defines whether a player's 2FA token cache should also be re-fetched from the database on every login,
+# in case it was changed by an external source sharing the same database (e.g. a linked website's own 2FA
+# setup) - independent of caching-strategy above, which only governs account data, not the token
+# specifically. Only relevant if external-sync is enabled; adds one extra database request per login.
+refresh-token-on-login: false
 #Defines the database connector type to use. Available:
 # MySQL - supports some MySQL-like databases (for example MariaDB)
 # PostgreSQL - uses Postgres

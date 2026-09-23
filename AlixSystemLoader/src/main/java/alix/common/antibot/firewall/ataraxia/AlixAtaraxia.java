@@ -7,8 +7,13 @@ import java.util.List;
 
 public final class AlixAtaraxia {
 
+    //A compile-time constant (unlike a method call, reading this field never triggers this class's static
+    //initializer in a caller - see JLS 12.4.1) so every isEnabled()-style check elsewhere in the codebase
+    //can gate a call into this class without itself starting the IPC listener below as a side effect.
+    public static final boolean ENABLED = false;
+
     static {
-        init();
+        if (ENABLED) init();
     }
 
     public static void blacklist(InetAddress ip) {
@@ -25,10 +30,6 @@ public final class AlixAtaraxia {
 
     public static void unwhitelist(InetAddress ip) {
         AtaraxiaIPC.mapUpdate_writeAndFlush(false, false, List.of(ip));
-    }
-
-    public static boolean isEnabled() {
-        return false;
     }
 
     private static void init() {

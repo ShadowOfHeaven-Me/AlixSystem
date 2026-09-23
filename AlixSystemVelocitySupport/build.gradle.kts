@@ -22,7 +22,7 @@ version = project.findProperty("alix-velocity-version")!!
 //lower 'velocity-toolchain-lang-version' below, since an older Velocity build needs an older JDK too). The
 //build NUMBER within whichever version this resolves to is always the newest one PaperMC has published,
 //so this never needs bumping just because PaperMC shipped another build of the same version.
-val velocityTargetVersion = project.findProperty("velocity-target-version") as? String ?: "4.1.2-SNAPSHOT"
+val velocityTargetVersion = project.findProperty("velocity-target-version") as? String ?: "4.2.1-SNAPSHOT"
 
 //There's no publicly consumable Maven artifact exposing Velocity's internals (only the much smaller,
 //public "velocity-api" is published that way, which doesn't have what this plugin needs to hook into
@@ -85,6 +85,19 @@ tasks.shadowJar {
     relocate("com.github.retrooper.packetevents", "$prefix.com.github.retrooper.packetevents")
     //relocate("net.kyori", "$prefix.net.kyori")
     relocate("com.alessiodp.libby", "$prefix.com.alessiodp.libby")
+    //See AlixSystemSpigot/build.gradle.kts's shadowJar block for why these are relocated (unrelocated
+    //JDBC/pool classes trip other plugins' unrelocated-library stability warnings, e.g. LibertyBans') and
+    //why mergeServiceFiles()/duplicatesStrategy below are needed alongside it (otherwise one of the two
+    //drivers' META-INF/services/java.sql.Driver entry silently gets dropped instead of merged).
+    relocate("org.mariadb.jdbc", "$prefix.org.mariadb.jdbc")
+    relocate("org.postgresql", "$prefix.org.postgresql")
+    relocate("com.zaxxer.hikari", "$prefix.com.zaxxer.hikari")
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
+    eachFile {
+        if (!this.path.startsWith("META-INF/services/"))
+            this.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 
     //if (!isUber)
     minimize {

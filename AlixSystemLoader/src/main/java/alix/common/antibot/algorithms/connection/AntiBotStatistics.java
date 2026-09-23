@@ -1,6 +1,7 @@
 package alix.common.antibot.algorithms.connection;
 
 import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
+import alix.common.antibot.algorithms.adaptive.ConnectionVerdict;
 import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
@@ -46,7 +47,7 @@ public final class AntiBotStatistics {
 
     public String getFormattedStatistics() {
         int total = getTotalBlocked();
-        String cpsView = AlixAtaraxia.isEnabled() ? "&7(excluding blocked) CPS: " : "&7CPS: ";
+        String cpsView = AlixAtaraxia.ENABLED ? "&7(excluding blocked) CPS: " : "&7CPS: ";
         return AlixFormatter.translateColors(cpsView + "&c" + getCPS() + " &7Total Blocked: &c" + total + " &7Blocked Since Start: &c" + getBlockedSinceStart(total));
     }
 
@@ -58,11 +59,23 @@ public final class AntiBotStatistics {
         return FireWallManager.getTotalBlocked();
     }
 
-    public void incrementConnections(InetAddress addr) {
-        AdaptiveAnomalyDetector.onConnection(addr);
+    public ConnectionVerdict incrementConnections(InetAddress addr) {
+        return incrementConnections(addr, 1);
+    }
+
+    //weight: see AdaptiveAnomalyDetector#onConnection(InetAddress, int). currentCps/panic-mode stay
+    //unweighted on purpose - those track the literal raw connection rate for the CPS display and the
+    //global-panic circuit breaker, not per-source suspicion.
+    //
+    //Returns AdaptiveAnomalyDetector's verdict instead of discarding it - callers used to increment the
+    //stats and throw the result away, so ELEVATED's RATE_LIMITED verdict never actually rejected a
+    //connection; only ATTACK's FIREWALLED side effect had any real effect. Callers now branch on this.
+    public ConnectionVerdict incrementConnections(InetAddress addr, int weight) {
+        ConnectionVerdict verdict = AdaptiveAnomalyDetector.onConnection(addr, weight);
         this.currentCps.increment();
 
         this.panicIfNecessary();
+        return verdict;
     }
 
     private void panicIfNecessary() {

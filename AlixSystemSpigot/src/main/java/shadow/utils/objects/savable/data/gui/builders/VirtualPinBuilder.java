@@ -77,7 +77,7 @@ public final class VirtualPinBuilder implements AlixJavaVerificationGui {
                 return;
             }
 
-            if (++user.loginAttempts == maxLoginAttempts)
+            if (++user.loginAttempts >= maxLoginAttempts)
                 MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
             else {//beautiful syntax
                 this.resetPin0();

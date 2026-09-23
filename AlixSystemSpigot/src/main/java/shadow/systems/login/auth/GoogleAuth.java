@@ -73,10 +73,6 @@ public final class GoogleAuth {
 
             ByteBuf[] buffers = ImageRenderer.qrCode(image);
 
-            /*AlixScheduler.repeatAsync(() -> {
-                Main.logError("CODE: " + GoogleAuthUtils.getTOTPCode(token) + " TOKEN: " + token);
-            }, 1, TimeUnit.SECONDS);*/
-
             Channel channel = user.getChannel();
 
             user.getDuplexProcessor().startQRCodeShow();

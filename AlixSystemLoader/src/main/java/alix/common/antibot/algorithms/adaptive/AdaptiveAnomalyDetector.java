@@ -72,6 +72,10 @@ public final class AdaptiveAnomalyDetector {
     private static final Map<Integer, SourceMetrics<Integer>> IPV4_SUBNET = new ConcurrentHashMap<>(); // /24
     private static final Map<Long, SourceMetrics<Long>> IPV6_PREFIX = new ConcurrentHashMap<>(); // /64
 
+    //Kept in sync with TesterAdaptiveAnomalyDetector's own copy of these same constants (src/test/java) -
+    //that harness can't call through this class directly, since referencing ANY member of
+    //AdaptiveAnomalyDetector triggers its static initializer above, which schedules real background tasks
+    //via AlixScheduler and needs a live Bukkit/Velocity platform on the classpath to do so.
     private static SourceMetrics<InetAddress> newPerIpMetrics() {
         return new SourceMetrics<>(0.1, 30, 1.5, 8, 15, 4_000,
                 2, 3, 8, 20,
@@ -110,13 +114,20 @@ public final class AdaptiveAnomalyDetector {
     }
 
     public static ConnectionVerdict onConnection(InetAddress addr) {
-        connectionsEstablishedCounter.increment();
+        return onConnection(addr, 1);
+    }
+
+    //weight lets a caller (LimboIntegration, via TelemetryProfiler.synSignature(channel)) make a single
+    //connection count as more than 1 toward the CUSUM buckets below when its SYN fingerprint looks
+    //suspicious. See SourceMetrics#recordConnectionEstablished(int).
+    public static ConnectionVerdict onConnection(InetAddress addr, int weight) {
+        connectionsEstablishedCounter.add(weight);
         var ipMetrics = PER_IP.computeIfAbsent(addr, a -> newPerIpMetrics());
-        var ipState = ipMetrics.recordConnectionEstablished();
+        var ipState = ipMetrics.recordConnectionEstablished(weight);
 
         var subnetKey = subnetKey(addr);
         var subnetMetrics = computeSubnetForKey(subnetKey);
-        var subnetState = subnetMetrics.recordConnectionEstablished();
+        var subnetState = subnetMetrics.recordConnectionEstablished(weight);
 
         return handle(addr, subnetKey, ipState, subnetState, ipMetrics, subnetMetrics);
     }

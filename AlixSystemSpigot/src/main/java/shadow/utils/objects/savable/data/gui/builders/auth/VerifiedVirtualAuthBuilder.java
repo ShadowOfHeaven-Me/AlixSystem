@@ -6,6 +6,9 @@ import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import com.github.retrooper.packetevents.util.Vector3i;
 import io.github.retrooper.packetevents.util.SpigotConversionUtil;
 import io.netty.buffer.ByteBuf;
+import shadow.Main;
+import shadow.utils.misc.methods.MethodProvider;
+import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.misc.packet.constructors.OutSoundPacketConstructor;
 import shadow.utils.users.types.VerifiedUser;
@@ -14,11 +17,30 @@ import java.util.function.Consumer;
 
 public final class VerifiedVirtualAuthBuilder extends VirtualAuthBuilder {
 
+    //This gate ("prove your current app code" before Reset Token/Recovery Codes/QR Code) defends against
+    //someone briefly at an unattended, already-logged-in session - unlike every other code-entry path, it
+    //had no attempt cap at all. Reuses max-auth-app-attempts for consistency with the login-time gate, and
+    //kicks (not just locks the GUI) once exceeded, since that's exactly who this gate exists to keep out.
+    private static final int maxInputAttempts = Main.config.getInt("max-auth-app-attempts");
+    private static final ByteBuf kickInvalidCodeMessagePacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("google-auth-invalid-code"));
+
     private final VerifiedUser user;
     private final Vector3i loc;
 
     public VerifiedVirtualAuthBuilder(VerifiedUser user, Consumer<Boolean> onConfirm) {
-        super(user, user.getData(), onConfirm, false);
+        this(user, onConfirm, new int[1]);
+    }
+
+    //wrongAttempts: a single-element array rather than an instance field, since it must be captured by the
+    //onConfirm wrapper passed to super() below - before "this" exists to hold a field on.
+    private VerifiedVirtualAuthBuilder(VerifiedUser user, Consumer<Boolean> onConfirm, int[] wrongAttempts) {
+        super(user, user.getData(), correct -> {
+            if (!correct && ++wrongAttempts[0] >= maxInputAttempts) {
+                MethodProvider.kickAsync(user, kickInvalidCodeMessagePacket);
+                return;
+            }
+            onConfirm.accept(correct);
+        }, false);
         this.user = user;
         this.loc = vec3iLoc(user);
     }

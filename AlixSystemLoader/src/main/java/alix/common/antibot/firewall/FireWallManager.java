@@ -100,7 +100,11 @@ public final class FireWallManager {
         recentFirewalls.increment();
         int sum = (int) recentFirewalls.sum();
 
-        AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.SECONDS);
+        //RECENT_FIREWALL_WINDOW is milliseconds (see its use at line 92 above) - was passed with
+        //TimeUnit.SECONDS, scheduling each decrement ~5.56 hours later instead of ~20 seconds later, so
+        //recentFirewalls only ever grew during a sustained attack and console logging stayed latched off
+        //for its whole duration instead of rolling off every ~20s as intended.
+        AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.MILLISECONDS);
 
         if (sum > MAX_RECENT_FIREWALLS && MESSAGES_LOCKED.compareAndSet(false, true)) {
             AlixCommonMain.logInfo(firewallLogsExhaustedConsoleMessage);
@@ -141,7 +145,13 @@ public final class FireWallManager {
 
         if (!loaded) {
             AdaptiveAnomalyDetector.onFirewall();
-            AlixAtaraxia.blacklist(ip);
+            //This call site never guarded on AlixAtaraxia.isEnabled() (hardcoded false, an unfinished
+            //feature) unlike every other Ataraxia call site. Confirmed live: with no Ataraxia companion
+            //process connected, AtaraxiaIPC.mapUpdate_writeAndFlush() -> ServerHandler.write() NPEs on the
+            //null channel, aborting this method before dynamicMap.putIfAbsent() ran - so on any
+            //epoll-capable server, no IP was ever actually firewalled by this path.
+            if (AlixAtaraxia.ENABLED)
+                AlixAtaraxia.blacklist(ip);
         }
         // Dynamic
         FireWallEntry previous = dynamicMap.putIfAbsent(ip, entry);

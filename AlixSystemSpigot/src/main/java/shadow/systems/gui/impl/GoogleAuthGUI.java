@@ -92,9 +92,21 @@ public final class GoogleAuthGUI extends AlixGUI {
         items[10] = whatIsThis;
 
         items[13] = new GUIItem(showQRCodeItem, e -> {
-            AlixScheduler.async(() -> GoogleAuth.showQRCode(user, player));
-            //the inv is closed here /\
             MAP.remove(player.getUniqueId());
+
+            //Token rotation for a not-yet-enabled account happens once, in AuthDataChanges#tryApply() right
+            //before the app is actually enabled - not here on every view, which would make the token
+            //generally volatile (other places, e.g. email encryption, rely on it staying stable otherwise).
+            if (!params.hasProvenAuthAccess() && !params.getAuthSettings().requiresAuthApp()) {
+                AlixScheduler.async(() -> GoogleAuth.showQRCode(user, player));
+                return;
+            }
+
+            //Shows the persistent secret itself (via QR code) - not a rotating code, so anyone who briefly
+            //gets at an already-logged-in, unattended session could otherwise scan it onto their own device
+            //outright, same as the reset-token/view-recovery-codes buttons below. Same gate as those.
+            runGatedByAuthAccess(user, () -> AlixScheduler.async(() -> GoogleAuth.showQRCode(user, player)));
+            //the inv is closed here /\ (or by verifyAuthAccess()'s own GUI, if gated)
         });
 
         items[16] = new GUIItem(authList.current().item, event -> {
@@ -177,11 +189,28 @@ public final class GoogleAuthGUI extends AlixGUI {
     }
 
     //Runs action immediately if this account already proved app-code access once before (the common case -
-    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams), otherwise prompts for
-    //the CURRENT code first via the same VerifiedVirtualAuthBuilder GUI/flow AuthDataChanges already uses
-    //for changing the auth TYPE, running action only if that's entered correctly.
+    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams) OR if the app currently
+    //isn't required at all - there's nothing to protect yet, and these buttons are reachable even while the
+    //account is still PASSWORD-only (never went through AuthDataChanges).
+    //
+    //Checks params.getAuthSettings().requiresAuthApp(), NOT UserTokensFileManager.hasToken() (an earlier,
+    //WRONG version of this check, found+fixed 2026-09-23 after a real player hit it on a totally fresh
+    //account): since Alix 3.10.0, PersistentUserData.saveToDatabase() eagerly generates+persists a token for
+    //EVERY account on its very first save, whether or not the app was ever enabled - so hasToken() is true
+    //for virtually every account almost immediately and is not a "was 2FA ever configured" signal at all.
+    //Gating on it meant these buttons demanded a code for a secret the player had genuinely never seen -
+    //exactly the catch-22 this whole gating mechanism was built to prevent in the first place.
+    //Without SOME check here, opening the verification prompt itself (AbstractAuthBuilder's constructor
+    //calls data.getToken(), which LAZILY GENERATES a fresh secret as a side effect of just being shown, on
+    //top of the one saveToDatabase() already silently created) would still be harmless data-wise but would
+    //still demand a code nobody has ever seen - see AuthDataChanges' equivalent reasoning for "first time
+    //enabling" the app.
+    //Otherwise prompts for the CURRENT code first via the same VerifiedVirtualAuthBuilder GUI/flow
+    //AuthDataChanges already uses for changing the auth TYPE, running action only if that's entered correctly.
     private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
-        if (user.getData().getLoginParams().hasProvenAuthAccess()) {
+        LoginParams params = user.getData().getLoginParams();
+
+        if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) {
             action.run();
             return;
         }

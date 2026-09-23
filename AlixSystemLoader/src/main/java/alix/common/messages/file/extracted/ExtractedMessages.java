@@ -1,5 +1,6 @@
 package alix.common.messages.file.extracted;
 
+import alix.common.AlixCommonMain;
 import alix.common.messages.Messages;
 import alix.common.messages.file.MessagesFile;
 import alix.common.utils.file.AlixFileManager;
@@ -38,8 +39,11 @@ public class ExtractedMessages extends AlixFileManager {
     public List<String> getFormattedMessages() {
         int size = messages.size();
         List<String> formatted = new ArrayList<>(size);
+        //Must match MessagesFile#loadLine()'s own split delimiter, not a hardcoded one - otherwise a
+        //regenerated messages.txt becomes unparseable on the next load.
+        char separator = AlixCommonMain.MAIN_CLASS_INSTANCE.getEngineParams().messagesSeparator();
         for (int i = 0; i < size; i++)
-            formatted.add(syntaxes.get(i) + ": " + messages.get(i));
+            formatted.add(syntaxes.get(i) + separator + " " + messages.get(i));
         Collections.sort(formatted);
         return formatted;
     }
