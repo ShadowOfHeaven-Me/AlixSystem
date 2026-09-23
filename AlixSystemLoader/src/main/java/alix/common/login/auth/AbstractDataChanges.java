@@ -7,6 +7,7 @@ import alix.common.messages.Messages;
 import alix.common.utils.AlixCommonUtils;
 
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public abstract class AbstractDataChanges<T> {
 
@@ -28,79 +29,103 @@ public abstract class AbstractDataChanges<T> {
         this.setExtraLoginType(data.getLoginParams().getExtraLoginType());
     }
 
-    public boolean tryApply(T player) {
-        boolean changeMainPassword = false, changeExtraPassword = false;
-
+    //Callback-based (rather than returning boolean directly) because password validation can involve a real
+    //HaveIBeenPwned HTTP call - see AlixCommonUtils#getPasswordInvalidityReasonAsync - which must never block
+    //whatever thread calls this. The callback fires immediately, on the calling thread, whenever that HTTP
+    //call isn't needed (the overwhelming majority of calls).
+    public void tryApply(T player, Consumer<Boolean> callback) {
         LoginType originalLoginType = data.getLoginType();
 
         if (newPassword == null) {//didn't change the password, but tried to change from a proper password to a pin or vice versa
             if (originalLoginType == LoginType.PIN && loginType != LoginType.PIN) {
                 this.sendMessage.accept(player, mainPin);
-                return false;
+                callback.accept(false);
+                return;
             }
 
             if (originalLoginType != LoginType.PIN && loginType == LoginType.PIN) {
                 this.sendMessage.accept(player, mainNotPin);
-                return false;
+                callback.accept(false);
+                return;
             }
 
-            LoginType extraLoginType = data.getLoginParams().getExtraLoginType();
+            LoginType currentExtraLoginType = data.getLoginParams().getExtraLoginType();
 
             if (this.extraLoginType != null && newExtraPassword == null) {
-                if (extraLoginType == LoginType.PIN && this.extraLoginType != LoginType.PIN) {
+                if (currentExtraLoginType == LoginType.PIN && this.extraLoginType != LoginType.PIN) {
                     this.sendMessage.accept(player, secondaryPin);
-                    return false;
+                    callback.accept(false);
+                    return;
                 }
 
-                if (extraLoginType != LoginType.PIN && this.extraLoginType == LoginType.PIN) {
+                if (currentExtraLoginType != LoginType.PIN && this.extraLoginType == LoginType.PIN) {
                     this.sendMessage.accept(player, secondaryNotPin);
-                    return false;
+                    callback.accept(false);
+                    return;
                 }
             }
         }
 
         if (newPassword != null) {
-            String reason = AlixCommonUtils.getPasswordInvalidityReason(newPassword, loginType);
-            if (reason == null) changeMainPassword = true;
-            else {
-                this.sendMessage.accept(player, reason);
-                return false;
-            }
+            AlixCommonUtils.getPasswordInvalidityReasonAsync(newPassword, loginType, reason -> {
+                if (reason != null) {
+                    this.sendMessage.accept(player, reason);
+                    callback.accept(false);
+                    return;
+                }
+                this.tryApplyExtra(player, true, callback);
+            });
+            return;
         }
 
+        this.tryApplyExtra(player, false, callback);
+    }
+
+    private void tryApplyExtra(T player, boolean changeMainPassword, Consumer<Boolean> callback) {
         if (extraLoginType != null) {
-            if (newExtraPassword == null && data.getLoginParams().getExtraPassword() == null) {//
+            if (newExtraPassword == null && data.getLoginParams().getExtraPassword() == null) {
                 this.sendMessage.accept(player, secondaryNotSet);
-                return false;
+                callback.accept(false);
+                return;
             }
             if (newExtraPassword != null) {
-                String reason = AlixCommonUtils.getPasswordInvalidityReason(newExtraPassword, extraLoginType);
-                if (reason == null) changeExtraPassword = true;
-                else {
-                    this.sendMessage.accept(player, reason);
-                    return false;
-                }
-            }
-            LoginType extraLoginType = data.getLoginParams().getExtraLoginType();
-
-            if (this.extraLoginType != null && newExtraPassword == null) {
-                if (extraLoginType == LoginType.PIN && this.extraLoginType != LoginType.PIN) {
-                    this.sendMessage.accept(player, secondaryPin);
-                    return false;
-                }
-
-                if (extraLoginType != LoginType.PIN && this.extraLoginType == LoginType.PIN) {
-                    this.sendMessage.accept(player, secondaryNotPin);
-                    return false;
-                }
+                AlixCommonUtils.getPasswordInvalidityReasonAsync(newExtraPassword, extraLoginType, reason -> {
+                    if (reason != null) {
+                        this.sendMessage.accept(player, reason);
+                        callback.accept(false);
+                        return;
+                    }
+                    this.finishApply(player, changeMainPassword, true, callback);
+                });
+                return;
             }
         }
+        this.finishApply(player, changeMainPassword, false, callback);
+    }
+
+    private void finishApply(T player, boolean changeMainPassword, boolean changeExtraPassword, Consumer<Boolean> callback) {
+        LoginType currentExtraLoginType = data.getLoginParams().getExtraLoginType();
+
+        if (this.extraLoginType != null && newExtraPassword == null) {
+            if (currentExtraLoginType == LoginType.PIN && this.extraLoginType != LoginType.PIN) {
+                this.sendMessage.accept(player, secondaryPin);
+                callback.accept(false);
+                return;
+            }
+
+            if (currentExtraLoginType != LoginType.PIN && this.extraLoginType == LoginType.PIN) {
+                this.sendMessage.accept(player, secondaryNotPin);
+                callback.accept(false);
+                return;
+            }
+        }
+
         if (changeMainPassword) data.setPassword(newPassword);
         if (changeExtraPassword) data.getLoginParams().setExtraPassword(Password.fromUnhashed(newExtraPassword));
 
         data.setLoginType(loginType);
         data.getLoginParams().setExtraLoginType(extraLoginType);
-        return true;
+        callback.accept(true);
     }
 
     public String getPassword() {

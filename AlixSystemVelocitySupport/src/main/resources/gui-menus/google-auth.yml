@@ -1,0 +1,72 @@
+#--------------------------------------------------------------------------------------------#
+#              Two-Factor Authentication menu - configurable positions & actions              #
+#--------------------------------------------------------------------------------------------#
+#
+# This file controls the Two-Factor Authentication sub-menu (opened from /account). The menu
+# SIZE (27 slots, a 9x3 grid) is fixed.
+#
+# The "what-is-this" item below is purely informational and fully configurable like a normal
+# item (see gui-menus/account.yml's comments for the full settings/actions reference). The
+# other three buttons have live, stateful behavior (showing a QR code, cycling the auth type,
+# applying changes), so their appearance stays built-in - each just needs "internal" + "slot".
+#
+# Valid internal ids:
+#   show-qr              - generates and shows the Google Authenticator QR code
+#   auth-type             - cycles the 2FA requirement (password / authenticator app / both)
+#   apply-changes          - applies the selected changes
+#   back                    - returns to the menu that opened this one
+#   reset-token              - generates a brand new secret/QR code (and new recovery codes), invalidating
+#                              the old ones - click once to arm, click again to confirm
+#   view-recovery-codes        - shows the player's current backup codes in chat
+#
+# background.material / background.name - the filler item shown in every slot with no item assigned.
+#
+# DEFAULT_OF(...) VALUES
+# Some values below are written as "default_of(x)" instead of a plain "x" - this marks x as the
+# plugin's own bundled default rather than something you've deliberately chosen. It's read exactly
+# like a plain "x" today, but a future update may silently change what's inside the parentheses (e.g.
+# reposition an item, swap a default icon/texture) even on a server that's already running this exact
+# file. A plain, unwrapped value (no matter what it's set to) is treated as YOUR deliberate choice and
+# is never touched by an update, for as long as the setting it belongs to still exists.
+# To lock a "default_of(...)" value in place so it never changes on you again, just delete the
+# "default_of(" and its matching ")", keeping the value itself.
+
+title: "@gui-title-google-auth"
+
+background.material: default_of(GRAY_STAINED_GLASS_PANE)
+background.name: "&f"
+
+item-order:
+  - what-is-this
+  - show-qr
+  - auth-type
+  - apply-changes
+  - back
+  - reset-token
+  - view-recovery-codes
+
+items.what-is-this.slot: default_of(10)
+items.what-is-this.head-texture: default_of("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZmMyNzEwNTI3MTllZjY0MDc5ZWU4YzE0OTg5NTEyMzhhNzRkYWM0YzI3Yjk1NjQwZGI2ZmJkZGMyZDZiNWI2ZSJ9fX0=")
+items.what-is-this.name: "@gui-google-auth-what-is-this-name"
+items.what-is-this.lore:
+  - "@gui-google-auth-what-is-this"
+items.what-is-this.actions:
+  - "[none]"
+
+items.show-qr.slot: default_of(13)
+items.show-qr.internal: show-qr
+
+items.auth-type.slot: default_of(16)
+items.auth-type.internal: auth-type
+
+items.apply-changes.slot: default_of(26)
+items.apply-changes.internal: apply-changes
+
+items.back.slot: default_of(8)
+items.back.internal: back
+
+items.reset-token.slot: default_of(4)
+items.reset-token.internal: reset-token
+
+items.view-recovery-codes.slot: default_of(22)
+items.view-recovery-codes.internal: view-recovery-codes

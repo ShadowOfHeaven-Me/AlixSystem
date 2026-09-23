@@ -26,5 +26,18 @@ public interface AlixMain {
         default char messagesSeparator() {
             return ':';
         }
+
+        /**
+         * The messages file treated as the "reference" translation to validate {@link #messagesFileName()}
+         * against for missing keys (see Messages' startup check) - i.e. the language every other
+         * bundled translation is expected to have every key of. Defaults to {@link #messagesFileName()}
+         * itself, meaning "nothing to compare against" for a platform with only a single messages file;
+         * a platform offering multiple language files (like Velocity's "language" config option) should
+         * override this to always return its default/canonical language's file name, regardless of which
+         * one is actually selected.
+         */
+        default String referenceMessagesFileName() {
+            return messagesFileName();
+        }
     }
 }

@@ -44,6 +44,11 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    //Newer Gradle no longer bundles this implicitly - without it, the test task can't even start the JUnit
+    //Platform test executor ("Failed to load JUnit Platform... including the JUnit Platform launcher"),
+    //regardless of whether there's anything to actually run (src/test/java here only holds standalone dev
+    //scripts with main(), not real JUnit tests - see failOnNoDiscoveredTests below).
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     compileOnly("net.kyori:adventure-api:4.18.0")
     compileOnly("net.kyori:adventure-nbt:4.18.0")
@@ -80,8 +85,8 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
 
-    compileOnlyApi("org.projectlombok:lombok:1.18.36")
-    annotationProcessor("org.projectlombok:lombok:1.18.36")
+    compileOnlyApi("org.projectlombok:lombok:1.18.48")
+    annotationProcessor("org.projectlombok:lombok:1.18.48")
     compileOnly("io.netty:netty-all:4.1.24.Final")
     compileOnly("com.google.code.gson:gson:2.12.1")
 }
@@ -105,4 +110,14 @@ if (project.findProperty("enable-preview")!! == "true") {
 }
 tasks.test {
     useJUnitPlatform()
+    //src/test/java here only holds standalone dev utilities (TesterBCrypt, TesterCompressor - plain main()
+    //scripts run manually, never real JUnit tests), so there's nothing for this task to ever discover -
+    //without this, a newer Gradle treats that as a failure instead of a harmless no-op.
+    failOnNoDiscoveredTests = false
 }
+
+//Was missing entirely, unlike the root/Spigot/Velocity modules - meant this compiled with whatever JDK is
+//running the Gradle daemon itself instead of the project's intended version, which crashes Lombok's
+//annotation processor on a sufficiently new daemon JDK with a NoSuchFieldException on javac internals
+//(Lombok's internal hooks not yet updated for that JDK) - see AlixAPI's build.gradle.kts for the same fix.
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(Integer.parseInt(project.findProperty("toolchain-lang-version").toString())))

@@ -18,13 +18,16 @@ import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static ua.nanit.limbo.connection.login.gui.LimboAuthBuilder.*;
 import static ua.nanit.limbo.connection.login.packets.SoundPackets.*;
 
 public final class LimboPinBuilder implements LimboGUI {
 
-    private static final PacketSnapshot pinInvalidLengthMessagePacket = PacketPlayOutMessage.snapshot("&cPin invalid length");
+    //Was a hardcoded English literal ("&cPin invalid length"), bypassing the Messages/i18n system that every
+    //other message/item in this class already goes through (see PIN_CONFIRM_ITEM etc. just below).
+    private static final PacketSnapshot pinInvalidLengthMessagePacket = PacketPlayOutMessage.snapshot(Messages.get("pin-invalid-length"));
 
     private static final int[] PIN_DIGIT_SLOTS = new int[]{28, 0, 1, 2, 9, 10, 11, 18, 19, 20};
     public static final int maxLoginAttempts = ConfigProvider.config.getInt("max-login-attempts");
@@ -49,9 +52,12 @@ public final class LimboPinBuilder implements LimboGUI {
     private static final ItemStack[] pinVerificationGuiItems = createPINVerificationItems();
 
     private static final PacketSnapshot invItemsPacket = new PacketPlayOutInventoryItems(pinVerificationGuiItems).toSnapshot();
+    //Were hardcoded English literals ("Register"/"Login"), same bug/fix as AnvilBuilderGoal's window titles -
+    //reusing the same "gui-title-login"/"gui-title-register" keys since it's the exact same displayed text,
+    //just for this PIN-based GUI instead of the anvil-based one.
     private static final PacketSnapshot
-            registerInvOpen = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.GENERIC_9X4, "Register"),
-            loginInvOpen = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.GENERIC_9X4, "Login");
+            registerInvOpen = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.GENERIC_9X4, Messages.get("gui-title-register")),
+            loginInvOpen = PacketPlayOutInventoryOpen.snapshot(AlixInventoryType.GENERIC_9X4, Messages.get("gui-title-login"));
 
 
     private final StringBuilder pin = new StringBuilder(4);
@@ -71,7 +77,7 @@ public final class LimboPinBuilder implements LimboGUI {
         this.data = data;
         this.loginState = loginState;
         this.items = new ArrayList<>(Arrays.asList(pinVerificationGuiItems));
-        if (data != null && data.canUseEmailRecovery()) {
+        if (data != null && data.canUseAnyRecovery()) {
             this.items.set(ACTION_RECOVER, RECOVER_ITEM);
             this.spoofWithSnapshot = false;
         } else {
@@ -111,14 +117,18 @@ public final class LimboPinBuilder implements LimboGUI {
             boolean login = append(digit);
 
             if (login && pinAutoConfirm) {//logging in
-                boolean spoofItems = this.onPINConfirmation();
-                if (!spoofItems) return;
+                this.onPINConfirmation(spoofItems -> {
+                    if (spoofItems) this.spoofAllItems();
+                });
+                return;
             } else if (pin.length() != 4)
                 this.duplexHandler.writeAndFlush(NOTE_BLOCK_HARP);//adding a pin digit
 
         } else if (performAction(slot)) {
-            boolean spoofItems = this.onPINConfirmation();
-            if (!spoofItems) return;
+            this.onPINConfirmation(spoofItems -> {
+                if (spoofItems) this.spoofAllItems();
+            });
+            return;
         }
         this.spoofAllItems();
     }
@@ -134,24 +144,29 @@ public final class LimboPinBuilder implements LimboGUI {
         this.spoofAllItems();
     }
 
-    private boolean onPINConfirmation() {
+    private void onPINConfirmation(Consumer<Boolean> callback) {
         String pin = this.getPasswordBuilt();
 
         if (PersistentUserData.isRegistered(data)) {
             if (this.loginState.isPasswordCorrect(pin)) {
                 this.duplexHandler.writeAndFlush(PLAYER_LEVELUP);
                 this.loginState.tryLogIn();
-                return false;
+                callback.accept(false);
+                return;
             }
 
             if (this.loginState.onIncorrectPassword()) {
                 this.resetPin0();
-                return true;
+                callback.accept(true);
+                return;
             }
-            return false;
+            callback.accept(false);
+            return;
         }
         this.duplexHandler.writeAndFlush(PLAYER_LEVELUP);
-        return this.loginState.registerIfValid(pin, LoginType.PIN) == null;
+        //PIN logins never trigger the (network-bound) HaveIBeenPwned check - see
+        //AlixCommonUtils#getPasswordInvalidityReasonAsync - so this callback always fires synchronously here.
+        this.loginState.registerIfValid(pin, LoginType.PIN, data -> callback.accept(data == null));
         //this.connection.getPlayer().sendTitle(pinRegister, pinRegisterBottomLine.format(pin), 0, 100, 50);
     }
 
@@ -197,8 +212,8 @@ public final class LimboPinBuilder implements LimboGUI {
             return false;
         }
 
-        if (slot == ACTION_RECOVER && this.data != null && this.data.canUseEmailRecovery()) {
-            this.loginState.openRecoveryEmailGui();
+        if (slot == ACTION_RECOVER && this.data != null && this.data.canUseAnyRecovery()) {
+            this.loginState.openRecovery();
             return false;
         }
 

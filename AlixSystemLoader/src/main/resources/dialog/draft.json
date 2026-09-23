@@ -1,0 +1,46 @@
+{
+  "type": "minecraft:multi_action",
+  "title": "Login",
+  "body": {
+    "type": "minecraft:plain_message",
+    "contents": {
+      "text": "Welcome, ",
+      "type": "text",
+      "extra": [
+        {
+          "selector": "@s",
+          "extra": [
+            {
+              "text": "\nPlease enter your password to proceed",
+              "color": "white"
+            }
+          ],
+          "color": "#ff7b00"
+        }
+      ],
+      "color": "white"
+    }
+  },
+  "inputs": [
+    {
+      "type": "minecraft:text",
+      "key": "alix_password",
+      "label": "Password",
+      "label_visible": true,
+      "max_length": 50
+    }
+  ],
+  "can_close_with_escape": false,
+  "pause": false,
+  "after_action": "none",
+  "actions": [
+    {
+      "label": "Confirm Input",
+      "action": {
+        "type": "minecraft:dynamic/run_command",
+        "command": "say 1",
+        "template": "login $(alix_password)"
+      }
+    }
+  ]
+}

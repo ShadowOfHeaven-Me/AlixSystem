@@ -357,7 +357,9 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
 
     private void passwordInput(String text) {
         //String text = new WrapperPlayClientNameItem(event).getItemName(); //(String) ReflectionUtils.inItemNamePacketTextMethod.invoke(event);
-        String invalidityReason = AlixUtils.getPasswordInvalidityReason(text, this.loginType.get());
+        //Live, per-keystroke feedback - checkBreach=false, since a real HIBP network call on every keystroke
+        //would be disastrous; the actual commit (see AbstractDataChanges#tryApply) re-validates fully anyway.
+        String invalidityReason = AlixUtils.getPasswordInvalidityReasonSync(text, this.loginType.get());
 
         if (!this.builder.input(text)) return;
         this.builder.updateValidity(invalidityReason);

@@ -24,4 +24,12 @@ public final class ServerSettingsManager {
 
     public static void init() {
     }
+
+    /**
+     * v1.5.2 ("/as reload") - see ServerSettings#reload() for why this can't just be
+     * settings.loadExceptionless() again.
+     */
+    public static void reload() {
+        settings.reload();
+    }
 }

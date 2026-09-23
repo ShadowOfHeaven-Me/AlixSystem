@@ -3,6 +3,7 @@ package alix.common.data;
 import alix.api.user.data.AlixUserData;
 import alix.api.user.data.PremiumStatus;
 import alix.common.AlixCommonMain;
+import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.data.file.AllowListFileManager;
@@ -16,7 +17,10 @@ import alix.common.data.security.password.Password;
 import alix.common.data.settings.ServerSettingsManager;
 import alix.common.data.settings.Setting;
 import alix.common.database.DatabaseUpdater;
+import alix.common.login.auth.GoogleAuthUtils;
+import alix.common.login.auth.RecoveryCodes;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.SaveUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +29,7 @@ import ua.nanit.limbo.util.UUIDUtil;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public final class PersistentUserData implements AlixUserData {
 
@@ -32,7 +37,7 @@ public final class PersistentUserData implements AlixUserData {
     public static final InetAddress UNKNOWN_IP = InetAddress.getLoopbackAddress();
     private static final LocationListProvider homesProvider = LocationListProvider.IMPL;
     private static final DatabaseUpdater database = DatabaseUpdater.INSTANCE;
-    private static final int CURRENT_DATA_LENGTH = 13;
+    private static final int CURRENT_DATA_LENGTH = 14;
     private final AlixLocationList homes;
     private final String name;
     private final UUID uuid;
@@ -46,9 +51,13 @@ public final class PersistentUserData implements AlixUserData {
     private volatile long mutedUntil, lastSuccessfulLogin;
     private final Identity identity;
     private volatile Email email;
+    //The device's fingerprinting passkey, as a raw 32-bit value - never null, 0 means "none set" (see
+    //hasFingerprint()) so every load path (all constructors below) can just default it to 0 rather than
+    //needing null-handling everywhere a fingerprint is read.
+    private volatile int fingerprint;
 
     //name | password1 ; password2 | ip | homes | mutedUntil | login type1 ; login type2 | login settings | lastSuccessfulLogin | premium data
-    //createdAt | email | identity
+    //createdAt | email | identity | fingerprint
     private PersistentUserData(String[] splitData) {
         //splitData = ensureSplitDataCorrectness(splitData);
         this.name = splitData[0];
@@ -68,6 +77,7 @@ public final class PersistentUserData implements AlixUserData {
         //if no data let's just store it from now on
         this.createdAt = createdAtStr.equals(NO_VALUE) ? System.currentTimeMillis() : Long.parseLong(createdAtStr);
         this.readEmail(splitData[11]);
+        this.fingerprint = Integer.parseInt(splitData[13]);
 
         GeoIPTracker.addExisting(this.ip);//Add it here, as it was loaded
         UserFileManager.putData(this);
@@ -101,12 +111,13 @@ public final class PersistentUserData implements AlixUserData {
         this.loginParams = data.loginParams;
         this.email = data.email;
         this.identity = data.identity;
+        this.fingerprint = data.fingerprint;
         UserFileManager.putData(this);
 
         this.saveToDatabase();
     }
 
-    public PersistentUserData(AlixLocationList homes, String name, UUID uuid, LoginParams loginParams, long createdAt, Identity identity, Email email, long lastSuccessfulLogin, @NotNull InetAddress ip, @NotNull PremiumData premiumData, long mutedUntil) {
+    public PersistentUserData(AlixLocationList homes, String name, UUID uuid, LoginParams loginParams, long createdAt, Identity identity, Email email, long lastSuccessfulLogin, @NotNull InetAddress ip, @NotNull PremiumData premiumData, long mutedUntil, int fingerprint) {
         this.homes = homes;
         this.name = name;
         this.uuid = uuid;
@@ -118,10 +129,19 @@ public final class PersistentUserData implements AlixUserData {
         this.ip = ip;
         this.premiumData = premiumData;
         this.mutedUntil = mutedUntil;
+        this.fingerprint = fingerprint;
     }
 
     public boolean canUseEmailRecovery() {
         return this.getEmail() != null && ServerSettingsManager.is(Setting.VERIFIED_EMAIL, true);
+    }
+
+    public boolean canUsePasskeyRecovery() {
+        return ConfigParams.fingerprintingEnabled && this.hasFingerprint();
+    }
+
+    public boolean canUseAnyRecovery() {
+        return this.canUseEmailRecovery() || this.canUsePasskeyRecovery();
     }
 
     void readEmail(String data) {
@@ -135,7 +155,7 @@ public final class PersistentUserData implements AlixUserData {
     public boolean setEmail(String email) {
         try {
             this.email = Email.fromEmail(email, this.getToken());
-            database.updateEmailByName(this.name, this.emailSavable());
+            database.updateEmailByName(this.identity, this.name, this.emailSavable());
             return true;
         } catch (Exception e) {
             AlixCommonUtils.logException(e);
@@ -158,12 +178,88 @@ public final class PersistentUserData implements AlixUserData {
                 premiumData.toSavable(),
                 this.createdAt,
                 this.emailSavable(),
-                this.identity.identity()
+                this.identity.identity(),
+                this.fingerprint
         );
     }
 
     public String getToken() {
         return this.identity.getToken();
+    }
+
+    //Resets this player's Google Authenticator secret (lost/compromised device: invalidates the old QR
+    //code and issues a new one) and, in the same step, re-encrypts their stored email with the new token -
+    //this token doubles as the email's own encryption key (see readEmail()/setEmail() above), so a reset
+    //that didn't also re-encrypt would silently make the existing email undecryptable. Returns the new
+    //secret (the caller needs it to render a fresh QR code). Deliberately does NOT also touch recovery
+    //codes - callers that want those regenerated too (normally: every caller of this method, since old
+    //codes are only meant as a backup for the secret being replaced here) call
+    //regenerateRecoveryCodes() themselves and get the plaintext codes back directly, instead of this method
+    //silently doing it internally with no way to hand the new codes back without an extra async DB read.
+    //
+    //Re-encrypts BEFORE committing the new token (rather than after, as an earlier version of this method
+    //did): Email.fromEmail() is pure computation (PBKDF2+AES, no I/O) and can only realistically fail on a
+    //genuine crypto/JVM error, not a transient one - if it does, throwing here and leaving the OLD token and
+    //OLD (still-matching) encrypted email both untouched is strictly safer than committing a new token
+    //first and then discovering the email can't be re-encrypted to match it.
+    //
+    //The token and the re-encrypted email are committed to the DATABASE together, as one transaction, via
+    //commitTokenAndEmail() - not as two separate writes. This matters for anything ELSE reading this row
+    //with its own connection (a linked website's own periodic sync, for instance): under ordinary READ
+    //COMMITTED isolation (MySQL/InnoDB and PostgreSQL's default), two separate writes would let such a
+    //reader observe the row in the brief window between them and see a token that doesn't match the email
+    //it's meant to decrypt. One transaction means it only ever sees the fully-old or the fully-new pairing.
+    //
+    //Still NOT solved by this: the transaction itself can fail outright (e.g. the database being
+    //unreachable) without that being detectable here - DatabaseUpdaterImpl's DB calls are all wrapped in
+    //AutoErrorReport, which deliberately logs and swallows every failure rather than propagating it, the
+    //same fire-and-log reliability model every OTHER write in this codebase already has (setPassword(),
+    //updateAuthSettingsByName(), etc.) - this method doesn't weaken that, but doesn't strengthen it either.
+    //A DB outage at the exact moment of a reset can still leave the stored email encrypted under a token
+    //that's no longer the active one; there is no cheap way to detect or roll that back from here. What IS
+    //guaranteed is that no reader ever sees a HALF-applied reset, only "not applied yet" or "fully applied".
+    public String regenerateAuthToken() {
+        String newToken = GoogleAuthUtils.generateSecretKey();
+        Email oldEmail = this.email;
+        Email newEmail = oldEmail;
+
+        if (oldEmail != null) {
+            try {
+                newEmail = Email.fromEmail(oldEmail.email(), newToken);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to re-encrypt the stored email under a freshly generated 2FA token - aborting the reset so the old token/email pairing is left intact", e);
+            }
+        }
+
+        UserTokensFileManager.commitTokenLocally(this.identity, newToken);
+        this.email = newEmail;
+
+        database.commitTokenAndEmail(this.identity, newToken, this.name, oldEmail != null ? this.emailSavable() : null);
+
+        return newToken;
+    }
+
+    public String[] regenerateRecoveryCodes() {
+        String[] codes = RecoveryCodes.generate();
+        database.saveRecoveryCodes(this.identity, RecoveryCodes.join(codes));
+        return codes;
+    }
+
+    public void loadRecoveryCodes(Consumer<String[]> consumer) {
+        database.loadRecoveryCodes(this.identity, joined -> consumer.accept(RecoveryCodes.split(joined)));
+    }
+
+    //Checks a player-submitted recovery code against this account's stored codes and, if it matches,
+    //consumes it (single-use, same as Azuriom's own native recovery codes) before calling back with the
+    //result. Delegates the whole read-check-write to the database layer as ONE atomic operation (see
+    //DatabaseUpdaterImpl#tryConsumeRecoveryCode()) rather than doing a separate load then save here -
+    //otherwise a second concurrent attempt for the same player (e.g. a laggy client double-sending
+    //"/recoverycode <code>") could read the same pre-write code list and consume it twice. The callback
+    //runs on whatever thread the database query completes on (see DatabaseUpdater) - callers touching
+    //connection/session state must hop back onto their own event loop first, same requirement as
+    //EmailHandler's async callbacks.
+    public void tryConsumeRecoveryCode(String typedCode, Consumer<Boolean> callback) {
+        database.tryConsumeRecoveryCode(this.identity, typedCode, callback);
     }
 
     public void saveToDatabase() {
@@ -194,7 +290,8 @@ public final class PersistentUserData implements AlixUserData {
             AlixLocationList homes,
             PremiumData premiumData,
             Password password,
-            @Nullable Password extraPassword
+            @Nullable Password extraPassword,
+            int fingerprint
     ) {
         this.name = name;
         this.uuid = uuid == null ? this._uuid() : uuid;
@@ -203,6 +300,7 @@ public final class PersistentUserData implements AlixUserData {
         this.ip = ip == null ? UNKNOWN_IP : ip;
         this.mutedUntil = mutedUntil;
         this.identity = identity == null ? Identity.newIdentity(name) : identity;
+        this.fingerprint = fingerprint;
 
         this.loginParams = new LoginParams(this, password == null ? Password.empty() : password);
         this.loginParams.setLoginType(loginType);
@@ -244,7 +342,8 @@ public final class PersistentUserData implements AlixUserData {
             AlixLocationList homes,
             PremiumData premiumData,
             Password password,
-            Password extraPassword
+            Password extraPassword,
+            int fingerprint
     ) {
         return new PersistentUserData(
                 name,
@@ -263,7 +362,8 @@ public final class PersistentUserData implements AlixUserData {
                 homes,
                 premiumData,
                 password,
-                extraPassword
+                extraPassword,
+                fingerprint
         );
     }
 
@@ -483,6 +583,20 @@ public final class PersistentUserData implements AlixUserData {
 
     public Email getEmail() {
         return this.email;
+    }
+
+    public int getFingerprint() {
+        return this.fingerprint;
+    }
+
+    public boolean hasFingerprint() {
+        return this.fingerprint != 0;
+    }
+
+    public void setFingerprint(int fingerprint) {
+        this.fingerprint = fingerprint;
+
+        database.updateFingerprintByName(this.name, fingerprint);
     }
 
     @Override

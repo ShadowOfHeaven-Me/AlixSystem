@@ -2,4 +2,15 @@
 /out/
 gradle.properties
 
+# Local Gradle tooling caches (daemon/build/configuration-cache state) - not build outputs, purely
+# derived/regenerable local state that shouldn't be tracked.
+.gradle/
+**/.gradle/
+
+# Gradle build output (compiled classes, generated resources, shaded jars) for every module - fully
+# regenerable from source via ./gradlew, and was badly stale/inconsistent with source when tracked
+# (a local verification build regenerates thousands of untracked files git had never seen).
+build/
+**/build/
+
 #AlixSystemVelocitySupport

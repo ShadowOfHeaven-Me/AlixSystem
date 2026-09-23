@@ -48,6 +48,19 @@ allow-case-sensitive-nicknames: false
 # anvil - The user registers/logs in using an anvil rename gui
 # pin - The user registers/logs in using a pin gui
 password-type: command
+#Defines whether a new/changed password is checked against the HaveIBeenPwned breached-password database
+#(https://haveibeenpwned.com/API/v3#PwnedPasswords) before being accepted, rejecting it if it's already
+#known to be publicly breached. Uses their "k-anonymity" range API: only the first 5 characters of the
+#password's SHA-1 hash are ever sent over the network - the real password, and even its full hash, never
+#leave this server. Off by default, since it adds a network round-trip (bounded to ~2 seconds, and it
+#fails open - a slow/unreachable API never blocks registration, it just skips the check for that attempt)
+#to every registration and password change while enabled. Not checked for PIN-type logins (a bare 4-digit
+#PIN has no meaningful breach data to check against).
+check-breached-passwords: false
+#The port AlixSystem's device-fingerprinting ("Device PassKey") service listens on. 0 disables the feature
+#entirely - no "Create a Device PassKey" option is shown in /account's login settings, and no passkey
+#recovery option is offered during login - since there's no port to talk to a client on.
+fingerprinting-port: 0
 #Defines whether premium players should be given their equivalent mojang-assigned uuid (their data will persist between name changes)
 #Possible values:
 # true -> always assign a premium uuid to premium players (good if you don't already have premium players with an offline uuid)
@@ -63,6 +76,24 @@ require-register-from-all: false
 #Parameter 'true' would result in the format /register <password> <password>
 #Parameter 'false' would result in the format /register <password>
 require-password-repeat-in-register: false
+#Defines whether the registering user should have to additionally provide an email address whilst registering (only applies to 'password-type: command')
+#Parameter 'true' would result in the format /register <password> <email> (or /register <password> <password> <email> if the repeat option above is also enabled)
+#Parameter 'false' would result in the regular /register <password> format
+#Note: this actually gates registration on verifying that email - a code is sent immediately, and the account is only
+#created once the player types "/verifyemail <code>" back. If they never do, no account is created at all, so
+#alix_users2.email never ends up holding an address nobody has actually proven ownership of.
+require-email-in-register: false
+#Defines how long (in seconds) a player is allowed to wait for their registration verification email to
+#arrive and type "/verifyemail <code>", once it's been sent - separate from 'max-login-time' above, since
+#receiving an email can easily take longer than that. Only applies while 'require-email-in-register' is true.
+#Set to 0 to disable this timeout entirely (the player can then wait as long as they need to for the email).
+email-verification-time: 300
+#Defines whether registering users must first accept a set of Terms & Conditions (e.g. for GDPR / personal data collection compliance) before they're allowed to register.
+#Applies to EVERY login/registration type (command, PIN, Anvil GUI, and Bedrock/Geyser-Floodgate) - not just command-based registration.
+#When enabled, players will be shown the link configured below and asked to type '/terms accept' or '/terms decline'. Declining results in a kick.
+require-terms-acceptance: false
+#The URL of your Terms & Conditions / privacy policy page, shown to players when 'require-terms-acceptance' is enabled above
+terms-url: "https://example.com/terms"
 #Defines whether all characters (so including non-english chars) should be shown as valid during verification command typing, either during login or register.
 #If set to false, only english characters will be seen as valid by the verifying user. Any other character range will be shown in red as invalid. However, when
 # password repeat in /register is enabled, the second password argument will differ in color, making it more distinguishable.
@@ -125,6 +156,21 @@ after-auto-register-commands:
 after-auto-login-commands:
 #Works exactly like the parameters above but invoked on a premium register/login
 after-any-premium-join-commands:
+
+
+#------------------------------------------------#
+#                    LANGUAGE                    #
+#------------------------------------------------#
+
+#Config used to select the language of the messages sent to players
+#Defines which messages file to load. "en" (the default) loads "messages.properties" - a normal,
+#freely-customizable file that (like this one) keeps your edits across plugin updates. Any other value
+#loads the matching bundled, ready-made translation from "langs/<code>.properties" instead (e.g. "cs" ->
+#langs/cs.properties) - these are NOT customizable: every plugin update fully overwrites them with the
+#newest bundled translation, discarding direct edits. If you want to customize player-facing text, keep
+#"language: en" and edit messages.properties instead.
+#Available: en (English), cs (Czech/Čeština)
+language: en
 
 
 #------------------------------------------------#

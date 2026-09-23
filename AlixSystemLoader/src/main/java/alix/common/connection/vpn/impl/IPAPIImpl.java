@@ -24,11 +24,11 @@ public final class IPAPIImpl implements ProxyCheck {
         if (out == null || !out.isJsonObject()) return CheckResultHolder.UNAVAILABLE;
 
         JsonObject obj = out.getAsJsonObject();
-        JsonElement status = obj.get("status");
-        if (status == null || !"success".equals(status.getAsString())) return CheckResultHolder.UNAVAILABLE;
+        if (!ProxyCheck.has(obj, "status") || !"success".equals(obj.get("status").getAsString()))
+            return CheckResultHolder.UNAVAILABLE;
 
-        boolean isProxyFlag = obj.has("proxy") && obj.get("proxy").getAsBoolean();
-        boolean isHosting = obj.has("hosting") && obj.get("hosting").getAsBoolean();
+        boolean isProxyFlag = ProxyCheck.has(obj, "proxy") && obj.get("proxy").getAsBoolean();
+        boolean isHosting = ProxyCheck.has(obj, "hosting") && obj.get("hosting").getAsBoolean();
         boolean isBad = isProxyFlag || isHosting;
 
         IPInfo.Builder builder = new IPInfo.Builder(address, "ip-api.com")
@@ -36,9 +36,9 @@ public final class IPAPIImpl implements ProxyCheck {
                 .isHosting(isHosting)
                 .isVpn(isProxyFlag && !isHosting);
 
-        if (obj.has("country")) builder.country(obj.get("country").getAsString());
-        if (obj.has("isp")) builder.isp(obj.get("isp").getAsString());
-        if (obj.has("as")) builder.asn(obj.get("as").getAsString());
+        if (ProxyCheck.has(obj, "country")) builder.country(obj.get("country").getAsString());
+        if (ProxyCheck.has(obj, "isp")) builder.isp(obj.get("isp").getAsString());
+        if (ProxyCheck.has(obj, "as")) builder.asn(obj.get("as").getAsString());
 
         if (isHosting) builder.proxyType(ProxyType.DATACENTER);
         else if (isProxyFlag) builder.proxyType(ProxyType.VPN);

@@ -1,5 +1,6 @@
 package shadow.utils.users.types;
 
+import alix.common.packets.message.MessageWrapper;
 import alix.spigot.api.users.AbstractSpigotUser;
 import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
@@ -72,8 +73,9 @@ public interface AlixUser extends AbstractSpigotUser {
         NettyUtils.writeDynamicWrapper(OutMessagePacketConstructor.packetWrapper(message), this.silentContext());
     }
 
+    //Was Component.text(message) - see OutMessagePacketConstructor for why that breaks hex codes.
     default void sendDynamicMessageSilently(String message) {
-        NettyUtils.writeAndFlushDynamicWrapper(OutMessagePacketConstructor.packetWrapper(Component.text(message)), this.silentContext());
+        NettyUtils.writeAndFlushDynamicWrapper(OutMessagePacketConstructor.packetWrapper(MessageWrapper.parseLegacy(message)), this.silentContext());
     }
 
     default void debug(String message) {

@@ -7,7 +7,7 @@ interface QueryConstants {
     String LOAD_ALL_USERS = "SELECT " +
                             "u.name, u.uuid, u.created_at, u.last_successful_login, u.ip, u.muted_until, " +
                             "u.login_type, u.extra_login_type, u.ip_auto_login, u.auth_settings, " +
-                            "u.has_proven_auth_access, u.identity, u.email, u.homes, u.premium_status, u.premium_uuid, " +
+                            "u.has_proven_auth_access, u.identity, u.email, u.homes, u.premium_status, u.premium_uuid, u.fingerprint, " +
                             "p0.hashed_password, p0.hash_id, p0.salt, p0.matcher_id, " +
                             "p1.hashed_password, p1.hash_id, p1.salt, p1.matcher_id " +
                             "FROM alix_users2 u " +
@@ -35,6 +35,7 @@ interface QueryConstants {
             "  homes TEXT NULL," +
             "  premium_status TINYINT NOT NULL DEFAULT 0," +
             "  premium_uuid CHAR(36) NULL," +
+            "  fingerprint INT NOT NULL DEFAULT 0," +
             "  PRIMARY KEY (name)," +
             "  UNIQUE KEY uq_alix_users2_uuid (uuid)," +
             "  UNIQUE KEY uq_alix_users2_identity (identity)" +
@@ -58,6 +59,7 @@ interface QueryConstants {
             "  homes TEXT NULL," +
             "  premium_status SMALLINT NOT NULL DEFAULT 0," +
             "  premium_uuid UUID NULL," +
+            "  fingerprint INTEGER NOT NULL DEFAULT 0," +
             "  CONSTRAINT pk_alix_users2 PRIMARY KEY (name)," +
             "  CONSTRAINT uq_alix_users2_uuid UNIQUE (uuid)," +
             "  CONSTRAINT uq_alix_users2_identity UNIQUE (identity)," +
@@ -81,7 +83,8 @@ interface QueryConstants {
             "  email TEXT NULL," +
             "  homes TEXT NULL," +
             "  premium_status INTEGER NOT NULL DEFAULT 0 CHECK (premium_status IN (-1, 0, 1))," +
-            "  premium_uuid TEXT NULL" +
+            "  premium_uuid TEXT NULL," +
+            "  fingerprint INTEGER NOT NULL DEFAULT 0" +
             ");";
 
     String CREATE_PASSWORDS_SQL_MYSQL =
@@ -126,7 +129,7 @@ interface QueryConstants {
             "SELECT " +
             "u.name, u.uuid, u.created_at, u.last_successful_login, u.ip, u.muted_until, " +
             "u.login_type, u.extra_login_type, u.ip_auto_login, u.auth_settings, " +
-            "u.has_proven_auth_access, u.identity, u.email, u.homes, u.premium_status, u.premium_uuid, " +
+            "u.has_proven_auth_access, u.identity, u.email, u.homes, u.premium_status, u.premium_uuid, u.fingerprint, " +
             "p0.hashed_password, p0.hash_id, p0.salt, p0.matcher_id, " +
             "p1.hashed_password, p1.hash_id, p1.salt, p1.matcher_id " +
             "FROM alix_users2 u " +
@@ -138,8 +141,8 @@ interface QueryConstants {
             "INSERT INTO alix_users2 (" +
             "name, uuid, created_at, last_successful_login, ip, muted_until, " +
             "login_type, extra_login_type, ip_auto_login, auth_settings, " +
-            "has_proven_auth_access, identity, email, homes, premium_status, premium_uuid" +
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+            "has_proven_auth_access, identity, email, homes, premium_status, premium_uuid, fingerprint" +
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
             "ON DUPLICATE KEY UPDATE " +
             "uuid = VALUES(uuid), " +
             "created_at = VALUES(created_at), " +
@@ -155,14 +158,15 @@ interface QueryConstants {
             "email = VALUES(email), " +
             "homes = VALUES(homes), " +
             "premium_status = VALUES(premium_status), " +
-            "premium_uuid = VALUES(premium_uuid)";
+            "premium_uuid = VALUES(premium_uuid), " +
+            "fingerprint = VALUES(fingerprint)";
 
     String UPSERT_USER_POSTGRES_AND_SQLITE =
             "INSERT INTO alix_users2 (" +
             "name, uuid, created_at, last_successful_login, ip, muted_until, " +
             "login_type, extra_login_type, ip_auto_login, auth_settings, " +
-            "has_proven_auth_access, identity, email, homes, premium_status, premium_uuid" +
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+            "has_proven_auth_access, identity, email, homes, premium_status, premium_uuid, fingerprint" +
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
             "ON CONFLICT (name) DO UPDATE SET " +
             "uuid = EXCLUDED.uuid, " +
             "created_at = EXCLUDED.created_at, " +
@@ -178,7 +182,8 @@ interface QueryConstants {
             "email = EXCLUDED.email, " +
             "homes = EXCLUDED.homes, " +
             "premium_status = EXCLUDED.premium_status, " +
-            "premium_uuid = EXCLUDED.premium_uuid";
+            "premium_uuid = EXCLUDED.premium_uuid, " +
+            "fingerprint = EXCLUDED.fingerprint";
 
     String UPSERT_PASSWORD_MYSQL =
             "INSERT INTO alix_passwords2 (" +
@@ -213,6 +218,30 @@ interface QueryConstants {
 
     String UPDATE_USERS_IP_SQL =
             "UPDATE alix_users2 SET ip = ? WHERE name = ?";
+
+    String UPDATE_FINGERPRINT_BY_NAME =
+            "UPDATE alix_users2 SET fingerprint = ? WHERE name = ?";
+
+    //Adds the 'fingerprint' column to a pre-existing alix_users2 table from before it was introduced -
+    //CREATE TABLE IF NOT EXISTS above is a no-op against such a table, so without this, every read/write
+    //against the new column would fail on any database that already existed. A no-op against a table that
+    //already has the column (whether freshly created above or already migrated).
+    String ADD_FINGERPRINT_COLUMN_MYSQL =
+            "ALTER TABLE alix_users2 ADD COLUMN IF NOT EXISTS fingerprint INT NOT NULL DEFAULT 0";
+
+    String ADD_FINGERPRINT_COLUMN_POSTGRES =
+            "ALTER TABLE alix_users2 ADD COLUMN IF NOT EXISTS fingerprint INTEGER NOT NULL DEFAULT 0";
+
+    String ADD_FINGERPRINT_COLUMN_SQLITE =
+            "ALTER TABLE alix_users2 ADD COLUMN IF NOT EXISTS fingerprint INTEGER NOT NULL DEFAULT 0";
+
+    static String ADD_FINGERPRINT_COLUMN_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> ADD_FINGERPRINT_COLUMN_MYSQL;
+            case POSTGRESQL -> ADD_FINGERPRINT_COLUMN_POSTGRES;
+            case SQLITE -> ADD_FINGERPRINT_COLUMN_SQLITE;
+        };
+    }
 
     static String CREATE_USERS_SQL(DatabaseType type) {
         return switch (type) {
@@ -272,7 +301,41 @@ interface QueryConstants {
             "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
             "ON CONFLICT (uuid) DO NOTHING";
 
+    //Unlike INSERT_TOKEN_* above, this DOES overwrite an existing token - used only by an explicit 2FA
+    //reset/regenerate (in-game or from a trusted external source such as a linked website), never by the
+    //normal lazy-create-on-first-use path (getTokenOrSupply()), which must never silently invalidate an
+    //already-working secret.
+    String UPSERT_TOKEN_MYSQL =
+            "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
+            "ON DUPLICATE KEY UPDATE token = VALUES(token)";
+
+    String UPSERT_TOKEN_POSTGRES_AND_SQLITE =
+            "INSERT INTO alix_user_tokens (uuid, token) VALUES (?, ?) " +
+            "ON CONFLICT (uuid) DO UPDATE SET token = EXCLUDED.token";
+
     String LOAD_ALL_TOKENS = "SELECT * FROM alix_user_tokens";
+
+    //Adds the 'recovery_codes' column to a pre-existing alix_user_tokens table from before it was
+    //introduced - CREATE TABLE IF NOT EXISTS above is a no-op against such a table, same reasoning as
+    //ADD_FINGERPRINT_COLUMN_SQL. NULL (not empty string) means "no recovery codes generated yet", same
+    //convention as alix_users2.email.
+    String ADD_RECOVERY_CODES_COLUMN_MYSQL =
+            "ALTER TABLE alix_user_tokens ADD COLUMN IF NOT EXISTS recovery_codes TEXT NULL";
+
+    String ADD_RECOVERY_CODES_COLUMN_POSTGRES =
+            "ALTER TABLE alix_user_tokens ADD COLUMN IF NOT EXISTS recovery_codes TEXT NULL";
+
+    String ADD_RECOVERY_CODES_COLUMN_SQLITE =
+            "ALTER TABLE alix_user_tokens ADD COLUMN IF NOT EXISTS recovery_codes TEXT NULL";
+
+    //Comma-separated, plaintext (never hashed - same tradeoff the token/email columns already make, and
+    //necessary so a player can have them shown again later, same as Azuriom's own native 2FA recovery
+    //codes - see AlixTotp/AlixTokenCrypto in the Azuriom-side plugin for the reasoning this mirrors).
+    String UPDATE_RECOVERY_CODES_SQL =
+            "UPDATE alix_user_tokens SET recovery_codes = ? WHERE uuid = ?";
+
+    String LOAD_RECOVERY_CODES_SQL =
+            "SELECT recovery_codes FROM alix_user_tokens WHERE uuid = ?";
 
     static String CREATE_TOKENS_SQL(DatabaseType type) {
         return switch (type) {
@@ -286,6 +349,21 @@ interface QueryConstants {
         return switch (type) {
             case MYSQL -> INSERT_TOKEN_MYSQL;
             case POSTGRESQL, SQLITE -> INSERT_TOKEN_POSTGRES_AND_SQLITE;
+        };
+    }
+
+    static String UPSERT_TOKEN_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> UPSERT_TOKEN_MYSQL;
+            case POSTGRESQL, SQLITE -> UPSERT_TOKEN_POSTGRES_AND_SQLITE;
+        };
+    }
+
+    static String ADD_RECOVERY_CODES_COLUMN_SQL(DatabaseType type) {
+        return switch (type) {
+            case MYSQL -> ADD_RECOVERY_CODES_COLUMN_MYSQL;
+            case POSTGRESQL -> ADD_RECOVERY_CODES_COLUMN_POSTGRES;
+            case SQLITE -> ADD_RECOVERY_CODES_COLUMN_SQLITE;
         };
     }
 

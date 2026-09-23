@@ -1,6 +1,7 @@
 package shadow.utils.misc.packet.buffered;
 
 import alix.common.data.security.password.Password;
+import alix.common.packets.message.MessageWrapper;
 import io.netty.buffer.ByteBuf;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +17,7 @@ public final class PacketConstructor {
 
     private static void rename(ItemStack item, String name) {
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
+        meta.setDisplayName(MessageWrapper.parseToLegacyString(name));
         item.setItemMeta(meta);
     }
 

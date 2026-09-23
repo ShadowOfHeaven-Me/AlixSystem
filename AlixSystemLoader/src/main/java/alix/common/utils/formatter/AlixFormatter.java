@@ -19,6 +19,9 @@ public final class AlixFormatter {
 
     public static String appendPrefix(String m) {
         return appendPrefix
+                && !m.isEmpty()//a blank spacer line should stay a genuinely blank line, not "<prefix> " with
+                //nothing after it - matches how e.g. LuckPerms' own console/chat output never tags its blank
+                //separator lines either
                 && !m.startsWith(messagePrefix)//quick-fix for my own mistakes
                 ? messagePrefix + m : m;
     }
@@ -69,6 +72,7 @@ public final class AlixFormatter {
      */
 
     public static String formatSingle(String s, String replacement) {//For {<digit>} = 1, specifically for {0} = 1
+        replacement = escapeMiniMessage(replacement);
         char[] a = s.toCharArray();
         int l = a.length;
         int lM2 = l - 2;
@@ -107,7 +111,7 @@ public final class AlixFormatter {
             if (c == '{' && a[i + 2] == '}') {
                 int index = a[i + 1] - 48;//48 is '0' in ascii
                 if (index < args.length && index >= 0) {//the given index is valid
-                    sb.append(args[index]);
+                    sb.append(escapeMiniMessage(String.valueOf(args[index])));
                     i += 2;//skipping '<digit>}' in the text, as the first '{' is already skipped by the default for(i) iterator
                     continue;//continue to the next loop and stop this
                 }//continue, the index was invalid
@@ -117,10 +121,39 @@ public final class AlixFormatter {
         return sb.toString();
     }
 
+    //Escapes MiniMessage's own special characters ('\' and '<' - '>' alone can never start a tag, so leaving
+    //it as-is avoids a spurious visible backslash for the rare value that happens to contain one, without any
+    //loss of safety) in a value about to be substituted into a message template via {0}-style formatting - a
+    //nickname, an IP, an email, or any other data pulled in at runtime - so it can never be interpreted as
+    //MiniMessage tag syntax once the finished string reaches MessageWrapper's MiniMessage parsing step. A
+    //player naming themselves e.g. "<click:run_command:'/x'>" (or any other real, recognized tag) must never
+    //become a live tag in someone else's client just because that name got substituted into a message. The
+    //STATIC template text itself (e.g. a literal "<player>" placeholder already baked into
+    //messages.properties/messages.txt) is deliberately left unescaped instead - see MessageWrapper's own
+    //comment for why that's handled safely a different way (non-strict parsing).
+    private static String escapeMiniMessage(String s) {
+        if (s.indexOf('\\') < 0 && s.indexOf('<') < 0)
+            return s;//fast path - the overwhelming majority of substituted values (numbers, statuses, IPs...) contain neither
+        StringBuilder sb = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\\' || c == '<') sb.append('\\');
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
     @AlixIntrinsified(method = "ChatColor.translateAlternateColorCodes")
     public static String translateColors(String text) {//Faster than ChatColor.translateAlternateColorCodes
         if (text == null) return null;
         char[] c = text.toCharArray();
+        //Hex codes ("&#RRGGBB") expand into a longer, multi-character raw sequence ("§x§R§R§G§G§B§B"), unlike
+        //every other code here which is a straight 1-for-1 '&'->'§' swap done in place on the same char[] -
+        //so they need a separate, StringBuilder-based pass. Pre-scanning for one first (cheap, no allocation)
+        //keeps every message that doesn't use hex - still the overwhelming majority - on the exact same
+        //fast, allocation-free path as before hex was supported at all.
+        if (containsHexCode(c)) return translateColorsWithHex(c);
+
         int lM1 = c.length - 1;
         for (int i = 0; i < lM1; i++)
             if (c[i] == '&') {
@@ -128,6 +161,49 @@ public final class AlixFormatter {
                 if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9' || d >= 'k' && d <= 'o' || d == 'r') c[i - 1] = '§';
             }
         return new String(c);
+    }
+
+    private static boolean containsHexCode(char[] c) {
+        int limit = c.length - 8;//last valid start index for an 8-character "&#RRGGBB" sequence
+        for (int i = 0; i <= limit; i++)
+            if (c[i] == '&' && c[i + 1] == '#' && isHex(c, i + 2)) return true;
+        return false;
+    }
+
+    private static boolean isHex(char[] c, int from) {
+        for (int i = from; i < from + 6; i++) {
+            char h = c[i];
+            if (!(h >= '0' && h <= '9' || h >= 'a' && h <= 'f' || h >= 'A' && h <= 'F')) return false;
+        }
+        return true;
+    }
+
+    //Handles both "&#RRGGBB" hex codes (expanded into the raw "§x§R§R§G§G§B§B" sequence Minecraft's legacy
+    //chat component format expects for a hex color) and the regular single-character codes translateColors()
+    //handles above - only reached once containsHexCode() has confirmed at least one hex code is present.
+    private static String translateColorsWithHex(char[] c) {
+        StringBuilder sb = new StringBuilder(c.length + 16);
+        int lM1 = c.length - 1;
+        int i = 0;
+        while (i < c.length) {
+            if (i < lM1 && c[i] == '&') {
+                char d = c[i + 1];
+                if (d == '#' && i <= lM1 - 7 && isHex(c, i + 2)) {
+                    sb.append('§').append('x');
+                    for (int j = i + 2; j < i + 8; j++) sb.append('§').append(c[j]);
+                    i += 8;
+                    continue;
+                }
+                if (d >= 'a' && d <= 'f' || d >= '0' && d <= '9' || d >= 'k' && d <= 'o' || d == 'r') {
+                    sb.append('§').append(d);
+                    i += 2;
+                    continue;
+                }
+            }
+            sb.append(c[i]);
+            i++;
+        }
+        return sb.toString();
     }
 
     private AlixFormatter() {

@@ -1,0 +1,35 @@
+#This is a TEMPLATE - gradle.properties itself is gitignored (personal/per-machine settings, never
+#committed), so on a fresh clone it won't exist yet. Copy this file to "gradle.properties" (same folder)
+#and fill in your own paths below. Editing your own gradle.properties afterward never shows up in git and
+#never conflicts with anyone else's - that's the whole point of it being gitignored.
+
+#Where the Spigot module's built jar gets copied to (e.g. a local test server's plugins folder)
+build-dir=C:\\path\\to\\your\\spigot-test-server\\plugins
+#Where the Velocity module's built jar gets copied to (e.g. a local test proxy's plugins folder)
+velocity-build-dir=C:\\path\\to\\your\\velocity-test-server\\plugins
+
+#Shared project version pins - keep these in sync with the rest of the team unless you deliberately need
+#to diverge (e.g. testing against a different packetevents build)
+alix-velocity-version=1.5.1 (DEV-1)
+alix-spigot-version=3.10.1 (DEV-1)
+packet-events-version=2.13.1-SNAPSHOT
+
+toolchain-lang-version=21
+enable-preview=false
+
+#AlixSystemVelocitySupport-specific overrides - both are optional and independent of each other.
+#Which Velocity version line to build against (defaults to the latest, e.g. "4.1.2-SNAPSHOT"). Lower this
+#to an older, more widely-deployed Velocity release for backwards-compatibility testing.
+#velocity-target-version=3.5.1
+#Which JDK AlixSystemVelocitySupport itself compiles with (defaults to 25, since PaperMC's latest Velocity
+#builds require it - independent of toolchain-lang-version above, which the rest of the project, e.g.
+#Spigot, still uses). If you lower velocity-target-version to an older Velocity release, lower this to
+#match whatever JDK that older build actually needs (e.g. 21).
+#velocity-toolchain-lang-version=25
+
+#Gradle
+org.gradle.warning.mode=none
+org.gradle.parallel=true
+org.gradle.caching=true
+org.gradle.configuration-cache=true
+org.gradle.daemon=true

@@ -23,8 +23,7 @@ public final class ProxyCheckIOImpl implements ProxyCheck {
 
         JsonObject root = out.getAsJsonObject();
 
-        JsonElement statusEle = root.get("status");
-        if (statusEle == null || !"ok".equalsIgnoreCase(statusEle.getAsString())) {
+        if (!ProxyCheck.has(root, "status") || !"ok".equalsIgnoreCase(root.get("status").getAsString())) {
             return CheckResultHolder.UNAVAILABLE;
         }
 
@@ -37,14 +36,14 @@ public final class ProxyCheckIOImpl implements ProxyCheck {
         // 1. Network / ISP
         if (ipObj.has("network") && ipObj.get("network").isJsonObject()) {
             JsonObject network = ipObj.getAsJsonObject("network");
-            if (network.has("asn")) builder.asn(network.get("asn").getAsString());
-            if (network.has("provider")) builder.isp(network.get("provider").getAsString());
+            if (ProxyCheck.has(network, "asn")) builder.asn(network.get("asn").getAsString());
+            if (ProxyCheck.has(network, "provider")) builder.isp(network.get("provider").getAsString());
         }
 
         // 2. Location
         if (ipObj.has("location") && ipObj.get("location").isJsonObject()) {
             JsonObject loc = ipObj.getAsJsonObject("location");
-            if (loc.has("country_name")) builder.country(loc.get("country_name").getAsString());
+            if (ProxyCheck.has(loc, "country_name")) builder.country(loc.get("country_name").getAsString());
         }
 
         // 3. Detections
@@ -52,12 +51,12 @@ public final class ProxyCheckIOImpl implements ProxyCheck {
         if (ipObj.has("detections") && ipObj.get("detections").isJsonObject()) {
             JsonObject det = ipObj.getAsJsonObject("detections");
 
-            boolean isProxy = det.has("proxy") && det.get("proxy").getAsBoolean();
-            boolean isVpn = det.has("vpn") && det.get("vpn").getAsBoolean();
-            boolean isTor = det.has("tor") && det.get("tor").getAsBoolean();
-            boolean isScraper = det.has("scraper") && det.get("scraper").getAsBoolean();
-            boolean isCompromised = det.has("compromised") && det.get("compromised").getAsBoolean();
-            boolean isHosting = det.has("hosting") && det.get("hosting").getAsBoolean();
+            boolean isProxy = ProxyCheck.has(det, "proxy") && det.get("proxy").getAsBoolean();
+            boolean isVpn = ProxyCheck.has(det, "vpn") && det.get("vpn").getAsBoolean();
+            boolean isTor = ProxyCheck.has(det, "tor") && det.get("tor").getAsBoolean();
+            boolean isScraper = ProxyCheck.has(det, "scraper") && det.get("scraper").getAsBoolean();
+            boolean isCompromised = ProxyCheck.has(det, "compromised") && det.get("compromised").getAsBoolean();
+            boolean isHosting = ProxyCheck.has(det, "hosting") && det.get("hosting").getAsBoolean();
 
             proxyFlag = isProxy || isVpn || isTor || isScraper || isCompromised || isHosting;
 
@@ -68,8 +67,8 @@ public final class ProxyCheckIOImpl implements ProxyCheck {
                     .isCompromised(isCompromised)
                     .isHosting(isHosting);
 
-            if (det.has("risk")) builder.riskScore(det.get("risk").getAsInt());
-            if (det.has("confidence")) builder.confidenceScore(det.get("confidence").getAsInt());
+            if (ProxyCheck.has(det, "risk")) builder.riskScore(det.get("risk").getAsInt());
+            if (ProxyCheck.has(det, "confidence")) builder.confidenceScore(det.get("confidence").getAsInt());
 
             // Primary ProxyType assignment
             ProxyType type = ProxyType.NOT_A_PROXY;

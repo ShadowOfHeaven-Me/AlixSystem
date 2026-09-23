@@ -41,8 +41,8 @@ public final class LimboAuthBuilder extends AbstractAuthBuilder implements Limbo
         super(data, onConfirm, includeLeaveButton);
         this.connection = connection;
         this.duplexHandler = connection.getDuplexHandler();
-        if (connection.getVerifyState() instanceof LoginState loginState && loginState.data != null && loginState.data.canUseEmailRecovery()) {
-            this.setOnRecover(b -> loginState.openRecoveryEmailGui());
+        if (connection.getVerifyState() instanceof LoginState loginState && loginState.data != null && loginState.data.canUseAnyRecovery()) {
+            this.setOnRecover(b -> loginState.openRecovery());
         }
     }
 }
