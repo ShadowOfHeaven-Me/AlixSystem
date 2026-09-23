@@ -255,7 +255,11 @@ public final class LoginState implements VerifyState {
 
     //true if the connection will stay alive (the user wasn't kicked)
     public boolean onIncorrectPassword() {
-        if (++loginAttempts == maxLoginAttempts) {
+        //FUNCTIONALITY (audit, 2026-09-24): >= not == - loginAttempts only ever counts up from 0, so a
+        //config value of 0 or negative (an admin applying this file's own "0 or less = disable" convention,
+        //documented right next to this on a different setting) meant == could never match and the lockout
+        //never fired at all, letting an attacker guess passwords without limit.
+        if (++loginAttempts >= maxLoginAttempts) {
             this.connection.sendPacketAndClose(incorrectPasswordKickPacket);
             return false;
         }
@@ -362,7 +366,14 @@ public final class LoginState implements VerifyState {
     }
 
     private boolean init2FA() {
-        if (this.data.getLoginParams().getAuthSettings() != AuthSetting.PASSWORD_AND_AUTH_APP) return false;
+        //Must also cover plain AUTH_APP (app-only, no password), not just PASSWORD_AND_AUTH_APP - normal
+        //login for an AUTH_APP-only account never reaches this (setData() shows the 2FA GUI directly and
+        //skips tryLogIn() for that path), but every recovery success handler (handleRecoveryCommand,
+        //handleRecoveryPasskeyCommand, LimboRecoveryAnvilBuilder, LimboPinBuilder) calls tryLogIn() ->
+        //init2FA() - proving only email/passkey ownership there must still require this account's actual
+        //(and, for AUTH_APP, ONLY) 2FA factor before logging in, or recovery silently bypasses 2FA entirely.
+        var authSettings = this.data.getLoginParams().getAuthSettings();
+        if (authSettings != AuthSetting.PASSWORD_AND_AUTH_APP && authSettings != AuthSetting.AUTH_APP) return false;
         //this.verificationMessage.clearEffects();
 
         /*if (this.gui != null) {
@@ -391,7 +402,10 @@ public final class LoginState implements VerifyState {
     }
 
     private boolean initDoubleVer() {
-        if (data.getLoginParams().isDoubleVerificationEnabled() && loginVerification.isPhase1()) {
+        //loginVerification is null for an AUTH_APP-only account (see setData()'s justAuthApp branch) - guard
+        //defensively rather than NPE if double-verification is ever configured on one (nothing currently
+        //prevents that combination), same reasoning as isPasswordCorrect()'s own guard above.
+        if (loginVerification != null && data.getLoginParams().isDoubleVerificationEnabled() && loginVerification.isPhase1()) {
             var extraLoginType = data.getLoginParams().getExtraLoginType();
             var isSecondaryGui = extraLoginType != LoginType.COMMAND;
 
@@ -452,12 +466,6 @@ public final class LoginState implements VerifyState {
     }
 
     public void handleCommand(String rawCmd) {
-        //fix for mods automatically allowing for arbitrary register with PIN
-        if (this.gui != null) {
-            this.sendMessage("&cError - Cannot input command cuz you're using a GUI for login!");
-            return;
-        }
-
         if (rawCmd == null || rawCmd.isEmpty()) return;
         if (rawCmd.charAt(0) == '/') rawCmd = rawCmd.substring(1);
         String[] split = rawCmd.split(" ");
@@ -468,9 +476,15 @@ public final class LoginState implements VerifyState {
         //through chat are "recovery"/"recoveremail"/"recoverpasskey"/"recoverycode" (to start/continue
         //account recovery), "terms" (to accept/decline the Terms & Conditions, since that's chat-only and
         //has no GUI of its own) and "verifyemail" (to complete a 'require-email-in-register' registration,
-        //also chat-only) - everything else must go through the GUI itself. This is enforced once here so
-        //it applies uniformly to every command source: signed and unsigned 1.19+ command packets and
-        //legacy pre-1.19 chat-as-command alike.
+        //also chat-only) - everything else must go through the GUI itself (this is also what stops mods
+        //from automatically driving arbitrary register commands through chat while a PIN GUI is showing).
+        //This is the ONLY gate on GUI-open command handling (audit, 2026-09-24: a now-removed, cruder
+        //"any command at all while gui != null" check used to sit above this and return unconditionally
+        //before this allowlist ever ran - meaning recovery/terms/verifyemail were silently unreachable
+        //through the exact GUI states they're documented to work during, e.g. a lost-device player
+        //standing at the 2FA prompt had no way to ever redeem a recovery code). Enforced once here so it
+        //applies uniformly to every command source: signed and unsigned 1.19+ command packets and legacy
+        //pre-1.19 chat-as-command alike.
         if (this.gui != null && !cmdName.equals("recovery") && !cmdName.equals("recoveremail")
                 && !cmdName.equals("recoverpasskey") && !cmdName.equals("recoverycode")
                 && !cmdName.equals("terms") && !cmdName.equals("verifyemail"))
@@ -528,7 +542,7 @@ public final class LoginState implements VerifyState {
         }
 
         if (this.isTermsGateBlocking()) {
-            this.sendTermsPrompt();
+            this.sendTermsRequiredReminder();
             return;
         }
 
@@ -545,6 +559,14 @@ public final class LoginState implements VerifyState {
         this.writeMessage(Messages.getWithPrefix("terms-required-explanation"));
         this.duplexHandler.write(PacketPlayOutMessage.withComponent(buildTermsLinkComponent()));
         this.sendMessage(Messages.getWithPrefix("terms-required-prompt"));
+    }
+
+    //Reminds a gated-but-unregistered player that they still need to accept the Terms & Conditions before
+    //anything else they type (other than "/terms accept"/"/terms decline" itself) will do anything - a
+    //short nag rather than the full explanation+link+prompt of sendTermsPrompt() above (which already ran
+    //once on join), mirroring sendEmailRegisterGatePrompt()'s role for the email-verification gate.
+    private void sendTermsRequiredReminder() {
+        this.sendMessage(Messages.getWithPrefix("terms-must-accept-first"));
     }
 
     //Builds the "terms-required-link" line as a real clickable/hoverable link (opens directly in the
@@ -626,6 +648,28 @@ public final class LoginState implements VerifyState {
 
     }
 
+    //Shared by the chat "/recovery" path (handleRecoveryCommand below) and the anvil-GUI recovery flow
+    //(LimboRecoveryAnvilBuilder, a different package - hence public) so the two can never drift apart on
+    //attempt-limit enforcement again: the GUI path previously called EmailHandler directly and never
+    //touched these counters at all, letting a player brute-force max-email-attempts/max-code-attempts
+    //(email-config.yml) indefinitely through the GUI while the chat path correctly enforced them.
+    //Returns true if the limit was hit (and the connection was disconnected) - callers must stop immediately.
+    public boolean registerInvalidRecoveryEmailAttempt() {
+        if (++this.invalidEmailAttempts >= MAX_EMAIL_ATTEMPTS) {
+            this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("email-recovery-invalid-email")));
+            return true;
+        }
+        return false;
+    }
+
+    public boolean registerInvalidRecoveryCodeAttempt() {
+        if (++this.invalidCodeAttempts >= MAX_CODE_ATTEMPTS) {
+            this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("email-recovery-invalid-email")));
+            return true;
+        }
+        return false;
+    }
+
     private void handleRecoveryCommand(String[] args) {
         if (args.length != 1) {
             this.sendMessage(Messages.get("email-recovery-invalid-email"));
@@ -639,10 +683,7 @@ public final class LoginState implements VerifyState {
                 this.tryLogIn();
                 return;
             }
-            if (++this.invalidCodeAttempts == MAX_CODE_ATTEMPTS) {
-                this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("email-recovery-invalid-email")));
-                return;
-            }
+            if (this.registerInvalidRecoveryCodeAttempt()) return;
             this.sendMessage(Messages.getWithPrefix("email-recovery-invalid-email"));
             return;
         }
@@ -657,10 +698,7 @@ public final class LoginState implements VerifyState {
             EmailHandler.sendRecoveryMail(this.connection, input, (conn, msg) -> this.sendMessage(msg));
             this.openRecoveryCodeGui();
         } else {
-            if (++this.invalidEmailAttempts == MAX_EMAIL_ATTEMPTS) {
-                this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("email-recovery-invalid-email")));
-                return;
-            }
+            if (this.registerInvalidRecoveryEmailAttempt()) return;
             this.sendMessage(Messages.getWithPrefix("email-recovery-invalid-email"));
         }
     }
@@ -705,7 +743,7 @@ public final class LoginState implements VerifyState {
                 //Same attempt-cap treatment every other guessable code in this class already gets
                 //(email-recovery code, register-email-verify code) - unguessable given the keyspace alone,
                 //but there's no reason this specific guess loop should be the one exception left unbounded.
-                if (++this.invalidRecoveryCodeAttempts == MAX_CODE_ATTEMPTS) {
+                if (++this.invalidRecoveryCodeAttempts >= MAX_CODE_ATTEMPTS) {
                     this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("recovery-code-invalid")));
                     return;
                 }
@@ -969,7 +1007,7 @@ public final class LoginState implements VerifyState {
             return;
         }
 
-        if (++this.invalidRegisterCodeAttempts == MAX_CODE_ATTEMPTS) {
+        if (++this.invalidRegisterCodeAttempts >= MAX_CODE_ATTEMPTS) {
             this.disconnect(PacketPlayOutDisconnect.of(Messages.getWithPrefix("register-email-verification-too-many-attempts")));
             return;
         }

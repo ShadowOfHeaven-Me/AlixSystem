@@ -1,6 +1,7 @@
 package alix.common.data.file;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.PlayerNameIndex;
 import alix.common.data.PersistentUserData;
@@ -69,13 +70,51 @@ public final class UserFileManager {
         return name != null ? map.get(name) : null;
     }
 
+    //do not remove from UserTokensFileManager here - a premium name change reuses this same Identity for
+    //the renamed record (see PersistentUserData#registerPremiumPlayerRename()), so wiping the 2FA secret/
+    //recovery codes/encrypted email here would silently break that player's 2FA and lose their stored
+    //email. Use removeFully() instead for an actual full account-data wipe (e.g. '/as fullyremovedata').
     public static PersistentUserData remove(String name) {
-        //do not remove from UserTokensFileManager
         PlayerNameIndex.remove(name);
         var data = map.remove(name);
         if (data != null) {
-            GeoIPTracker.removeIP(data.getSavedIP());
+            //Caught rather than left to propagate: an exception here (e.g. from the Ataraxia IPC calls
+            //GeoIPTracker may make) previously aborted this method before database.removeByName() ran,
+            //silently leaving the row in the database - see removeFully()'s own docs for the same concern
+            //one level up.
+            try {
+                GeoIPTracker.removeIP(data.getSavedIP());
+            } catch (Exception e) {
+                AlixCommonMain.logWarning("Failed to update GeoIPTracker while removing '" + name + "': " + e);
+            }
             database.removeByName(name);
+        }
+        return data;
+    }
+
+    //Like remove(), but also wipes the 2FA secret, encrypted email backup and recovery codes -
+    //removeByName() above only touches alix_users2/alix_passwords2, not alix_user_tokens. Only safe to use
+    //when the Identity is truly being discarded (a full account-data wipe), never for a rename, which
+    //reuses the same Identity for the new record.
+    public static PersistentUserData removeFully(String name) {
+        var data = remove(name);
+        if (data != null) {
+            //Caught rather than left to propagate: UserTokensFile#save() (called from removeTokenLocally())
+            //wraps a real write failure as an unchecked RuntimeException - same class of bug as
+            //GeoIPTracker's above, just one call deeper. Without this, a token-file write failure skipped
+            //database.removeUserToken() AND fastSave() below, silently undoing part of a GDPR erasure.
+            try {
+                UserTokensFileManager.removeTokenLocally(data.identity());
+            } catch (Exception e) {
+                AlixCommonMain.logWarning("Failed to remove local 2FA token while removing '" + name + "': " + e);
+            }
+            database.removeUserToken(data.identity());
+            //Force an immediate local-file flush rather than leaving this to the periodic (up to 1-minute)
+            //autosave. Without this, a crash in that window leaves the erased account's row still sitting in
+            //the on-disk users.yml - and the static initializer above treats any name present locally but
+            //absent from the database as "local-only" and pushes it BACK into the database on the next boot,
+            //silently undoing a completed GDPR erasure ('/as fullyremovedata').
+            fastSave();
         }
         return data;
     }

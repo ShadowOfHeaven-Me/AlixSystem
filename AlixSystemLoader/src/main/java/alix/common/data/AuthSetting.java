@@ -6,6 +6,10 @@ public enum AuthSetting {
     AUTH_APP,
     PASSWORD_AND_AUTH_APP;
 
+    public boolean requiresAuthApp() {
+        return this != PASSWORD;
+    }
+
     public String toSavable() {
         return String.valueOf(this.ordinal());
     }

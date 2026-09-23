@@ -226,7 +226,15 @@ public final class Hashing {
 
         hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), UUID_SHA256_ALIX, SHA256_MIGRATE, SHA512_MIGRATE, BCRYPT};
 
-        byte def = 3;
+        //FUNCTIONALITY (audit, 2026-09-24): was 3 (UUID_SHA256_ALIX) - matches config.yml's own shipped
+        //password-hash-type default of 4 now. 3 discards half of its SHA-256 digest and collapses the rest
+        //via lossy XOR/addition into a single long (the same construction UUID#hashCode() uses to pick a
+        //hash-table bucket, repurposed here as the actual stored hash) - considerably weaker than a full,
+        //un-truncated SHA-256 digest for essentially no benefit. This fallback only matters when
+        //password-hash-type is entirely absent from config.yml (an old/corrupted config predating this
+        //option) - every config.yml this project actually ships already explicitly sets 4 - but it should
+        //still match the real default rather than silently being weaker than it.
+        byte def = 4;
         int i = ConfigProvider.config.getInt("password-hash-type", def);
         byte b = (byte) i;
         byte highestId = hashingAlgorithms[hashingAlgorithms.length - 1].hashId();//Or hashingAlgorithms.length - 1

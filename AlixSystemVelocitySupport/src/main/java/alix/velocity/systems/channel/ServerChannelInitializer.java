@@ -1,6 +1,7 @@
 package alix.velocity.systems.channel;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.algorithms.adaptive.ConnectionVerdict;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.epoll.AlixEpollConnection;
 import alix.common.antibot.epoll.Telemetry;
@@ -16,6 +17,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
+import ua.nanit.limbo.integration.LimboIntegration;
 
 import java.net.InetAddress;
 
@@ -76,7 +78,16 @@ public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter
                 channel.unsafe().closeForcibly();
                 return;
             }
-            AntiBotStatistics.INSTANCE.incrementConnections(address);
+            //RATE_LIMITED/FIREWALLED both mean this specific connection shouldn't proceed either - see
+            //LimboIntegration#onProxyAddress's matching comment (AlixSystemLoader).
+            //
+            //FUNCTIONALITY (audit, 2026-09-24): weighted, not the plain 1-arg overload - see
+            //AlixInterceptor's matching Spigot comment (this call site is reached exactly when
+            //PROXY_PROTOCOL is false, exactly when a SYN signature can actually exist).
+            if (AntiBotStatistics.INSTANCE.incrementConnections(address, LimboIntegration.connectionWeight(channel)) != ConnectionVerdict.ALLOWED) {
+                channel.unsafe().closeForcibly();
+                return;
+            }
 
             //cuz not invoked in epoll fw
             if (isNettyFireWall && Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)

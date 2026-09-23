@@ -1,6 +1,7 @@
 package shadow.systems.netty;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.algorithms.adaptive.ConnectionVerdict;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.epoll.AlixEpollConnection;
 import alix.common.antibot.firewall.FireWallManager;
@@ -23,6 +24,7 @@ import shadow.utils.objects.AlixConsoleFilterHolder;
 import shadow.virtualization.BukkitLimboIntegration;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.handlers.DummyHandler;
+import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.server.LimboServer;
 
 import java.net.InetAddress;
@@ -40,7 +42,7 @@ public final class AlixInterceptor {
         FireWallType type = FireWallType.NETTY;
 
         if (!AlixUtils.antibotService) type = FireWallType.NOT_USED;
-        else if (AlixAtaraxia.isEnabled()) {
+        else if (AlixAtaraxia.ENABLED) {
             type = FireWallType.ATARAXIA;
             AlixCommonMain.logInfo("Using the optimized Alix Ataraxia for FireWall Protection.");
         } else if (!Main.config.getBoolean("unsafe-firewall")) {
@@ -123,7 +125,19 @@ public final class AlixInterceptor {
                     channel.unsafe().closeForcibly();
                     return;
                 }
-                AntiBotStatistics.INSTANCE.incrementConnections(address);
+                //RATE_LIMITED/FIREWALLED both mean this specific connection shouldn't proceed either - see
+                //LimboIntegration#onProxyAddress's matching comment.
+                //
+                //FUNCTIONALITY (audit, 2026-09-24): weighted, not the plain 1-arg overload - this call
+                //site is reached exactly when PROXY_PROTOCOL is false, which is also exactly when
+                //TelemetryProfilerImpl actually captures SYN signatures (see LimboIntegration
+                //#connectionWeight()'s own docs) - the ONLY other caller, onProxyAddress(), is reached only
+                //when PROXY_PROTOCOL is true, where a signature can never exist, so leaving this call site
+                //unweighted meant the whole feature was silently dead in every real deployment.
+                if (AntiBotStatistics.INSTANCE.incrementConnections(address, LimboIntegration.connectionWeight(channel)) != ConnectionVerdict.ALLOWED) {
+                    channel.unsafe().closeForcibly();
+                    return;
+                }
             }
 
             //always true
@@ -132,15 +146,20 @@ public final class AlixInterceptor {
                 ChannelPipeline pipeline = channel.pipeline();
                 config.setAutoRead(false);
 
-                limbo.getClientChannelInitializer().initChannel(channel, PROXY_PROTOCOL, false);
+                //try/finally: exceptionCaught() below only logs and never rethrows, so without this, an
+                //exception from any of the three calls below left autoRead disabled forever - Netty would
+                //never read another byte from this one channel, hanging it permanently with no cleanup.
+                try {
+                    limbo.getClientChannelInitializer().initChannel(channel, PROXY_PROTOCOL, false);
 
-                super.channelRead(ctx, msg);
-                //Log.error("pipeline=" + channel.pipeline().names());
+                    super.channelRead(ctx, msg);
+                    //Log.error("pipeline=" + channel.pipeline().names());
 
-                if (NanoLimbo.removeTimeout && pipeline.context("timeout") != null)
-                    pipeline.replace("timeout", "--timeout", DummyHandler.HANDLER);
-
-                config.setAutoRead(true);
+                    if (NanoLimbo.removeTimeout && pipeline.context("timeout") != null)
+                        pipeline.replace("timeout", "--timeout", DummyHandler.HANDLER);
+                } finally {
+                    config.setAutoRead(true);
+                }
                 return;
             }
 
@@ -161,6 +180,10 @@ public final class AlixInterceptor {
 
     public static void onDisable() {
         Interceptor.onDisable();
+        //see AlixHandler#purgeNullChannelConnections()'s own docs - must run before vanilla's own
+        //MinecraftServer#stopServer() gets to ServerConnectionListener#handleAllDisconnections(), which
+        //this plugin disabling here happens well ahead of.
+        AlixHandler.purgeNullChannelConnections();
         switch (fireWallType) {
             case NETTY:
                 AlixHandler.SERVER_CHANNELS.forEach(channel -> {

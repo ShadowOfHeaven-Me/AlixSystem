@@ -188,6 +188,36 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
         });
     }
 
+    @Override
+    public void loadToken(Identity identity, Consumer<String> consumer) {
+        UUID tokenUuid = identity.tokenKey().key();
+        //Same queryAsync reasoning as loadRecoveryCodes() above - offloaded, and chained onto this player's
+        //own execution queue so this can never interleave with a concurrent write for the SAME player
+        //(saveUserToken()/commitTokenAndEmail()/removeUserToken() all key on the same identity string).
+        //
+        //Unlike every other queryAsync() call in this class, this one is on the LOGIN critical path (see
+        //UserTokensFileManager#refreshFromDatabase()/LimboIntegration#onLoginStart()) - queryAsync() wraps
+        //the query in AutoErrorReport, which only logs a failure and never itself calls the consumer, so a
+        //transient DB error here (unlike everywhere else it's merely logged) would otherwise leave the
+        //connecting player's login hung forever, since nothing downstream would ever run. Catching and
+        //falling back to null (treat a failed lookup the same as "no externally-set token found", refresh
+        //skipped for this login rather than the whole login stalling on a DB hiccup) keeps that guarantee
+        //local to this one query instead of having to touch the shared, more broadly-used queryAsync()/
+        //AutoErrorReport() machinery.
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_TOKEN_SQL)) {
+                setUuid(ps, 1, tokenUuid);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    consumer.accept(rs.next() ? rs.getString(1) : null);
+                }
+            } catch (Exception e) {
+                AlixCommonUtils.logException(e);
+                consumer.accept(null);
+            }
+        });
+    }
+
     //Reads, checks and (on a match) rewrites the recovery-codes row all within ONE queryAsync task (one
     //connection, one entry in this player's execution chain) - unlike doing loadRecoveryCodes() then a
     //separate saveRecoveryCodes() call from the caller, this can't be interleaved by a second concurrent
@@ -700,6 +730,17 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
             this.clearPasswordPointers0(name, connection);
             try (PreparedStatement ps = connection.prepareStatement(REMOVE_USER_BY_NAME)) {
                 ps.setString(1, name);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public void removeUserToken(Identity identity) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(DELETE_TOKEN_SQL)) {
+                setUuid(ps, 1, tokenUuid);
                 ps.executeUpdate();
             }
         });

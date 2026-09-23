@@ -3,6 +3,8 @@ package shadow.systems.commands;
 import alix.common.commands.file.AlixCommandInfo;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
+import alix.common.data.security.email.EmailHandler;
+import ua.nanit.limbo.connection.login.LoginState;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
@@ -350,6 +352,7 @@ public final class CommandManager {
 
             registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
             registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
+            registerPermissionlessCommandForcibly("alixhelp", new AlixHelpCommand());
             if (!__noPremiumAuthButKeepIdentity)
                 registerPermissionlessCommandForcibly("premium", new PremiumCommand());
 
@@ -1352,7 +1355,7 @@ public final class CommandManager {
             user.completeCaptcha();
             return;
         }
-        if (++user.captchaAttempts == maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
+        if (++user.captchaAttempts >= maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
         else user.writeAndFlushConstSilently(incorrectCaptchaMessagePacket);
     }
 
@@ -1405,7 +1408,7 @@ public final class CommandManager {
             user.tryLogIn();
             return true;
         }
-        if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
+        if (++user.loginAttempts >= maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
         else user.writeAndFlushConstSilently(incorrectPasswordMessagePacket);
         return false;
     }
@@ -1542,12 +1545,60 @@ public final class CommandManager {
         }
     }
 
+    //Non-admin-gated "/alixhelp" - lists every player-facing command, mirroring Velocity's
+    //AlixSystemCommand#sendPlayerCommandsList()/CommandManager#register_Help().
+    private static final class AlixHelpCommand implements CommandExecutor {
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+            sendMessage(sender, Messages.get("player-commands-header"));
+
+            sendMessage(sender, Messages.get("player-commands-section-login"));
+            //Same reasoning as Velocity's sendPlayerCommandsList(): /register and /login are already
+            //explained at the point they're actually needed, and /terms is only relevant while
+            //require-terms-acceptance is on.
+            sendMessage(sender, Messages.get("player-commands-recovery"));
+            if (LoginState.requireTermsAcceptance)
+                sendMessage(sender, Messages.get("player-commands-terms"));
+            sendMessage(sender, "");
+
+            sendMessage(sender, Messages.get("player-commands-section-account"));
+            sendMessage(sender, Messages.get("player-commands-account"));
+            sendMessage(sender, Messages.get("player-commands-account-sendverifyemail"));
+            sendMessage(sender, Messages.get("player-commands-account-verifyemail"));
+            sendMessage(sender, Messages.get("player-commands-changepassword"));
+            sendMessage(sender, Messages.get("player-commands-premium"));
+            sendMessage(sender, "");
+            return true;
+        }
+    }
+
     private static final class AccountSettingsCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             if (isConsoleButPlayerRequired(sender)) return false;
-            AccountGUI.add((Player) sender);
+            Player player = (Player) sender;
+            if (args.length > 0) {
+                String sub = args[0];
+                if (sub.equalsIgnoreCase("verifyemail")) {
+                    if (args.length < 2) {
+                        sendMessage(sender, Messages.getWithPrefix("account-verifyemail-specify-code"));
+                        return true;
+                    }
+                    EmailHandler.verifyMail(sender, UserFileManager.get(player.getName()), args[1], false, AlixUtils::sendMessage);
+                    return true;
+                }
+                if (sub.equalsIgnoreCase("sendverifyemail")) {
+                    if (args.length < 2) {
+                        sendMessage(sender, Messages.getWithPrefix("account-sendverifyemail-usage"));
+                        return true;
+                    }
+                    EmailHandler.sendVerifyMail(sender, player.getName(), args[1], false, AlixUtils::sendMessage);
+                    return true;
+                }
+            }
+            AccountGUI.add(player);
             return true;
         }
     }

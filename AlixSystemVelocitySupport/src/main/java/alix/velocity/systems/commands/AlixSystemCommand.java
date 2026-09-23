@@ -6,7 +6,6 @@ import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.epoll.TelemetryProfilerImpl;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.commands.file.CommandsFileManager;
-import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
@@ -26,8 +25,10 @@ import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
+import alix.velocity.server.impl.VelocityLimboIntegration;
 import alix.velocity.utils.AlixUtils;
 import alix.velocity.utils.file.FileManager;
+import alix.velocity.utils.user.UserManager;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -35,6 +36,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.proxy.connection.client.ConnectedPlayer;
 import io.netty.channel.Channel;
 import ua.nanit.limbo.connection.login.LoginState;
 
@@ -176,21 +178,13 @@ public final class AlixSystemCommand {
         root.then(BrigadierCommand.literalArgumentBuilder("panicmode")
                 .executes(context -> {
                     CommandSource sender = context.getSource();
-                    if (PanicModeManager.activate("Manual trigger.")) {
-                        sendMessage(sender, Messages.get("as-panicmode-enabled"));
-                    } else {
-                        sendMessage(sender, Messages.get("as-panicmode-already-enabled"));
-                    }
+                    reportPanicModeActivate(sender);
                     return SINGLE_SUCCESS;
                 })
                 .then(BrigadierCommand.literalArgumentBuilder("on")
                         .executes(context -> {
                             CommandSource sender = context.getSource();
-                            if (PanicModeManager.activate("Manual trigger.")) {
-                                sendMessage(sender, Messages.get("as-panicmode-enabled"));
-                            } else {
-                                sendMessage(sender, Messages.get("as-panicmode-already-enabled"));
-                            }
+                            reportPanicModeActivate(sender);
                             return SINGLE_SUCCESS;
                         })
                 )
@@ -202,6 +196,22 @@ public final class AlixSystemCommand {
                             } else {
                                 sendMessage(sender, Messages.get("as-panicmode-already-disabled"));
                             }
+                            return SINGLE_SUCCESS;
+                        })
+                )
+                .then(BrigadierCommand.literalArgumentBuilder("disable")
+                        .executes(context -> {
+                            CommandSource sender = context.getSource();
+                            sendMessage(sender, PanicModeManager.lock("Manual trigger.") ?
+                                    Messages.get("as-panicmode-locked") : Messages.get("as-panicmode-already-locked"));
+                            return SINGLE_SUCCESS;
+                        })
+                )
+                .then(BrigadierCommand.literalArgumentBuilder("enable")
+                        .executes(context -> {
+                            CommandSource sender = context.getSource();
+                            sendMessage(sender, PanicModeManager.unlock("Manual trigger.") ?
+                                    Messages.get("as-panicmode-unlocked") : Messages.get("as-panicmode-already-unlocked"));
                             return SINGLE_SUCCESS;
                         })
                 )
@@ -255,15 +265,20 @@ public final class AlixSystemCommand {
                         .executes(context -> {
                             String target = StringArgumentType.getString(context, "name");
                             CommandSource sender = context.getSource();
-                            PersistentUserData data = UserFileManager.remove(target);
+                            PersistentUserData data = UserFileManager.removeFully(target);
                             if (AllowListFileManager.remove(target)) {
+                                AllowListFileManager.save();
                                 sendMessage(sender, Messages.get("as-frd-removed-from-allowlist", target));
                             }
                             if (data == null) {
                                 sendMessage(sender, playerDataNotFound.format(target));
                                 return SINGLE_SUCCESS;
                             }
-                            GeoIPTracker.removeIP(data.getSavedIP());
+                            //removeFully() already calls GeoIPTracker.removeIP() internally (via
+                            //UserFileManager.remove()) - this redundant second call double-decremented
+                            //EXISTING_ACCOUNTS for this IP, silently under-counting another account sharing
+                            //it (e.g. a household/alt) and weakening disallowJoin()'s max-accounts-per-IP
+                            //check for that IP until a restart reloads real state.
                             sendMessage(sender, Messages.get("as-frd-success", target));
                             return SINGLE_SUCCESS;
                         })
@@ -308,7 +323,11 @@ public final class AlixSystemCommand {
                                             );
                                             LoginType type;
                                             try {
-                                                type = LoginType.valueOf(loginTypeArg.toUpperCase());
+                                                //LoginType.from(..., false, false), not valueOf() - matches
+                                                //Spigot's equivalent 'rp' case and this file's own 'cp'
+                                                //case, both of which also accept the legacy aliases
+                                                //("PASSWORD"/"ANVIL_PASSWORD") that plain valueOf() rejects.
+                                                type = LoginType.from(loginTypeArg.toUpperCase(), false, false);
                                             } catch (Exception e) {
                                                 sendMessage(sender, Messages.get("as-invalid-login-type", loginTypeArg));
                                                 return SINGLE_SUCCESS;
@@ -598,14 +617,18 @@ public final class AlixSystemCommand {
                                         return SINGLE_SUCCESS;
                                     }
 
-                                    /*ConnectedPlayer player = (ConnectedPlayer) Main.PLUGIN.getServer().getPlayer(target).orElse(null);
+                                    //Was commented out - this Velocity path silently skipped the same safety check Spigot's
+                                    //equivalent 'fs'/'forcestatus' case enforces: a player mid-login who already self-declared
+                                    //NON_PREMIUM (a non-v4 UUID assigned during the ongoing handshake) must not have their status
+                                    //force-set to PREMIUM off cached data underneath that in-progress login.
+                                    ConnectedPlayer player = (ConnectedPlayer) Main.PLUGIN.getServer().getPlayer(target).orElse(null);
                                     if (player != null && !UserManager.hasVerified(player.getUniqueId())) {
                                         var packetUUID = VelocityLimboIntegration.getLoginAssignedUUID(player.getConnection().getChannel());
                                         if (packetUUID != null && packetUUID.version() != 4) {
-                                            sendMessage(sender, "&ePlayer " + target + " declared himself as NON_PREMIUM, and thus his status cannot be set to PREMIUM.");
+                                            sendMessage(sender, Messages.get("as-forcestatus-self-declared-non-premium", target));
                                             return SINGLE_SUCCESS;
                                         }
-                                    }*/
+                                    }
 
                                     PremiumUtils.getOrRequestAndCacheData(null, target, newPremiumData -> {
                                         if (newPremiumData.getStatus().isUnknown()) {
@@ -736,6 +759,19 @@ public final class AlixSystemCommand {
         sendMessage(sender, Messages.get("player-commands-changepassword"));
         sendMessage(sender, Messages.get("player-commands-premium"));
         sendMessage(sender, "");
+    }
+
+    //Shared by both "/as panicmode" (bare) and "/as panicmode on" - activates panic mode and reports
+    //whether it was actually turned on just now or was already active. If panic mode has been disabled via
+    //"/as panicmode disable", activate() always fails - report that distinctly, rather than the misleading
+    //"already enabled" a bare false would otherwise imply.
+    private static void reportPanicModeActivate(CommandSource sender) {
+        if (PanicModeManager.isLocked()) {
+            sendMessage(sender, Messages.get("as-panicmode-locked-cannot-activate"));
+            return;
+        }
+        sendMessage(sender, PanicModeManager.activate("Manual trigger.") ?
+                Messages.get("as-panicmode-enabled") : Messages.get("as-panicmode-already-enabled"));
     }
 
     // Helper method to add the same subcommand under multiple aliases

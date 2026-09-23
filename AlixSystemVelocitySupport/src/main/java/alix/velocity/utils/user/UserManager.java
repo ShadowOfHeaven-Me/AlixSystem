@@ -79,8 +79,14 @@ public final class UserManager {
         var user = new VerifiedUser(player);
         USERS.put(player.getUniqueId(), user);
 
+        //FUNCTIONALITY (audit, 2026-09-24): identity-checked removal, not remove(uuid) - a reconnect can
+        //put a brand-new VerifiedUser for this uuid into USERS before the OLD channel's closeFuture (from
+        //addConnected()'s own forced c.close() of it, on a same-IP reconnect) actually fires; an
+        //unconditional remove(uuid) here would then evict that new, still-live session instead of the
+        //stale one this listener was actually registered for. This is what getVerified(uuid) returning
+        //unexpectedly null (see PacketEventListener's own "...how?") was actually catching downstream.
         user.getChannel().closeFuture().addListener(f -> {
-            USERS.remove(player.getUniqueId());
+            USERS.remove(player.getUniqueId(), user);
         });
         ExecutableCommandList.executeFor(user);
     }

@@ -43,7 +43,7 @@ mcupload {
             loaders = listOf("paper", "purpur", "spigot", "bukkit")
             projectId = "dXkFpOAK"
             gameVersions = listOf(
-                "26.2", "26.1.2","26.1.1","26.1",
+                "26.3", "26.2", "26.1.2","26.1.1","26.1",
                 "1.21.11", "1.21.10", "1.21.9", "1.21.8", "1.21.7", "1.21.6", "1.21.5", "1.21.4", "1.21.3", "1.21.2", "1.21.1", "1.21",
                 "1.20.6", "1.20.5", "1.20.4", "1.20.3", "1.20.2", "1.20.1", "1.20",
                 "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19",
@@ -92,8 +92,18 @@ tasks.shadowJar {
         "io.github.retrooper.packetevents",
         "com.github.retrooper.packetevents",
         "net.kyori.adventure.api",
-        "net.kyori.adventure.nbt"//,
-        //"org.mariadb.jdbc"
+        "net.kyori.adventure.nbt",
+        //Unrelocated JDBC/pool classes (org.mariadb.jdbc, org.postgresql, com.zaxxer.hikari) previously
+        //triggered LibertyBans' (and any other plugin bundling the same libraries) unrelocated-library
+        //stability warning, since two plugins' classloaders each carrying their own unrelocated copy of the
+        //same class can collide through java.sql.DriverManager's JVM-wide (not per-classloader) driver
+        //registry. Relocating them was previously abandoned because it silently dropped PostgreSQL's
+        //META-INF/services/java.sql.Driver entry (see the mergeServiceFiles()/duplicatesStrategy comment
+        //above) - now that eachFile below narrows duplicatesStrategy back to EXCLUDE everywhere except
+        //META-INF/services/*, that merge bug no longer applies, so these can be relocated too.
+        "org.mariadb.jdbc",
+        "org.postgresql",
+        "com.zaxxer.hikari"
     )
 
     for (s in list) {
