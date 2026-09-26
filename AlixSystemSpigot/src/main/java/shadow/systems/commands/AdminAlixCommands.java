@@ -14,6 +14,8 @@ import alix.common.data.file.UserFileManager;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.PremiumStatus;
+import alix.common.data.security.email.EmailConfig;
+import alix.common.data.security.email.EmailHandler;
 import alix.common.data.security.password.Password;
 import alix.common.database.DatabaseUpdater;
 import alix.common.database.migrate.MigrateManager;
@@ -48,6 +50,13 @@ import java.util.Date;
 import static shadow.utils.main.AlixUtils.*;
 
 public final class AdminAlixCommands implements CommandExecutor {
+
+    //Matches AlixSystemCommand's own devMode flag on Velocity - "/as testdb" is a dev-only convenience
+    //(per ShadowOfHeaven directly: lets him create a throwaway test account without having to join
+    //in-game himself; the actual database connection is already verified elsewhere, in connect()) and was
+    //never meant to be reachable outside of that, unlike here where it was previously registered
+    //unconditionally.
+    private static final boolean devMode = false;
 
     private final String passwordResetMessage = Messages.get("password-reset-forcefully");
     private final String twoFactorResetMessage = Messages.get("auth-app-reset-forcefully");
@@ -119,13 +128,13 @@ public final class AdminAlixCommands implements CommandExecutor {
 
                     case "frd":
                     case "fullyremovedata": {
-                        PersistentUserData data = UserFileManager.remove(arg2);
+                        PersistentUserData data = UserFileManager.removeFully(arg2);
 
                         if (AllowListFileManager.remove(arg2)) {
+                            AllowListFileManager.save();
                             sendMessage(sender, Messages.get("as-frd-removed-from-allowlist", arg2));
                         }
 
-                        //todo: Also remove from UserTokensFileManager?
                         if (data == null) {
                             sendMessage(sender, playerDataNotFound.format(arg2));
                             return false;
@@ -378,6 +387,33 @@ public final class AdminAlixCommands implements CommandExecutor {
                         sendMessage(sender, Messages.get("as-reset2fa-success", arg2));
                         return true;
                     }
+                    case "verifyemail": {
+                        EmailHandler.verifyMail(sender, null, arg2, true, AlixUtils::sendMessage);
+                        return true;
+                    }
+                    case "panicmode": {
+                        if (arg2.equalsIgnoreCase("on")) {
+                            reportPanicModeActivate(sender);
+                            return true;
+                        }
+                        if (arg2.equalsIgnoreCase("off")) {
+                            sendMessage(sender, PanicModeManager.deactivate("Manual trigger.") ?
+                                    Messages.get("as-panicmode-disabled") : Messages.get("as-panicmode-already-disabled"));
+                            return true;
+                        }
+                        if (arg2.equalsIgnoreCase("disable")) {
+                            sendMessage(sender, PanicModeManager.lock("Manual trigger.") ?
+                                    Messages.get("as-panicmode-locked") : Messages.get("as-panicmode-already-locked"));
+                            return true;
+                        }
+                        if (arg2.equalsIgnoreCase("enable")) {
+                            sendMessage(sender, PanicModeManager.unlock("Manual trigger.") ?
+                                    Messages.get("as-panicmode-unlocked") : Messages.get("as-panicmode-already-unlocked"));
+                            return true;
+                        }
+                        sendMessage(sender, Messages.get("as-unknown-command"));
+                        return false;
+                    }
                     case "user": {
                         AlixScheduler.async(() -> {
                             OfflinePlayer offlinePlayer = getOfflinePlayer(arg2);
@@ -494,10 +530,16 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, Messages.get("as-forceop-console-only"));
                             return false;
                         }
-                        OfflinePlayer p = getOfflinePlayer(arg1);
+                        //FUNCTIONALITY (audit, 2026-09-24): was reading arg1 (the literal "forceop"
+                        //keyword itself, matched by the enclosing switch) instead of arg2 (the actual
+                        //<player> argument documented in as-help-forceop) - meaning this never operated
+                        //on the intended target at all. It instead silently OPed whichever account happens
+                        //to be literally named "forceop", a real privilege-escalation path via a guessable
+                        //username collision, on every single invocation.
+                        OfflinePlayer p = getOfflinePlayer(arg2);
                         if (p == null || p.getName() == null) {
-                            sendMessage(sender, Messages.get("warning-player-never-joined", arg1));
-                            AlixHandler.handleOperatorSet(sender, arg1);
+                            sendMessage(sender, Messages.get("warning-player-never-joined", arg2));
+                            AlixHandler.handleOperatorSet(sender, arg2);
                             return false;
                         }
                         AlixHandler.handleOperatorSet(sender, p.getName());
@@ -508,10 +550,11 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, Messages.get("as-forceop-console-only"));
                             return false;
                         }
-                        OfflinePlayer p = getOfflinePlayer(arg1);
+                        //FUNCTIONALITY (audit, 2026-09-24): same arg1-instead-of-arg2 bug as forceop above.
+                        OfflinePlayer p = getOfflinePlayer(arg2);
                         if (p == null || p.getName() == null) {
-                            sendMessage(sender, Messages.get("warning-player-never-joined", arg1));
-                            AlixHandler.handleOperatorUnset(sender, arg1);
+                            sendMessage(sender, Messages.get("warning-player-never-joined", arg2));
+                            AlixHandler.handleOperatorUnset(sender, arg2);
                             return false;
                         }
                         AlixHandler.handleOperatorUnset(sender, p.getName());
@@ -583,6 +626,14 @@ public final class AdminAlixCommands implements CommandExecutor {
                     sendMessage(sender, Messages.get("as-help-forcestatus"));
                     sendMessage(sender, Messages.get("as-help-fullyremovedata"));
                     sendMessage(sender, "");
+                    sendMessage(sender, Messages.get("admin-commands-section-security"));
+                    sendMessage(sender, Messages.get("as-help-panicmode"));
+                    sendMessage(sender, Messages.get("as-help-ufw"));
+                    sendMessage(sender, "");
+                    sendMessage(sender, Messages.get("admin-commands-section-email"));
+                    sendMessage(sender, Messages.get("as-help-sendverifyemail"));
+                    sendMessage(sender, Messages.get("as-help-verifyemail"));
+                    sendMessage(sender, "");
                     sendMessage(sender, Messages.get("admin-commands-section-server"));
                     sendMessage(sender, Messages.get("as-help-info"));
                     sendMessage(sender, Messages.get("as-help-abstats"));
@@ -623,9 +674,20 @@ public final class AdminAlixCommands implements CommandExecutor {
                     return true;
                 }
                 case "testdb": {
+                    if (!devMode) {
+                        sendMessage(sender, Messages.get("as-unknown-command"));
+                        return false;
+                    }
                     DatabaseUpdater.INSTANCE.testDatabase();
                     return true;
                 }
+                case "panicmode": {
+                    reportPanicModeActivate(sender);
+                    return true;
+                }
+                case "sendverifyemail":
+                    EmailHandler.sendVerifyMail(sender, EmailConfig.INSTANCE.email, true, AlixUtils::sendMessage);
+                    break;
                 case "__reset_all_premium_passwords": {
                     UserFileManager.getAllData().stream()
                             .filter(data -> data.getPremiumData().getStatus().isPremium())
@@ -637,7 +699,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     Player player = (Player) sender;
                     if (ABStats.reversePresence(UserManager.getVerifiedUser(player))) {
                         sendMessage(sender, Messages.get("as-abstats-added"));
-                        if (AlixAtaraxia.isEnabled())
+                        if (AlixAtaraxia.ENABLED)
                             sendMessage(sender, Messages.get("as-abstats-ataraxia-warning"));
                     } else sendMessage(sender, Messages.get("as-abstats-removed"));
                     break;
@@ -752,5 +814,18 @@ public final class AdminAlixCommands implements CommandExecutor {
             }
         }
         return true;
+    }
+
+    //Shared by both "/as panicmode" (bare) and "/as panicmode on" - activates panic mode and reports
+    //whether it was actually turned on just now or was already active. If panic mode has been disabled via
+    //"/as panicmode disable", activate() always fails - report that distinctly, rather than the misleading
+    //"already enabled" a bare false would otherwise imply.
+    private static void reportPanicModeActivate(CommandSender sender) {
+        if (PanicModeManager.isLocked()) {
+            sendMessage(sender, Messages.get("as-panicmode-locked-cannot-activate"));
+            return;
+        }
+        sendMessage(sender, PanicModeManager.activate("Manual trigger.") ?
+                Messages.get("as-panicmode-enabled") : Messages.get("as-panicmode-already-enabled"));
     }
 }

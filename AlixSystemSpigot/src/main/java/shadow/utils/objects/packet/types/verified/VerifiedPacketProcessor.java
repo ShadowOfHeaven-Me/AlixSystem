@@ -53,6 +53,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     private final AlixDeque<Component> blockedChatMessages;
     private long lastMovementPacket, lastTeleport;
     private VirtualAuthBuilder authBuilder;
+    private Runnable pendingQRConfirmAction;
     //might be non-thread-safe
     //@ScheduledForFix
     //private AuthReminder authReminder;
@@ -169,11 +170,23 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
             authCancelMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("google-auth-setting-cancel-chat"));
 
     public void verifyAuthAccess(Runnable actionOnCorrectInput) {
+        this.verifyAuthAccess(actionOnCorrectInput, true);
+    }
+
+    //grantsProvenAccess: whether a CORRECT code here should mark hasProvenAuthAccess (a persistent,
+    //account-wide trust flag - see LoginParams) true. SECURITY (2026-09-23): must be false for a "confirm"
+    //that has no actual pending action behind it (see processChat() below) - otherwise anyone who merely
+    //views an account's QR code while the app ISN'T YET required (e.g. via the plain, unauthenticated "Show
+    //QR Code" button on a PASSWORD-only account) and types "confirm" could permanently bypass every future
+    //proof-of-access gate on this account, without ever actually enabling 2FA at all: the very next time the
+    //REAL owner enables it, tryApply()'s "if (params.hasProvenAuthAccess())" branch at the top would apply
+    //it immediately, trusting a proof that was never actually tied to a real enable.
+    public void verifyAuthAccess(Runnable actionOnCorrectInput, boolean grantsProvenAccess) {
         this.currentAction = CurrentAction.VERIFYING_AUTH_ACCESS;
         this.authBuilder = new VerifiedVirtualAuthBuilder(this.user, correct -> {
             if (correct) {
                 VerifiedVirtualAuthBuilder.visualsOnProvenAccess(this.user);
-                this.user.getData().getLoginParams().setHasProvenAuthAccess(true);
+                if (grantsProvenAccess) this.user.getData().getLoginParams().setHasProvenAuthAccess(true);
                 this.endQRCodeShowAndTeleportBack();
                 if (actionOnCorrectInput != null) actionOnCorrectInput.run();
                 return;
@@ -183,12 +196,29 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
         this.authBuilder.openGUI();
     }
 
+    //Arms a one-shot action to run once the player, while currently viewing a freshly-shown QR code (see
+    //GoogleAuth#showQRCode()), types "confirm" in chat and then enters the code their app just generated
+    //for it correctly. Used by AuthDataChanges to only actually apply an auth-type change that newly
+    //requires the app once the player has proven they scanned the QR right - rather than applying it
+    //immediately and trusting blindly that they did. Cleared on "cancel" too, so a canceled QR view never
+    //leaves a stale action to fire on some later, unrelated "confirm".
+    public void confirmQRCodeThenRun(Runnable action) {
+        this.pendingQRConfirmAction = action;
+    }
+
     private void processChat(String chat) {
         switch (chat) {
             case "confirm": {
                 //init the gui
-                if (!this.user.getData().getLoginParams().hasProvenAuthAccess()) this.verifyAuthAccess(null);
-                else this.endQRCodeShowAndTeleportBack();
+                if (!this.user.getData().getLoginParams().hasProvenAuthAccess()) {
+                    Runnable pending = this.pendingQRConfirmAction;
+                    this.pendingQRConfirmAction = null;
+                    //grantsProvenAccess = (pending != null): a confirm with no pending action only ever
+                    //happens from the plain "Show QR Code" button on a not-yet-required account (see
+                    //verifyAuthAccess()'s docs above) - proving a code for a secret nobody actually
+                    //committed to enabling yet must not grant lasting trust.
+                    this.verifyAuthAccess(pending, pending != null);
+                } else this.endQRCodeShowAndTeleportBack();
                 return;
             }
             case "cancel": {
@@ -404,6 +434,12 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
         if (collidableOriginally != null) this.user.getPlayer().setCollidable(collidableOriginally);
         this.authBuilder = null;
         this.collidableOriginally = null;
+        //Every normal exit from the QR-view state (a successful confirm, "cancel", or GoogleAuth#showQRCode()'s
+        //own teleport-failure path) funnels through here - clearing it as the single choke point, rather than
+        //only in processChat()'s "cancel" case, also covers that teleport-failure path (which calls this
+        //directly, bypassing processChat entirely) so a stale pending action can never survive to fire on some
+        //later, unrelated QR confirmation.
+        this.pendingQRConfirmAction = null;
         //this.authReminder.cancel();
         //this.authReminder = null;
         this.blockedChatMessages.forEach(this.user::writeDynamicMessageSilently);

@@ -15,7 +15,12 @@ import static shadow.utils.main.AlixUtils.captchaVerificationCaseSensitive;
 
 public abstract class Captcha {
 
-    protected static final int maxRotation = Main.config.getInt("captcha-max-random-rotation") % 360;
+    //FUNCTIONALITY (audit, 2026-09-24): clamped to [0, 359] - was unclamped, and Java's % keeps the
+    //dividend's sign, so a negative config value produced a negative maxRotation. That flowed into
+    //CaptchaImageGenerator's Random#nextInt((maxRotation << 1) + 1), which throws IllegalArgumentException
+    //("bound must be positive") for any negative maxRotation - breaking every single captcha image
+    //generation (the anti-bot join-gate) for as long as the plugin ran with that config value.
+    protected static final int maxRotation = Math.max(0, Main.config.getInt("captcha-max-random-rotation")) % 360;
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
     protected final String captcha;
 
@@ -71,7 +76,13 @@ public abstract class Captcha {
             captchaPool.recycle(future);
             return;
         }
-        if (captcha.isReleased()) return;//can't recycle a used captcha
+        //FUNCTIONALITY (audit, 2026-09-24): a shown-but-never-completed captcha (player disconnects before
+        //answering) can't be recycled, but its buffers still need freeing - previously nothing did that for
+        //this specific case either (see SmoothCaptcha/NameCaptcha's matching comments for the full bug).
+        if (captcha.isReleased()) {
+            captcha.release();
+            return;
+        }
 
         captchaPool.recycle(future.isCompletedFutureType() ? future : AlixFuture.completedFuture(captcha));
     }

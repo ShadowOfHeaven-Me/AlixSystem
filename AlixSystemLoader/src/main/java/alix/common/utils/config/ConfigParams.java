@@ -6,7 +6,8 @@ public final class ConfigParams {
 
     public static final int maximumTotalAccounts, maxLoginTime, fingerprintingPort, emailVerificationTime;
     public static final boolean isDebugEnabled, isCaptchaMap, playerIPAutoLogin, forcefullyDisableAutoLogin, hasMaxLoginTime,
-            requireRegisterFromAll, loadBuiltInIps, checkBreachedPasswords, fingerprintingEnabled, hasEmailVerificationTime;
+            requireRegisterFromAll, loadBuiltInIps, checkBreachedPasswords, fingerprintingEnabled, hasEmailVerificationTime,
+            supportMobileConnections;
     public static final LoginType defaultLoginType;
 
     static {
@@ -33,6 +34,8 @@ public final class ConfigParams {
         //this key doesn't exist in every platform's config.yml, the same as 'require-email-in-register' itself.
         emailVerificationTime = config.getInt("email-verification-time");
         hasEmailVerificationTime = emailVerificationTime > 0;
+        //Gates the CELLULAR_CARRIER MTU signature - see MtuAnalyser#guessMtuEnvironment()'s docs.
+        supportMobileConnections = config.getBoolean("support-mobile-connections");
 
         /*String loginType = config.getString("password-type").toLowerCase();
         *//*switch (loginType) {

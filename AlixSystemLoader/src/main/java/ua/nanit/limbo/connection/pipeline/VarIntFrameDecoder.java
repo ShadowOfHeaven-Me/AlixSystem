@@ -239,12 +239,17 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         //uhh, is it possible for this to be the result of fragmentation?
         //if (len < 0) throw NettySafety.INVALID_PACKET_LEN;
 
-        //readVarIntPacketLength(...) returns 0 only for actual VarInts read as a 0 (not possible here, needs to include packet id
-        // or be negative in case it's larger than 127 bytes)
+        //0 here means "not enough bytes yet to finish reading the length VarInt" (see readVarInt2Byte's own
+        //atStop==0 case - its only reachable caller, given the readableBytes()>=2 guard above), NOT an
+        //actual invalid VarInt - a genuinely malformed/oversized VarInt already throws NettySafety
+        //.INVALID_VAR_INT directly from readVarInt3Or4Byte instead of returning 0. Treating 0 as invalid
+        //here disconnected any legitimate client whose packet length needs a 3rd length-prefix byte (any
+        //packet body 16384-32767 bytes, well within MAX_RECEIVED_SIZE) if TCP happened to split the length
+        //prefix across two reads - feeding a false "invalid packet" signal into the anomaly detector for
+        //ordinary network jitter.
         if (len == 0) {
-            throw NettySafety.INVALID_PACKET_LEN;
-            /*in.resetReaderIndex();
-            return null;*/
+            in.resetReaderIndex();
+            return null;
         }
 
         //the packet is said to be larger than what we've cumulated (hehe) so far

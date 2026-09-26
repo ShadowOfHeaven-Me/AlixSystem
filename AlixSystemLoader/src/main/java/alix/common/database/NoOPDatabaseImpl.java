@@ -96,6 +96,11 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
+    public void loadToken(Identity identity, Consumer<String> consumer) {
+        consumer.accept(null);
+    }
+
+    @Override
     public void tryConsumeRecoveryCode(Identity identity, String typedCode, Consumer<Boolean> callback) {
         callback.accept(false);
     }
@@ -137,6 +142,11 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
 
     @Override
     public void removeByName(String name) {
+
+    }
+
+    @Override
+    public void removeUserToken(Identity identity) {
 
     }
 

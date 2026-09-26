@@ -1,498 +1,539 @@
-account-limit-reached: &cYou've reached the maximum amount of accounts! ({0})
-account-name-exists-under-different-casing: &cThis account already exists under a differently-cased nickname!
-admin-commands-header: &e&lAdmin commands:
-admin-commands-section-accounts: &6&lAccounts & passwords
-admin-commands-section-operators: &6&lOperator management
-admin-commands-section-server: &6&lServer & utilities
-already-connecting: &cAnother login from the same nickname is registered to be already happening!
-already-logged-in: &cYou're already logged in!
-already-logged-in-login-command: &cYou're already logged in! To change your password, please use /changepassword!
-already-registered: &cYou're already registered!
-anti-abuse-fail-console-message: Firewalled the IP {0} for the suspicion of performing a server attack. Message: {1}. Expires: {2}
-anti-bot-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a bot attack. Algorithm ID: {1}
-anti-bot-firewalled: &cYour IP has been firewalled!
-anti-bot-invalid-name-blocked: &cInvalid name! Must be within 1-16 characters long!
-anti-ddos-fail-console-message: Permanently firewalled the IP {0} for the suspicion of performing a DDoS attack. Algorithm ID: {1}
-anti-vpn: &cDisable your VPN!
-anvil-title-change-password: Change password
-anvil-title-change-pin: Change PIN
-as-abstats-added: &aAdded to AntiBot Statistics view!
-as-abstats-ataraxia-warning: &e[WARNING] The actual CPS can be different, because the Ataraxia FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the eBPF beforehand.
-as-abstats-removed: &cRemoved from AntiBot Statistics view!
-as-avg-result: &c({0})/{1} = {2}
-as-bypasslimit-added: Added name '{0}' to the account limit bypass list!
-as-bypasslimit-already-added: &cName '{0}' is already on the account limit bypass list!
-as-bypasslimit-not-added: &cName '{0}' is not on the account limit bypass list!
-as-bypasslimit-removed: Removed name '{0}' from the account limit bypass list!
-as-calc-result: &c{0} = {1}
-as-changepassword-extra-login-cleared: &eAdditionally setting the player's extra login type to NONE to avoid issues.
-as-changepassword-success: Successfully changed player {0}'s password to {1} with login type {2}
-as-constants-alfa: &cAlfa &7- 2.502907875095892
-as-constants-e: &cE &7- 2.718281828459045
-as-constants-f: &cF &7- 2.807770242028519
-as-constants-ipsylon: &cIpsylon &7- 4.66920160902990
-as-constants-k: &cK &7- 2.584981759579253
-as-constants-omega: &cOmega &7- 0.56714329040978
-as-constants-pi: &cPi &7- 3.141592653589793
-as-constants-random: &cRandom &7- Returns random number, for example: {0}
-as-forceop-console-only: Only the console is allowed to execute this command!
-as-forcestatus-already-has-status: &cPlayer {0} already has the premium status of {1}
-as-forcestatus-api-non-premium: &cPlayer's {0} status api request returned NON_PREMIUM, and thus it cannot be set to PREMIUM.
-as-forcestatus-cached-non-premium: &cPlayer's {0} status was determined as NON_PREMIUM, and thus it cannot be set to PREMIUM.
-as-forcestatus-format: &cFormat: /as fs <player> <status>
-as-forcestatus-invalid-status: &cInvalid status, should be either PREMIUM, NON_PREMIUM or UNKNOWN
-as-forcestatus-self-declared-non-premium: &ePlayer {0} declared himself as NON_PREMIUM, and thus his status cannot be set to PREMIUM.
-as-forcestatus-success: The premium status of the player {0} has been set to {1}.
-as-forcestatus-success-api: The premium status of the player {0} has been set to PREMIUM, premium uuid={1}
-as-forcestatus-unknown: &cCould not determine player's {0} premium status in any way, the status cannot be set
-as-frd-removed-from-allowlist: Removed the name {0} from the allow-list!
-as-frd-success: Fully removed the data of the account {0}!
-as-help-abstats:   &c/as abstats &7- Enables or disables the ability to view the AntiBot Statistics.
-as-help-avg:   &c/as avg/average <numbers> &7- Returns what the given numbers average is equal to. Example: &c/as avg 4 + 67 - 9 + 14 returns 19.
-as-help-bypasslimit:   &c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list. Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.
-as-help-bypasslimit-remove:   &c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.
-as-help-changepassword:   &c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.
-as-help-constants:   &c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.
-as-help-forcedeop:   &c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, by executing this command in console.
-as-help-forceop:   &c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, by executing this command in console.
-as-help-forcestatus:   &c/as fs/forcestatus <player> <status> &7- Forcefully sets the player's premium status (if can safely be done)
-as-help-fullyremovedata:   &c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.
-as-help-helpmath:   &c/as helpmath &7- Lists alix commands related to math.
-as-help-info:   &c/as info &7- Informs about time, memory, and number of currently active server threads.
-as-help-math:   &c/as calc/calculate <mathematical operation> &7- Returns what the given mathematical operation is equal to. Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925
-as-help-randommath:   &c/as randommath/rmath &7- Gives you a random, already solved mathematical operation. Example: &c{0}
-as-help-registerforcefully:   &c/as rf/registerforcefully <name> <password> [login type] &7- Registers a player of the given username with the given password, and login type (COMMAND if not specified)
-as-help-reset2fa:   &c/as r2fa/reset2fa <player> &7- Turns off a PASSWORD_AND_AUTH_APP player's Authenticator app requirement (password untouched) - for someone locked out with no device and no recovery codes left. AUTH_APP-only accounts need /as resetpassword instead.
-as-help-resetpassword:   &c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.
-as-help-resetstatus:   &c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium
-as-help-user:   &c/as user <player> &7- Returns information about the given player.
-as-help-valueof:   &c/as valueof <number> &7- Returns a more readable version of a given number.
-as-incognitooff-success: &6Your identity is now back to original!
-as-info-active-threads: Currently Active Threads: &c{0}
-as-info-memory-free: Free Memory: &c{0}MB
-as-info-memory-max: Max Memory: &c{0}MB
-as-info-memory-total: Total Memory: &c{0}MB
-as-info-memory-usage: Percent Of Memory Usage: {0}{1}%
-as-info-time: Time: &c{0}
-as-invalid-login-type: Available login types: COMMAND, PIN & ANVIL, but instead got: {0}
-as-invalid-password-prefix: &eInvalid password:
-as-messages-extract-already-exists: The extraction file already exists! Delete it manually if you want to extract the messages again.
-as-messages-extract-success: The messages have been successfully extracted into another file!
-as-messages-merge-not-extracted: The extraction file already does not exists! Extract the messages first, before trying to merge them.
-as-messages-merge-success: The messages have been successfully merged into one file! You need to restart your server, for this change to take effect
-as-migrate-invalid-type: '{0}' is not a supported migration type!
-as-profilejoins-disabled: Disabled detailed join profiling
-as-profilejoins-enabled: Enabled detailed join profiling, re-enter command to disable
-as-registerforcefully-already-exists: Player data of the user {0} already exists!
-as-registerforcefully-success: Successfully registered the player {0} with the password {1}, and login type {2}
-as-reset2fa-app-only: &cThe player {0}'s account uses AUTH_APP only (no password) - use /as resetpassword instead, which also clears the app requirement.
-as-reset2fa-not-enabled: &cThe player {0} doesn't currently require the Authenticator app, nothing to reset.
-as-reset2fa-success: Successfully turned off the Authenticator app requirement for the player {0}. Their password was not changed.
-as-resetpassword-success: Successfully reset the password of the player {0}.
-as-resetpassword-success-with-type: Successfully reset the password of the player {0} and set his password type to {1}!
-as-resetstatus-success: The premium status of the player {0} has been set to UNKNOWN.
-as-save-all-local-to-db: All user data sync with the connected database has been initiated and should complete soon enough
-as-specify-password: Specify the player's password!
-as-ufw-blocked-static: Ip {0} is blocked statically, cannot remove from firewall. If this is an error, report this immediately!
-as-ufw-invalid-ip: '{0}' is not a valid IP address!
-as-ufw-not-firewalled: Ip {0} is not firewalled.
-as-ufw-not-firewalled-panicmode: Ip {0} is not firewalled, but is unable to connect, because panic mode is active.
-as-ufw-removed: Removed {0} from the Firewall Database!
-as-unknown-command: &cTry /as help!
-as-user-accounts: Accounts: &c{0}{1}
-as-user-auth-app-and-password: &aEnabled - Auth App and in-game password
-as-user-auth-app-and-passwords: &aEnabled - Auth App and two in-game passwords
-as-user-auth-app-disabled: &cDisabled
-as-user-auth-app-only: &aEnabled - Just Auth App
-as-user-connection-env: Connection Environment: &c{0}
-as-user-double-verification: Double password verification: &c{0}
-as-user-encryption: Encryption: &c{0}
-as-user-first-joined: First joined: &c{0}
-as-user-header: User {0} has the following data:
-as-user-ip: IP: &c{0}
-as-user-ip-autologin: IP AutoLogin: &c{0}
-as-user-login-type: Login Type: &c{0}
-as-user-os: Operating System: &c{0}
-as-user-premium-status: Premium Status: &c{0}
-as-user-second-login-type: Second Login Type: &c{0}
-as-user-totp: TOTP Auth app: {0}
-as-user-totp-linked: Has TOTP app linked: {0}
-as-user-uuid-version: UUID Version: &c{0}
-as-valueof-expected-number: &cExpected a number!
-auto-login: &aYour last ip was the same as before, so you've been automatically logged in! You can manage these settings at /account
-auto-login-premium: &aAutomatically logged in
-auto-register-premium: &aAutomatically registered
-ban-reason-absent: You've been banned!
-banned-ip-forever: Banned ip &c{0} &7forever!
-banned-ip-reason: Banned ip &c{0} for {1} &7forever!
-banned-ip-reason-and-time: Banned ip &c{0} &7until &c{1}&7, for {2}&7!
-banned-player-forever: Banned player &c{0} &7forever!
-banned-player-reason: Banned player &c{0} for {1} &7forever!
-banned-player-reason-and-time: Banned player &c{0} &7until &c{1}&7, for {2}&7!
-bedrock-login-above-input: Password
-bedrock-login-input: Enter your password
-bedrock-login-title: Login
-bedrock-register-above-input: Password
-bedrock-register-above-input-repeat: Confirm Password
-bedrock-register-input: Register with password
-bedrock-register-input-repeat: Repeat your password
-bedrock-register-title: Register
-bedrock-remember-me: Remember Me
-captcha-already-completed: &cYou have already completed the captcha test!
-captcha-complete: &aCaptcha test has been completed. You may now register using /register <password>
-captcha-complete-register-password-repeat: &aCaptcha test has been completed. You may now register using /register <password> <password>
-captcha-fail-chat: &cThe captcha test was failed
-captcha-fail-kick: &cYou've failed the captcha test
-captcha-reminder-command: &cComplete the captcha test first!
-captcha-time-passed: &cYou took too long to complete the captcha!
-chat-already-off: &cThe chat is already turned OFF!
-chat-already-on: &cThe chat is already turned ON!
-chat-clear: Chat has been cleared by &c{0}
-chat-is-off: The chat is currently turned off!
-chat-message-delay: Wait for another {0} second(s)!
-chat-set-off: Chat was turned &cOFF &7by {0}
-chat-set-on: Chat was turned &aON &7by {0}
-command-does-not-exist: &cThe given command does not exist!
-command-unreachable: &cThis command is unreachable.
-commands-login-password-arg: password
-commands-recovery-email-arg: email
+account-limit-reached= &cYou've reached the maximum amount of accounts! ({0})
+account-name-exists-under-different-casing= &cThis account already exists under a differently-cased nickname!
+account-sendverifyemail-usage= &eUsage: /account sendverifyemail <email>
+account-verifyemail-specify-code= &eSpecify the verify code!
+admin-commands-header= &e&lAdmin commands:
+admin-commands-section-accounts= &6&lAccounts & passwords
+admin-commands-section-email= &6&lEmail verification
+admin-commands-section-operators= &6&lOperator management
+admin-commands-section-security= &6&lSecurity
+admin-commands-section-server= &6&lServer & utilities
+already-connecting= &cAnother login from the same nickname is registered to be already happening!
+already-logged-in= &cYou're already logged in!
+already-logged-in-login-command= &cYou're already logged in! To change your password, please use /changepassword!
+already-registered= &cYou're already registered!
+anti-abuse-fail-console-message= Firewalled the IP {0} for the suspicion of performing a server attack. Message: {1}. Expires: {2}
+anti-bot-fail-console-message= Permanently firewalled the IP {0} for the suspicion of performing a bot attack. Algorithm ID: {1}
+anti-bot-firewalled= &cYour IP has been firewalled!
+anti-bot-invalid-name-blocked= &cInvalid name! Must be within 1-16 characters long!
+anti-ddos-fail-console-message= Permanently firewalled the IP {0} for the suspicion of performing a DDoS attack. Algorithm ID: {1}
+anti-vpn= &cDisable your VPN!
+anvil-title-change-password= Change password
+anvil-title-change-pin= Change PIN
+as-abstats-added= &aAdded to AntiBot Statistics view!
+as-abstats-ataraxia-warning= &e[WARNING] The actual CPS can be different, because the Ataraxia FireWall is in use, and does not count dropped connections. The current CPS will only show the attempted connections that were not dropped by the eBPF beforehand.
+as-abstats-removed= &cRemoved from AntiBot Statistics view!
+as-avg-result= &c({0})/{1} = {2}
+as-bypasslimit-added= Added name '{0}' to the account limit bypass list!
+as-bypasslimit-already-added= &cName '{0}' is already on the account limit bypass list!
+as-bypasslimit-not-added= &cName '{0}' is not on the account limit bypass list!
+as-bypasslimit-removed= Removed name '{0}' from the account limit bypass list!
+as-calc-result= &c{0} = {1}
+as-changepassword-extra-login-cleared= &eAdditionally setting the player's extra login type to NONE to avoid issues.
+as-changepassword-success= Successfully changed player {0}'s password to {1} with login type {2}
+as-constants-alfa= &cAlfa &7- 2.502907875095892
+as-constants-e= &cE &7- 2.718281828459045
+as-constants-f= &cF &7- 2.807770242028519
+as-constants-ipsylon= &cIpsylon &7- 4.66920160902990
+as-constants-k= &cK &7- 2.584981759579253
+as-constants-omega= &cOmega &7- 0.56714329040978
+as-constants-pi= &cPi &7- 3.141592653589793
+as-constants-random= &cRandom &7- Returns random number, for example: {0}
+as-forceop-console-only= Only the console is allowed to execute this command!
+as-forcestatus-already-has-status= &cPlayer {0} already has the premium status of {1}
+as-forcestatus-api-non-premium= &cPlayer's {0} status api request returned NON_PREMIUM, and thus it cannot be set to PREMIUM.
+as-forcestatus-cached-non-premium= &cPlayer's {0} status was determined as NON_PREMIUM, and thus it cannot be set to PREMIUM.
+as-forcestatus-format= &cFormat: /as fs <player> <status>
+as-forcestatus-invalid-status= &cInvalid status, should be either PREMIUM, NON_PREMIUM or UNKNOWN
+as-forcestatus-self-declared-non-premium= &ePlayer {0} declared himself as NON_PREMIUM, and thus his status cannot be set to PREMIUM.
+as-forcestatus-success= The premium status of the player {0} has been set to {1}.
+as-forcestatus-success-api= The premium status of the player {0} has been set to PREMIUM, premium uuid={1}
+as-forcestatus-unknown= &cCould not determine player's {0} premium status in any way, the status cannot be set
+as-frd-removed-from-allowlist= Removed the name {0} from the allow-list!
+as-frd-success= Fully removed the data of the account {0}!
+as-help-abstats=   &c/as abstats &7- Enables or disables the ability to view the AntiBot Statistics.
+as-help-avg=   &c/as avg/average <numbers> &7- Returns what the given numbers average is equal to. Example: &c/as avg 4 + 67 - 9 + 14 returns 19.
+as-help-bypasslimit=   &c/as bl/bypasslimit <name> &7- Adds the specified name to the account limit bypass list. Such accounts are not restricted by the account limiter, no matter the config 'max-total-accounts' parameter.
+as-help-bypasslimit-remove=   &c/as bl-r/bypasslimit-remove <name> &7- Removes the specified name from the account limit bypass list.
+as-help-changepassword=   &c/as cp/changepassword <player> <new password> [login type] &7- Sets the player's password to the new one specified, and optionally changes their login type.
+as-help-constants=   &c/as cons/constants &7- Shows all constants that can be used in mathematical operations, in this plugin.
+as-help-forcedeop=   &c/as forcedeop <player> &7- In case of having trouble with /deop you can forcefully deop a player, by executing this command in console.
+as-help-forceop=   &c/as forceop <player> &7- In case of having trouble with /op you can forcefully op a player, by executing this command in console.
+as-help-forcestatus=   &c/as fs/forcestatus <player> <status> &7- Forcefully sets the player's premium status (if can safely be done)
+as-help-fullyremovedata=   &c/as frd/fullyremovedata <player> &7- Fully removes all account data. The data cannot be restored after this operation.
+as-help-panicmode=   &c/as panicmode [on/off/disable/enable] &7- on/off manually triggers Panic-Mode (only already-registered IPs can connect); disable/enable controls whether it can be triggered at all.
+as-help-helpmath=   &c/as helpmath &7- Lists alix commands related to math.
+as-help-info=   &c/as info &7- Informs about time, memory, and number of currently active server threads.
+as-help-math=   &c/as calc/calculate <mathematical operation> &7- Returns what the given mathematical operation is equal to. Example: &c/as calc sqrt(3) * cos(pi) / (sin(e) - 2^2) returns 0.48257042764929925
+as-help-randommath=   &c/as randommath/rmath &7- Gives you a random, already solved mathematical operation. Example: &c{0}
+as-help-registerforcefully=   &c/as rf/registerforcefully <name> <password> [login type] &7- Registers a player of the given username with the given password, and login type (COMMAND if not specified)
+as-help-reset2fa=   &c/as r2fa/reset2fa <player> &7- Turns off a PASSWORD_AND_AUTH_APP player's Authenticator app requirement (password untouched) - for someone locked out with no device and no recovery codes left. AUTH_APP-only accounts need /as resetpassword instead.
+as-help-resetpassword=   &c/as rp/resetpassword <player> [login type] &7- Resets the player's password and optionally changes their login type. Available login types: COMMAND, PIN & ANVIL.
+as-help-resetstatus=   &c/as rs/resetstatus <player> &7- Resets the player's premium status. Mainly aimed to forgive cracked players who used /premium
+as-help-sendverifyemail=   &c/as sendverifyemail &7- Sends a verification code to the server's own outgoing address (see email-config.yml). Required once, before any email-dependent player feature (e.g. account recovery) becomes available.
+as-help-verifyemail=   &c/as verifyemail <code> &7- Confirms the code from /as sendverifyemail above.
+as-help-ufw=   &c/as ufw <ip> &7- Removes the given ip from the Firewall Database, if possible.
+as-help-user=   &c/as user <player> &7- Returns information about the given player.
+as-help-valueof=   &c/as valueof <number> &7- Returns a more readable version of a given number.
+as-incognitooff-success= &6Your identity is now back to original!
+as-info-active-threads= Currently Active Threads: &c{0}
+as-info-memory-free= Free Memory: &c{0}MB
+as-info-memory-max= Max Memory: &c{0}MB
+as-info-memory-total= Total Memory: &c{0}MB
+as-info-memory-usage= Percent Of Memory Usage: {0}{1}%
+as-info-time= Time: &c{0}
+as-invalid-login-type= Available login types: COMMAND, PIN & ANVIL, but instead got: {0}
+as-invalid-password-prefix= &eInvalid password:
+as-messages-extract-already-exists= The extraction file already exists! Delete it manually if you want to extract the messages again.
+as-messages-extract-success= The messages have been successfully extracted into another file!
+as-messages-merge-not-extracted= The extraction file already does not exists! Extract the messages first, before trying to merge them.
+as-messages-merge-success= The messages have been successfully merged into one file! You need to restart your server, for this change to take effect
+as-migrate-invalid-type= '{0}' is not a supported migration type!
+as-panicmode-already-disabled= &cPanic mode is already disabled!
+as-panicmode-already-enabled= &cPanic mode is already enabled!
+as-panicmode-already-locked= &cPanic mode is already disabled!
+as-panicmode-already-unlocked= &cPanic mode is already enabled!
+as-panicmode-disabled= &aPanic mode has been manually disabled.
+as-panicmode-enabled= &aPanic mode has been manually enabled.
+as-panicmode-locked= &aPanic mode has been disabled - it will no longer trigger, manually or automatically, until re-enabled with '/as panicmode enable'.
+as-panicmode-locked-cannot-activate= &cPanic mode is disabled - enable it first with '/as panicmode enable'!
+as-panicmode-unlocked= &aPanic mode has been re-enabled.
+as-profilejoins-disabled= Disabled detailed join profiling
+as-profilejoins-enabled= Enabled detailed join profiling, re-enter command to disable
+as-registerforcefully-already-exists= Player data of the user {0} already exists!
+as-registerforcefully-success= Successfully registered the player {0} with the password {1}, and login type {2}
+as-reset2fa-app-only= &cThe player {0}'s account uses AUTH_APP only (no password) - use /as resetpassword instead, which also clears the app requirement.
+as-reset2fa-not-enabled= &cThe player {0} doesn't currently require the Authenticator app, nothing to reset.
+as-reset2fa-success= Successfully turned off the Authenticator app requirement for the player {0}. Their password was not changed.
+as-resetpassword-success= Successfully reset the password of the player {0}.
+as-resetpassword-success-with-type= Successfully reset the password of the player {0} and set his password type to {1}!
+as-resetstatus-success= The premium status of the player {0} has been set to UNKNOWN.
+as-save-all-local-to-db= All user data sync with the connected database has been initiated and should complete soon enough
+as-specify-password= Specify the player's password!
+as-ufw-blocked-static= Ip {0} is blocked statically, cannot remove from firewall. If this is an error, report this immediately!
+as-ufw-invalid-ip= '{0}' is not a valid IP address!
+as-ufw-not-firewalled= Ip {0} is not firewalled.
+as-ufw-not-firewalled-panicmode= Ip {0} is not firewalled, but is unable to connect, because panic mode is active.
+as-ufw-removed= Removed {0} from the Firewall Database!
+as-unknown-command= &cTry /as help!
+as-user-accounts= Accounts: &c{0}{1}
+as-user-auth-app-and-password= &aEnabled - Auth App and in-game password
+as-user-auth-app-and-passwords= &aEnabled - Auth App and two in-game passwords
+as-user-auth-app-disabled= &cDisabled
+as-user-auth-app-only= &aEnabled - Just Auth App
+as-user-connection-env= Connection Environment: &c{0}
+as-user-double-verification= Double password verification: &c{0}
+as-user-encryption= Encryption: &c{0}
+as-user-first-joined= First joined: &c{0}
+as-user-header= User {0} has the following data:
+as-user-ip= IP: &c{0}
+as-user-ip-autologin= IP AutoLogin: &c{0}
+as-user-login-type= Login Type: &c{0}
+as-user-os= Operating System: &c{0}
+as-user-premium-status= Premium Status: &c{0}
+as-user-second-login-type= Second Login Type: &c{0}
+as-user-totp= TOTP Auth app: {0}
+as-user-totp-linked= Has TOTP app linked: {0}
+as-user-uuid-version= UUID Version: &c{0}
+as-valueof-expected-number= &cExpected a number!
+auto-login= &aYour last ip was the same as before, so you've been automatically logged in! You can manage these settings at /account
+auto-login-premium= &aAutomatically logged in
+auto-register-premium= &aAutomatically registered
+ban-reason-absent= You've been banned!
+banned-ip-forever= Banned ip &c{0} &7forever!
+banned-ip-reason= Banned ip &c{0} for {1} &7forever!
+banned-ip-reason-and-time= Banned ip &c{0} &7until &c{1}&7, for {2}&7!
+banned-player-forever= Banned player &c{0} &7forever!
+banned-player-reason= Banned player &c{0} for {1} &7forever!
+banned-player-reason-and-time= Banned player &c{0} &7until &c{1}&7, for {2}&7!
+bedrock-login-above-input= Password
+bedrock-login-input= Enter your password
+bedrock-login-title= Login
+bedrock-register-above-input= Password
+bedrock-register-above-input-repeat= Confirm Password
+bedrock-register-input= Register with password
+bedrock-register-input-repeat= Repeat your password
+bedrock-register-title= Register
+bedrock-remember-me= Remember Me
+captcha-already-completed= &cYou have already completed the captcha test!
+captcha-complete= &aCaptcha test has been completed. You may now register using /register <password>
+captcha-complete-register-password-repeat= &aCaptcha test has been completed. You may now register using /register <password> <password>
+captcha-fail-chat= &cThe captcha test was failed
+captcha-fail-kick= &cYou've failed the captcha test
+captcha-reminder-command= &cComplete the captcha test first!
+captcha-time-passed= &cYou took too long to complete the captcha!
+chat-already-off= &cThe chat is already turned OFF!
+chat-already-on= &cThe chat is already turned ON!
+chat-clear= Chat has been cleared by &c{0}
+chat-is-off= The chat is currently turned off!
+chat-message-delay= Wait for another {0} second(s)!
+chat-set-off= Chat was turned &cOFF &7by {0}
+chat-set-on= Chat was turned &aON &7by {0}
+command-does-not-exist= &cThe given command does not exist!
+command-unreachable= &cThis command is unreachable.
+commands-login-password-arg= password
 commands-recovery-email-arg= email
-commands-register-email-arg: email
-commands-register-password-arg: password
-commands-register-password-second-arg: repeat password
-commands-register-passwords-do-not-match: &cPasswords do not match!
-commands-register-passwords-more-than-two: &cYou must repeat the password just once!
-device-fingerprint-mismatch: &cThis device's passkey does not match the one on file.
-email-recovery-anvil-code-title: Enter 6-digit code
-email-recovery-anvil-email-title: Enter exact email
-email-recovery-body: Your account recovery code is: {0}
-email-recovery-code-invalid: &cInvalid recovery code!
-email-recovery-code-sent: &aA 6-digit recovery code has been sent to your email!
-email-recovery-invalid-email: &cThe provided email does not match your registered email!
-email-recovery-no-email: &cYou do not have a recovery email set up!
-email-recovery-reminder: &7You can recover your account via /recovery {0}
-email-recovery-subject: Account Recovery Code
-email-recovery-success: &aRecovery successful! Logging in...
-recovery-code-hint: &7Lost your Authenticator app? Type &f/recoverycode <code>&7 to log in with a backup code instead.
-recovery-code-invalid: &cInvalid or already-used recovery code!
-recovery-code-invalid-input: &cUsage: /recoverycode <code>
-recovery-code-not-applicable: &cYour account doesn't use the Authenticator app, so there's nothing to recover here.
-recovery-code-password-required: &cEnter your password first, then use a recovery code instead of the app code.
-recovery-code-success: &aRecovery code accepted! Logging in...
-error-player-never-joined: &cERROR: Player {0} has never joined this server before!
-feed-self: You have been fed!
-firewall-exhausted-logs: This server seems to be currently getting attacked, we'll disable firewall logs until things calm down
-flying-disabled: Flying has been &aenabled!
-flying-enabled: Flying has been &cdisabled!
-flying-player-disabled: Flying for player {0} has been &cdisabled!
-flying-player-enabled: Flying for player {0} has been &aenabled!
-flying-speed-player: &cFlying Speed &7for {0} has been set to &c{1}
-flying-speed-self: Your &cFlying Speed &7has been set to &c{0}
-format-add-warp: Format: /addwarp <name>
-format-changepassword: Format: /changepassword <new password>
-format-chat: Format: /chat <on/off>
-format-deop-restricted: Format: /deop <player> <password>
-format-deop-unrestricted: Format: /deop <player>
-format-enderchest: Format: /enderchest or /enderchest <player>
-format-feed: Format: /feed or /feed <player>
-format-fly: Format: /fly or /fly <player>
-format-gamemode: Format: /gm <gamemode> or /gm <gamemode> <player>
-format-heal: Format: /heal or /heal <player>
-format-home: Format: /home or /home <name>
-format-home-list: Format: /homelist
-format-invsee: Format: /invsee <player>
-format-login: Format: /login <password>
-format-msg: Format: /msg <player> <message>
-format-mute: Format: /mute <player> or /mute <player> <time>
-format-nicknameplayer: Format: /nicknameplayer <player> <name>
-format-op-restricted: Format: /op <player> <password>
-format-op-unrestricted: Format: /op <player>
-format-register: Format: /register <password>
-format-register-email: Format: /register <password> <email>
-format-register-repeat: Format: /register <password> <password>
-format-register-repeat-email: Format: /register <password> <password> <email>
-format-remove-home: Format: /removehome <name>
-format-remove-warp: Format: /removewarp <name>
-format-reply: Format: /reply <message>
-format-sethome: Format: /sethome or /sethome <name>
-format-setspawn: Format: /setspawn
-format-spawn: Format: /spawn
-format-speed: Format: /speed <number> or /speed <number> <player>, or /speed <number> <player> (walk/fly)
-format-sudo: Format: /sudo <player> <command> or /sudo <player> chat: <message>
-format-tempban: Format: /tempban <player> or /tempban <player> <reason>, or /tempban <player> <reason> <time>
-format-tempbanip: Format: /tempbanip <player/ip> or /tempbanip <player/ip> <reason>, or /tempbanip <player/ip> <reason> <time>
-format-tpa: Format: /tpa <player>
-format-tpa-accept: Format: /tpaccept <player>
-format-tpa-cancel: Format: /tpacancel
-format-tpa-deny: Format: /tpadeny <player>
-format-unban: Format: /unban <player>
-format-unbanip: Format: /unbanip <player/ip>
-format-unmute: Format: /unmute <player>
-format-warp: Format: /warp <name>
-gamemode-adventure-player: Gamemode for player {0} was set to &cadventure.
-gamemode-adventure-self: Your gamemode was set to &cadventure.
-gamemode-creative-player: Gamemode for player {0} was set to &ccreative.
-gamemode-creative-self: Your gamemode was set to &ccreative.
-gamemode-player-set-player: Gamemode for player {0} was set to &c{1}.
-gamemode-set: Your gamemode was set to &c{0}.
-gamemode-spectator-player: Gamemode for player {0} was set to &cspectator.
-gamemode-spectator-self: Your gamemode was set to &cspectator.
-gamemode-survival-player: Gamemode for player {0} was set to &csurvival.
-gamemode-survival-self: Your gamemode was set to &csurvival.
-google-auth-access-confirmation-failed: &cThe given code was invalid! Try again!
-google-auth-access-confirmed: &aYou've confirmed your access to the 2FA app.
-google-auth-gui-title: Auth app Code:
-google-auth-invalid-code: &cInvalid Auth App Code!
-google-auth-invalid-code-chat-message: &cInvalid Auth App Code! Try again!
-google-auth-setting-cancel: &c[Cancel]
-google-auth-setting-cancel-chat: &7You've cancelled the 2FA set-up.
-google-auth-setting-confirm: &a[Confirm successful integration]
-google-auth-setting-explanation: &e&lHow to integrate?
-google-auth-setting-explanation-hover: &7In order to integrate your Google Authenticator -nl &7app with this server's account, you must -nl &71. Open up the Google Authenticator app on your phone -nl &72. Click the plus in bottom right -nl &73. Select 'Scan QR Code' -nl &74. Scan the QR code shown before you right now
-google-auth-tp-failed: &cFailed to teleport.
-gui-account-google-authenticator: &aGoogle Authenticator
-gui-account-login-settings: &aLogin Settings
-gui-account-passwords: &aPasswords
-gui-account-passwords-gui-not-available: &cThis option is only available for servers that are 1.14+!
-gui-confirm: &aConfirm
-gui-go-back: &6Go back
-gui-google-auth-applied-changes: &aSuccessfully applied changes!
-gui-google-auth-apply-changes: &aApply changes
-gui-google-auth-config-auth-and-password-lore: &7You will be required to input both: -nl &7Your normal passwords set in the &aPasswords &7GUI, -nl &7and the 6-digit code shown in your -nl &7Google Authenticator app
-gui-google-auth-config-auth-and-password-name: &aPassword & Google Auth
-gui-google-auth-config-auth-lore: &7You will be required to input -nl &7the 6-digit code shown in your -nl &7Google Authenticator app
-gui-google-auth-config-auth-name: &aGoogle Auth Only
-gui-google-auth-config-password-lore: &7You will be required to complete -nl &7a normal password verification, -nl &7configurable in the &aPasswords &7GUI
-gui-google-auth-config-password-name: &aPassword Only
-gui-google-auth-save-changes: &aSave Changes
-gui-google-auth-recovery-codes-chat-footer: &7Keep these somewhere safe. If you ever lose your device, use one -nl &7instead of the 6-digit code with &f/recoverycode <code>&7.
-gui-google-auth-recovery-codes-chat-header: &eYour recovery codes (each one works only once):
-gui-google-auth-reset-token-confirm-lore: &7Your current QR code and recovery -nl &7codes will stop working immediately.
-gui-google-auth-reset-token-confirm-name: &c&lAre you sure? Click again to confirm!
-gui-google-auth-reset-token-lore: &7Click to generate a brand new QR code -nl &7and invalidate the old one, along with -nl &7your current recovery codes. -nl &7&oUse this if you lost your device or -nl &7&othink someone else has your code.
-gui-google-auth-reset-token-failed-chat: &cSomething went wrong while resetting your code - it was NOT changed. Please try again.
-gui-google-auth-reset-token-name: &cReset Code
-gui-google-auth-reset-token-success-chat: &aYour Authenticator code has been reset! Scan the new QR code.
-gui-google-auth-show-qr-code-lore: &7Clicking this will show a QR code you can scan with -nl &7your Google Authenticator app in order to -nl &7link your account on this server with the app. -nl &f&nThe code will only be visible to you.
-gui-google-auth-show-qr-code-name: &aShow QR Code
-gui-google-auth-view-recovery-codes-lore: &7Click to view your backup codes - use one -nl &7instead of your 6-digit code if you ever -nl &7lose your device. -nl &7&oEach code works only once.
-gui-google-auth-view-recovery-codes-name: &aRecovery Codes
-gui-google-auth-what-is-this: &7This gui allows you to set up the integration -nl &7between the Google Authenticator app -nl &7and your account on this server
-gui-google-auth-what-is-this-name: &eWhat is this?
-gui-invalid-password: &cInvalid password
-gui-ip-autologin-accept: &aACCEPT
-gui-ip-autologin-lore-accept: &7Accepting is usually safe, since -nl &7each IP is unique as assigned -nl &7by the ISP.
-gui-ip-autologin-lore-reject: &7Rejecting is fine too - a shared -nl &7IP (VPN, same ISP, or router) -nl &7could occasionally let someone -nl &7else log in as you, but that -nl &7risk is small.
-gui-ip-autologin-question-mark: &eWhat is this?
-gui-ip-autologin-reject: &cREJECT
-gui-ip-autologin-what-is-this: &7This gui asks whether you'd -nl &7like to be automatically logged in -nl &7if you join with the same IP, -nl &7 as your previous successful login.
-gui-leave: &7Leave
-gui-login-settings-device-passkey-off: &cDevice PassKey: OFF
-gui-login-settings-device-passkey-on: &aDevice PassKey: ON
-gui-login-settings-ip-autologin-off: &cIP AutoLogin: OFF
-gui-login-settings-ip-autologin-on: &aIP AutoLogin: ON
-gui-overall-go-back: &6Go Back
-gui-password-try-apply-data-fail-main-not-pin: &cYou need to change your MAIN password to a PIN!
-gui-password-try-apply-data-fail-main-pin: &cYou need to change your MAIN password to a longer one if you wish to switch from a PIN password!
-gui-password-try-apply-data-fail-secondary-not-pin: &cYou need to change your SECONDARY password to a PIN!
-gui-password-try-apply-data-fail-secondary-password-not-set: &cYou need to set your secondary password if you wish to use double verification!
-gui-password-try-apply-data-fail-secondary-pin: &cYou need to change your SECONDARY password to a longer one if you wish to switch from a PIN password!
-gui-passwords-applied-changes: &aSuccessfully applied changes!
-gui-passwords-change-main: &aChange Password
-gui-passwords-change-secondary: &aChange Secondary Password
-gui-passwords-changed-main: &8Changed password: {0}
-gui-passwords-changed-secondary: &8Changed secondary password: {0}
-gui-passwords-login-type-anvil: &aLogin Type: Anvil
-gui-passwords-login-type-command: &aLogin Type: Command
-gui-passwords-login-type-pin: &aLogin Type: PIN
-gui-passwords-login-type-secondary-anvil: &aSecondary Login Type: Anvil
-gui-passwords-login-type-secondary-command: &aSecondary Login Type: Command
-gui-passwords-login-type-secondary-disabled: &cDisabled
-gui-passwords-login-type-secondary-pin: &aSecondary Login Type: PIN
-gui-passwords-save-changes: &aSave Changes
-gui-pin-type-invalid: &cThe main password is not a PIN, but the login type is set to PIN!
-gui-recover-account: &eRecover account?
-gui-recovery-choice-email: &aEmail Recovery
-gui-recovery-choice-email-lore: &7Click to recover your account via your registered email.
-gui-recovery-choice-passkey: &aDevice PassKey Recovery
-gui-recovery-choice-passkey-lore: &7Click to recover your account using this device's passkey.
-gui-title-account: Settings
-gui-title-google-auth: Google Authenticator
-gui-title-ip-autologin: Login automatically?
-gui-title-login: Login
-gui-title-login-settings: Login Settings
-gui-title-password-changing: Enter at least 5 chars
-gui-title-password-changing-pin: Enter 4 digits
-gui-title-passwords: Passwords
-gui-title-recovery-choice: Recover account?
-gui-title-register: Register
-heal-self: You have been healed!
-home-absent: &cHome was never set!
-home-default-overwrite: &6Your old default home was successfully overwritten, and set to your current location!
-home-named-absent: &cHome of the name {0} was never set!
-home-named-overwrite: &6Your old home named {0} was successfully overwritten, and set to your current location!
-home-set: &6Home was successfully set!
-home-teleport-default: &6Successfully teleported to your home!
-home-teleport-named: &6Successfully teleported to your home named {0}!
-incorrect-captcha: &cIncorrect captcha!
-incorrect-command: &cIncorrect command to sudo!
-incorrect-password: &cIncorrect password!
-invalid-command: &cInvalid command!
-invalid-name: &cInvalid name, please use another one!
-ip-autologin-accept: &aYou will now be always automatically logged in by IP! You can manage these settings at /account
-ip-autologin-forcefully-disabled: &cThis parameter has been forcefully -nl disabled via the server's config, and will -nl currently have no effect whatsoever.
-ip-autologin-reject: &aYou will now always not be automatically logged in by IP! You can manage these settings at /account
-ip-info-absent-ban: &cNo ip information about {0} was found, therefore the ip ban was unsuccessful.
-ip-not-banned: &cERROR: IP {0} is not banned!
-item-absent-during-renaming: &cYou have to hold the item you want to rename!
-item-name-reset: &6Successfully reset last item name.
-list-of-homes: List of existing homes:
-log-player-join-auto-verified: Player {0}[{1}] joined and was automatically verified for: {2}
-log-player-join-captcha-verified: Player {0}[{1}] joined, completed the captcha and registered
-log-player-join-logged-in: Player {0}[{1}] joined and logged in
-log-player-join-registered: Player {0}[{1}] joined and registered
-log-player-quit: Player {0}[{1}] disconnected
-login-enter-secondary-password: &aEnter your secondary password
-login-reminder-command: &cLog in first!
-login-success: &aYou've successfully logged in!
-login-time-passed: &cYou took too long to log in!
-max-homes-reached: &cMax numbers of homes has already been reached by you! ({0})
-movement-forbidden-captcha: &cMoving around during the captcha verification is forbidden!
-movement-forbidden-captcha-chat: &cDo not move around during captcha verification!
-muted-forever: Muted {0} forever!
-muted-self: &cYou're muted!
-muted-time: &7Muted {0} until {1}
-nickname-change-self: Your nickname has been set to '{0}&7'.
-nickname-player-reset: Last nickname of the player {0} has been reset!
-nickname-player-set: Nickname of player {0} has been set to '{1}&7'.
-nickname-reset: Your last nickname has been reset!
-no-conversation-to-reply-to: &cYou don't have a conversation that you could reply to!
-no-homes-set: No homes were set yet!
-no-longer-online: {0} is no longer online!
-none-players: None players are currently online!
-not-a-number: &c'{0}' is not a number!
-not-logged-in-reminder: &cPlease type /login <password>
-online-player-list: Online Player List ({0} Currently Online)
-packet-limit-reached-verification: &c[AntiBot] You've sent too many total packets!
-password-changed: &aSuccessfully changed your password!
-password-invalid-breached: &cThis password has appeared in a known data breach - please pick a different one.
-password-invalid-character: Invalid character '{1}' at "{0}&c{1}&7{2}" <- HERE
-password-invalid-character-blank: Invalid character '{1}' (Blank) at "{0}&c{1}&7{2}" <- HERE
-password-invalid-gui: &cINVALID PASSWORD
-password-invalid-too-long: Too long!
-password-invalid-too-short: Too short!
-password-register: &aYour password has been successfully registered!
-password-reset-forcefully: &cYour password has been reset by an admin
-auth-app-reset-forcefully: &cYour Authenticator app requirement has been turned off by an admin. Your password was not changed.
-personal-message-receive: &6[&c{0} &6-> &cMe&6]: &7
-personal-message-send: &6[&cMe &6-> &c{0}&6]: &7
-pin-confirm: &aCONFIRM
-pin-gui-title: Enter your PIN
-pin-invalid-length: &cYour pin needs to be four digits long!
-pin-leave: &7LEAVE THE SERVER
-pin-leave-feedback: &7You've clicked the LEAVE button
-pin-register: Registered with PIN:
-pin-register-bottom-line: &b{0}
-pin-remove-last: &eREMOVE LAST
-pin-reset: &cRESET
-ping-before-join: &cYou must first add this server to you server list and refresh it!
-ping-check-failed: &cYou've failed the ping check, try joining later with a better connection!
-player-already-online: This player is already online!
-player-already-op: &cERROR: Player {0} is already an operator.
-player-data-not-found: &cPlayer {0} is not in the AlixSystem User Library!
-player-feed: Player {0} has been fed!
-player-healed: Player {0} has been healed!
-player-not-banned: &cERROR: Player named {0} is not banned!
-player-not-found: &cNo player called {0} was found!
-player-not-op: &cERROR: Player {0} was not an operator.
-player-was-deopped: &7Player {0} was deopped by {1}.
-player-was-opped: &7Player {0} was opped by {1}.
-premium-command-already-premium: &cYou're already a premium player!
-premium-command-non-premium: &cYou cannot be a premium player!
-premium-command-premium: &aSuccessfully updated your status to premium!
-premium-command-unknown: &eSomething went wrong! Could not get your premium status!
-premium-disconnect-cannot-decrypt-secret: &cCannot decrypt shared secret
-premium-disconnect-cannot-enable-encryption: &cInternal error - couldn't enable encryption
-premium-disconnect-cannot-verify-session: &cCannot verify session
-premium-disconnect-illegal-encryption-state: &cIllegal encryption state
-premium-disconnect-internal-error: &cInternal error (Encryption)
-premium-disconnect-invalid-nonce: &cInvalid nonce
-premium-disconnect-invalid-session: &cInvalid session
-prevent-first-time-join: &aWe're analysing your connection. You may now join the server.
-register-email-verification-required: &cYou must verify your email before you can register! Check your inbox for the code, then type &f/verifyemail <code>&c.
-register-email-verification-sent: &aA verification code has been sent to {0}! Type &f/verifyemail <code> &ato finish registering.
-register-email-verification-time-passed: &cYou took too long to verify your email! Please register again.
-register-email-verification-too-many-attempts: &cToo many invalid email verification codes entered.
-register-reminder-command: &cRegister first!
-register-success: &aSuccessfully registered! You may now rejoin the server!
-register-time-passed: &cYou took too long to register!
-reminder-login-subtitle: &e/login <password>
-reminder-login-title: Log in with
-reminder-register-subtitle: &e/register <password>
-reminder-register-subtitle-email: &e/register <password> <email>
-reminder-register-subtitle-repeat: &e/register <password> <password>
-reminder-register-subtitle-repeat-email: &e/register <password> <password> <email>
-reminder-register-title: Register with
-reminder-terms-subtitle: &e/terms accept
-reminder-terms-title: Accept the terms with
-reminder-verifyemail-subtitle: &e/verifyemail <code>
-reminder-verifyemail-title: Verify your email with
-remove-warp: &6Successfully removed the warp {0}!
-renamed-item: &6Successfully renamed held item.
-server-is-full: &cThe server is full!
-server-still-starting: &cThe server still hasn't started yet!
-spawn-location-set: &6Spawn location was successfully set!
-spawn-teleport: &6Successfully teleported to spawn!
-speed-invalid-arg: &cFourth argument should be either walk or fly, but instead found '{0}'!
-successfully-removed: &6Successfully removed your {0} home.
-successfully-unmuted: Successfully unmuted player {0}.
-sudoed-player-chat: Sudoed player {0} to chat:
-sudoed-player-command: Sudoed player {0} to type the command {1}
-system-unsure-op-password-tip: &cIf you're not sure what the password is, then please check your config.yml file of this plugin or use this command using only console.
-terms-accepted: &aTerms & Conditions accepted!
-terms-declined-kick: &cYou must accept the Terms & Conditions in order to register.
-terms-invalid-input: &cType &f/terms accept &cor &f/terms decline&c.
-terms-not-required: &7Terms & Conditions acceptance is not required on this server.
-terms-required-explanation: &eBefore you can register, please review our Terms & Conditions.
-terms-required-link: &7Read them here: &f{0}
-terms-required-prompt: &aType &f/terms accept &ato continue, or &f/terms decline &ato disconnect.
-tpa-accept: Your teleportation request has been accepted.
-tpa-accept-self: You have accepted the teleportation request from {0}.
-tpa-deny: Your teleportation request has been denied.
-tpa-deny-self: You have denied the teleportation request from {0}.
-tpa-failed-target-has-tpa-off: &cPlayer {0} has teleportation requests turned off!
-tpa-off: You will now stop receiving teleport requests.
-tpa-on: You're now able to receive teleport requests.
-tpa-request-absent: &cYou do not have a teleportation request from {0}!
-tpa-request-absent-from-self: &cYou do not have a pending teleportation request.
-tpa-request-already-sent: &cYou have already sent a tpa request to {0}! If you want to cancel it, then type /tpacancel
-tpa-request-cancel: Cancelled your teleportation request.
-tpa-request-expired: Your teleportation request to {0} has expired.
-tpa-request-receive: You have received a teleportation request from {0}. If you want to accept/deny it, then type &c/tpaccept {0} &7or &c/tpadeny {0}&7. Otherwise it will automatically expire in &c{1} seconds&7.
-tpa-request-send: You have sent a teleportation request to {0}. If you want to cancel it, then type &c/tpacancel&7. Otherwise it will automatically expire in &c{1} seconds&7.
-unbanned-ip: Unbanned ip &c{0}&7!
-unbanned-player: Unbanned player &c{0}&7!
-uncompleted-captcha-type-reminder: &cType the shown captcha in chat
-uncompleted-recaptcha-reminder: &cClick the
-unregistered-reminder: &cPlease type /register <password>
-unregistered-reminder-password-repeat: &cPlease type /register <password> <password>
-user-delayed-teleportation: &7The teleportation will take place in {0}.
-verify-mail.code-mismatch: &cThe sent code does not match the input one!
-verify-mail.email-body: Enter {0}
-verify-mail.email-body-link: Or click here to verify instantly: {0}
-verify-mail.email-subject: Verify server email
-verify-mail.encryption-failed: &cInternal error - Verify code matches, but could not be encrypted for saving
-verify-mail.invalid-email: &cSpecify a valid email address!
-verify-mail.requesting-send: Requesting an email send...
-verify-mail.send-failed: &cFailed to send verify email
-verify-mail.send-first: &cInvoke '{0}' first!
-verify-mail.sent-successfully: &aEmail successfully sent! Check your email's inbox
-verify-mail.server-success: &aSuccessfully verified the server's email
-verify-mail.user-success: &aSuccessfully verified your email!
-walking-speed-player: &cWalking Speed &7for {0} has been set to &c{1}
-walking-speed-self: Your &cWalking Speed &7has been set to &c{0}
-warning-player-never-joined: &eWARNING: Player {0} has never joined this server before!
-warp-absent: &cWarp {0} does not exist!
-warp-create: &6Successfully created the warp {0}!
-warp-location-change: &6Successfully changed the location of the warp {0}!
-warp-teleport: &6Successfully teleported to warp {0}!
+commands-register-email-arg= email
+commands-register-password-arg= password
+commands-register-password-second-arg= repeat password
+commands-register-passwords-do-not-match= &cPasswords do not match!
+commands-register-passwords-more-than-two= &cYou must repeat the password just once!
+device-fingerprint-mismatch= &cThis device's passkey does not match the one on file.
+email-recovery-anvil-code-title= Enter 6-digit code
+email-recovery-anvil-email-title= Enter exact email
+email-recovery-body= Your account recovery code is: {0}
+email-recovery-code-invalid= &cInvalid recovery code!
+email-recovery-code-sent= &aA 6-digit recovery code has been sent to your email!
+email-recovery-invalid-email= &cThe provided email does not match your registered email!
+email-recovery-no-email= &cYou do not have a recovery email set up!
+email-recovery-reminder= &7You can recover your account via /recovery {0}
+email-recovery-subject= Account Recovery Code
+email-recovery-success= &aRecovery successful! Logging in...
+recovery-code-hint= &7Lost your Authenticator app? Type &f/recoverycode <code>&7 to log in with a backup code instead.
+recovery-code-invalid= &cInvalid or already-used recovery code!
+recovery-code-invalid-input= &cUsage: /recoverycode <code>
+recovery-code-not-applicable= &cYour account doesn't use the Authenticator app, so there's nothing to recover here.
+recovery-code-password-required= &cEnter your password first, then use a recovery code instead of the app code.
+recovery-code-success= &aRecovery code accepted! Logging in...
+error-generic= &cSomething went wrong!
+error-player-never-joined= &cERROR: Player {0} has never joined this server before!
+feed-self= You have been fed!
+firewall-exhausted-logs= This server seems to be currently getting attacked, we'll disable firewall logs until things calm down
+flying-disabled= Flying has been &aenabled!
+flying-enabled= Flying has been &cdisabled!
+flying-player-disabled= Flying for player {0} has been &cdisabled!
+flying-player-enabled= Flying for player {0} has been &aenabled!
+flying-speed-player= &cFlying Speed &7for {0} has been set to &c{1}
+flying-speed-self= Your &cFlying Speed &7has been set to &c{0}
+format-add-warp= Format: /addwarp <name>
+format-changepassword= Format: /changepassword <new password>
+format-chat= Format: /chat <on/off>
+format-deop-restricted= Format: /deop <player> <password>
+format-deop-unrestricted= Format: /deop <player>
+format-enderchest= Format: /enderchest or /enderchest <player>
+format-feed= Format: /feed or /feed <player>
+format-fly= Format: /fly or /fly <player>
+format-gamemode= Format: /gm <gamemode> or /gm <gamemode> <player>
+format-heal= Format: /heal or /heal <player>
+format-home= Format: /home or /home <name>
+format-home-list= Format: /homelist
+format-invsee= Format: /invsee <player>
+format-login= Format: /login <password>
+format-msg= Format: /msg <player> <message>
+format-mute= Format: /mute <player> or /mute <player> <time>
+format-nicknameplayer= Format: /nicknameplayer <player> <name>
+format-op-restricted= Format: /op <player> <password>
+format-op-unrestricted= Format: /op <player>
+format-register= Format: /register <password>
+format-register-email= Format: /register <password> <email>
+format-register-repeat= Format: /register <password> <password>
+format-register-repeat-email= Format: /register <password> <password> <email>
+format-remove-home= Format: /removehome <name>
+format-remove-warp= Format: /removewarp <name>
+format-reply= Format: /reply <message>
+format-sethome= Format: /sethome or /sethome <name>
+format-setspawn= Format: /setspawn
+format-spawn= Format: /spawn
+format-speed= Format: /speed <number> or /speed <number> <player>, or /speed <number> <player> (walk/fly)
+format-sudo= Format: /sudo <player> <command> or /sudo <player> chat: <message>
+format-tempban= Format: /tempban <player> or /tempban <player> <reason>, or /tempban <player> <reason> <time>
+format-tempbanip= Format: /tempbanip <player/ip> or /tempbanip <player/ip> <reason>, or /tempbanip <player/ip> <reason> <time>
+format-tpa= Format: /tpa <player>
+format-tpa-accept= Format: /tpaccept <player>
+format-tpa-cancel= Format: /tpacancel
+format-tpa-deny= Format: /tpadeny <player>
+format-unban= Format: /unban <player>
+format-unbanip= Format: /unbanip <player/ip>
+format-unmute= Format: /unmute <player>
+format-warp= Format: /warp <name>
+gamemode-adventure-player= Gamemode for player {0} was set to &cadventure.
+gamemode-adventure-self= Your gamemode was set to &cadventure.
+gamemode-creative-player= Gamemode for player {0} was set to &ccreative.
+gamemode-creative-self= Your gamemode was set to &ccreative.
+gamemode-player-set-player= Gamemode for player {0} was set to &c{1}.
+gamemode-set= Your gamemode was set to &c{0}.
+gamemode-spectator-player= Gamemode for player {0} was set to &cspectator.
+gamemode-spectator-self= Your gamemode was set to &cspectator.
+gamemode-survival-player= Gamemode for player {0} was set to &csurvival.
+gamemode-survival-self= Your gamemode was set to &csurvival.
+google-auth-access-confirmation-failed= &cThe given code was invalid! Try again!
+google-auth-access-confirmed= &aYou've confirmed your access to the 2FA app.
+google-auth-gui-title= Auth app Code:
+google-auth-invalid-code= &cInvalid Auth App Code!
+google-auth-invalid-code-chat-message= &cInvalid Auth App Code! Try again!
+google-auth-setting-cancel= &c[Cancel]
+google-auth-setting-cancel-chat= &7You've cancelled the 2FA set-up.
+google-auth-setting-confirm= &a[Confirm successful integration]
+google-auth-setting-explanation= &e&lHow to integrate?
+google-auth-setting-explanation-hover= &7In order to integrate your Google Authenticator -nl &7app with this server's account, you must -nl &71. Open up the Google Authenticator app on your phone -nl &72. Click the plus in bottom right -nl &73. Select 'Scan QR Code' -nl &74. Scan the QR code shown before you right now
+google-auth-tp-failed= &cFailed to teleport.
+gui-account-google-authenticator= &aGoogle Authenticator
+gui-account-login-settings= &aLogin Settings
+gui-account-passwords= &aPasswords
+gui-account-passwords-gui-not-available= &cThis option is only available for servers that are 1.14+!
+gui-confirm= &aConfirm
+gui-go-back= &6Go back
+gui-google-auth-applied-changes= &aSuccessfully applied changes!
+gui-google-auth-apply-changes= &aApply changes
+gui-google-auth-config-auth-and-password-lore= &7You will be required to input both: -nl &7Your normal passwords set in the &aPasswords &7GUI, -nl &7and the 6-digit code shown in your -nl &7Google Authenticator app
+gui-google-auth-config-auth-and-password-name= &aPassword & Google Auth
+gui-google-auth-config-auth-lore= &7You will be required to input -nl &7the 6-digit code shown in your -nl &7Google Authenticator app
+gui-google-auth-config-auth-name= &aGoogle Auth Only
+gui-google-auth-config-password-lore= &7You will be required to complete -nl &7a normal password verification, -nl &7configurable in the &aPasswords &7GUI
+gui-google-auth-config-password-name= &aPassword Only
+gui-google-auth-save-changes= &aSave Changes
+gui-google-auth-recovery-codes-chat-footer= &7Keep these somewhere safe. If you ever lose your device, use one -nl &7instead of the 6-digit code with &f/recoverycode <code>&7.
+gui-google-auth-recovery-codes-chat-header= &eYour recovery codes (each one works only once):
+gui-google-auth-reset-token-confirm-lore= &7Your current QR code and recovery -nl &7codes will stop working immediately.
+gui-google-auth-reset-token-confirm-name= &c&lAre you sure? Click again to confirm!
+gui-google-auth-reset-token-lore= &7Click to generate a brand new QR code -nl &7and invalidate the old one, along with -nl &7your current recovery codes. -nl &7&oUse this if you lost your device or -nl &7&othink someone else has your code.
+gui-google-auth-reset-token-failed-chat= &cSomething went wrong while resetting your code - it was NOT changed. Please try again.
+gui-google-auth-reset-token-name= &cReset Code
+gui-google-auth-reset-token-success-chat= &aYour Authenticator code has been reset! Scan the new QR code.
+gui-google-auth-show-qr-code-lore= &7Clicking this will show a QR code you can scan with -nl &7your Google Authenticator app in order to -nl &7link your account on this server with the app. -nl &f&nThe code will only be visible to you.
+gui-google-auth-show-qr-code-name= &aShow QR Code
+gui-google-auth-view-recovery-codes-lore= &7Click to view your backup codes - use one -nl &7instead of your 6-digit code if you ever -nl &7lose your device. -nl &7&oEach code works only once.
+gui-google-auth-view-recovery-codes-name= &aRecovery Codes
+gui-google-auth-what-is-this= &7This gui allows you to set up the integration -nl &7between the Google Authenticator app -nl &7and your account on this server
+gui-google-auth-what-is-this-name= &eWhat is this?
+gui-invalid-password= &cInvalid password
+gui-ip-autologin-accept= &aACCEPT
+gui-ip-autologin-lore-accept= &7Accepting is usually safe, since -nl &7each IP is unique as assigned -nl &7by the ISP.
+gui-ip-autologin-lore-reject= &7Rejecting is fine too - a shared -nl &7IP (VPN, same ISP, or router) -nl &7could occasionally let someone -nl &7else log in as you, but that -nl &7risk is small.
+gui-ip-autologin-question-mark= &eWhat is this?
+gui-ip-autologin-reject= &cREJECT
+gui-ip-autologin-what-is-this= &7This gui asks whether you'd -nl &7like to be automatically logged in -nl &7if you join with the same IP, -nl &7 as your previous successful login.
+gui-leave= &7Leave
+gui-login-settings-device-passkey-off= &cDevice PassKey: OFF
+gui-login-settings-device-passkey-on= &aDevice PassKey: ON
+gui-login-settings-ip-autologin-off= &cIP AutoLogin: OFF
+gui-login-settings-ip-autologin-on= &aIP AutoLogin: ON
+gui-overall-go-back= &6Go Back
+gui-password-try-apply-data-fail-main-not-pin= &cYou need to change your MAIN password to a PIN!
+gui-password-try-apply-data-fail-main-pin= &cYou need to change your MAIN password to a longer one if you wish to switch from a PIN password!
+gui-password-try-apply-data-fail-secondary-not-pin= &cYou need to change your SECONDARY password to a PIN!
+gui-password-try-apply-data-fail-secondary-password-not-set= &cYou need to set your secondary password if you wish to use double verification!
+gui-password-try-apply-data-fail-secondary-pin= &cYou need to change your SECONDARY password to a longer one if you wish to switch from a PIN password!
+gui-passwords-applied-changes= &aSuccessfully applied changes!
+gui-passwords-change-main= &aChange Password
+gui-passwords-change-secondary= &aChange Secondary Password
+gui-passwords-changed-main= &8Changed password: {0}
+gui-passwords-changed-secondary= &8Changed secondary password: {0}
+gui-passwords-login-type-anvil= &aLogin Type: Anvil
+gui-passwords-login-type-command= &aLogin Type: Command
+gui-passwords-login-type-pin= &aLogin Type: PIN
+gui-passwords-login-type-secondary-anvil= &aSecondary Login Type: Anvil
+gui-passwords-login-type-secondary-command= &aSecondary Login Type: Command
+gui-passwords-login-type-secondary-disabled= &cDisabled
+gui-passwords-login-type-secondary-pin= &aSecondary Login Type: PIN
+gui-passwords-save-changes= &aSave Changes
+gui-pin-type-invalid= &cThe main password is not a PIN, but the login type is set to PIN!
+gui-recover-account= &eRecover account?
+gui-recovery-choice-email= &aEmail Recovery
+gui-recovery-choice-email-lore= &7Click to recover your account via your registered email.
+gui-recovery-choice-passkey= &aDevice PassKey Recovery
+gui-recovery-choice-passkey-lore= &7Click to recover your account using this device's passkey.
+gui-title-account= Settings
+gui-title-google-auth= Google Authenticator
+gui-title-ip-autologin= Login automatically?
+gui-title-login= Login
+gui-title-login-settings= Login Settings
+gui-title-password-changing= Enter at least 5 chars
+gui-title-password-changing-pin= Enter 4 digits
+gui-title-passwords= Passwords
+gui-title-recovery-choice= Recover account?
+gui-title-register= Register
+heal-self= You have been healed!
+home-absent= &cHome was never set!
+home-default-overwrite= &6Your old default home was successfully overwritten, and set to your current location!
+home-named-absent= &cHome of the name {0} was never set!
+home-named-overwrite= &6Your old home named {0} was successfully overwritten, and set to your current location!
+home-set= &6Home was successfully set!
+home-teleport-default= &6Successfully teleported to your home!
+home-teleport-named= &6Successfully teleported to your home named {0}!
+incorrect-captcha= &cIncorrect captcha!
+incorrect-command= &cIncorrect command to sudo!
+incorrect-password= &cIncorrect password!
+invalid-command= &cInvalid command!
+invalid-name= &cInvalid name, please use another one!
+ip-autologin-accept= &aYou will now be always automatically logged in by IP! You can manage these settings at /account
+ip-autologin-forcefully-disabled= &cThis parameter has been forcefully -nl disabled via the server's config, and will -nl currently have no effect whatsoever.
+ip-autologin-reject= &aYou will now always not be automatically logged in by IP! You can manage these settings at /account
+ip-info-absent-ban= &cNo ip information about {0} was found, therefore the ip ban was unsuccessful.
+ip-not-banned= &cERROR: IP {0} is not banned!
+item-absent-during-renaming= &cYou have to hold the item you want to rename!
+item-name-reset= &6Successfully reset last item name.
+list-of-homes= List of existing homes:
+log-player-join-auto-verified= Player {0}[{1}] joined and was automatically verified for: {2}
+log-player-join-captcha-verified= Player {0}[{1}] joined, completed the captcha and registered
+log-player-join-logged-in= Player {0}[{1}] joined and logged in
+log-player-join-registered= Player {0}[{1}] joined and registered
+log-player-quit= Player {0}[{1}] disconnected
+login-enter-secondary-password= &aEnter your secondary password
+login-reminder-command= &cLog in first!
+login-success= &aYou've successfully logged in!
+login-time-passed= &cYou took too long to log in!
+max-homes-reached= &cMax numbers of homes has already been reached by you! ({0})
+movement-forbidden-captcha= &cMoving around during the captcha verification is forbidden!
+movement-forbidden-captcha-chat= &cDo not move around during captcha verification!
+muted-forever= Muted {0} forever!
+muted-self= &cYou're muted!
+muted-time= &7Muted {0} until {1}
+nickname-change-self= Your nickname has been set to '{0}&7'.
+nickname-player-reset= Last nickname of the player {0} has been reset!
+nickname-player-set= Nickname of player {0} has been set to '{1}&7'.
+nickname-reset= Your last nickname has been reset!
+no-conversation-to-reply-to= &cYou don't have a conversation that you could reply to!
+no-homes-set= No homes were set yet!
+no-longer-online= {0} is no longer online!
+none-players= None players are currently online!
+not-a-number= &c'{0}' is not a number!
+not-logged-in-reminder= &cPlease type /login <password>
+online-player-list= Online Player List ({0} Currently Online)
+packet-limit-reached-verification= &c[AntiBot] You've sent too many total packets!
+password-changed= &aSuccessfully changed your password!
+password-invalid-breached= &cThis password has appeared in a known data breach - please pick a different one.
+password-invalid-character= Invalid character '{1}' at "{0}&c{1}&7{2}" <- HERE
+password-invalid-character-blank= Invalid character '{1}' (Blank) at "{0}&c{1}&7{2}" <- HERE
+password-invalid-gui= &cINVALID PASSWORD
+password-invalid-too-long= Too long!
+password-invalid-too-short= Too short!
+password-register= &aYour password has been successfully registered!
+password-reset-forcefully= &cYour password has been reset by an admin
+auth-app-reset-forcefully= &cYour Authenticator app requirement has been turned off by an admin. Your password was not changed.
+personal-message-receive= &6[&c{0} &6-> &cMe&6]: &7
+personal-message-send= &6[&cMe &6-> &c{0}&6]: &7
+pin-confirm= &aCONFIRM
+pin-gui-title= Enter your PIN
+pin-invalid-length= &cYour pin needs to be four digits long!
+pin-leave= &7LEAVE THE SERVER
+pin-leave-feedback= &7You've clicked the LEAVE button
+pin-register= Registered with PIN:
+pin-register-bottom-line= &b{0}
+pin-remove-last= &eREMOVE LAST
+pin-reset= &cRESET
+ping-before-join= &cYou must first add this server to you server list and refresh it!
+ping-check-failed= &cYou've failed the ping check, try joining later with a better connection!
+player-already-online= This player is already online!
+player-already-op= &cERROR: Player {0} is already an operator.
+player-commands-account=   &c/account &7- Opens the account settings menu (passwords, login settings, 2FA) - use the commands below to verify/recover your email.
+player-commands-account-sendverifyemail=   &c/account sendverifyemail <email> &7- Sends a verification code to the given email address.
+player-commands-account-verifyemail=   &c/account verifyemail <code> &7- Verifies your email address using the code sent to it.
+player-commands-changepassword=   &c/changepassword <new password> &7- Changes your account's password.
+player-commands-header= &e&lPlayer commands:
+player-commands-premium=   &c/premium &7- Attempts to register your account as premium.
+player-commands-recovery=   &c/recovery <email> &7- Only usable at the login prompt right after connecting (not in regular chat afterward) - recovers account access via a registered recovery email while unregistered.
+player-commands-section-account= &6&lAccount settings
+player-commands-section-login= &6&lLogin & account recovery
+player-commands-terms=   &c/terms accept|decline &7- Accepts or declines the Terms & Conditions during registration (only used if enabled in the server's configuration).
+player-data-not-found= &cPlayer {0} is not in the AlixSystem User Library!
+player-feed= Player {0} has been fed!
+player-healed= Player {0} has been healed!
+player-not-banned= &cERROR: Player named {0} is not banned!
+player-not-found= &cNo player called {0} was found!
+player-not-op= &cERROR: Player {0} was not an operator.
+player-was-deopped= &7Player {0} was deopped by {1}.
+player-was-opped= &7Player {0} was opped by {1}.
+premium-command-already-premium= &cYou're already a premium player!
+premium-command-non-premium= &cYou cannot be a premium player!
+premium-command-premium= &aSuccessfully updated your status to premium!
+premium-command-unknown= &eSomething went wrong! Could not get your premium status!
+premium-disconnect-cannot-decrypt-secret= &cCannot decrypt shared secret
+premium-disconnect-cannot-enable-encryption= &cInternal error - couldn't enable encryption
+premium-disconnect-cannot-verify-session= &cCannot verify session
+premium-disconnect-illegal-encryption-state= &cIllegal encryption state
+premium-disconnect-internal-error= &cInternal error (Encryption)
+premium-disconnect-invalid-nonce= &cInvalid nonce
+premium-disconnect-invalid-session= &cInvalid session
+prevent-first-time-join= &aWe're analysing your connection. You may now join the server.
+register-email-verification-required= &cYou must verify your email before you can register! Check your inbox for the code, then type &f/verifyemail <code>&c.
+register-email-verification-sent= &aA verification code has been sent to {0}! Type &f/verifyemail <code> &ato finish registering.
+register-email-verification-time-passed= &cYou took too long to verify your email! Please register again.
+register-email-verification-too-many-attempts= &cToo many invalid email verification codes entered.
+register-reminder-command= &cRegister first!
+register-success= &aSuccessfully registered! You may now rejoin the server!
+register-time-passed= &cYou took too long to register!
+reminder-login-subtitle= &e/login <password>
+reminder-login-title= Log in with
+reminder-register-subtitle= &e/register <password>
+reminder-register-subtitle-email= &e/register <password> <email>
+reminder-register-subtitle-repeat= &e/register <password> <password>
+reminder-register-subtitle-repeat-email= &e/register <password> <password> <email>
+reminder-register-title= Register with
+reminder-terms-subtitle= &e/terms accept
+reminder-terms-title= Accept the terms with
+reminder-verifyemail-subtitle= &e/verifyemail <code>
+reminder-verifyemail-title= Verify your email with
+remove-warp= &6Successfully removed the warp {0}!
+renamed-item= &6Successfully renamed held item.
+server-is-full= &cThe server is full!
+server-still-starting= &cThe server still hasn't started yet!
+spawn-location-set= &6Spawn location was successfully set!
+spawn-teleport= &6Successfully teleported to spawn!
+speed-invalid-arg= &cFourth argument should be either walk or fly, but instead found '{0}'!
+successfully-removed= &6Successfully removed your {0} home.
+successfully-unmuted= Successfully unmuted player {0}.
+sudoed-player-chat= Sudoed player {0} to chat:
+sudoed-player-command= Sudoed player {0} to type the command {1}
+system-unsure-op-password-tip= &cIf you're not sure what the password is, then please check your config.yml file of this plugin or use this command using only console.
+terms-accepted= &aTerms & Conditions accepted!
+terms-declined-kick= &cYou must accept the Terms & Conditions in order to register.
+terms-invalid-input= &cType &f/terms accept &cor &f/terms decline&c.
+terms-must-accept-first= &cYou must accept the Terms & Conditions first! Type /terms accept.
+terms-not-required= &7Terms & Conditions acceptance is not required on this server.
+terms-required-explanation= &eBefore you can register, please review our Terms & Conditions.
+terms-required-link= &7Read them here: &f{0}
+terms-required-prompt= &aType &f/terms accept &ato continue, or &f/terms decline &ato disconnect.
+tpa-accept= Your teleportation request has been accepted.
+tpa-accept-self= You have accepted the teleportation request from {0}.
+tpa-deny= Your teleportation request has been denied.
+tpa-deny-self= You have denied the teleportation request from {0}.
+tpa-failed-target-has-tpa-off= &cPlayer {0} has teleportation requests turned off!
+tpa-off= You will now stop receiving teleport requests.
+tpa-on= You're now able to receive teleport requests.
+tpa-request-absent= &cYou do not have a teleportation request from {0}!
+tpa-request-absent-from-self= &cYou do not have a pending teleportation request.
+tpa-request-already-sent= &cYou have already sent a tpa request to {0}! If you want to cancel it, then type /tpacancel
+tpa-request-cancel= Cancelled your teleportation request.
+tpa-request-expired= Your teleportation request to {0} has expired.
+tpa-request-receive= You have received a teleportation request from {0}. If you want to accept/deny it, then type &c/tpaccept {0} &7or &c/tpadeny {0}&7. Otherwise it will automatically expire in &c{1} seconds&7.
+tpa-request-send= You have sent a teleportation request to {0}. If you want to cancel it, then type &c/tpacancel&7. Otherwise it will automatically expire in &c{1} seconds&7.
+unbanned-ip= Unbanned ip &c{0}&7!
+unbanned-player= Unbanned player &c{0}&7!
+uncompleted-captcha-type-reminder= &cType the shown captcha in chat
+uncompleted-recaptcha-reminder= &cClick the
+unregistered-reminder= &cPlease type /register <password>
+unregistered-reminder-password-repeat= &cPlease type /register <password> <password>
+user-delayed-teleportation= &7The teleportation will take place in {0}.
+verify-mail.code-mismatch= &cThe sent code does not match the input one!
+verify-mail.email-body= Enter {0}
+verify-mail.email-body-link= Or click here to verify instantly: {0}
+verify-mail.email-subject= Verify server email
+verify-mail.encryption-failed= &cInternal error - Verify code matches, but could not be encrypted for saving
+verify-mail.invalid-email= &cSpecify a valid email address!
+verify-mail.requesting-send= Requesting an email send...
+verify-mail.send-failed= &cFailed to send verify email
+verify-mail.send-first= &cInvoke '{0}' first!
+verify-mail.sent-successfully= &aEmail successfully sent! Check your email's inbox
+verify-mail.server-success= &aSuccessfully verified the server's email
+verify-mail.too-many-attempts= &cToo many incorrect attempts! Request a new code with '{0}'.
+verify-mail.user-success= &aSuccessfully verified your email!
+web-verification.confirm-button= Confirm
+web-verification.confirm-message= Click the button below to finish verifying this email address.
+web-verification.confirm-title= Confirm your email
+web-verification.error-generic-message= Please try again in-game.
+web-verification.error-not-found-message= Your account could not be found or the email could not be saved. Please try again in-game.
+web-verification.error-title= Something went wrong
+web-verification.invalid-message= This verification link is no longer valid. Please request a new one in-game via /account sendverifyemail.
+web-verification.invalid-title= Link invalid or expired
+web-verification.method-not-allowed-message= Only GET and POST requests are supported.
+web-verification.method-not-allowed-title= Method not allowed
+web-verification.success-message= Your email has been successfully verified. You can now close this page.
+web-verification.success-title= Email verified!
+walking-speed-player= &cWalking Speed &7for {0} has been set to &c{1}
+walking-speed-self= Your &cWalking Speed &7has been set to &c{0}
+warning-player-never-joined= &eWARNING: Player {0} has never joined this server before!
+warp-absent= &cWarp {0} does not exist!
+warp-create= &6Successfully created the warp {0}!
+warp-location-change= &6Successfully changed the location of the warp {0}!
+warp-teleport= &6Successfully teleported to warp {0}!

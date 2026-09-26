@@ -12,7 +12,13 @@ public final class ConnectionManager {
     public static final boolean isEnabled = ConfigProvider.config.getBoolean("prevent-first-time-join-during-high-traffic");
     public static final String preventFirstTimeJoinMessage = Messages.get("prevent-first-time-join");
     //private static final ConcurrentLoopSet<ArrayKey> set;
-    private static final long forgetInMillis = ConfigProvider.config.getInt("forget-connection-in") * 1000L;
+    //FUNCTIONALITY (audit, 2026-09-24): clamped to a 1-second floor - unlike maxSize right below, this was
+    //previously unclamped, and AlixCache's expireAfterWrite() (backed by Guava's CacheBuilder) throws
+    //IllegalArgumentException for a negative/zero duration, which - since this static initializer runs
+    //during class loading, touched by connection filtering at startup - crashed the whole plugin's boot
+    //with an ExceptionInInitializerError for any admin who set this to 0 or a negative value (the same
+    //"0 or less = disable" convention this file's own isEnabled/config already documents elsewhere).
+    private static final long forgetInMillis = Math.max(1, ConfigProvider.config.getInt("forget-connection-in")) * 1000L;
     private static final Map<String, Boolean> CACHE;
 
     static {

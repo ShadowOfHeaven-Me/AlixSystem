@@ -58,7 +58,7 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
                     if (user.isPasswordCorrect(password)) {
                         this.user.tryLogIn();
                         return;
-                    } else if (++user.loginAttempts == maxLoginAttempts)
+                    } else if (++user.loginAttempts >= maxLoginAttempts)
                         MethodProvider.kickAsync(this.user, CommandManager.incorrectPasswordKickPacket);
                     return;
                 }

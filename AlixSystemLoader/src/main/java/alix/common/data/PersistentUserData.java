@@ -528,7 +528,15 @@ public final class PersistentUserData implements AlixUserData {
         database.clearPasswordPointers(this.name);
     }
 
-    public PersistentUserData setIP(InetAddress ip) {
+    //FUNCTIONALITY (audit, 2026-09-24): synchronized - this whole read-then-two-GeoIPTracker-calls-then-
+    //write sequence is a non-atomic check-then-act, and UserFileManager.map is keyed by username, so two
+    //connections authenticating as the same username in close succession (the Limbo/proxy login path has
+    //no equivalent to Spigot's own same-name connection de-dup, AlixChannelHandler#putConnecting) share
+    //this exact PersistentUserData instance. Without this, both could read the same stale oldIp and race on
+    //GeoIPTracker#addExisting()/removeIP(), letting one thread's addExisting() go unbalanced by a matching
+    //removeIP() (or the old IP's count get decremented twice) - drifting EXISTING_ACCOUNTS out of sync with
+    //reality, which weakens the max-accounts-per-IP abuse check (GeoIPTracker#disallowJoin()).
+    public synchronized PersistentUserData setIP(InetAddress ip) {
         var oldIp = this.ip;
         if (oldIp.equals(ip))
             return this;

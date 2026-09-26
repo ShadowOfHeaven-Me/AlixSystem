@@ -1,5 +1,6 @@
 package alix.common.messages.file.extracted;
 
+import alix.common.AlixCommonMain;
 import alix.common.messages.Messages;
 import alix.common.messages.file.MessagesFile;
 import alix.common.utils.file.AlixFileManager;
@@ -38,8 +39,13 @@ public class ExtractedMessages extends AlixFileManager {
     public List<String> getFormattedMessages() {
         int size = messages.size();
         List<String> formatted = new ArrayList<>(size);
+        //FUNCTIONALITY (audit, 2026-09-24): was a hardcoded ": " - MessagesFile#loadLine() splits on
+        //messagesSeparator() (now '=', per this session's earlier delimiter revert), so a merge
+        //(/as m-e then /as m-m) regenerated messages.txt with a delimiter the loader could no longer parse,
+        //silently dropping virtually every message to the "<Message not found>" placeholder on next restart.
+        char separator = AlixCommonMain.MAIN_CLASS_INSTANCE.getEngineParams().messagesSeparator();
         for (int i = 0; i < size; i++)
-            formatted.add(syntaxes.get(i) + ": " + messages.get(i));
+            formatted.add(syntaxes.get(i) + separator + " " + messages.get(i));
         Collections.sort(formatted);
         return formatted;
     }

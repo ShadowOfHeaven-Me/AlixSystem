@@ -97,12 +97,17 @@ public final class LoginParams {
 
     public void setLoginType(LoginType loginType) {
         this.loginType = loginType;
-        database.updateExtraLoginTypeByName(this.name(), extraLoginType);
+        //FUNCTIONALITY (audit, 2026-09-24): was updateExtraLoginTypeByName(extraLoginType) - persisted the
+        //wrong, unchanged column, so a login-type change took effect in memory but was silently lost on
+        //the next restart/reload.
+        database.updateLoginTypeByName(this.name(), loginType);
     }
 
     public void setExtraLoginType(LoginType extraLoginType) {
         this.extraLoginType = extraLoginType;
-        database.updateLoginTypeByName(this.name(), loginType);
+        //FUNCTIONALITY (audit, 2026-09-24): was updateLoginTypeByName(loginType) - same swap as above, for
+        //the extra-login-type column.
+        database.updateExtraLoginTypeByName(this.name(), extraLoginType);
     }
 
     String name() {

@@ -24,7 +24,7 @@ public final class UnverifiedVirtualAuthBuilder extends VirtualAuthBuilder {
 
     private static void onCodeConfirm(UnverifiedUser user, Boolean correct) {
         if (!correct) {
-            if (++user.authAppAttempts == maxInputAttempts) MethodProvider.kickAsync(user, kickInvalidCodeMessagePacket);
+            if (++user.authAppAttempts >= maxInputAttempts) MethodProvider.kickAsync(user, kickInvalidCodeMessagePacket);
             else user.writeAndFlushConstSilently(invalidCodeMessagePacket);
             return;
         }

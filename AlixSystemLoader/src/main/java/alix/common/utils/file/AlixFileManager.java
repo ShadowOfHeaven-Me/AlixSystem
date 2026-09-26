@@ -34,11 +34,18 @@ public abstract class AlixFileManager {
         SECRETS_FOLDER = new File(path + File.separator + "secrets");
         SECRETS_FOLDER.mkdir();
 
-        try {
-            Files.setPosixFilePermissions(SECRETS_FOLDER.toPath(), EnumSet.of(OWNER_EXECUTE, OWNER_WRITE, OWNER_READ));
-        } catch (Throwable e) {
-            //just swallow
-            //AlixCommonMain.logWarning("Could not set POSIX file perms: " + e.getMessage());
+        //FUNCTIONALITY (audit, 2026-09-24): INTERNAL_FOLDER gets the same owner-only lockdown as
+        //SECRETS_FOLDER below now - users.yml (FileType.INTERNAL) holds every account's password hash+
+        //salt, IP and UUID, which is just as sensitive as the 2FA/token data SECRETS_FOLDER already
+        //protects (offline hash-cracking risk if another local user/process on a shared host can read it).
+        //Previously left at whatever the process umask produced, commonly world-readable.
+        for (File folder : new File[]{INTERNAL_FOLDER, SECRETS_FOLDER}) {
+            try {
+                Files.setPosixFilePermissions(folder.toPath(), EnumSet.of(OWNER_EXECUTE, OWNER_WRITE, OWNER_READ));
+            } catch (Throwable e) {
+                //just swallow
+                //AlixCommonMain.logWarning("Could not set POSIX file perms: " + e.getMessage());
+            }
         }
     }
 
