@@ -40,7 +40,7 @@ public class ExtractedMessages extends AlixFileManager {
         int size = messages.size();
         List<String> formatted = new ArrayList<>(size);
         //Must match MessagesFile#loadLine()'s own split delimiter, not a hardcoded one - otherwise a
-        //regenerated messages.txt becomes unparseable on the next load.
+        //regenerated messages.properties becomes unparseable on the next load.
         char separator = AlixCommonMain.MAIN_CLASS_INSTANCE.getEngineParams().messagesSeparator();
         for (int i = 0; i < size; i++)
             formatted.add(syntaxes.get(i) + separator + " " + messages.get(i));

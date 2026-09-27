@@ -129,7 +129,7 @@ public final class AlixFormatter {
     //player naming themselves e.g. "<click:run_command:'/x'>" (or any other real, recognized tag) must never
     //become a live tag in someone else's client just because that name got substituted into a message. The
     //STATIC template text itself (e.g. a literal "<player>" placeholder already baked into
-    //messages.properties/messages.txt) is deliberately left unescaped instead - see MessageWrapper's own
+    //messages.properties) is deliberately left unescaped instead - see MessageWrapper's own
     //comment for why that's handled safely a different way (non-strict parsing).
     private static String escapeMiniMessage(String s) {
         if (s.indexOf('\\') < 0 && s.indexOf('<') < 0)

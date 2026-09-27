@@ -62,5 +62,5 @@ web-verification-token-expiry-minutes: 30
 # "<web-verification-public-url>/verify" in a browser. An "Link invalid or expired" page IS the correct
 # result (no real token was used) - what matters is getting a page at all, not a connection failure.
 #
-# The web verification page's title/message text lives in messages.properties/messages.txt (the
+# The web verification page's title/message text lives in messages.properties (the
 # "web-verification.*" keys), same as every other player-facing string.

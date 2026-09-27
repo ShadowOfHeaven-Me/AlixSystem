@@ -266,14 +266,14 @@ use-this-syntax: false
 
 #Config used for the overall set-up
 
-#Selects which bundled translation the messages.txt-driven text (i.e. everything actually customizable in
+#Selects which bundled translation the messages.properties-driven text (i.e. everything actually customizable in
 #that file) uses: "en" (English, the default - and the only one that's still a normal, freely editable
-#config file) or "cs" (Czech - a read-only, jar-bundled translation under langs/cs.txt, like Velocity's own
-#"language" option; edit messages.txt directly instead if you want to customize the English text).
+#config file) or "cs" (Czech - a read-only, jar-bundled translation under langs/cs.properties, like Velocity's own
+#"language" option; edit messages.properties directly instead if you want to customize the English text).
 #(Deprecated) Separately, "pl" (Polski) still switches the older, hardcoded English/Polish messages that
-#were never part of messages.txt to begin with - unaffected by "en"/"cs" above, and not customizable either way.
+#were never part of messages.properties to begin with - unaffected by "en"/"cs" above, and not customizable either way.
 language: en
-#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.txt file)
+#Defines whether, instead of the normal console join log, an Alix one should be used instead (configurable in the messages.properties file)
 custom-join-log: true
 #Defines which fallback location should be used if for some unknown reason, the player is destined to respawn in the verification world
 # true - The last saved location will be used or the Alix spawn (defined by /setspawn) if it's absent as well

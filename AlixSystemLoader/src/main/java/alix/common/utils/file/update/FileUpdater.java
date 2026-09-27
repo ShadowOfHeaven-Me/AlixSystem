@@ -34,16 +34,16 @@ public final class FileUpdater {
                 String bukkitMessagesFile = bukkitParams.messagesFileName();
 
                 if (bukkitMessagesFile.startsWith("langs/")) {
-                    //A bundled, ready-made translation (anything other than the default "messages.txt") is
+                    //A bundled, ready-made translation (anything other than the default "messages.properties") is
                     //NOT a customizable config file - it's fully overwritten with the newest jar-bundled
                     //version on every update, discarding any direct edits, unlike every other file here. An
-                    //operator who wants to customize player-facing text should edit messages.txt with
+                    //operator who wants to customize player-facing text should edit messages.properties with
                     //"language: en" instead - that file DOES get the normal merge-preserving treatment below,
                     //same as Velocity's messages.properties.
                     File dest = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder(), bukkitMessagesFile);
                     AlixFileManager.writeJarCompiledFileIntoDest(dest, bukkitMessagesFile);
                 } else {
-                    //messages.txt
+                    //messages.properties
                     File messagesFile = updateFile(bukkitMessagesFile, bukkitParams.messagesSeparator());
                     MessagesFileUpdater.updateFormatting(messagesFile);
                 }
