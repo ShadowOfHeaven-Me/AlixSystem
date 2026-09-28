@@ -124,7 +124,8 @@ public final class DimensionRegistry {
     
     public CompoundBinaryTag getTags(Version version) {
         return switch (version) {
-            case V26_2 -> this.tags_26_2;
+            //case V26_3 -> null;
+            case V26_3, V26_2 -> this.tags_26_2;
             case V26_1 -> this.tags_26_1;
             case V1_21_11 -> this.tags_1_21_11;
             case V1_21_9 -> this.tags_1_21_9;

@@ -84,7 +84,6 @@ public final class AdaptiveAnomalyDetector {
                 new RateLimiter<>(10, 10));
     }
 
-    //true if allowed
     private static <T> ConnectionVerdict handle(InetAddress addr, T subnetKey, State ipState, State subnetState, SourceMetrics<InetAddress> ipMetrics,
                                                 SourceMetrics<T> subnetMetrics) {
         if (ipState == State.ATTACK) {
@@ -99,6 +98,7 @@ public final class AdaptiveAnomalyDetector {
             return ConnectionVerdict.RATE_LIMITED;
         }
 
+        //todo: finish this with tcp hints & other metrics
         if (subnetState == State.ELEVATED && !GeoIPTracker.isMapped(addr) || subnetState == State.ATTACK) {
             if (subnetMetrics.getRateLimiter().tryAcquire(subnetKey))
                 return ConnectionVerdict.ALLOWED;

@@ -154,9 +154,9 @@ public final class FireWallManager {
         if (entry.timeoutAt() > 0) {
             long timeoutIn = entry.timeoutAt() - System.currentTimeMillis();
             if (timeoutIn > 0)
-                AlixScheduler.runLaterAsync(() -> removeDynamic0(ip), timeoutIn, TimeUnit.MILLISECONDS);
+                AlixScheduler.runLaterAsync(() -> removeDynamic(ip), timeoutIn, TimeUnit.MILLISECONDS);
             else
-                removeDynamic0(ip);
+                removeDynamic(ip);
         }
         return previous;
     }
@@ -179,7 +179,7 @@ public final class FireWallManager {
             long timeoutAt = entry.timeoutAt();
             if (timeoutAt > 0 && System.currentTimeMillis() > timeoutAt) {
                 // Expired. Lazily remove
-                removeDynamic0(address);
+                removeDynamic(address);
             } else return true;//present and not stale
         }
 
@@ -191,6 +191,8 @@ public final class FireWallManager {
     }
 
     public static boolean removeDynamic(InetAddress ip) {
+        if (AlixAtaraxia.isEnabled())
+            AlixAtaraxia.unblacklist(ip);
         return removeDynamic0(ip);
     }
 
@@ -257,6 +259,8 @@ public final class FireWallManager {
 
     public static void init() {
         AlixScheduler.async(() -> {
+            AlixAtaraxia.init();
+
             if (ConfigParams.loadBuiltInIps) loadWithBuiltIn0();
             else loadWithoutBuiltIn0();
 

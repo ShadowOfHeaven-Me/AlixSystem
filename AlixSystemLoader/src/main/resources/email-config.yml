@@ -42,6 +42,8 @@ port: 587
 max-email-attempts: 5
 # Defines how many attempts does the user get when entering the recovery code, before being kicked out
 max-code-attempts: 3
+# Minutes a sent verification code stays valid for
+verify-code-expiry-minutes: 60
 
 
 #------------------------------------------------#

@@ -16,13 +16,13 @@ import lombok.SneakyThrows;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static alix.common.antibot.firewall.ataraxia.AtaraxiaProtocol.encodeJ2RMapUpdate;
+import static alix.common.antibot.firewall.ataraxia.AtaraxiaServerHandler.HANDLER;
 
 final class AtaraxiaIPC {
 
-    private static final Logger LOGGER = Logger.getLogger("AlixAtaraxia");
+    //private static final Logger LOGGER = Logger.getLogger("AlixAtaraxia");
     private static final File ATARAXIA_FOLDER, SOCKET_FILE;
 
     static {
@@ -34,7 +34,7 @@ final class AtaraxiaIPC {
         SOCKET_FILE = new File(ipcFolder, "ipc.sock");
     }
 
-    static void syncAll(ServerHandler handler) {
+    static void syncAll(AtaraxiaServerHandler handler) {
         handler.write(encodeJ2RMapUpdate(false, true, GeoIPTracker.EXISTING_ACCOUNTS.keySet()));
 
         FireWallManager.AT_LOAD_COMPLETE.thenRun(() -> {
@@ -44,7 +44,7 @@ final class AtaraxiaIPC {
     }
 
     static void mapUpdate_writeAndFlush(boolean isBlacklist, boolean add, Collection<InetAddress> ips) {
-        ServerHandler.INSTANCE.writeAndFlush(encodeJ2RMapUpdate(isBlacklist, add, ips));
+        HANDLER.writeAndFlush(encodeJ2RMapUpdate(isBlacklist, add, ips));
     }
 
     @SneakyThrows
@@ -60,12 +60,12 @@ final class AtaraxiaIPC {
                 .childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(Channel ch) {
-                        ch.pipeline().addLast(ServerHandler.INSTANCE);
+                        ch.pipeline().addLast(HANDLER);
                     }
                 });
 
         ChannelFuture f = b.bind(new DomainSocketAddress(SOCKET_FILE)).sync();
-        LOGGER.info("Listening on " + SOCKET_FILE);
+        AlixCommonMain.logInfo("Ataraxia listening on " + SOCKET_FILE);
 
         f.channel().closeFuture().addListener(sex -> {
             bossGroup.shutdownGracefully();

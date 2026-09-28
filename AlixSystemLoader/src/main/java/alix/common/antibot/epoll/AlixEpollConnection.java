@@ -22,9 +22,6 @@ public final class AlixEpollConnection {
         int res = AlixSocketAccessBridge.nativeAccept(serverFd, addr);//fd
         if (res < 0)
             return res;// return Errors.ERRNO_EAGAIN_NEGATIVE;//just generally trying to avoid errors, not sure if this is a good idea
-
-        if (Telemetry.ENABLED)
-            TelemetryProfiler.PROFILER.onConnection(res, addr);
         //first - length
 
         //last 4  - port

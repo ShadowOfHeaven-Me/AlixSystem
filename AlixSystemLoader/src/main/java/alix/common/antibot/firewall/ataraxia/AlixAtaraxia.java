@@ -8,7 +8,7 @@ import java.util.List;
 public final class AlixAtaraxia {
 
     static {
-        init();
+        init0();
     }
 
     public static void blacklist(InetAddress ip) {
@@ -28,12 +28,15 @@ public final class AlixAtaraxia {
     }
 
     public static boolean isEnabled() {
-        return false;
+        return AtaraxiaServerHandler.isConnected();
     }
 
-    private static void init() {
+    private static void init0() {
         if (!Epoll.isAvailable()) return;
 
         AtaraxiaIPC.start0();
+    }
+
+    public static void init() {
     }
 }

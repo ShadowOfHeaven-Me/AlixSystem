@@ -78,8 +78,7 @@ public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter
             }
             AntiBotStatistics.INSTANCE.incrementConnections(address);
 
-            //cuz not invoked in epoll fw
-            if (isNettyFireWall && Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)
+            if (Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)
                 TelemetryProfiler.PROFILER.onConnection(epoll.fd().intValue(), null);
         }
 
