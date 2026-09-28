@@ -114,6 +114,19 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //auth app support
         boolean justAuthApp = registered && this.data.getLoginParams().getAuthSettings() == AuthSetting.AUTH_APP;
 
+        //IP auto-login is only a password-equivalent trust signal (see LoginVerdictManager#getVerdict()'s own
+        //comment for the full reasoning) - it must never silently satisfy a 2FA requirement too. An account
+        //that's both IP-auto-login-trusted AND requires the auth app (AUTH_APP/PASSWORD_AND_AUTH_APP) skips
+        //straight to the 2FA prompt below, exactly like justAuthApp, instead of ever reaching the password
+        //step. Mirrors the same gate LoginVerdictManager itself already applies (minus the AuthSetting
+        //exclusion, which is the whole point here) so this only fires for a connection that would otherwise
+        //have been fully IP-auto-logged-in were it not for the 2FA requirement.
+        boolean ipAutoLoginSkipsPassword = registered
+                && this.data.getLoginParams().getAuthSettings().requiresAuthApp()
+                && !AlixUtils.forcefullyDisableIpAutoLogin
+                && this.data.getLoginParams().getIpAutoLogin()
+                && this.data.getSavedIP().equals(this.address);
+
         //bedrock support
         Object bedrockPlayer = Dependencies.getBedrockPlayer(this.player);
         this.isBedrock = bedrockPlayer != null;
@@ -132,14 +145,14 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.verificationMessage = VerificationMessage.createFor(this);
 
         if (isBedrock) this.alixGui = PasswordGui.newBuilderBedrock(this, bedrockPlayer);
-        else if (justAuthApp) this.alixGui = PasswordGui.newBuilder2FA(this);
+        else if (justAuthApp || ipAutoLoginSkipsPassword) this.alixGui = PasswordGui.newBuilder2FA(this);
         else if (isGuiUser && hasCompletedCaptcha)
             this.alixGui = PasswordGui.newBuilder(this, this.loginType);
         //else this.getChannel().eventLoop().schedule(() -> this.setVerificationMessageBuffer(getVerificationReminderMessagePacket(registered, hasAccount)), 500, TimeUnit.MILLISECONDS);
 
-        if (registered && !justAuthApp) this.loginVerification = new LoginVerification(this.data.getPassword(), true);
+        if (registered && !justAuthApp && !ipAutoLoginSkipsPassword) this.loginVerification = new LoginVerification(this.data.getPassword(), true);
 
-        this.blocker = justAuthApp ? PacketBlocker.getPacketBlocker2FA(this, tempUser) : PacketBlocker.getPacketBlocker(this, tempUser, this.loginType);
+        this.blocker = (justAuthApp || ipAutoLoginSkipsPassword) ? PacketBlocker.getPacketBlocker2FA(this, tempUser) : PacketBlocker.getPacketBlocker(this, tempUser, this.loginType);
         this.reminderTask = VerificationReminder.reminderFor(this);//probably the most efficient way, since all packet sending methods need to be invoked on the eventLoop thread
         //this.openPasswordBuilderGUI();
         //if (!captchaInitialized) this.spoofVerificationPackets();//spoof the verification packets immediately

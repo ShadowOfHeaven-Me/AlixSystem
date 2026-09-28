@@ -298,15 +298,24 @@ public final class LoginState implements VerifyState {
         //auth app support
         boolean justAuthApp = this.isRegistered && this.data.getLoginParams().getAuthSettings() == AuthSetting.AUTH_APP;
 
+        //IP auto-login is only a password-equivalent trust signal (see Events#onInitialServer's own comment
+        //for the full reasoning) - it must never silently satisfy a 2FA requirement too. An account that's
+        //both IP-auto-login-trusted AND requires the auth app (AUTH_APP/PASSWORD_AND_AUTH_APP) skips straight
+        //to the 2FA prompt here, exactly like justAuthApp above, instead of ever reaching the password step.
+        boolean ipAutoLoginSkipsPassword = this.isRegistered
+                && this.data.getLoginParams().getAuthSettings().requiresAuthApp()
+                && this.data.getLoginParams().getIpAutoLogin()
+                && this.data.getSavedIP().equals(this.connection.getAddress());
+
         //bedrock support
         Object bedrockPlayer = geyserUtil.getBedrockPlayer(this.connection.getChannel());
         boolean isBedrock = bedrockPlayer != null;
 
         if (isBedrock) this.gui = this.newBuilderBedrock(bedrockPlayer);
-        else if (justAuthApp) this.gui = this.newBuilder2FA();
+        else if (justAuthApp || ipAutoLoginSkipsPassword) this.gui = this.newBuilder2FA();
         else if (isGuiUser) this.gui = this.newBuilder(loginType);
 
-        if (this.isRegistered && !justAuthApp)
+        if (this.isRegistered && !justAuthApp && !ipAutoLoginSkipsPassword)
             this.loginVerification = new LoginVerification(this.data.getPassword(), true);
 
         this.countdown = ConfigParams.hasMaxLoginTime ? new LimboCountdown(this.connection, this.isRegistered) : null;
