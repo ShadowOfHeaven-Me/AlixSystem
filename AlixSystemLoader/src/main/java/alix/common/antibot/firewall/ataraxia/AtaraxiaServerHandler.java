@@ -3,6 +3,7 @@ package alix.common.antibot.firewall.ataraxia;
 import alix.common.AlixCommonMain;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.GeoIPTracker;
+import alix.common.connection.timestamp.ClockSkew;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
@@ -24,9 +25,9 @@ import java.util.List;
 import static alix.common.antibot.firewall.ataraxia.AtaraxiaProtocol.*;
 
 @Sharable
-final class ServerHandler extends ChannelInboundHandlerAdapter {
+final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
 
-    static final ServerHandler INSTANCE = new ServerHandler();
+    static final AtaraxiaServerHandler HANDLER = new AtaraxiaServerHandler();
 
     //perfect
     //still can `this.state = null;` without a warning
@@ -40,7 +41,12 @@ final class ServerHandler extends ChannelInboundHandlerAdapter {
     private long totalBytesRead = 0;
 
     static ByteBuf buffer() {
-        return Unpooled.directBuffer();
+        var ch = HANDLER.channel;
+        return ch != null ? ch.alloc().buffer() : Unpooled.directBuffer();
+    }
+
+    static boolean isConnected() {
+        return HANDLER.state != ConnectionState.DISCONNECTED;
     }
 
     public void write(ByteBuf buf) {
@@ -105,12 +111,11 @@ final class ServerHandler extends ChannelInboundHandlerAdapter {
 
                 int protocol = buf.readByte();
                 if (protocol != AtaraxiaProtocol.PROTOCOL_VERSION) {
-                    AlixCommonMain.logError("Server Alix and Ataraxia have mismatched protocols - ataraxia=" + protocol + " server=" + AtaraxiaProtocol.PROTOCOL_VERSION + "! Shutting off the connection!");
+                    AlixCommonMain.logError("Java Alix and Ataraxia have mismatched protocols - ataraxia=" + protocol + " server=" + AtaraxiaProtocol.PROTOCOL_VERSION + "! Shutting off the connection!");
 
                     this.channel.close();
                     return false;
                 }
-
 
                 AtaraxiaIPC.syncAll(this);
             }
@@ -141,9 +146,26 @@ final class ServerHandler extends ChannelInboundHandlerAdapter {
                     });
                 }
             }
+            case R2J_SND_TS -> {
+                //cuz java doesn't have a u32
+                long tsval = Integer.toUnsignedLong(buf.readInt());
+                long tsecr = Integer.toUnsignedLong(buf.readInt());
+                int addr = buf.readInt();
+                int port = Short.toUnsignedInt(buf.readShort());
+                buf.readShort();//padding
+
+                ClockSkew.on_timestamp(addr, port, tsval);
+
+                /*try {
+                    AlixCommonMain.logInfo("tsval=" + tsval + " tsecr=" + tsecr + " addr=" + InetAddress.getByAddress(IPUtils.ipv4ByteArray(addr)).getHostAddress() + " port=" + port);
+                } catch (UnknownHostException e) {
+                    throw new RuntimeException(e);
+                }*/
+            }
         }
         return true;
     }
+
 
     private void validateState(ConnectionState state) {
         if (this.state == state)
@@ -155,21 +177,23 @@ final class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        AlixCommonMain.logInfo("Ataraxia connected");
         this.validateState(ConnectionState.DISCONNECTED);
 
         this.channel = ctx.channel();
         this.state = ConnectionState.PRE_HANDSHAKE;
 
         this.writeAndFlush(AtaraxiaProtocol.encodeJ2RHandshake());
+
+        this.channel.closeFuture().addListener(f -> this.onClose());
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        System.out.printf("Received EOF. Total data transferred: %.2f MB (%d bytes)%n",
-                totalBytesRead / (1024.0 * 1024.0), totalBytesRead);
+    void onClose() {
+        AlixCommonMain.logInfo(String.format("Ataraxia disconnected. Total data transferred: %.2f MB (%d bytes)%n", totalBytesRead / 1e6f, totalBytesRead));
         this.channel = null;
         this.releaseCumulation();
         this.state = ConnectionState.DISCONNECTED;
+        this.totalBytesRead = 0;
     }
 
     @Override

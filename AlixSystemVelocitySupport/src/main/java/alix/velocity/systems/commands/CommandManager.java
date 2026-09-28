@@ -47,19 +47,6 @@ public final class CommandManager {
         warnIfNoPermissionPluginDetected(server);
     }
 
-    //Unlike Bukkit/Spigot, Velocity has no built-in "server operator" concept - a player has NO permissions
-    //at all (console is the only source that always passes every check) unless some plugin on the proxy
-    //explicitly grants them, normally via a permissions plugin (e.g. LuckPerms) hooking Velocity's
-    //PermissionsSetupEvent. "/as" (and thus "/alix") is gated behind the "alixsystem.admin" permission
-    //(see AlixSystemCommand#register), so on a proxy with no permissions plugin installed, "/as" will look
-    //to every player as if it doesn't exist at all - Brigadier hides/rejects a command entirely for any
-    //source that fails its "requires()" check, which is indistinguishable, from the player's perspective,
-    //from the command never having registered in the first place. This is very likely what was actually
-    //happening when "/as" was reported as "not registering" - the command registration itself was already
-    //correct (verified by launching a real Velocity proxy with this plugin installed and confirming "/as",
-    //its "alix" alias, "/as commands" and "/alixhelp" all register and respond correctly from the console,
-    //which always has every permission). Logged once at startup, at INFO level, so operators who haven't
-    //set this up yet get a clear pointer instead of silently wondering why an admin command "doesn't work".
     private static void warnIfNoPermissionPluginDetected(ProxyServer server) {
         boolean permissionPluginPresent = server.getPluginManager().getPlugins().stream()
                 .anyMatch(p -> {
@@ -68,20 +55,10 @@ public final class CommandManager {
                 });
 
         if (!permissionPluginPresent) {
-            Main.logInfo("&e[Alix] > Note: '/as' (and its 'alix' alias) require the 'alixsystem.admin' permission. " +
-                         "Velocity has no built-in operator system like Spigot/Bukkit does - unlike there, simply " +
-                         "being the server owner does NOT grant it. No permissions plugin (e.g. LuckPerms) was " +
-                         "detected on this proxy, so right now NO player can use '/as', even you. Install one and " +
-                         "grant 'alixsystem.admin' to your admins, or players will see '/as' as if it doesn't exist.");
+            Main.logInfo("No permission plugins detected, you won't be able to use the admin alix commands in-game!");
         }
     }
 
-    //A genuinely separate, non-admin-gated command listing only player-facing commands (reusing
-    //AlixSystemCommand#sendPlayerCommandsList()) - "/as commands" (an "/as ..." subcommand) intentionally
-    //stays admin-only, since "/as" as a whole is an admin command tree and shouldn't have any part of it
-    //runnable by, or exposing admin command names to, a non-admin player. Anyone (including console) can
-    //run this one; its base name and any additional aliases are configured in commands.txt like every other
-    //command here, under the "alixhelp" key.
     private static void register_Help(ProxyServer server) {
         var cmd = command("alixhelp", ctx -> {
             AlixSystemCommand.sendPlayerCommandsList(ctx.getSource());

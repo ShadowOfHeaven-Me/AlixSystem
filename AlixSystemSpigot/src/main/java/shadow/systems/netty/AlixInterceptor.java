@@ -4,6 +4,8 @@ import alix.common.AlixCommonMain;
 import alix.common.antibot.algorithms.adaptive.ConnectionVerdict;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
 import alix.common.antibot.epoll.AlixEpollConnection;
+import alix.common.antibot.epoll.Telemetry;
+import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.FireWallType;
 import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
@@ -14,6 +16,7 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.unix.AlixFastUnsafeEpoll;
 import io.papermc.paper.configuration.GlobalConfiguration;
 import shadow.Main;
@@ -42,9 +45,9 @@ public final class AlixInterceptor {
         FireWallType type = FireWallType.NETTY;
 
         if (!AlixUtils.antibotService) type = FireWallType.NOT_USED;
-        else if (AlixAtaraxia.ENABLED) {
+        else if (AlixAtaraxia.isEnabled()) {
             type = FireWallType.ATARAXIA;
-            AlixCommonMain.logInfo("Using the optimized Alix Ataraxia for FireWall Protection.");
+            AlixCommonMain.logInfo("Using the optimized Alix Ataraxia eBPF for FireWall Protection.");
         } else if (!Main.config.getBoolean("unsafe-firewall")) {
             type = FireWallType.NETTY;
             AlixCommonMain.logInfo("Using Netty for FireWall Protection (per config).");
@@ -133,33 +136,29 @@ public final class AlixInterceptor {
                     channel.unsafe().closeForcibly();
                     return;
                 }
+
+                if (Telemetry.ENABLED && channel instanceof EpollSocketChannel epoll)
+                    TelemetryProfiler.PROFILER.onConnection(epoll.fd().intValue(), null);
             }
 
-            //always true
-            if (limbo != null) {
-                ChannelConfig config = channel.config();
-                ChannelPipeline pipeline = channel.pipeline();
-                config.setAutoRead(false);
+            ChannelConfig config = channel.config();
+            ChannelPipeline pipeline = channel.pipeline();
+            config.setAutoRead(false);
 
-                //try/finally: exceptionCaught() below only logs and never rethrows, so without this, an
-                //exception from any of the three calls below left autoRead disabled forever - Netty would
-                //never read another byte from this one channel, hanging it permanently with no cleanup.
-                try {
-                    limbo.getClientChannelInitializer().initChannel(channel, PROXY_PROTOCOL, false);
+            //try/finally: exceptionCaught() below only logs and never rethrows, so without this, an
+            //exception from any of the three calls below left autoRead disabled forever - Netty would
+            //never read another byte from this one channel, hanging it permanently with no cleanup.
+            try {
+                limbo.getClientChannelInitializer().initChannel(channel, PROXY_PROTOCOL, false);
 
-                    super.channelRead(ctx, msg);
-                    //Log.error("pipeline=" + channel.pipeline().names());
+                super.channelRead(ctx, msg);
+                //Log.error("pipeline=" + channel.pipeline().names());
 
-                    if (NanoLimbo.removeTimeout && pipeline.context("timeout") != null)
-                        pipeline.replace("timeout", "--timeout", DummyHandler.HANDLER);
-                } finally {
-                    config.setAutoRead(true);
-                }
-                return;
+                if (NanoLimbo.removeTimeout && pipeline.context("timeout") != null)
+                    pipeline.replace("timeout", "--timeout", DummyHandler.HANDLER);
+            } finally {
+                config.setAutoRead(true);
             }
-
-            AlixChannelHandler.inject(channel);
-            super.channelRead(ctx, msg);
         }
 
         @Override

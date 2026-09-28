@@ -167,10 +167,6 @@ public final class LoginState implements VerifyState {
         AlixCommonUtils.getPasswordInvalidityReasonAsync(password, type, onReason);
     }
 
-    //Runs r immediately if already on this connection's event loop, otherwise schedules it there - needed
-    //whenever a callback (HaveIBeenPwned's HTTP check, FingerprintGateway) might complete on some other
-    //thread (a virtual thread doing the actual network work) but still needs to touch
-    //duplexHandler/PacketDuplexHandler afterward, which asserts it's only ever called from the event loop.
     private void runOnEventLoop(Runnable r) {
         var eventLoop = this.connection.getChannel().eventLoop();
         if (eventLoop.inEventLoop()) r.run();

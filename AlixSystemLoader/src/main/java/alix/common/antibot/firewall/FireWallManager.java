@@ -145,12 +145,10 @@ public final class FireWallManager {
 
         if (!loaded) {
             AdaptiveAnomalyDetector.onFirewall();
-            //This call site never guarded on AlixAtaraxia.isEnabled() (hardcoded false, an unfinished
-            //feature) unlike every other Ataraxia call site. Confirmed live: with no Ataraxia companion
-            //process connected, AtaraxiaIPC.mapUpdate_writeAndFlush() -> ServerHandler.write() NPEs on the
-            //null channel, aborting this method before dynamicMap.putIfAbsent() ran - so on any
-            //epoll-capable server, no IP was ever actually firewalled by this path.
-            if (AlixAtaraxia.ENABLED)
+            //Must stay guarded like every other Ataraxia call site - AtaraxiaServerHandler#write()/flush()
+            //dereference its Channel field directly with no null check, so calling blacklist() with no
+            //companion process actually connected NPEs instead of no-op'ing.
+            if (AlixAtaraxia.isEnabled())
                 AlixAtaraxia.blacklist(ip);
         }
         // Dynamic
@@ -164,9 +162,9 @@ public final class FireWallManager {
         if (entry.timeoutAt() > 0) {
             long timeoutIn = entry.timeoutAt() - System.currentTimeMillis();
             if (timeoutIn > 0)
-                AlixScheduler.runLaterAsync(() -> removeDynamic0(ip), timeoutIn, TimeUnit.MILLISECONDS);
+                AlixScheduler.runLaterAsync(() -> removeDynamic(ip), timeoutIn, TimeUnit.MILLISECONDS);
             else
-                removeDynamic0(ip);
+                removeDynamic(ip);
         }
         return previous;
     }
@@ -189,7 +187,7 @@ public final class FireWallManager {
             long timeoutAt = entry.timeoutAt();
             if (timeoutAt > 0 && System.currentTimeMillis() > timeoutAt) {
                 // Expired. Lazily remove
-                removeDynamic0(address);
+                removeDynamic(address);
             } else return true;//present and not stale
         }
 
@@ -201,6 +199,8 @@ public final class FireWallManager {
     }
 
     public static boolean removeDynamic(InetAddress ip) {
+        if (AlixAtaraxia.isEnabled())
+            AlixAtaraxia.unblacklist(ip);
         return removeDynamic0(ip);
     }
 
@@ -267,6 +267,8 @@ public final class FireWallManager {
 
     public static void init() {
         AlixScheduler.async(() -> {
+            AlixAtaraxia.init();
+
             if (ConfigParams.loadBuiltInIps) loadWithBuiltIn0();
             else loadWithoutBuiltIn0();
 

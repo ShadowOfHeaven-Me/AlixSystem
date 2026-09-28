@@ -355,10 +355,6 @@ public final class AlixSystemCommand {
                         })
         );
 
-        //Emergency recovery for a player who lost BOTH their Authenticator device AND every recovery code -
-        //see AdminAlixCommands's Spigot-side "r2fa"/"reset2fa" case for the full reasoning (this mirrors it
-        //exactly, just registered through Brigadier instead of a raw switch). Deliberately keeps the
-        //password untouched, only drops the app requirement back to PASSWORD-only.
         addSubcommand(root, Arrays.asList("r2fa", "reset2fa"),
                 argument("name", StringArgumentType.word())
                         .suggests(USERNAME_SUGGESTIONS)
@@ -374,9 +370,6 @@ public final class AlixSystemCommand {
                             AuthSetting authSettings = data.getLoginParams().getAuthSettings();
 
                             if (authSettings == AuthSetting.AUTH_APP) {
-                                //No password at all to fall back on for an app-only account - /as
-                                //resetpassword already both sets a fresh password AND drops AuthSettings
-                                //back to PASSWORD, so it fully covers this case on its own.
                                 sendMessage(sender, Messages.get("as-reset2fa-app-only", target));
                                 return SINGLE_SUCCESS;
                             }
@@ -389,9 +382,6 @@ public final class AlixSystemCommand {
                             data.getLoginParams().setAuthSettings(AuthSetting.PASSWORD);
                             data.getLoginParams().setHasProvenAuthAccess(false);
 
-                            //Also invalidates the old secret/recovery codes - if the app requirement is
-                            //later re-enabled, a device or codes that may have caused this lockout in the
-                            //first place (theft, not just loss) can't still be used to satisfy it.
                             try {
                                 data.regenerateAuthToken();
                             } catch (Exception e) {
@@ -649,21 +639,11 @@ public final class AlixSystemCommand {
         );
 
 
-        // Fallback execution (when no subcommand is provided)
         root.executes(context -> {
             sendAdminCommandsList(context.getSource());
             return SINGLE_SUCCESS;
         });
 
-        // Subcommand: lists every command (both admin and player-facing) along with a short description of what it does.
-        // Deliberately left gated by the root's "alixsystem.admin" requirement, same as every other "/as ..."
-        // subcommand - "/as" is an admin command tree, and admin subcommand names/usage shouldn't be exposed
-        // to (or runnable by) non-admins just because this particular one happens to also list player-facing
-        // commands for the admin's own reference. A previous revision exempted this subcommand from the
-        // permission check so regular players could use it too, which was the wrong fix: it let any player
-        // run an "/as ..." subcommand and see the full admin command list. Players who just want to see their
-        // own available commands should use the separate, genuinely non-admin "/alixhelp" command instead
-        // (see CommandManager#register_Help()), which only lists sendPlayerCommandsList()'s content.
         root.then(BrigadierCommand.literalArgumentBuilder("commands")
                 .executes(context -> {
                     CommandSource sender = context.getSource();
@@ -673,7 +653,6 @@ public final class AlixSystemCommand {
                 })
         );
 
-        // Finally, register the command (using the aliases configured in commands.txt, e.g. "alix")
         commandManager.register(
                 commandManager.metaBuilder("as")
                         .aliases(CommandsFileManager.getAliases("alixsystem"))
@@ -683,9 +662,6 @@ public final class AlixSystemCommand {
         );
     }
 
-    // Lists every admin ("/as ...") subcommand along with a short description of what it does, grouped into
-    // sections rather than one flat, undifferentiated wall of red text - the previous layout had no header
-    // or grouping at all, making a 16-command list hard to scan for anything specific.
     private static void sendAdminCommandsList(CommandSource sender) {
         sendMessage(sender, "");
         sendMessage(sender, Messages.get("admin-commands-header"));
@@ -720,8 +696,7 @@ public final class AlixSystemCommand {
         sendMessage(sender, "");
     }
 
-    // "Enabled"/"Disabled" (or "Yep"/"Nope" when yesNo is true), localized - shared across every state
-    // shown by "/as user <player>".
+
     private static String stateOf(boolean b) {
         return stateOf(b, false);
     }
@@ -731,23 +706,11 @@ public final class AlixSystemCommand {
         return Messages.get(b ? "state-enabled" : "state-disabled");
     }
 
-    // Lists every player-facing command along with a short description of what it does. Package-private (not
-    // private) so CommandManager#register_Help() can reuse it for the separate, non-admin-gated "/alixhelp"
-    // command - see the comment on the "commands" subcommand above for why that had to be a separate command
-    // rather than just opening up this "/as ..." subcommand to everyone.
     static void sendPlayerCommandsList(CommandSource sender) {
         sendMessage(sender, Messages.get("player-commands-header"));
 
         sendMessage(sender, Messages.get("player-commands-section-login"));
-        // /register and /login are deliberately not listed here: both are already explained to the
-        // player at the point they're actually needed (a detailed prompt on first join for /register,
-        // the respective login GUI/prompt for /login), so repeating them in a general command list adds
-        // nothing at runtime.
         sendMessage(sender, Messages.get("player-commands-recovery"));
-        // /terms is only ever relevant while 'require-terms-acceptance' is on (it's not a real command
-        // otherwise), and even then it's already explained via the in-your-face prompt shown during
-        // registration - only listed here as a reminder for that same reason, gated behind the setting
-        // that makes it exist at all.
         if (LoginState.requireTermsAcceptance)
             sendMessage(sender, Messages.get("player-commands-terms"));
         sendMessage(sender, "");

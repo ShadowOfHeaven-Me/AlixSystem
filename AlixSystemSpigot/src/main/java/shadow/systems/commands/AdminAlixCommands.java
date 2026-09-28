@@ -692,7 +692,7 @@ public final class AdminAlixCommands implements CommandExecutor {
                     Player player = (Player) sender;
                     if (ABStats.reversePresence(UserManager.getVerifiedUser(player))) {
                         sendMessage(sender, Messages.get("as-abstats-added"));
-                        if (AlixAtaraxia.ENABLED)
+                        if (AlixAtaraxia.isEnabled())
                             sendMessage(sender, Messages.get("as-abstats-ataraxia-warning"));
                     } else sendMessage(sender, Messages.get("as-abstats-removed"));
                     break;

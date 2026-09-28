@@ -128,31 +128,24 @@ public final class DimensionRegistry {
     //entries) - captured live from a real 26.3 server, not reused from 26.2. See getCodec()'s moreOrEqual
     //pattern above for the same forward-compat reasoning on the top entry.
     public CompoundBinaryTag getTags(Version version) {
-        if (version.moreOrEqual(Version.V26_3))
-            return this.tags_26_3;
-        if (version.equals(Version.V26_2))
-            return this.tags_26_2;
-        if (version.equals(Version.V26_1))
-            return this.tags_26_1;
-        if (version.moreOrEqual(Version.V1_21_11))
-            return this.tags_1_21_11;
-        if (version.equals(Version.V1_21_9))
-            return this.tags_1_21_9;
-        if (version.equals(Version.V1_21_7))
-            return this.tags_1_21_7;
-        if (version.equals(Version.V1_21_6))
-            return this.tags_1_21_6;
-        if (version.equals(Version.V1_21_5))
-            return this.tags_1_21_5;
-        if (version.equals(Version.V1_21_4))
-            return this.tags_1_21_4;
-        if (version.equals(Version.V1_21_2))
-            return this.tags_1_21_2;
-        if (version.equals(Version.V1_21))
-            return this.tags_1_21;
-        if (version.equals(Version.V1_20_5))
-            return this.tags_1_20_5;
-        throw new AlixException("Unexpected value: " + version);
+        //V26_3 must resolve to its own tags_26_3, not fall back to tags_26_2 - 26.3's tags differ meaningfully
+        //(see the class-level comment above) and this exact mapping was already verified live against a real
+        //26.3 client.
+        return switch (version) {
+            case V26_3 -> this.tags_26_3;
+            case V26_2 -> this.tags_26_2;
+            case V26_1 -> this.tags_26_1;
+            case V1_21_11 -> this.tags_1_21_11;
+            case V1_21_9 -> this.tags_1_21_9;
+            case V1_21_7 -> this.tags_1_21_7;
+            case V1_21_6 -> this.tags_1_21_6;
+            case V1_21_5 -> this.tags_1_21_5;
+            case V1_21_4 -> this.tags_1_21_4;
+            case V1_21_2 -> this.tags_1_21_2;
+            case V1_21 -> this.tags_1_21;
+            case V1_20_5 -> this.tags_1_20_5;
+            default -> throw new AlixException("Unexpected value: " + version);
+        };
     }
 
     public Dimension findDimension(Version version, NamespacedKey dimensionKey) {

@@ -17,10 +17,11 @@ final class AtaraxiaProtocol {
 
     static final int
             R2J_HANDSHAKE_REPLY = 0,
-            R2J_UPDATE_MAP = 1;
+            R2J_UPDATE_MAP = 1,
+            R2J_SND_TS = 2;
 
     static ByteBuf encodeJ2RHandshake() {
-        ByteBuf buf = ServerHandler.buffer();
+        ByteBuf buf = AtaraxiaServerHandler.buffer();
 
         buf.writeByte(J2R_HANDSHAKE);
         buf.writeByte(PROTOCOL_VERSION);
@@ -29,7 +30,7 @@ final class AtaraxiaProtocol {
     }
 
     static ByteBuf encodeJ2RMapUpdate(boolean isBlacklist, boolean add, Collection<InetAddress> ips) {
-        ByteBuf buf = ServerHandler.buffer();
+        ByteBuf buf = AtaraxiaServerHandler.buffer();
 
         buf.writeByte(J2R_UPDATE_MAP);
         buf.writeBoolean(isBlacklist);
@@ -60,7 +61,7 @@ final class AtaraxiaProtocol {
     private static ByteBuf encodeLen(ByteBuf buf) {
         int len = buf.writerIndex();
 
-        ByteBuf encoded = ServerHandler.buffer();
+        ByteBuf encoded = AtaraxiaServerHandler.buffer();
         encoded.writeInt(len);
         encoded.writeBytes(buf);
 

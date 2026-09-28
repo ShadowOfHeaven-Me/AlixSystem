@@ -10,11 +10,7 @@ import alix.velocity.utils.user.VerifiedUser;
 
 import java.util.Map;
 
-/**
- * The /account menu. Its title, item positions/appearance, and click actions are configurable via
- * "gui-menus/account.yml" (auto-created with defaults on first use). See the "menu" sibling package
- * for the shared config-driven GUI engine reused by this and the other account menus.
- */
+
 public final class AccountGUI extends AlixGUI {
 
     private static final String MENU_NAME = "account";

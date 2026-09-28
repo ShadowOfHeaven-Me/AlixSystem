@@ -47,7 +47,7 @@ public final class AntiBotStatistics {
 
     public String getFormattedStatistics() {
         int total = getTotalBlocked();
-        String cpsView = AlixAtaraxia.ENABLED ? "&7(excluding blocked) CPS: " : "&7CPS: ";
+        String cpsView = AlixAtaraxia.isEnabled() ? "&7(excluding blocked) CPS: " : "&7CPS: ";
         return AlixFormatter.translateColors(cpsView + "&c" + getCPS() + " &7Total Blocked: &c" + total + " &7Blocked Since Start: &c" + getBlockedSinceStart(total));
     }
 
