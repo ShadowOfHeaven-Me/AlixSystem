@@ -24,9 +24,12 @@ public final class GoogleAuthExplanation {
     private static Component build(boolean includeClickEvents) {
         var confirm = MessageWrapper.parseLegacy(Messages.get("google-auth-setting-confirm"));
         if (includeClickEvents) confirm = confirm.clickEvent(ClickEvent.runCommand("/confirm"));
+        //the bracketed text alone gives no hint it's a command when it isn't clickable - spell it out
+        else confirm = confirm.append(MessageWrapper.parseLegacy(" &7(type /confirm)"));
 
         var cancel = MessageWrapper.parseLegacy(Messages.get("google-auth-setting-cancel"));
         if (includeClickEvents) cancel = cancel.clickEvent(ClickEvent.runCommand("/cancel"));
+        else cancel = cancel.append(MessageWrapper.parseLegacy(" &7(type /cancel)"));
 
         var explanation = MessageWrapper.parseLegacy(Messages.get("google-auth-setting-explanation"));
         explanation = explanation.hoverEvent(HoverEvent.showText(concat(Messages.getSplit("google-auth-setting-explanation-hover"), "\n")));
