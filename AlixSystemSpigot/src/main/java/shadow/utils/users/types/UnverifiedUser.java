@@ -86,7 +86,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     //public long armSwingSent, keepAliveSent;
 
     public UnverifiedUser(Player player, TemporaryUser tempUser) {
-        super(NettyUtils.getSilentContext(tempUser.getChannel()));
+        super(tempUser.getChannel(), NettyUtils.getSilentContext(tempUser.getChannel()));
         //UserManager.putAttr(this);
         this.player = player;
         this.data = tempUser.getLoginInfo().getData();
