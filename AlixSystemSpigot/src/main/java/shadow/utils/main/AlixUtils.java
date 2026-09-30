@@ -624,7 +624,10 @@ public final class AlixUtils {
     public static final ByteBuf
             notLoggedInUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.notLoggedInUserMessage, true, true),
             captchaNotCompletedUserMessagePacket = OutMessagePacketConstructor.constructConst(Messages.get("uncompleted-captcha-type-reminder"), true, true),
-            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.get("unregistered-reminder-password-repeat") : Messages.get("unregistered-reminder"), true, true);
+            unregisteredUserMessagePacket = OutMessagePacketConstructor.constructConst(requirePasswordRepeatInRegister ? Messages.get("unregistered-reminder-password-repeat") : Messages.get("unregistered-reminder"), true, true),
+            //shown while the terms/email gates are blocking registration (ACTION_BAR strategy)
+            termsRequiredActionBarMessagePacket = OutMessagePacketConstructor.constructConst(Messages.get("terms-must-accept-first"), true, true),
+            emailVerificationRequiredActionBarMessagePacket = OutMessagePacketConstructor.constructConst(Messages.get("register-email-verification-required"), true, true);
 
     public static ByteBuf getVerificationReminderMessagePacket(boolean isRegistered, boolean hasAccount) {
         if (isRegistered) return notLoggedInUserMessagePacket;//is registered - require login

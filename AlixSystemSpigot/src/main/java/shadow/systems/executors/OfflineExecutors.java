@@ -141,10 +141,7 @@ public final class OfflineExecutors extends UniversalExecutors {
             return;
         }
 
-        //require-register-from-all: an unregistered name that would otherwise auto-create an account here
-        //(linked/Bedrock, or Java premium/verified-cache) must fall through to addOffline() below instead,
-        //the same way Velocity's own onInitialServer()/PacketEventListener already gate this exact
-        //auto-creation - see ConfigParams#requireRegisterFromAll's docs. Everyone registers manually.
+        //require-register-from-all: mirrors Velocity's onInitialServer()/PacketEventListener gate
         if (!ConfigParams.requireRegisterFromAll) {
             if (isLinked) {
                 LoginVerdictManager.addOnline(user, ip, PersistentUserData.createDefault(name, e.getAddress(), Password.createRandom()), true, e);

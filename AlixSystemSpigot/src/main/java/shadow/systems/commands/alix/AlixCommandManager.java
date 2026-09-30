@@ -70,10 +70,7 @@ public final class AlixCommandManager {
             formatTermsMessagePacket = constructTermsMessageSafely(),
             formatVerifyEmailMessagePacket = OutMessagePacketConstructor.constructConst(alix.common.messages.Messages.getWithPrefix("register-email-verification-required"));
 
-    //Same clickable "/terms accept"/"/terms decline" text as the prompt shown on join (UnverifiedUser#
-    //sendTermsPrompt()) - shown as a format hint when a player types bare "/terms" with no argument. Falls
-    //back to a non-clickable version if building/serializing a ClickEvent throws - see
-    //UnverifiedUser#buildTermsPromptComponent()'s docs for why.
+    //Same clickable "/terms accept"/"/terms decline" text as the join prompt, with the same ClickEvent fallback.
     private static ByteBuf constructTermsMessageSafely() {
         try {
             return OutMessagePacketConstructor.constructConst(UnverifiedUser.buildTermsPromptComponent(true));

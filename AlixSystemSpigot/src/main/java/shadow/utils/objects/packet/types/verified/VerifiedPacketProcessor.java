@@ -347,9 +347,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
                             event.setCancelled(true);
                         return;
                     case WINDOW_ITEMS:
-                        //Captures the player's own real inventory (see qrViewRealInventory's docs) instead of
-                        //just dropping it like the rest of this list - endQRCodeShow() replays the latest one
-                        //captured once the view ends.
+                        //capture the real inventory instead of dropping it - replayed by endQRCodeShow()
                         WrapperPlayServerWindowItems windowItems = new WrapperPlayServerWindowItems(event);
                         if (windowItems.getWindowId() == 0) this.qrViewRealInventory = windowItems.getItems();
                         event.setCancelled(true);
@@ -423,14 +421,7 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     }
 
     private Boolean collidableOriginally;
-    //Captures the player's real WINDOW_ITEMS while it's being cancelled during VIEWING_QR_CODE (see
-    //onPacketSend()) - the cross-world teleport into the captcha room makes the server send a fresh,
-    //legitimate inventory resync for the player's own real items, and that packet was getting silently
-    //swallowed along with the rest of the "suppress outside noise" list, leaving the client's view of its
-    //own inventory stuck on whatever it last had (often blank, right after a dimension change) with nothing
-    //ever correcting it - this is what actually looked like a held item vanishing, on any item, surviving a
-    //relog. Same capture-and-replay pattern disablePasswordSetting() already uses for the anvil GUI's own
-    //blocked WINDOW_ITEMS packets.
+    //Captured real inventory during VIEWING_QR_CODE (see onPacketSend()), replayed once the view ends.
     private List<ItemStack> qrViewRealInventory;
 
     public void startQRCodeShow() {
@@ -449,18 +440,10 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
             this.user.writeAndFlushDynamicSilently(new WrapperPlayServerWindowItems(0, 0, this.qrViewRealInventory, null));
             this.qrViewRealInventory = null;
         }
-        //GoogleAuth#showQRCode() spoofs a client-only switch to spectator (OutGameStatePacketConstructor's
-        //SPECTATOR_GAMEMODE_PACKET + a matching abilities packet) so the player floats, no-clips, and can't
-        //be seen interacting with their real inventory while viewing the QR code - their real Bukkit
-        //gamemode is never touched. But nothing ever spoofed the switch back, so every normal exit left the
-        //client permanently believing it's in spectator (most visibly: the held item no longer renders,
-        //since spectator hides it, and nothing brings it back). Mirror showQRCode()'s spoof with one back to
-        //the player's real, current gamemode and abilities.
+        //showQRCode() spoofs a client-only switch to spectator - spoof it back here on every exit
         var player = this.user.getPlayer();
         this.user.writeDynamicSilently(new WrapperPlayServerChangeGameState(
                 WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE, player.getGameMode().getValue()));
-        //Last param is the protocol's FOV modifier, not Bukkit's walk speed - 0.1f is vanilla's own default,
-        //matching what showQRCode()'s spectator packet already sends for it.
         this.user.writeDynamicSilently(new WrapperPlayServerPlayerAbilities(
                 player.getGameMode().isInvulnerable(), player.isFlying(), player.getAllowFlight(),
                 player.getGameMode() == org.bukkit.GameMode.CREATIVE, player.getFlySpeed(), 0.1f));

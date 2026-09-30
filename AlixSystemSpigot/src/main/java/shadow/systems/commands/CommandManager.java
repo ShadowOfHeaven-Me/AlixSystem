@@ -1421,8 +1421,6 @@ public final class CommandManager {
             passwordRegisterMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("password-register")),
             registerPasswordsDoNotMatchMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-do-not-match")),
             registerPasswordsMoreThanTwoMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-more-than-two")),
-            //picked once, at class-load - see requirePasswordRepeatInRegister's own docs for why this is safe
-            //to bake into a static const the same way captchaCompleteMessagePacket above already does.
             formatRegisterEmailMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix(
                     requirePasswordRepeatInRegister ? "format-register-repeat-email" : "format-register-email")),
             termsMustAcceptFirstMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("terms-must-accept-first")),
@@ -1457,8 +1455,7 @@ public final class CommandManager {
             user.writeAndFlushConstSilently(alreadyRegisteredMessagePacket);
             return;
         }
-        //mirrors LoginState#registerIfValid()'s own terms-gate check - a player who hasn't accepted yet gets
-        //reminded instead of being let through.
+        //mirrors LoginState#registerIfValid()'s terms-gate check
         if (user.isTermsGateBlocking()) {
             user.writeAndFlushConstSilently(termsMustAcceptFirstMessagePacket);
             return;
@@ -1496,14 +1493,8 @@ public final class CommandManager {
         tryRegisterIfValidAsync(user, password);
     }
 
-    //Handles /register when a mandatory email is configured ('require-email-in-register') - mirrors
-    //LoginState#handleRegisterCommandWithEmail(). Expected format is either "/register <password> <email>",
-    //or "/register <password> <password> <email>" when password-repeat is also enabled.
-    //
-    //The account is deliberately NOT created here - only once the code sent below is confirmed via
-    //"/verifyemail <code>" (see onAsyncVerifyEmailCommand()) - same reasoning as LoginState's own version:
-    //gating registration itself on the code, rather than creating the account immediately and verifying
-    //after the fact, means a player who never verifies simply never ends up with an account at all.
+    //Handles /register when 'require-email-in-register' is on - mirrors LoginState#handleRegisterCommandWithEmail().
+    //The account isn't created until the code is confirmed via "/verifyemail <code>" (see onAsyncVerifyEmailCommand()).
     private static void onAsyncRegisterCommandWithEmail(UnverifiedUser user, String args) {
         String[] a = AlixUtils.split(args, ' ');
         int expectedArgs = requirePasswordRepeatInRegister ? 3 : 2;
@@ -1528,12 +1519,7 @@ public final class CommandManager {
             return;
         }
 
-        //Validate the password itself up front, the same way registerIfValidAsync() eventually will -
-        //there's no account to run this check against yet (it doesn't exist until the code below is
-        //confirmed), and no reason to burn a real email send (or a real HaveIBeenPwned lookup) on a password
-        //that's going to be rejected anyway. Full async check (including the breach check, if
-        //'check-breached-passwords' is on), same as the plain-text path - not just the sync
-        //format/complexity one.
+        //validate up front, no point sending an email for a password we'd reject anyway
         getPasswordInvalidityReasonAsync(password, LoginType.COMMAND, reason -> {
             if (reason != null) {
                 user.sendDynamicMessageSilently(reason);
@@ -1546,12 +1532,17 @@ public final class CommandManager {
                     () -> user.getChannel().eventLoop().execute(() -> completeEmailRegistration(user)));
             user.sendDynamicMessageSilently(Messages.getWithPrefix("register-email-verification-sent", email));
 
-            //Swap from the general max-login-time countdown to the (typically longer) dedicated
-            //email-verification one - mirrors LoginState#handleRegisterCommandWithEmail()'s own swap on
-            //Velocity, see VirtualCountdown#restartAsEmailVerification()'s docs for why.
+            //Swap to the longer email-verification countdown - mirrors LoginState on Velocity.
             if (ConfigParams.hasEmailVerificationTime)
                 user.getPacketBlocker().getCountdown().restartAsEmailVerification();
+
+            refreshVerificationMessage(user);
         });
+    }
+
+    //Refreshes the title/action-bar reminder to match the gate now blocking registration.
+    private static void refreshVerificationMessage(UnverifiedUser user) {
+        if (!user.isGUIUser() && !user.isBedrock()) user.getVerificationMessage().updateMessage();
     }
 
     //Handles the pre-login "/verifyemail <code>" command that completes a 'require-email-in-register'
@@ -1574,11 +1565,7 @@ public final class CommandManager {
         user.sendDynamicMessageSilently(Messages.getWithPrefix("verify-mail.code-mismatch"));
     }
 
-    //Finishes a 'require-email-in-register' registration once its code has been confirmed - either typed in
-    //chat (onAsyncVerifyEmailCommand() above) or via the clickable web-verification link (see
-    //onAsyncRegisterCommandWithEmail()'s onRegisterVerified callback) - mirrors
-    //LoginState#completeEmailRegistration(). Must run on this connection's event loop (both callers already
-    //guarantee that).
+    //Finishes a 'require-email-in-register' registration once its code is confirmed - mirrors LoginState#completeEmailRegistration().
     private static void completeEmailRegistration(UnverifiedUser user) {
         if (!user.isEmailRegisterGateBlocking()) return;
 
@@ -1586,18 +1573,10 @@ public final class CommandManager {
         String email = user.getPendingRegisterEmail();
         user.clearPendingEmailRegistration();
 
-        //Re-validates the password through the same central choke point as every other registration path
-        //(already known-good by this point, since onAsyncRegisterCommandWithEmail() checked it before ever
-        //sending the email) - going through it again rather than duplicating (or bypassing) its checks is
-        //worth the redundant work, mirroring LoginState#completeEmailRegistration()'s own reasoning.
         registerIfValidAsync(user, password, email);
     }
 
     //Single choke point for actually registering a validated password - mirrors LoginState#registerIfValid().
-    //Always performs the full async check (including the HaveIBeenPwned breach check, if
-    //'check-breached-passwords' is enabled), not just the sync format/complexity one getInvalidityReason()
-    //alone does. email: non-null only for a 'require-email-in-register' registration, attached to the new
-    //account as part of registerAsync() itself.
     private static void registerIfValidAsync(UnverifiedUser user, String password, String email) {
         getPasswordInvalidityReasonAsync(password, LoginType.COMMAND, reason -> {
             if (reason != null) {
@@ -1609,10 +1588,7 @@ public final class CommandManager {
         });
     }
 
-    //Same as tryRegisterIfValid() below, but performs the full async check (including the HaveIBeenPwned
-    //breach check) instead of only the sync one - used by the plain-text /register command, mirroring
-    //LoginState#registerIfValid()'s own behavior on Velocity. Not used by VerificationBedrockGUI, which
-    //still needs tryRegisterIfValid()'s synchronous boolean result.
+    //Same as tryRegisterIfValid() below, but with the full async (breach-check-included) validation.
     private static void tryRegisterIfValidAsync(UnverifiedUser user, String password) {
         registerIfValidAsync(user, password, null);
     }
@@ -1629,6 +1605,7 @@ public final class CommandManager {
         if (args.equalsIgnoreCase("accept")) {
             user.acceptTerms();
             user.writeAndFlushConstSilently(LoginState.requireEmailInRegister ? formatRegisterEmailMessagePacket : AlixCommandManager.formatRegisterMessagePacket);
+            refreshVerificationMessage(user);
             return;
         }
         if (args.equalsIgnoreCase("decline")) {
@@ -1638,9 +1615,7 @@ public final class CommandManager {
         user.writeAndFlushConstSilently(termsMustAcceptFirstMessagePacket);
     }
 
-    //returns true if valid. Sync-only check (no HaveIBeenPwned breach check, unlike registerIfValidAsync()
-    //above) - kept for VerificationBedrockGUI's existing synchronous need, which acts on the boolean result
-    //immediately.
+    //returns true if valid. Sync-only (no breach check) - kept for VerificationBedrockGUI's sync need.
     public static boolean tryRegisterIfValid(UnverifiedUser user, String password) {
         String reason = getInvalidityReason(password, false);
         if (reason == null) {

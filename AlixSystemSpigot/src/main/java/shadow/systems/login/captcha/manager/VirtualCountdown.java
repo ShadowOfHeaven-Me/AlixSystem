@@ -22,10 +22,7 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
     private final UnverifiedUser user;
     private ByteBuf[] packets;
     private int index;
-    //Whether this countdown is currently running in "waiting on a require-email-in-register verification
-    //code" mode (see restartAsEmailVerification()) - determines which kick packet tick() uses once the
-    //countdown reaches zero, since that state isn't otherwise derivable from the user's captcha/registered
-    //flags the way the other three cases are.
+    //Whether this is currently the email-verification-wait countdown (see restartAsEmailVerification()).
     private boolean emailVerificationMode;
 
     public VirtualCountdown(UnverifiedUser user) {
@@ -55,13 +52,7 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
         this.emailVerificationMode = false;
     }
 
-    //Switches from the general max-login-time countdown to the (typically longer) dedicated
-    //email-verification one - mirrors LoginState#handleRegisterCommandWithEmail()'s own countdown swap on
-    //Velocity. Receiving the email can easily take longer than max-login-time allows for the rest of the
-    //register flow, and without this the player could get kicked (losing the pending password/email, since
-    //the account isn't created yet) before the code even arrives, forcing them to restart registration and
-    //wait for a new email every time. A no-op when 'email-verification-time' isn't configured (the caller
-    //checks ConfigParams#hasEmailVerificationTime first), leaving the general countdown running unswapped.
+    //Swaps to the (typically longer) email-verification-time countdown - mirrors LoginState on Velocity.
     public void restartAsEmailVerification() {
         this.packets = BufferedPackets.emailVerificationOutExperiencePackets;
         this.index = BufferedPackets.emailVerificationPacketArraySize;

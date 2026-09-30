@@ -58,13 +58,7 @@ public final class GoogleAuth {
 
     private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.05f, 0.1f));
 
-    //Falls back to the click-event-free version of the message if serializing the clickable one throws -
-    //some server builds ship a packetevents/Adventure combination whose ClickEvent NBT serialization is
-    //broken (a reflection lookup failing internally to packetevents, not something this plugin controls),
-    //which would otherwise throw here, inside this class's static initializer, and per normal Java semantics
-    //permanently break every use of GoogleAuth for the rest of the server's uptime the first time anyone
-    //tried to view a QR code - not merely that one attempt. "/confirm"/"/cancel" still work fully as typed
-    //commands in the fallback; only their clickability is lost.
+    //falls back to the click-event-free version if serializing the clickable one throws
     public static final ByteBuf MESSAGE = constructMessageSafely();
 
     private static ByteBuf constructMessageSafely() {
@@ -101,14 +95,7 @@ public final class GoogleAuth {
             OriginalLocationsManager.add(player, loc);//try to prevent any potential data loss
 
             AlixScheduler.sync(() -> {
-                //A cross-world teleport (this one, into the dedicated captcha world) while the player has an
-                //item actively "in use" - a charged/aimed trident (Riptide-style wind-up), a drawn bow, food
-                //being eaten, a raised shield - is a known vanilla edge case where that item can be lost
-                //outright, surviving even a relog, since the loss happens server-side as part of the
-                //dimension change itself rather than being a client-only display desync. clearActiveItem()
-                //is Paper's documented, safe way to end an active-use action without losing the item -
-                //calling it right before the teleport, whenever there's an active item to clear, closes that
-                //window instead of letting the teleport interrupt it uncontrolled.
+                //a cross-world teleport can otherwise lose an actively-used item (trident wind-up, drawn bow...)
                 if (player.hasActiveItem()) player.clearActiveItem();
 
                 MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC).thenAccept(b -> {

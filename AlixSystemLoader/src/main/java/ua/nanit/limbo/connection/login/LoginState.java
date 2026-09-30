@@ -552,13 +552,7 @@ public final class LoginState implements VerifyState {
     //Sends the Terms & Conditions prompt (explanation + link + instructions) to an unregistered player
     private void sendTermsPrompt() {
         this.writeMessage(Messages.getWithPrefix("terms-required-explanation"));
-        //Falls back to a plain-text (still fully readable, just not clickable) version of the link if
-        //building/serializing the clickable one throws - some server builds ship a packetevents/Adventure
-        //combination whose ClickEvent/HoverEvent NBT serialization is broken (a reflection lookup failing
-        //internally to packetevents, not something this plugin controls). Unlike GoogleAuth's own const,
-        //eagerly-built version of this same risk, this one is built fresh per player on demand, so a failure
-        //here only costs this one message rather than permanently breaking a whole class - still worth not
-        //leaving the player with no Terms link at all, though.
+        //falls back to plain text if ClickEvent serialization throws (broken packetevents/Adventure build)
         try {
             this.duplexHandler.write(PacketPlayOutMessage.withComponent(buildTermsLinkComponent(true)));
         } catch (Throwable t) {
@@ -571,10 +565,7 @@ public final class LoginState implements VerifyState {
         }
     }
 
-    //Builds the "/terms accept"/"/terms decline" instruction line with both commands clickable
-    //(ClickEvent.runCommand) - mirrors UnverifiedUser#buildTermsPromptComponent() on Spigot, see its docs
-    //for the full reasoning (including why this locates the commands by substring search rather than a
-    //{0}/{1} placeholder).
+    //Makes "/terms accept"/"/terms decline" clickable - mirrors UnverifiedUser's copy on Spigot.
     private Component buildTermsPromptComponent(boolean includeClickEvents) {
         String template = AlixFormatter.appendPrefix(Messages.get("terms-required-prompt"));
         Component result = Component.empty();
@@ -613,8 +604,6 @@ public final class LoginState implements VerifyState {
     //The lang key's raw template (still holding its unsubstituted "{0}" placeholder) is split around that
     //placeholder so the surrounding legacy-formatted text is preserved exactly, with only the URL itself
     //replaced by the clickable component.
-    //includeClickEvent: see sendTermsPrompt()'s docs - false builds the same link without ClickEvent, for
-    //the fallback used when serializing the clickable version throws.
     private Component buildTermsLinkComponent(boolean includeClickEvent) {
         String template = AlixFormatter.appendPrefix(Messages.get("terms-required-link"));
         String[] parts = template.split("\\{0\\}", 2);

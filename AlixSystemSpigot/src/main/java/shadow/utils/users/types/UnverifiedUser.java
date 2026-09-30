@@ -79,14 +79,9 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     private AlixVerificationGui alixGui;
     public int loginAttempts, captchaAttempts, authAppAttempts;
     private boolean hasCompletedCaptcha, isGuiUser;//, isGUIInitialized;
-    //Whether this (still unregistered) connection has accepted the Terms & Conditions, when
-    //'require-terms-acceptance' is enabled - mirrors LoginState#termsAccepted (Velocity's own copy of this
-    //same gate).
+    //Mirrors LoginState#termsAccepted on Velocity.
     private boolean termsAccepted;
-    //Set while a 'require-email-in-register' registration is waiting on the player to confirm their email via
-    //'/verifyemail <code>' - see CommandManager#onAsyncRegisterCommand()'s email-gate handling. Mirrors
-    //LoginState's own pendingRegisterPassword/Email fields; null/non-null on the password field alone is
-    //enough to tell whether this gate is currently active.
+    //Set while waiting on '/verifyemail <code>' - mirrors LoginState's pendingRegisterPassword/Email.
     private String pendingRegisterPassword, pendingRegisterEmail;
     public int invalidRegisterCodeAttempts;
     //Virtualization values
@@ -169,11 +164,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //this.openPasswordBuilderGUI();
         //if (!captchaInitialized) this.spoofVerificationPackets();//spoof the verification packets immediately
 
-        //Prompt unregistered players to accept the Terms & Conditions before they're allowed to register -
-        //mirrors LoginState's own "sent once on join" call, see its docs for why this is sent via chat
-        //regardless of whether a login GUI is also showing. Gated on hasCompletedCaptcha the same way the
-        //register/login GUI itself is (isGuiUser && hasCompletedCaptcha above) - showing it before the
-        //captcha is even solved would just compete with that flow for chat attention.
+        //mirrors LoginState's "sent once on join" terms prompt
         if (!registered && hasCompletedCaptcha && this.isTermsGateBlocking())
             this.getChannel().eventLoop().execute(this::sendTermsPrompt);
     }
@@ -511,8 +502,6 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.registerAsync(password, null);
     }
 
-    //email: set on the newly created account once registration succeeds, for a 'require-email-in-register'
-    //registration - see CommandManager#onAsyncRegisterCommand()'s email-gate handling.
     public void registerAsync(String password, String email) {//invoked async
         try {
             this.register0(password, email);
@@ -587,8 +576,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         return PersistentUserData.isRegistered(this.data); //this.hasAccount() && data.getPassword().isSet();
     }
 
-    //Mirrors LoginState#isTermsGateBlocking() - only ever meaningful for an unregistered account, same
-    //reasoning as that method's own docs (a registered one has nothing to accept).
+    //Mirrors LoginState#isTermsGateBlocking().
     public boolean isTermsGateBlocking() {
         return !this.isRegistered() && LoginState.requireTermsAcceptance && !this.termsAccepted;
     }
@@ -597,11 +585,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.termsAccepted = true;
     }
 
-    //Sends the full Terms & Conditions prompt (explanation + clickable link + instructions) - mirrors
-    //LoginState#sendTermsPrompt()/buildTermsLinkComponent(). Falls back to a plain-text (still fully
-    //readable, just not clickable) link if building/serializing the clickable one throws - see
-    //LoginState#sendTermsPrompt()'s matching comment for why: some server builds ship a
-    //packetevents/Adventure combination whose ClickEvent/HoverEvent NBT serialization is broken.
+    //Mirrors LoginState#sendTermsPrompt() - falls back to plain text if a ClickEvent fails to serialize.
     public void sendTermsPrompt() {
         this.sendDynamicMessageSilently(Messages.getWithPrefix("terms-required-explanation"));
         try {
@@ -617,18 +601,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.flush();
     }
 
-    //Builds the "/terms accept"/"/terms decline" instruction line with both commands clickable
-    //(ClickEvent.runCommand), the same way GoogleAuthExplanation's confirm/cancel prompt already is -
-    //mirrors LoginState#buildTermsPromptComponent() on Velocity. Falls back to a plain-text (still fully
-    //readable, just not clickable) version if building/serializing a ClickEvent throws - see
-    //sendTermsPrompt()'s call site and buildTermsLinkComponent()'s matching comment for why: some server
-    //builds ship a packetevents/Adventure combination whose ClickEvent NBT serialization is broken.
-    //
-    //Locates the literal "/terms accept"/"/terms decline" command text within the (possibly translated)
-    //message template by substring search rather than a {0}/{1} placeholder, since the command names
-    //themselves are never translated (see both messages.properties and langs/cs.properties) - only the
-    //surrounding text is. If a locale ever drops one of these substrings, the whole line is returned as
-    //plain (non-clickable) text instead of throwing.
+    //Makes "/terms accept"/"/terms decline" clickable - mirrors LoginState on Velocity.
     public static Component buildTermsPromptComponent(boolean includeClickEvents) {
         String template = alix.common.utils.formatter.AlixFormatter.appendPrefix(Messages.get("terms-required-prompt"));
         Component result = Component.empty();
@@ -638,10 +611,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
             int idx = template.indexOf(cmd, cursor);
             if (idx < 0) return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template);
 
-            //include a legacy color code immediately preceding the command text (e.g. "&f") as part of the
-            //clickable span itself, rather than the plain-text chunk before it - otherwise that color would
-            //be lost (it has no visible text left to apply to in the preceding chunk) and the command text
-            //would render in whatever color follows it instead.
+            //keep a preceding color code (e.g. "&f") in the clickable span, not the plain-text chunk before it
             int chunkStart = idx >= 2 && template.charAt(idx - 2) == '&' ? idx - 2 : idx;
 
             result = result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor, chunkStart)));
@@ -672,8 +642,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         return result;
     }
 
-    //Mirrors LoginState#isEmailRegisterGateBlocking() - true while a 'require-email-in-register'
-    //registration is waiting on '/verifyemail <code>'.
+    //Mirrors LoginState#isEmailRegisterGateBlocking().
     public boolean isEmailRegisterGateBlocking() {
         return this.pendingRegisterPassword != null;
     }

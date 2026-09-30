@@ -10,11 +10,7 @@ import net.kyori.adventure.text.event.HoverEvent;
 public final class GoogleAuthExplanation {
 
     public static final Component COMBINED;
-    //Click-event-free fallback, built alongside COMBINED - see GoogleAuth's static initializer for why: some
-    //server builds ship a packetevents/Adventure combination whose ClickEvent NBT serialization is broken
-    //(a reflection lookup failing at runtime, not something this plugin can fix), which would otherwise
-    //permanently break the whole GoogleAuth class the first time COMBINED got serialized. "/confirm"/"/cancel"
-    //still work fully as typed commands either way - this only loses their clickability.
+    //Click-event-free fallback for when ClickEvent serialization fails - see GoogleAuth's static initializer.
     public static final Component COMBINED_NO_CLICK_EVENTS;
 
     //Was Component.text(Messages.get(...)) throughout this class - see AlixUtils#sendMessage(CommandSource,
