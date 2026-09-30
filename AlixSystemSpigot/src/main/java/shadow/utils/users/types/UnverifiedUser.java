@@ -543,8 +543,10 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
                 data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
         }
 
+        //register0() can run off the main thread (e.g. the HaveIBeenPwned breach-check callback) - invoke()
+        //ends up at Bukkit.dispatchCommand(), which needs the main thread
         if (data.getPremiumData().getStatus().isPremium())
-            premiumJoinCommands.invoke(this.player);
+            AlixScheduler.sync(() -> premiumJoinCommands.invoke(this.player));
 
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);

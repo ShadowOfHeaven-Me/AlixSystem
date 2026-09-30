@@ -168,7 +168,8 @@ public final class GoogleAuthGUI extends AlixGUI {
 
         items[22] = new GUIItem(viewRecoveryCodesItem, event -> {
             MAP.remove(player.getUniqueId());
-            player.closeInventory();
+            //this GUI click can be handled off the main thread - closeInventory() needs main thread
+            AlixScheduler.sync(player::closeInventory);
             //Recovery codes are plaintext, fully-usable-remotely substitutes for the app code (see
             ///recoverycode) - anyone who reads them off an unattended session can log in as this player
             //from anywhere afterward, same severity as reading the password itself. Same gate as the reset

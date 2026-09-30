@@ -4,6 +4,7 @@ import alix.common.data.AuthSetting;
 import alix.common.data.LoginParams;
 import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.formatter.AlixFormatter;
 import com.github.retrooper.packetevents.protocol.sound.Sounds;
 import io.netty.buffer.ByteBuf;
@@ -29,7 +30,8 @@ public final class AuthDataChanges {
         if (params.hasProvenAuthAccess()) {
             this.apply0(user);
             VerifiedVirtualAuthBuilder.send(Sounds.ENTITY_PLAYER_LEVELUP, user, VerifiedVirtualAuthBuilder.vec3iLoc(user));
-            user.getPlayer().closeInventory();
+            //this GUI click can be handled off the main thread - closeInventory() needs main thread
+            AlixScheduler.sync(() -> user.getPlayer().closeInventory());
             return;
         }
         switch (authSetting) {
