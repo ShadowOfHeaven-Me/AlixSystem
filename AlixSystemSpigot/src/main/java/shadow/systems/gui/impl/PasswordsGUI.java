@@ -157,14 +157,19 @@ public final class PasswordsGUI extends AlixGUI {
         });
 
         ItemStack i5 = SAVE_CHANGES;
-        items[17] = new GUIItem(i5, event -> changes.tryApply(player, success -> {
+        //tryApply's callback runs on whatever thread finishApply() completes on - the calling (sync) thread
+        //when no breach-check HTTP call was needed, but an async virtual thread when one was (see
+        //AbstractDataChanges#tryApply's docs). closeInventory() fires a Bukkit InventoryCloseEvent, which
+        //Paper asserts must only ever happen on the main thread, so the whole callback is hopped back to
+        //sync here rather than assuming it already is.
+        items[17] = new GUIItem(i5, event -> changes.tryApply(player, success -> AlixScheduler.sync(() -> {
             if (success) {
                 player.sendRawMessage(appliedChanges);
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
                 player.closeInventory();
             } else
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1, 1);//the tryApply method will provide the text feedback
-        }));
+        })));
 
         return items;
     }

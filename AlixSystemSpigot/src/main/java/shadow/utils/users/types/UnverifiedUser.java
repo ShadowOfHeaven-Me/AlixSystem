@@ -609,7 +609,51 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         } catch (Throwable t) {
             this.writeDynamicMessageSilently(buildTermsLinkComponent(false));
         }
-        this.sendDynamicMessageSilently(Messages.getWithPrefix("terms-required-prompt"));
+        try {
+            this.writeDynamicMessageSilently(buildTermsPromptComponent(true));
+        } catch (Throwable t) {
+            this.writeDynamicMessageSilently(buildTermsPromptComponent(false));
+        }
+        this.flush();
+    }
+
+    //Builds the "/terms accept"/"/terms decline" instruction line with both commands clickable
+    //(ClickEvent.runCommand), the same way GoogleAuthExplanation's confirm/cancel prompt already is -
+    //mirrors LoginState#buildTermsPromptComponent() on Velocity. Falls back to a plain-text (still fully
+    //readable, just not clickable) version if building/serializing a ClickEvent throws - see
+    //sendTermsPrompt()'s call site and buildTermsLinkComponent()'s matching comment for why: some server
+    //builds ship a packetevents/Adventure combination whose ClickEvent NBT serialization is broken.
+    //
+    //Locates the literal "/terms accept"/"/terms decline" command text within the (possibly translated)
+    //message template by substring search rather than a {0}/{1} placeholder, since the command names
+    //themselves are never translated (see both messages.properties and langs/cs.properties) - only the
+    //surrounding text is. If a locale ever drops one of these substrings, the whole line is returned as
+    //plain (non-clickable) text instead of throwing.
+    public static Component buildTermsPromptComponent(boolean includeClickEvents) {
+        String template = alix.common.utils.formatter.AlixFormatter.appendPrefix(Messages.get("terms-required-prompt"));
+        Component result = Component.empty();
+        int cursor = 0;
+
+        for (String cmd : new String[]{"/terms accept", "/terms decline"}) {
+            int idx = template.indexOf(cmd, cursor);
+            if (idx < 0) return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template);
+
+            //include a legacy color code immediately preceding the command text (e.g. "&f") as part of the
+            //clickable span itself, rather than the plain-text chunk before it - otherwise that color would
+            //be lost (it has no visible text left to apply to in the preceding chunk) and the command text
+            //would render in whatever color follows it instead.
+            int chunkStart = idx >= 2 && template.charAt(idx - 2) == '&' ? idx - 2 : idx;
+
+            result = result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor, chunkStart)));
+
+            Component cmdComponent = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(chunkStart, idx + cmd.length()));
+            if (includeClickEvents) cmdComponent = cmdComponent.clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(cmd));
+            result = result.append(cmdComponent);
+
+            cursor = idx + cmd.length();
+        }
+
+        return result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor)));
     }
 
     private static Component buildTermsLinkComponent(boolean includeClickEvent) {

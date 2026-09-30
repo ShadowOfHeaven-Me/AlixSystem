@@ -6,6 +6,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.security.email.EmailConfig;
 import alix.common.data.security.email.EmailHandler;
+import alix.common.utils.config.ConfigParams;
 import ua.nanit.limbo.connection.login.LoginState;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import alix.common.login.premium.PremiumUtils;
@@ -1544,6 +1545,12 @@ public final class CommandManager {
                     (u, msg) -> u.sendDynamicMessageSilently(msg),
                     () -> user.getChannel().eventLoop().execute(() -> completeEmailRegistration(user)));
             user.sendDynamicMessageSilently(Messages.getWithPrefix("register-email-verification-sent", email));
+
+            //Swap from the general max-login-time countdown to the (typically longer) dedicated
+            //email-verification one - mirrors LoginState#handleRegisterCommandWithEmail()'s own swap on
+            //Velocity, see VirtualCountdown#restartAsEmailVerification()'s docs for why.
+            if (ConfigParams.hasEmailVerificationTime)
+                user.getPacketBlocker().getCountdown().restartAsEmailVerification();
         });
     }
 

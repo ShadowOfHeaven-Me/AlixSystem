@@ -6,6 +6,7 @@ import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.keys.str.CharArray;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
+import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.verification.VerificationCommand;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
@@ -66,8 +67,24 @@ public final class AlixCommandManager {
     public static final ByteBuf
             formatRegisterMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatRegister),
             formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin),
-            formatTermsMessagePacket = OutMessagePacketConstructor.constructConst(alix.common.messages.Messages.getWithPrefix("terms-required-prompt")),
+            formatTermsMessagePacket = constructTermsMessageSafely(),
             formatVerifyEmailMessagePacket = OutMessagePacketConstructor.constructConst(alix.common.messages.Messages.getWithPrefix("register-email-verification-required"));
+
+    //Same clickable "/terms accept"/"/terms decline" text as the prompt shown on join (UnverifiedUser#
+    //sendTermsPrompt()) - shown as a format hint when a player types bare "/terms" with no argument. Falls
+    //back to a non-clickable version if building/serializing a ClickEvent throws - see
+    //UnverifiedUser#buildTermsPromptComponent()'s docs for why.
+    private static ByteBuf constructTermsMessageSafely() {
+        try {
+            return OutMessagePacketConstructor.constructConst(UnverifiedUser.buildTermsPromptComponent(true));
+        } catch (Throwable t) {
+            Main.logWarning("Failed to build the /terms format-hint message with clickable accept/decline text - "
+                    + "falling back to a non-clickable version. This is very likely a packetevents/Adventure "
+                    + "version mismatch on this server build, not something wrong with your AlixSystem setup. "
+                    + "Cause: " + t);
+            return OutMessagePacketConstructor.constructConst(UnverifiedUser.buildTermsPromptComponent(false));
+        }
+    }
 
     //This is a custom verification command handling implementation
     //I've deemed to be the fastest so far

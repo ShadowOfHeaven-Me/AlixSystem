@@ -564,7 +564,38 @@ public final class LoginState implements VerifyState {
         } catch (Throwable t) {
             this.duplexHandler.write(PacketPlayOutMessage.withComponent(buildTermsLinkComponent(false)));
         }
-        this.sendMessage(Messages.getWithPrefix("terms-required-prompt"));
+        try {
+            this.duplexHandler.writeAndFlush(PacketPlayOutMessage.withComponent(buildTermsPromptComponent(true)));
+        } catch (Throwable t) {
+            this.duplexHandler.writeAndFlush(PacketPlayOutMessage.withComponent(buildTermsPromptComponent(false)));
+        }
+    }
+
+    //Builds the "/terms accept"/"/terms decline" instruction line with both commands clickable
+    //(ClickEvent.runCommand) - mirrors UnverifiedUser#buildTermsPromptComponent() on Spigot, see its docs
+    //for the full reasoning (including why this locates the commands by substring search rather than a
+    //{0}/{1} placeholder).
+    private Component buildTermsPromptComponent(boolean includeClickEvents) {
+        String template = AlixFormatter.appendPrefix(Messages.get("terms-required-prompt"));
+        Component result = Component.empty();
+        int cursor = 0;
+
+        for (String cmd : new String[]{"/terms accept", "/terms decline"}) {
+            int idx = template.indexOf(cmd, cursor);
+            if (idx < 0) return LegacyComponentSerializer.legacySection().deserialize(template);
+
+            int chunkStart = idx >= 2 && template.charAt(idx - 2) == '&' ? idx - 2 : idx;
+
+            result = result.append(LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor, chunkStart)));
+
+            Component cmdComponent = LegacyComponentSerializer.legacySection().deserialize(template.substring(chunkStart, idx + cmd.length()));
+            if (includeClickEvents) cmdComponent = cmdComponent.clickEvent(ClickEvent.runCommand(cmd));
+            result = result.append(cmdComponent);
+
+            cursor = idx + cmd.length();
+        }
+
+        return result.append(LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor)));
     }
 
     //Reminds a gated-but-unregistered player that they still need to accept the Terms & Conditions before
