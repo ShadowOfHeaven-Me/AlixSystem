@@ -82,6 +82,16 @@ public final class GoogleAuth {
             OriginalLocationsManager.add(player, loc);//try to prevent any potential data loss
 
             AlixScheduler.sync(() -> {
+                //A cross-world teleport (this one, into the dedicated captcha world) while the player has an
+                //item actively "in use" - a charged/aimed trident (Riptide-style wind-up), a drawn bow, food
+                //being eaten, a raised shield - is a known vanilla edge case where that item can be lost
+                //outright, surviving even a relog, since the loss happens server-side as part of the
+                //dimension change itself rather than being a client-only display desync. clearActiveItem()
+                //is Paper's documented, safe way to end an active-use action without losing the item -
+                //calling it right before the teleport, whenever there's an active item to clear, closes that
+                //window instead of letting the teleport interrupt it uncontrolled.
+                if (player.hasActiveItem()) player.clearActiveItem();
+
                 MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC).thenAccept(b -> {
                     if (!b) {
                         for (ByteBuf buf : buffers) buf.release();
