@@ -1604,6 +1604,7 @@ public final class CommandManager {
 
         if (args.equalsIgnoreCase("accept")) {
             user.acceptTerms();
+            user.sendDynamicMessageSilently(Messages.getWithPrefix("terms-accepted"));
             user.writeAndFlushConstSilently(LoginState.requireEmailInRegister ? formatRegisterEmailMessagePacket : AlixCommandManager.formatRegisterMessagePacket);
             refreshVerificationMessage(user);
             return;
