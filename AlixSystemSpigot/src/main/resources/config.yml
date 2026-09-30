@@ -27,12 +27,6 @@ anti-vpn: true
 anti-vpn-include-bedrock: true
 #Defines whether bot attack detection algorithms should be enabled in pair with a fast-blocking FireWall system. Works best with 'prevent-first-time-join-during-high-traffic' and 'anti-vpn' set to true, and 'max-total-accounts' at 1.
 antibot-service: true
-#Defines whether a connection whose SYN-fingerprint MTU matches a typical cellular/mobile carrier's reduced
-#value should be treated as unremarkable (0 suspicion) rather than scored like any other unexplained low MTU.
-#Most Minecraft servers don't realistically expect players joining over mobile data, so this defaults to
-#false - a cellular-shaped MTU is then scored the same as any other low/tunnel-like MTU instead of being
-#given the benefit of the doubt. Only turn this on if you genuinely expect mobile players.
-support-mobile-connections: false
 #Defines whether Alix should load its built-in "bad ips" file into the fast-blocking Firewall system. Setting this to false can save a bit of RAM
 load-builtin-ips: true
 #Defines whether Alix should perform name validation checks: (1-16 chars in length, 0-9/a-z/A-Z/_ characters allowed)
@@ -316,3 +310,9 @@ write-const-bufs: true
 encrypt-emails: true
 #Whether to support hosting any kind of HTTP service (e.g. a resource pack server) on the same port as the minecraft server
 support-mc-port-http: false
+#Defines whether a connection whose SYN-fingerprint MTU matches a typical cellular/mobile carrier's reduced
+#value should be treated as unremarkable (0 suspicion) rather than scored like any other unexplained low MTU.
+#Most Minecraft servers don't realistically expect players joining over mobile data, so this defaults to
+#false - a cellular-shaped MTU is then scored the same as any other low/tunnel-like MTU instead of being
+#given the benefit of the doubt. Only turn this on if you genuinely expect mobile players.
+support-mobile-connections: false
