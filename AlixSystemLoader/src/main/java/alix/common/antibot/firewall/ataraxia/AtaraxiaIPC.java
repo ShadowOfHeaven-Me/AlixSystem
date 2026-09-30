@@ -27,9 +27,12 @@ final class AtaraxiaIPC {
     private static final Logger LOGGER = Logger.getLogger("AlixAtaraxia");
     private static final File ATARAXIA_FOLDER, SOCKET_FILE;
     //AF_UNIX socket paths are capped at 108 bytes on Linux (sun_path); bind() fails with
-    //"File name too long" past that. Falls back to a short path under the system temp dir, keyed by a hash
-    //of the natural path so it's still per-install-unique.
-    private static final int MAX_SOCKET_PATH_BYTES = 100;
+    //"File name too long" past that. This path is NOT ours to relocate on a whim, though - it's hardcoded
+    //into Ataraxia's own side too, and Ataraxia can't be told to dial a different path without being
+    //restarted, so silently binding somewhere else here would just leave us listening on a socket Ataraxia
+    //will never actually connect to. If the natural path is too long, that's a real install-path constraint
+    //to report and let the admin fix, not one we can work around unilaterally - see start0().
+    private static final int MAX_SOCKET_PATH_BYTES = 108;
 
     static {
         ATARAXIA_FOLDER = new File(AlixCommonMain.MAIN_CLASS_INSTANCE.getDataFolder(), "ataraxia");
@@ -37,10 +40,7 @@ final class AtaraxiaIPC {
         File ipcFolder = new File(ATARAXIA_FOLDER, "ipc");
         ipcFolder.mkdirs();
 
-        File naturalSocketFile = new File(ipcFolder, "ipc.sock");
-        SOCKET_FILE = naturalSocketFile.getAbsolutePath().getBytes(StandardCharsets.UTF_8).length >= MAX_SOCKET_PATH_BYTES
-                ? new File(System.getProperty("java.io.tmpdir"), "alix-" + Integer.toHexString(naturalSocketFile.getAbsolutePath().hashCode()) + ".sock")
-                : naturalSocketFile;
+        SOCKET_FILE = new File(ipcFolder, "ipc.sock");
     }
 
     static void syncAll(AtaraxiaServerHandler handler) {
@@ -60,6 +60,17 @@ final class AtaraxiaIPC {
     //an isEnabled()-style check from arbitrary call sites (connection handling, admin commands); an
     //uncaught exception there previously aborted whichever unrelated operation happened to trigger it.
     static void start0() {
+        //Same reasoning as MAX_SOCKET_PATH_BYTES's docs: failing loudly here, rather than transparently
+        //binding elsewhere, is the only option - Ataraxia will only ever dial this exact path.
+        int pathBytes = SOCKET_FILE.getAbsolutePath().getBytes(StandardCharsets.UTF_8).length;
+        if (pathBytes >= MAX_SOCKET_PATH_BYTES) {
+            LOGGER.log(Level.WARNING, "Ataraxia integration cannot start: the IPC socket path (" + SOCKET_FILE
+                    + ") is " + pathBytes + " bytes long, at or past the " + MAX_SOCKET_PATH_BYTES
+                    + "-byte AF_UNIX limit. This path is fixed on Ataraxia's own side, so it cannot be worked "
+                    + "around here - move the server to a shorter install path if you need Ataraxia support.");
+            return;
+        }
+
         SOCKET_FILE.delete();
 
         EventLoopGroup bossGroup = new EpollEventLoopGroup(1);
