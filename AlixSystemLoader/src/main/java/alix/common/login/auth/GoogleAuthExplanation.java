@@ -10,16 +10,27 @@ import net.kyori.adventure.text.event.HoverEvent;
 public final class GoogleAuthExplanation {
 
     public static final Component COMBINED;
+    //Click-event-free fallback, built alongside COMBINED - see GoogleAuth's static initializer for why: some
+    //server builds ship a packetevents/Adventure combination whose ClickEvent NBT serialization is broken
+    //(a reflection lookup failing at runtime, not something this plugin can fix), which would otherwise
+    //permanently break the whole GoogleAuth class the first time COMBINED got serialized. "/confirm"/"/cancel"
+    //still work fully as typed commands either way - this only loses their clickability.
+    public static final Component COMBINED_NO_CLICK_EVENTS;
 
     //Was Component.text(Messages.get(...)) throughout this class - see AlixUtils#sendMessage(CommandSource,
     //String) for why that breaks hex codes. clickEvent()/hoverEvent() apply fine on top of the parsed
     //Component the same way they did on the old flat text one.
     static {
+        COMBINED = build(true);
+        COMBINED_NO_CLICK_EVENTS = build(false);
+    }
+
+    private static Component build(boolean includeClickEvents) {
         var confirm = MessageWrapper.parseLegacy(Messages.get("google-auth-setting-confirm"));
-        confirm = confirm.clickEvent(ClickEvent.runCommand("/confirm"));
+        if (includeClickEvents) confirm = confirm.clickEvent(ClickEvent.runCommand("/confirm"));
 
         var cancel = MessageWrapper.parseLegacy(Messages.get("google-auth-setting-cancel"));
-        cancel = cancel.clickEvent(ClickEvent.runCommand("/cancel"));
+        if (includeClickEvents) cancel = cancel.clickEvent(ClickEvent.runCommand("/cancel"));
 
         var explanation = MessageWrapper.parseLegacy(Messages.get("google-auth-setting-explanation"));
         explanation = explanation.hoverEvent(HoverEvent.showText(concat(Messages.getSplit("google-auth-setting-explanation-hover"), "\n")));
@@ -34,7 +45,7 @@ public final class GoogleAuthExplanation {
         combined.append(cancel);
         combined.append(newLine);
 
-        COMBINED = combined.build();
+        return combined.build();
     }
 
     private static Component concat(String[] lines, String separator) {

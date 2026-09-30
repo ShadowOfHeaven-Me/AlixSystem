@@ -58,7 +58,26 @@ public final class GoogleAuth {
 
     private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.05f, 0.1f));
 
-    public static final ByteBuf MESSAGE = OutMessagePacketConstructor.constructConst(GoogleAuthExplanation.COMBINED);
+    //Falls back to the click-event-free version of the message if serializing the clickable one throws -
+    //some server builds ship a packetevents/Adventure combination whose ClickEvent NBT serialization is
+    //broken (a reflection lookup failing internally to packetevents, not something this plugin controls),
+    //which would otherwise throw here, inside this class's static initializer, and per normal Java semantics
+    //permanently break every use of GoogleAuth for the rest of the server's uptime the first time anyone
+    //tried to view a QR code - not merely that one attempt. "/confirm"/"/cancel" still work fully as typed
+    //commands in the fallback; only their clickability is lost.
+    public static final ByteBuf MESSAGE = constructMessageSafely();
+
+    private static ByteBuf constructMessageSafely() {
+        try {
+            return OutMessagePacketConstructor.constructConst(GoogleAuthExplanation.COMBINED);
+        } catch (Throwable t) {
+            shadow.Main.logWarning("Failed to build the 2FA QR code message with clickable confirm/cancel text - "
+                    + "falling back to a non-clickable version. This is very likely a packetevents/Adventure "
+                    + "version mismatch on this server build, not something wrong with your AlixSystem setup. "
+                    + "Cause: " + t);
+            return OutMessagePacketConstructor.constructConst(GoogleAuthExplanation.COMBINED_NO_CLICK_EVENTS);
+        }
+    }
 
     public static void showQRCode(VerifiedUser user, Player player) {
         if (user == null) return;

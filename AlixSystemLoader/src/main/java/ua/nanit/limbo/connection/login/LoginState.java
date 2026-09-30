@@ -552,7 +552,18 @@ public final class LoginState implements VerifyState {
     //Sends the Terms & Conditions prompt (explanation + link + instructions) to an unregistered player
     private void sendTermsPrompt() {
         this.writeMessage(Messages.getWithPrefix("terms-required-explanation"));
-        this.duplexHandler.write(PacketPlayOutMessage.withComponent(buildTermsLinkComponent()));
+        //Falls back to a plain-text (still fully readable, just not clickable) version of the link if
+        //building/serializing the clickable one throws - some server builds ship a packetevents/Adventure
+        //combination whose ClickEvent/HoverEvent NBT serialization is broken (a reflection lookup failing
+        //internally to packetevents, not something this plugin controls). Unlike GoogleAuth's own const,
+        //eagerly-built version of this same risk, this one is built fresh per player on demand, so a failure
+        //here only costs this one message rather than permanently breaking a whole class - still worth not
+        //leaving the player with no Terms link at all, though.
+        try {
+            this.duplexHandler.write(PacketPlayOutMessage.withComponent(buildTermsLinkComponent(true)));
+        } catch (Throwable t) {
+            this.duplexHandler.write(PacketPlayOutMessage.withComponent(buildTermsLinkComponent(false)));
+        }
         this.sendMessage(Messages.getWithPrefix("terms-required-prompt"));
     }
 
@@ -571,13 +582,15 @@ public final class LoginState implements VerifyState {
     //The lang key's raw template (still holding its unsubstituted "{0}" placeholder) is split around that
     //placeholder so the surrounding legacy-formatted text is preserved exactly, with only the URL itself
     //replaced by the clickable component.
-    private Component buildTermsLinkComponent() {
+    //includeClickEvent: see sendTermsPrompt()'s docs - false builds the same link without ClickEvent, for
+    //the fallback used when serializing the clickable version throws.
+    private Component buildTermsLinkComponent(boolean includeClickEvent) {
         String template = AlixFormatter.appendPrefix(Messages.get("terms-required-link"));
         String[] parts = template.split("\\{0\\}", 2);
 
-        Component link = Component.text(termsUrl)
-                .clickEvent(ClickEvent.openUrl(termsUrl))
-                .hoverEvent(HoverEvent.showText(Component.text(termsUrl)))
+        Component link = Component.text(termsUrl);
+        if (includeClickEvent) link = link.clickEvent(ClickEvent.openUrl(termsUrl));
+        link = link.hoverEvent(HoverEvent.showText(Component.text(termsUrl)))
                 .decorate(TextDecoration.UNDERLINED);
 
         Component result = LegacyComponentSerializer.legacySection().deserialize(parts[0]).append(link);
