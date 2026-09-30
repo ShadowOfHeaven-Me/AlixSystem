@@ -62,14 +62,18 @@ public final class VirtualAnvilPasswordBuilder extends AnvilBuilderBase implemen
                         MethodProvider.kickAsync(this.user, CommandManager.incorrectPasswordKickPacket);
                     return;
                 }
-                String reason = AlixUtils.getInvalidityReason(password, false);
-                if (reason != null) {
-                    this.user.writeConstSilently(PasswordGui.villagerNoSoundPacket);
-                    this.user.sendDynamicMessageSilently(reason);
-                    return;
-                }
-                this.user.writeConstSilently(CommandManager.passwordRegisterMessagePacket);
-                AlixScheduler.async(() -> this.user.registerAsync(password));//invokes flush
+                //Full async check (including the HaveIBeenPwned breach check, if 'check-breached-passwords'
+                //is on), not just the sync format/complexity one AlixUtils#getInvalidityReason() alone does -
+                //matches the plain-text /register command's own check (CommandManager#registerIfValidAsync()).
+                AlixUtils.getPasswordInvalidityReasonAsync(password, alix.common.data.LoginType.COMMAND, reason -> {
+                    if (reason != null) {
+                        this.user.writeConstSilently(PasswordGui.villagerNoSoundPacket);
+                        this.user.sendDynamicMessageSilently(reason);
+                        return;
+                    }
+                    this.user.writeConstSilently(CommandManager.passwordRegisterMessagePacket);
+                    AlixScheduler.async(() -> this.user.registerAsync(password));//invokes flush
+                });
         }
     }
 

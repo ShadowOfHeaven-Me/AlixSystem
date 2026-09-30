@@ -10,4 +10,6 @@ public interface VerificationCommand {
     //VerificationCommand OF_CAPTCHA = CommandManager::onAsyncCaptchaCommand; //PacketBlocker.serverboundNameVersion ? CommandManager::onAsyncCaptchaCommand : CommandManager::onSyncCaptchaCommand;
     VerificationCommand OF_REGISTER = CommandManager::onAsyncRegisterCommand; //PacketBlocker.serverboundChatCommandPacketVersion ? CommandManager::onAsyncRegisterCommand : CommandManager::onSyncRegisterCommand;
     VerificationCommand OF_LOGIN = CommandManager::onAsyncLoginCommand; //PacketBlocker.serverboundChatCommandPacketVersion ? CommandManager::onAsyncLoginCommand : CommandManager::onSyncLoginCommand;
+    VerificationCommand OF_TERMS = CommandManager::onAsyncTermsCommand;
+    VerificationCommand OF_VERIFYEMAIL = CommandManager::onAsyncVerifyEmailCommand;
 }

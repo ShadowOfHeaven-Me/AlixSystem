@@ -65,7 +65,9 @@ public final class AlixCommandManager {
 
     public static final ByteBuf
             formatRegisterMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatRegister),
-            formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin);
+            formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin),
+            formatTermsMessagePacket = OutMessagePacketConstructor.constructConst(alix.common.messages.Messages.getWithPrefix("terms-required-prompt")),
+            formatVerifyEmailMessagePacket = OutMessagePacketConstructor.constructConst(alix.common.messages.Messages.getWithPrefix("register-email-verification-required"));
 
     //This is a custom verification command handling implementation
     //I've deemed to be the fastest so far
@@ -104,6 +106,14 @@ public final class AlixCommandManager {
                 user.writeAndFlushConstSilently(formatLoginMessagePacket);
                 return;
             }
+            if (consumer == VerificationCommand.OF_TERMS) {
+                user.writeAndFlushConstSilently(formatTermsMessagePacket);
+                return;
+            }
+            if (consumer == VerificationCommand.OF_VERIFYEMAIL) {
+                user.writeAndFlushConstSilently(formatVerifyEmailMessagePacket);
+                return;
+            }
             throw new AlixError("Invalid: " + new String(labelChars) + " for " + new String(cmd));
         }
         //This line of code passes the whole string as the second command argument
@@ -119,6 +129,8 @@ public final class AlixCommandManager {
         //VerificationCommand captcha = VerificationCommand.OF_CAPTCHA;
         VerificationCommand register = VerificationCommand.OF_REGISTER;
         VerificationCommand login = VerificationCommand.OF_LOGIN;
+        VerificationCommand terms = VerificationCommand.OF_TERMS;
+        VerificationCommand verifyEmail = VerificationCommand.OF_VERIFYEMAIL;
 
         for (String commandAlias : CommandsFileManager.getLoginCommands()) {
             AlixCommandInfo alix = getCommand(commandAlias);
@@ -135,6 +147,12 @@ public final class AlixCommandManager {
                     continue;
                 case "login":
                     verificationCommands.put(cmd, login);
+                    continue;
+                case "terms":
+                    verificationCommands.put(cmd, terms);
+                    continue;
+                case "verifyemail":
+                    verificationCommands.put(cmd, verifyEmail);
                     continue;
                 default:
                     throw new AssertionError("Invalid verification command: '" + commandAlias + "' - '" + command + "'!");

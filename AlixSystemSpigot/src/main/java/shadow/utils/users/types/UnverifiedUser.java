@@ -17,6 +17,7 @@ import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +41,7 @@ import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
+import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.integration.LimboIntegration;
 
 import java.net.InetAddress;
@@ -77,6 +79,16 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     private AlixVerificationGui alixGui;
     public int loginAttempts, captchaAttempts, authAppAttempts;
     private boolean hasCompletedCaptcha, isGuiUser;//, isGUIInitialized;
+    //Whether this (still unregistered) connection has accepted the Terms & Conditions, when
+    //'require-terms-acceptance' is enabled - mirrors LoginState#termsAccepted (Velocity's own copy of this
+    //same gate).
+    private boolean termsAccepted;
+    //Set while a 'require-email-in-register' registration is waiting on the player to confirm their email via
+    //'/verifyemail <code>' - see CommandManager#onAsyncRegisterCommand()'s email-gate handling. Mirrors
+    //LoginState's own pendingRegisterPassword/Email fields; null/non-null on the password field alone is
+    //enough to tell whether this gate is currently active.
+    private String pendingRegisterPassword, pendingRegisterEmail;
+    public int invalidRegisterCodeAttempts;
     //Virtualization values
     public boolean blindnessSent;
     public String originalJoinMessage;
@@ -156,6 +168,14 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.reminderTask = VerificationReminder.reminderFor(this);//probably the most efficient way, since all packet sending methods need to be invoked on the eventLoop thread
         //this.openPasswordBuilderGUI();
         //if (!captchaInitialized) this.spoofVerificationPackets();//spoof the verification packets immediately
+
+        //Prompt unregistered players to accept the Terms & Conditions before they're allowed to register -
+        //mirrors LoginState's own "sent once on join" call, see its docs for why this is sent via chat
+        //regardless of whether a login GUI is also showing. Gated on hasCompletedCaptcha the same way the
+        //register/login GUI itself is (isGuiUser && hasCompletedCaptcha above) - showing it before the
+        //captcha is even solved would just compete with that flow for chat attention.
+        if (!registered && hasCompletedCaptcha && this.isTermsGateBlocking())
+            this.getChannel().eventLoop().execute(this::sendTermsPrompt);
     }
 
 
@@ -488,8 +508,14 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     }*/
 
     public void registerAsync(String password) {//invoked async
+        this.registerAsync(password, null);
+    }
+
+    //email: set on the newly created account once registration succeeds, for a 'require-email-in-register'
+    //registration - see CommandManager#onAsyncRegisterCommand()'s email-gate handling.
+    public void registerAsync(String password, String email) {//invoked async
         try {
-            this.register0(password);
+            this.register0(password, email);
         } finally {
             AlixScheduler.sync(this::register1);//invoke this method at all cost
         }
@@ -510,7 +536,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //this.player.setGameMode(this.originalGameMode);
     }
 
-    private void register0(String password) {//the common part
+    private void register0(String password, String email) {//the common part
         //AlixScheduler.async(() -> {
         VerifiedUser verifiedUser = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext());
         PersistentUserData data = verifiedUser.getData();
@@ -518,6 +544,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         AlixEventInvoker.callOnAuthInferThread(AuthReason.MANUAL_REGISTER, verifiedUser);
         //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
+        if (email != null) data.setEmail(email);
 
         if (data.getPremiumData().getStatus().isUnknown()) {
             boolean premium = VerifiedCache.getAndCheckIfEquals(this.getName(), this.retrooperUser);
@@ -558,6 +585,71 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
 
     public boolean isRegistered() {
         return PersistentUserData.isRegistered(this.data); //this.hasAccount() && data.getPassword().isSet();
+    }
+
+    //Mirrors LoginState#isTermsGateBlocking() - only ever meaningful for an unregistered account, same
+    //reasoning as that method's own docs (a registered one has nothing to accept).
+    public boolean isTermsGateBlocking() {
+        return !this.isRegistered() && LoginState.requireTermsAcceptance && !this.termsAccepted;
+    }
+
+    public void acceptTerms() {
+        this.termsAccepted = true;
+    }
+
+    //Sends the full Terms & Conditions prompt (explanation + clickable link + instructions) - mirrors
+    //LoginState#sendTermsPrompt()/buildTermsLinkComponent(). Falls back to a plain-text (still fully
+    //readable, just not clickable) link if building/serializing the clickable one throws - see
+    //LoginState#sendTermsPrompt()'s matching comment for why: some server builds ship a
+    //packetevents/Adventure combination whose ClickEvent/HoverEvent NBT serialization is broken.
+    public void sendTermsPrompt() {
+        this.sendDynamicMessageSilently(Messages.getWithPrefix("terms-required-explanation"));
+        try {
+            this.writeDynamicMessageSilently(buildTermsLinkComponent(true));
+        } catch (Throwable t) {
+            this.writeDynamicMessageSilently(buildTermsLinkComponent(false));
+        }
+        this.sendDynamicMessageSilently(Messages.getWithPrefix("terms-required-prompt"));
+    }
+
+    private static Component buildTermsLinkComponent(boolean includeClickEvent) {
+        String termsUrl = LoginState.termsUrl;
+        String template = alix.common.utils.formatter.AlixFormatter.appendPrefix(Messages.get("terms-required-link"));
+        String[] parts = template.split("\\{0\\}", 2);
+
+        Component link = Component.text(termsUrl);
+        if (includeClickEvent) link = link.clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl(termsUrl));
+        link = link.hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text(termsUrl)))
+                .decorate(net.kyori.adventure.text.format.TextDecoration.UNDERLINED);
+
+        Component result = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(parts[0]).append(link);
+        if (parts.length > 1 && !parts[1].isEmpty())
+            result = result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(parts[1]));
+        return result;
+    }
+
+    //Mirrors LoginState#isEmailRegisterGateBlocking() - true while a 'require-email-in-register'
+    //registration is waiting on '/verifyemail <code>'.
+    public boolean isEmailRegisterGateBlocking() {
+        return this.pendingRegisterPassword != null;
+    }
+
+    public void armPendingEmailRegistration(String password, String email) {
+        this.pendingRegisterPassword = password;
+        this.pendingRegisterEmail = email;
+    }
+
+    public String getPendingRegisterPassword() {
+        return this.pendingRegisterPassword;
+    }
+
+    public String getPendingRegisterEmail() {
+        return this.pendingRegisterEmail;
+    }
+
+    public void clearPendingEmailRegistration() {
+        this.pendingRegisterPassword = null;
+        this.pendingRegisterEmail = null;
     }
 
     @Override
