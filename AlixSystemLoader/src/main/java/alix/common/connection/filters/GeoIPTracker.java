@@ -79,8 +79,21 @@ public final class GeoIPTracker implements ConnectionFilter {
 
     //removed when data is removed per /as frd <user> or on ip updates
     public static void removeIP(InetAddress ip) {
-        boolean removed = null == EXISTING_ACCOUNTS.compute(ip, (k, v) -> v != null && v != 1 ? v - 1 : null);
-        if (removed && AlixAtaraxia.isEnabled())
+        //compute()'s remapping function returns null for BOTH "this was the last account, remove the
+        //mapping" AND "there was no mapping to begin with" - compute() can't tell those apart, so comparing
+        //its return value against null (as this used to) misreports an IP that was never mapped as "just
+        //removed", calling unwhitelist() on Ataraxia for an IP it never whitelisted. computeIfPresent()'s
+        //remapping function, unlike compute()'s, is only invoked when a mapping already existed, so the flag
+        //it sets can only fire on a genuine last-account removal.
+        boolean[] wasLastAccount = {false};
+        EXISTING_ACCOUNTS.computeIfPresent(ip, (k, v) -> {
+            if (v == 1) {
+                wasLastAccount[0] = true;
+                return null;
+            }
+            return v - 1;
+        });
+        if (wasLastAccount[0] && AlixAtaraxia.isEnabled())
             AlixAtaraxia.unwhitelist(ip);
     }
 }
