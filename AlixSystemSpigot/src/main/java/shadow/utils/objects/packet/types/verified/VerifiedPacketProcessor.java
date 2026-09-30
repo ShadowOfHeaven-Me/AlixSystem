@@ -224,12 +224,16 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     }
 
     private void endQRCodeShowAndTeleportBack() {
-        this.endQRCodeShow();
-        Location original = this.user.originalLocation.get();
-        if (original != null) {
-            MethodProvider.teleportAsync(this.user.getPlayer(), original);
-            this.user.originalLocation.set(null);//let's not do a lazySet here
-        }
+        //callers (packet-receive handlers) can run off the main thread - teleport() fires a
+        //PlayerTeleportEvent, which Paper asserts must only happen synchronously
+        AlixScheduler.sync(() -> {
+            this.endQRCodeShow();
+            Location original = this.user.originalLocation.get();
+            if (original != null) {
+                MethodProvider.teleportAsync(this.user.getPlayer(), original);
+                this.user.originalLocation.set(null);//let's not do a lazySet here
+            }
+        });
     }
 
     //String cmd = (String) PacketBlocker.getStringFromCommandPacketMethod.invoke(msg);

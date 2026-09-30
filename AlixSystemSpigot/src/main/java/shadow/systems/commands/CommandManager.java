@@ -1424,9 +1424,13 @@ public final class CommandManager {
             formatRegisterEmailMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix(
                     requirePasswordRepeatInRegister ? "format-register-repeat-email" : "format-register-email")),
             termsMustAcceptFirstMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("terms-must-accept-first")),
-            termsDeclinedKickPacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("terms-declined-kick")),
-            registerEmailVerificationRequiredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("register-email-verification-required")),
-            registerEmailVerificationTooManyAttemptsMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("register-email-verification-too-many-attempts"));
+            registerEmailVerificationRequiredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("register-email-verification-required"));
+
+    //kickAsync() needs a real disconnect-phase packet (OutDisconnectPacketConstructor), not a chat message
+    //one - using constructConst() here showed a blank "Disconnected" screen with no reason.
+    public static final ByteBuf
+            termsDeclinedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.getWithPrefix("terms-declined-kick")),
+            registerEmailVerificationTooManyAttemptsMessagePacket = OutDisconnectPacketConstructor.constAtPlay(Messages.getWithPrefix("register-email-verification-too-many-attempts"));
 
 /*    public static void onSyncRegisterCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
