@@ -429,6 +429,21 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
         if (collidableOriginally != null) this.user.getPlayer().setCollidable(collidableOriginally);
         this.authBuilder = null;
         this.collidableOriginally = null;
+        //GoogleAuth#showQRCode() spoofs a client-only switch to spectator (OutGameStatePacketConstructor's
+        //SPECTATOR_GAMEMODE_PACKET + a matching abilities packet) so the player floats, no-clips, and can't
+        //be seen interacting with their real inventory while viewing the QR code - their real Bukkit
+        //gamemode is never touched. But nothing ever spoofed the switch back, so every normal exit left the
+        //client permanently believing it's in spectator (most visibly: the held item no longer renders,
+        //since spectator hides it, and nothing brings it back). Mirror showQRCode()'s spoof with one back to
+        //the player's real, current gamemode and abilities.
+        var player = this.user.getPlayer();
+        this.user.writeDynamicSilently(new WrapperPlayServerChangeGameState(
+                WrapperPlayServerChangeGameState.Reason.CHANGE_GAME_MODE, player.getGameMode().getValue()));
+        //Last param is the protocol's FOV modifier, not Bukkit's walk speed - 0.1f is vanilla's own default,
+        //matching what showQRCode()'s spectator packet already sends for it.
+        this.user.writeDynamicSilently(new WrapperPlayServerPlayerAbilities(
+                player.getGameMode().isInvulnerable(), player.isFlying(), player.getAllowFlight(),
+                player.getGameMode() == org.bukkit.GameMode.CREATIVE, player.getFlySpeed(), 0.1f));
         //Every normal exit from the QR-view state (a successful confirm, "cancel", or GoogleAuth#showQRCode()'s
         //own teleport-failure path) funnels through here - clearing it as the single choke point, rather than
         //only in processChat()'s "cancel" case, also covers that teleport-failure path (which calls this
