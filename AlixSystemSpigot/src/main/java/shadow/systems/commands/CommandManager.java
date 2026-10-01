@@ -41,6 +41,7 @@ import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
+import shadow.utils.misc.CommandsPacketManager;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
@@ -1544,8 +1545,10 @@ public final class CommandManager {
         });
     }
 
-    //Refreshes the title/action-bar reminder to match the gate now blocking registration.
+    //Refreshes the title/action-bar reminder and the advertised command list (so the client stops showing
+    //e.g. "/terms accept" in red as if it doesn't exist) to match the gate now blocking registration.
     private static void refreshVerificationMessage(UnverifiedUser user) {
+        CommandsPacketManager.writeAndFlush(user);
         if (!user.isGUIUser() && !user.isBedrock()) user.getVerificationMessage().updateMessage();
     }
 

@@ -77,7 +77,9 @@ public final class LoginState implements VerifyState {
             LOGIN = createLimboCommand("login", Messages.get("commands-login-password-arg")),
             LOGIN_AND_RECOVERY = createMultiCommand(
                     CustomCommand.of("recovery", Messages.get("commands-recovery-email-arg")),
-                    CustomCommand.of("login", Messages.get("commands-login-password-arg")));
+                    CustomCommand.of("login", Messages.get("commands-login-password-arg"))),
+            TERMS = createLimboCommand("terms", Messages.get("commands-terms-arg")),
+            VERIFY_EMAIL = createLimboCommand("verifyemail", Messages.get("commands-verifyemail-code-arg"));
 
     //The /register command hint shown to the client, matching whichever of 'require-password-repeat-in-
     //register'/'require-email-in-register' are enabled - when both are on, this now shows all 3 arguments
@@ -390,11 +392,23 @@ public final class LoginState implements VerifyState {
         return true;
     }
 
+    //The advertised command list always needs to match whichever command the player is actually expected to
+    //type next, or the client shows it in red as if it doesn't exist (even though it's handled fine
+    //server-side) - re-called from handleTermsCommand()/handleRegisterCommandWithEmail() whenever the gate
+    //state changes, not just once on join.
     private void writeCommands() {
         /*if (PacketPlayOutShowDialog.write(this.connection))
             return;*/
 
         if (this.version().moreOrEqual(Version.V1_13)) {
+            if (this.isTermsGateBlocking()) {
+                this.write(TERMS);
+                return;
+            }
+            if (this.isEmailRegisterGateBlocking()) {
+                this.write(VERIFY_EMAIL);
+                return;
+            }
             if (this.data != null && this.data.canUseEmailRecovery()) {
                 this.write(LOGIN_AND_RECOVERY);
                 return;
@@ -654,7 +668,10 @@ public final class LoginState implements VerifyState {
             //prompt now that the gate is actually cleared - see currentTitle()/isTermsGateBlocking(). Guarded
             //the same way sendInitial()/initDoubleVer() already guard their own title writes, since a title
             //packet isn't meaningful while a login GUI (anvil/PIN/bedrock) is covering it instead.
-            if (this.gui == null) this.connection.writeTitle(this.currentTitle());
+            if (this.gui == null) {
+                this.writeCommands();
+                this.connection.writeTitle(this.currentTitle());
+            }
             this.duplexHandler.writeAndFlush(requireEmailInRegister ? formatRegisterEmailMessagePacket : formatRegisterMessagePacket);
             return;
         }
@@ -980,7 +997,10 @@ public final class LoginState implements VerifyState {
             //active - see currentTitle()/isEmailRegisterGateBlocking(). Guarded the same way sendInitial()/
             //initDoubleVer() already guard their own title writes, since a title packet isn't meaningful
             //while a login GUI (anvil/PIN/bedrock) is covering it instead.
-            if (this.gui == null) this.connection.writeTitle(this.currentTitle());
+            if (this.gui == null) {
+                this.writeCommands();
+                this.connection.writeTitle(this.currentTitle());
+            }
             //Includes a clickable web-verification link (if 'enable-web-verification' is on) alongside the
             //6-digit code - clicking it completes this exact same pending registration, gated behind the same
             //single-use code check "/verifyemail <code>" itself goes through (see
