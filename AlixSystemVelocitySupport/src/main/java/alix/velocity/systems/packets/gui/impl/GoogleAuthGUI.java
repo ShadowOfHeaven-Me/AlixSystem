@@ -33,6 +33,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class GoogleAuthGUI extends AlixGUI {
 
@@ -189,10 +190,27 @@ public final class GoogleAuthGUI extends AlixGUI {
     //one there.
     public static final int QR_MAP_SLOT = 45;
 
+    //Right after joining, the real off-hand item isn't known yet (see VerifiedPacketProcessor's docs) until
+    //the backend server's own initial inventory sync has actually arrived through the proxy - which can
+    //easily lose a race against a player clicking "Show QR Code" the moment the (proxy-rendered, effectively
+    //instant) account GUI opens. Faking the map in before that point left nothing correct to restore later,
+    //so the item stayed stuck until something else (e.g. a reconnect) forced a fresh sync. Retried every
+    //50ms, capped at 1s - in practice the sync is already in flight, so this just waits it out.
+    private static final int MAX_OFFHAND_WAIT_ATTEMPTS = 20;
+
     //Renders and shows the current Google Authenticator QR code - shared by the "show-qr" button and by a
     //successful "reset-token" confirmation (which needs to show the BRAND NEW code right after generating
     //it). Must run on this.user's event loop - callers are responsible for that (see the two call sites).
     private void showQrCode() {
+        this.showQrCode(0);
+    }
+
+    private void showQrCode(int attempt) {
+        if (!this.user.getDuplexProcessor().isRealOffHandItemKnown() && attempt < MAX_OFFHAND_WAIT_ATTEMPTS) {
+            this.user.getChannel().eventLoop().schedule(() -> this.showQrCode(attempt + 1), 50, TimeUnit.MILLISECONDS);
+            return;
+        }
+
         var token = this.user.getData().getToken();
         try {
             byte[] imgBytes = GoogleAuthUtils.createQRCode(

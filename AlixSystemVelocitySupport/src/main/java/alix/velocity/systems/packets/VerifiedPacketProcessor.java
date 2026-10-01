@@ -258,6 +258,12 @@ public final class VerifiedPacketProcessor {
     //with an assumed-empty default.
     private boolean realOffHandItemKnown = false;
 
+    //Lets GoogleAuthGUI#showQrCode() wait for the real off-hand item to be known (see its own docs) before
+    //faking the QR map in, rather than risking a restore later with no real value to restore to.
+    public boolean isRealOffHandItemKnown() {
+        return this.realOffHandItemKnown;
+    }
+
     //Whether the fake QR map is ACTUALLY currently sitting in the off-hand slot right now - set by
     //startQrCodeShow(), cleared by endQRCodeShow(). Deliberately NOT the same thing as
     //"currentAction is VIEWING_QR or VERIFYING_AUTH_ACCESS": VERIFYING_AUTH_ACCESS is also entered directly
