@@ -656,7 +656,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateAuthSettingsByName(String name, AuthSetting authSettings) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_AUTH_SETTINGS_BY_NAME)) {
                 ps.setString(1, authSettings != null ? authSettings.name() : null);
                 ps.setString(2, name);
@@ -667,7 +667,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateHasProvenAuthAccessByName(String name, boolean hasProvenAuthAccess) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_HAS_PROVEN_AUTH_ACCESS_BY_NAME)) {
                 ps.setBoolean(1, hasProvenAuthAccess);
                 ps.setString(2, name);
@@ -678,7 +678,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateIpAutoLoginByName(String name, Boolean ipAutoLogin) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_IP_AUTO_LOGIN_BY_NAME)) {
                 ps.setObject(1, ipAutoLogin);
                 ps.setString(2, name);
@@ -689,7 +689,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateLoginTypeByName(String name, LoginType loginType) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_LOGIN_TYPE_BY_NAME)) {
                 ps.setString(1, loginType != null ? loginType.name() : null);
                 ps.setString(2, name);
@@ -700,7 +700,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateExtraLoginTypeByName(String name, LoginType extraLoginType) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_EXTRA_LOGIN_TYPE_BY_NAME)) {
                 ps.setString(1, extraLoginType != null ? extraLoginType.name() : null);
                 ps.setString(2, name);
@@ -822,7 +822,14 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     }
 
     void query(ThrowableConsumer<Connection, Exception> func) {
-        this.database.query(new AutoErrorReport(func, this.getType()));
+        try {
+            this.database.query(new AutoErrorReport(func, this.getType()));
+        } catch (Throwable t) {
+            //AutoErrorReport only covers the delegate - a failure to even obtain a connection (pool
+            //exhausted, DB down) throws here instead, which would otherwise go completely unlogged for
+            //async callers
+            AlixCommonUtils.logException(t);
+        }
     }
 
     void async(Runnable r) {
