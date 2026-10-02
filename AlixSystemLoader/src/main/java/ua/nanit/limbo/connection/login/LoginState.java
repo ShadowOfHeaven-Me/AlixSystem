@@ -5,6 +5,7 @@ import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.fingerprinting.FingerprintGateway;
+import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
 import alix.common.data.security.email.EmailConfig;
@@ -191,11 +192,13 @@ public final class LoginState implements VerifyState {
 
     private PersistentUserData register0(String password) {
         if (this.data != null) this.data.setPassword(password);
-        else {
-            this.data = PersistentUserData.createDefault(this.connection.getUsername(),
-                    this.connection.getAddress(), Password.fromUnhashed(password));
-            if (VerifiedCache.getAndCheckIfEquals(this.connection.getUsername(), this.connection.getChannel()))
-                this.data.setPremiumData(PremiumDataCache.getOrUnknown(this.connection.getUsername()));
+        else this.data = PersistentUserData.createDefault(this.connection.getUsername(),
+                this.connection.getAddress(), Password.fromUnhashed(password));
+
+        //resolve UNKNOWN premium data to the real result, mirrors UnverifiedUser#register0() on Spigot
+        if (this.data.getPremiumData().getStatus().isUnknown()) {
+            boolean premium = VerifiedCache.getAndCheckIfEquals(this.connection.getUsername(), this.connection.getChannel());
+            this.data.setPremiumData(premium ? PremiumDataCache.getOrUnknown(this.connection.getUsername()) : PremiumData.NON_PREMIUM);
         }
 
         this.logIn();
@@ -225,6 +228,8 @@ public final class LoginState implements VerifyState {
 
     private void logIn0() {
         this.data.setIP(this.connection.getAddress());
+        //mirrors UserManager#putVer() on Spigot, was missing here entirely
+        this.data.updateLastSuccessfulLoginTime();
         var config = this.connection.getChannel().config();
 
         //disallow any reads after uninjecting the handlers, but before the authAction happens
