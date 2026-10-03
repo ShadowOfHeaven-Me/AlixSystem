@@ -1,6 +1,7 @@
 package shadow.systems.commands;
 
 import alix.common.commands.file.AlixCommandInfo;
+import alix.common.data.LoginParams;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
@@ -1743,7 +1744,13 @@ public final class CommandManager {
                         sendMessage(sender, Messages.getWithPrefix("account-sendverifyemail-usage"));
                         return true;
                     }
-                    EmailHandler.sendVerifyMail(sender, player.getName(), args[1], false, AlixUtils::sendMessage);
+                    String email = args[1];
+                    VerifiedUser user = getVerifiedUser(player);
+                    LoginParams params = user.getData().getLoginParams();
+                    Runnable send = () -> EmailHandler.sendVerifyMail(sender, player.getName(), email, false, AlixUtils::sendMessage);
+                    //the email is this account's recovery channel - same gate as the Account Settings GUI's email button
+                    if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) send.run();
+                    else user.getDuplexProcessor().verifyAuthAccess(send);
                     return true;
                 }
             }

@@ -1,6 +1,7 @@
 package alix.velocity.systems.commands;
 
 import alix.common.commands.file.CommandsFileManager;
+import alix.common.data.LoginParams;
 import alix.common.data.LoginType;
 import alix.common.data.file.UserFileManager;
 import alix.common.data.security.email.EmailHandler;
@@ -128,7 +129,12 @@ public final class CommandManager {
                             Player player = (Player) ctx.getSource();
                             String email = StringArgumentType.getString(ctx, "email");
 
-                            EmailHandler.sendVerifyMail(player, player.getUsername(), email, false, AlixUtils::sendMessage);
+                            VerifiedUser user = UserManager.getVerified(player.getUniqueId());
+                            LoginParams params = user.getData().getLoginParams();
+                            Runnable send = () -> EmailHandler.sendVerifyMail(player, player.getUsername(), email, false, AlixUtils::sendMessage);
+                            //the email is this account's recovery channel - same gate as the Account Settings GUI's email button
+                            if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) send.run();
+                            else user.getDuplexProcessor().verifyAuthAccess(send);
                             return SINGLE_SUCCESS;
                         })
                 );

@@ -1,5 +1,6 @@
 package shadow.systems.gui.impl;
 
+import alix.common.data.LoginParams;
 import alix.common.data.PersistentUserData;
 import alix.common.data.fingerprinting.FingerprintGateway;
 import alix.common.data.settings.ServerSettingsManager;
@@ -8,6 +9,8 @@ import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.config.ConfigParams;
+import io.netty.buffer.ByteBuf;
+import net.kyori.adventure.text.event.ClickEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -16,6 +19,7 @@ import shadow.systems.gui.AlixGUI;
 import shadow.systems.gui.item.GUIItem;
 import shadow.systems.login.autoin.premium.SpigotEncryption;
 import shadow.utils.main.AlixUtils;
+import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
 import shadow.utils.misc.version.AlixMaterials;
 import shadow.utils.users.UserManager;
 import shadow.utils.users.types.VerifiedUser;
@@ -40,6 +44,32 @@ public final class LoginSettingsGUI extends AlixGUI {
     static {
         if (AlixUtils.forcefullyDisableIpAutoLogin)
             addLore(IP_AUTOLOGIN_ON, Messages.get("ip-autologin-forcefully-disabled").split(" -nl "));
+    }
+
+    //falls back to the click-event-free version if serializing the clickable one throws - same
+    //packetevents/Adventure fallback pattern as GoogleAuth's own message, see its comment for why
+    private static final ByteBuf changeEmailMessagePacket = constructChangeEmailMessageSafely();
+
+    private static ByteBuf constructChangeEmailMessageSafely() {
+        var text = MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-account-change-email-chat"));
+        try {
+            return OutMessagePacketConstructor.constructConst(text.clickEvent(ClickEvent.suggestCommand("/account sendverifyemail ")));
+        } catch (Throwable t) {
+            return OutMessagePacketConstructor.constructConst(text);
+        }
+    }
+
+    //The email is this account's recovery channel, so changing it unattended would let anyone silently
+    //redirect recovery to themselves - same gate as GoogleAuthGUI's recovery-codes/reset-token buttons,
+    //see its own copy of this check for the full reasoning.
+    private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
+        LoginParams params = user.getData().getLoginParams();
+
+        if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) {
+            action.run();
+            return;
+        }
+        user.getDuplexProcessor().verifyAuthAccess(action);
     }
 
     private final AbstractAlixGUI originalGui;
@@ -72,8 +102,13 @@ public final class LoginSettingsGUI extends AlixGUI {
         }
 
         if (ServerSettingsManager.is(Setting.VERIFIED_EMAIL, true)) {
-            //Email changes require chat input rather than a direct GUI toggle - this button is informational only.
-            items[2] = new GUIItem(EMAIL_RECOVERY_GET.apply(data));
+            //Clicking prompts for a new email in chat (send/confirm code) rather than a direct GUI toggle -
+            //there's no valid "off" value to switch to, unlike the other settings on this screen.
+            items[2] = new GUIItem(EMAIL_RECOVERY_GET.apply(data), event -> {
+                MAP.remove(user.getUUID());
+                AlixScheduler.sync(player::closeInventory);
+                runGatedByAuthAccess(user, () -> user.writeAndFlushConstSilently(changeEmailMessagePacket));
+            });
         }
 
         items[8] = new GUIItem(GO_BACK_ITEM, event -> {
