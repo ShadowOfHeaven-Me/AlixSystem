@@ -483,6 +483,13 @@ public final class PersistentUserData implements AlixUserData {
 
     public void updateLastSuccessfulLoginTime() {
         this.setLastSuccessfulLogin(System.currentTimeMillis());
+        this.persistToken();
+    }
+
+    //INSERT IGNORE/ON CONFLICT DO NOTHING - fixes an account whose token only ever lived in the local
+    //user-tokens file (predates DB token saving) getting a row on next login, instead of never
+    public void persistToken() {
+        database.saveUserToken(this.identity, this.getToken());
     }
 
     public LoginType getLoginType() {

@@ -94,6 +94,9 @@ public final class AuthDataChanges {
         //is cheap in-memory work and saveRecoveryCodes() is a fire-and-forget async DB write (see
         //DatabaseUpdaterImpl), so this is safe to do directly here without offloading to another thread.
         if (!wasRequired && requiresApp(this.authSetting)) {
+            //must land before regenerateRecoveryCodes() - both go through this player's own queryAsync
+            //chain, so this guarantees the token row exists before the recovery codes UPDATE needs it
+            user.getData().persistToken();
             String[] codes = user.getData().regenerateRecoveryCodes();
             sendRecoveryCodes(user, codes);
         }

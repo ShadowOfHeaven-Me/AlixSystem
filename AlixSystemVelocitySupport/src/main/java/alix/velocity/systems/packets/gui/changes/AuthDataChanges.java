@@ -79,6 +79,8 @@ public final class AuthDataChanges {
         //none until they happen to click "Recovery Codes" or "Reset Code" separately - see the Spigot
         //AuthDataChanges' equivalent for the full reasoning.
         if (!wasRequired && requiresApp(this.authSetting)) {
+            //see the Spigot AuthDataChanges equivalent for why this must land first
+            user.getData().persistToken();
             String[] codes = user.getData().regenerateRecoveryCodes();
             sendRecoveryCodes(user, codes);
         }
