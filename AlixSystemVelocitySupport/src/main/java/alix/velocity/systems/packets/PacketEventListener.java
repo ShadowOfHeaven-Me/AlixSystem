@@ -145,7 +145,10 @@ public final class PacketEventListener extends PacketListenerAbstract {
         }
         if (event instanceof PacketPlayReceiveEvent playEvent) {
             var alixUser = UserManager.getVerified(user.getUUID());
-            if (alixUser == null) return;//...how?
+            //Genuinely reachable on a race between an old, reconnected-over channel's closeFuture (see
+            //UserManager#add()'s own docs, fixed 2026-09-24) and other transient timing - kept as a
+            //defensive no-op rather than an assumption this can never happen.
+            if (alixUser == null) return;
 
             alixUser.getDuplexProcessor().onReceive(playEvent);
 

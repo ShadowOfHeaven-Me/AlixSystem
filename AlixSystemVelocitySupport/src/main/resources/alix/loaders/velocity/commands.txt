@@ -2,6 +2,8 @@ alixsystem: as, alix
 alixhelp: -
 register: -
 login: -
+terms: -
+verifyemail: -
 account: settings
 changepassword: changepass
 recovery: -

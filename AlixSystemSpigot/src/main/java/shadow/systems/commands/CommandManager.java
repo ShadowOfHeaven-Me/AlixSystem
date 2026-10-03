@@ -1,8 +1,14 @@
 package shadow.systems.commands;
 
 import alix.common.commands.file.AlixCommandInfo;
+import alix.common.data.LoginParams;
+import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
+import alix.common.data.security.email.EmailConfig;
+import alix.common.data.security.email.EmailHandler;
+import alix.common.utils.config.ConfigParams;
+import ua.nanit.limbo.connection.login.LoginState;
 import alix.common.data.loc.impl.bukkit.BukkitNamedLocation;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
@@ -36,6 +42,7 @@ import shadow.utils.main.AlixHandler;
 import shadow.utils.main.AlixUtils;
 import shadow.utils.main.file.managers.SpawnFileManager;
 import shadow.utils.main.file.managers.WarpFileManager;
+import shadow.utils.misc.CommandsPacketManager;
 import shadow.utils.misc.ReflectionUtils;
 import shadow.utils.misc.methods.MethodProvider;
 import shadow.utils.misc.packet.constructors.OutDisconnectPacketConstructor;
@@ -350,6 +357,7 @@ public final class CommandManager {
 
             registerPermissionlessCommandForcibly("changepassword", new PasswordChangeCommand());
             registerPermissionlessCommandForcibly("account", new AccountSettingsCommand());
+            registerPermissionlessCommandForcibly("alixhelp", new AlixHelpCommand());
             if (!__noPremiumAuthButKeepIdentity)
                 registerPermissionlessCommandForcibly("premium", new PremiumCommand());
 
@@ -1352,7 +1360,7 @@ public final class CommandManager {
             user.completeCaptcha();
             return;
         }
-        if (++user.captchaAttempts == maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
+        if (++user.captchaAttempts >= maxCaptchaAttempts) MethodProvider.kickAsync(user, incorrectCaptchaKickPacket);
         else user.writeAndFlushConstSilently(incorrectCaptchaMessagePacket);
     }
 
@@ -1405,7 +1413,7 @@ public final class CommandManager {
             user.tryLogIn();
             return true;
         }
-        if (++user.loginAttempts == maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
+        if (++user.loginAttempts >= maxLoginAttempts) MethodProvider.kickAsync(user, incorrectPasswordKickPacket);
         else user.writeAndFlushConstSilently(incorrectPasswordMessagePacket);
         return false;
     }
@@ -1414,7 +1422,17 @@ public final class CommandManager {
             alreadyRegisteredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("already-registered")),
             passwordRegisterMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("password-register")),
             registerPasswordsDoNotMatchMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-do-not-match")),
-            registerPasswordsMoreThanTwoMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-more-than-two"));
+            registerPasswordsMoreThanTwoMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("commands-register-passwords-more-than-two")),
+            formatRegisterEmailMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix(
+                    requirePasswordRepeatInRegister ? "format-register-repeat-email" : "format-register-email")),
+            termsMustAcceptFirstMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("terms-must-accept-first")),
+            registerEmailVerificationRequiredMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("register-email-verification-required"));
+
+    //kickAsync() needs a real disconnect-phase packet (OutDisconnectPacketConstructor), not a chat message
+    //one - using constructConst() here showed a blank "Disconnected" screen with no reason.
+    public static final ByteBuf
+            termsDeclinedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.getWithPrefix("terms-declined-kick")),
+            registerEmailVerificationTooManyAttemptsMessagePacket = OutDisconnectPacketConstructor.constAtPlay(Messages.getWithPrefix("register-email-verification-too-many-attempts"));
 
 /*    public static void onSyncRegisterCommand(UnverifiedUser user, String password) {
         if (!user.hasCompletedCaptcha()) {
@@ -1443,6 +1461,16 @@ public final class CommandManager {
             user.writeAndFlushConstSilently(alreadyRegisteredMessagePacket);
             return;
         }
+        //mirrors LoginState#registerIfValid()'s terms-gate check
+        if (user.isTermsGateBlocking()) {
+            user.writeAndFlushConstSilently(termsMustAcceptFirstMessagePacket);
+            return;
+        }
+
+        if (LoginState.requireEmailInRegister) {
+            onAsyncRegisterCommandWithEmail(user, args);
+            return;
+        }
 
         String password;
 
@@ -1452,7 +1480,7 @@ public final class CommandManager {
             switch (a.length) {
                 case 1:
                     //todo: reconsider
-                    tryRegisterIfValid(user, a[0]);//tolerate single password input, even if repeat is explicitly enabled in config
+                    tryRegisterIfValidAsync(user, a[0]);//tolerate single password input, even if repeat is explicitly enabled in config
                     return;
                 case 2:
                     password = a[0];
@@ -1468,10 +1496,135 @@ public final class CommandManager {
 
         } else password = args;
 
-        tryRegisterIfValid(user, password);
+        tryRegisterIfValidAsync(user, password);
     }
 
-    //returns true if valid
+    //Handles /register when 'require-email-in-register' is on - mirrors LoginState#handleRegisterCommandWithEmail().
+    //The account isn't created until the code is confirmed via "/verifyemail <code>" (see onAsyncVerifyEmailCommand()).
+    private static void onAsyncRegisterCommandWithEmail(UnverifiedUser user, String args) {
+        String[] a = AlixUtils.split(args, ' ');
+        int expectedArgs = requirePasswordRepeatInRegister ? 3 : 2;
+        if (a.length != expectedArgs) {
+            user.writeAndFlushConstSilently(formatRegisterEmailMessagePacket);
+            return;
+        }
+
+        String password = a[0];
+
+        if (requirePasswordRepeatInRegister) {
+            String repeat = a[1];
+            if (!password.equals(repeat)) {
+                user.writeAndFlushConstSilently(registerPasswordsDoNotMatchMessagePacket);
+                return;
+            }
+        }
+
+        String email = a[a.length - 1];
+        if (!EmailHandler.isValidEmail(email)) {
+            user.sendDynamicMessageSilently(Messages.getWithPrefix("verify-mail.invalid-email"));
+            return;
+        }
+
+        //validate up front, no point sending an email for a password we'd reject anyway
+        getPasswordInvalidityReasonAsync(password, LoginType.COMMAND, reason -> {
+            if (reason != null) {
+                user.sendDynamicMessageSilently(reason);
+                return;
+            }
+
+            user.armPendingEmailRegistration(password, email);
+            EmailHandler.sendVerifyMailForPendingRegistration(user, email,
+                    (u, msg) -> u.sendDynamicMessageSilently(msg),
+                    () -> user.getChannel().eventLoop().execute(() -> completeEmailRegistration(user)));
+            user.sendDynamicMessageSilently(Messages.getWithPrefix("register-email-verification-sent", email));
+
+            //Swap to the longer email-verification countdown - mirrors LoginState on Velocity.
+            if (ConfigParams.hasEmailVerificationTime)
+                user.getPacketBlocker().getCountdown().restartAsEmailVerification();
+
+            refreshVerificationMessage(user);
+        });
+    }
+
+    //Refreshes the title/action-bar reminder and the advertised command list (so the client stops showing
+    //e.g. "/terms accept" in red as if it doesn't exist) to match the gate now blocking registration.
+    private static void refreshVerificationMessage(UnverifiedUser user) {
+        CommandsPacketManager.writeAndFlush(user);
+        if (!user.isGUIUser() && !user.isBedrock()) user.getVerificationMessage().updateMessage();
+    }
+
+    //Handles the pre-login "/verifyemail <code>" command that completes a 'require-email-in-register'
+    //registration - mirrors LoginState#handleRegisterVerifyEmailCommand().
+    public static void onAsyncVerifyEmailCommand(UnverifiedUser user, String args) {
+        if (!user.isEmailRegisterGateBlocking()) {
+            user.sendDynamicMessageSilently(Messages.getWithPrefix("verify-mail.send-first", "/register"));
+            return;
+        }
+
+        if (EmailHandler.verifyCode(user, args.trim())) {
+            completeEmailRegistration(user);
+            return;
+        }
+
+        if (++user.invalidRegisterCodeAttempts >= EmailConfig.getConfig().getInt("max-code-attempts")) {
+            MethodProvider.kickAsync(user, registerEmailVerificationTooManyAttemptsMessagePacket);
+            return;
+        }
+        user.sendDynamicMessageSilently(Messages.getWithPrefix("verify-mail.code-mismatch"));
+    }
+
+    //Finishes a 'require-email-in-register' registration once its code is confirmed - mirrors LoginState#completeEmailRegistration().
+    private static void completeEmailRegistration(UnverifiedUser user) {
+        if (!user.isEmailRegisterGateBlocking()) return;
+
+        String password = user.getPendingRegisterPassword();
+        String email = user.getPendingRegisterEmail();
+        user.clearPendingEmailRegistration();
+
+        registerIfValidAsync(user, password, email);
+    }
+
+    //Single choke point for actually registering a validated password - mirrors LoginState#registerIfValid().
+    private static void registerIfValidAsync(UnverifiedUser user, String password, String email) {
+        getPasswordInvalidityReasonAsync(password, LoginType.COMMAND, reason -> {
+            if (reason != null) {
+                user.sendDynamicMessageSilently(reason);
+                return;
+            }
+            user.registerAsync(password, email);
+            user.writeAndFlushConstSilently(passwordRegisterMessagePacket);
+        });
+    }
+
+    //Same as tryRegisterIfValid() below, but with the full async (breach-check-included) validation.
+    private static void tryRegisterIfValidAsync(UnverifiedUser user, String password) {
+        registerIfValidAsync(user, password, null);
+    }
+
+    //Handles the pre-login "/terms accept|decline" command - mirrors LoginState#handleTermsCommand().
+    public static void onAsyncTermsCommand(UnverifiedUser user, String args) {
+        if (user.isRegistered()) return;//nothing meaningful to accept/decline for an already-registered account
+
+        if (!LoginState.requireTermsAcceptance) {
+            user.writeAndFlushConstSilently(LoginState.requireEmailInRegister ? formatRegisterEmailMessagePacket : AlixCommandManager.formatRegisterMessagePacket);
+            return;
+        }
+
+        if (args.equalsIgnoreCase("accept")) {
+            user.acceptTerms();
+            user.sendDynamicMessageSilently(Messages.getWithPrefix("terms-accepted"));
+            user.writeAndFlushConstSilently(LoginState.requireEmailInRegister ? formatRegisterEmailMessagePacket : AlixCommandManager.formatRegisterMessagePacket);
+            refreshVerificationMessage(user);
+            return;
+        }
+        if (args.equalsIgnoreCase("decline")) {
+            MethodProvider.kickAsync(user, termsDeclinedKickPacket);
+            return;
+        }
+        user.writeAndFlushConstSilently(termsMustAcceptFirstMessagePacket);
+    }
+
+    //returns true if valid. Sync-only (no breach check) - kept for VerificationBedrockGUI's sync need.
     public static boolean tryRegisterIfValid(UnverifiedUser user, String password) {
         String reason = getInvalidityReason(password, false);
         if (reason == null) {
@@ -1542,12 +1695,66 @@ public final class CommandManager {
         }
     }
 
+    //Non-admin-gated "/alixhelp" - lists every player-facing command, mirroring Velocity's
+    //AlixSystemCommand#sendPlayerCommandsList()/CommandManager#register_Help().
+    private static final class AlixHelpCommand implements CommandExecutor {
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+            sendMessage(sender, Messages.get("player-commands-header"));
+
+            sendMessage(sender, Messages.get("player-commands-section-login"));
+            //Same reasoning as Velocity's sendPlayerCommandsList(): /register and /login are already
+            //explained at the point they're actually needed, and /terms is only relevant while
+            //require-terms-acceptance is on.
+            sendMessage(sender, Messages.get("player-commands-recovery"));
+            if (LoginState.requireTermsAcceptance)
+                sendMessage(sender, Messages.get("player-commands-terms"));
+            sendMessage(sender, "");
+
+            sendMessage(sender, Messages.get("player-commands-section-account"));
+            sendMessage(sender, Messages.get("player-commands-account"));
+            sendMessage(sender, Messages.get("player-commands-account-sendverifyemail"));
+            sendMessage(sender, Messages.get("player-commands-account-verifyemail"));
+            sendMessage(sender, Messages.get("player-commands-changepassword"));
+            sendMessage(sender, Messages.get("player-commands-premium"));
+            sendMessage(sender, "");
+            return true;
+        }
+    }
+
     private static final class AccountSettingsCommand implements CommandExecutor {
 
         @Override
         public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             if (isConsoleButPlayerRequired(sender)) return false;
-            AccountGUI.add((Player) sender);
+            Player player = (Player) sender;
+            if (args.length > 0) {
+                String sub = args[0];
+                if (sub.equalsIgnoreCase("verifyemail")) {
+                    if (args.length < 2) {
+                        sendMessage(sender, Messages.getWithPrefix("account-verifyemail-specify-code"));
+                        return true;
+                    }
+                    EmailHandler.verifyMail(sender, UserFileManager.get(player.getName()), args[1], false, AlixUtils::sendMessage);
+                    return true;
+                }
+                if (sub.equalsIgnoreCase("sendverifyemail")) {
+                    if (args.length < 2) {
+                        sendMessage(sender, Messages.getWithPrefix("account-sendverifyemail-usage"));
+                        return true;
+                    }
+                    String email = args[1];
+                    VerifiedUser user = getVerifiedUser(player);
+                    LoginParams params = user.getData().getLoginParams();
+                    Runnable send = () -> EmailHandler.sendVerifyMail(sender, player.getName(), email, false, AlixUtils::sendMessage);
+                    //the email is this account's recovery channel - same gate as the Account Settings GUI's email button
+                    if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) send.run();
+                    else user.getDuplexProcessor().verifyAuthAccess(send);
+                    return true;
+                }
+            }
+            AccountGUI.add(player);
             return true;
         }
     }

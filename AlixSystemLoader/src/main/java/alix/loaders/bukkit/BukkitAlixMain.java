@@ -175,19 +175,19 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
     private static final class ParamImpl implements Params {
 
         //supported message-language codes; every one except DEFAULT_LANGUAGE maps to a bundled, read-only
-        //translation under the "langs" resource folder (e.g. "cs" -> langs/cs.txt - see messagesFileName()
-        //and FileUpdater's SPIGOT/PAPER branch for why these are never merge-preserved the way messages.txt
+        //translation under the "langs" resource folder (e.g. "cs" -> langs/cs.properties - see messagesFileName()
+        //and FileUpdater's SPIGOT/PAPER branch for why these are never merge-preserved the way messages.properties
         //is). Deliberately separate from the older 'isPluginLanguageEnglish' en/pl switch a handful of
         //classes still use directly (AlixUtils#isPluginLanguageEnglish and friends) - that one predates this
         //mechanism and isn't affected by it either way; "pl" simply isn't a valid choice for this newer,
-        //messages.txt-routed system, and falls back to English (messages.txt) here the same as any other
+        //messages.properties-routed system, and falls back to English (messages.properties) here the same as any other
         //unsupported value would.
         private static final Set<String> SUPPORTED_LANGUAGES = Set.of("en", "cs");
         private static final String DEFAULT_LANGUAGE = "en";
-        //The default/canonical messages file - unlike a "langs/<code>.txt" bundled translation, this one is
+        //The default/canonical messages file - unlike a "langs/<code>.properties" bundled translation, this one is
         //a normal, merge-updated config file (like config.yml): fully customizable, and every edit survives
         //a plugin update.
-        private static final String DEFAULT_MESSAGES_FILE = "messages.txt";
+        private static final String DEFAULT_MESSAGES_FILE = "messages.properties";
 
         @Override
         public String messagesFileName() {
@@ -201,7 +201,7 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
                     AlixCommonMain.logWarning("Unsupported 'language' value '" + language + "' in config.yml, falling back to '" + DEFAULT_LANGUAGE + "'. Supported values: " + SUPPORTED_LANGUAGES);
                 language = DEFAULT_LANGUAGE;
             }
-            return language.equals(DEFAULT_LANGUAGE) ? DEFAULT_MESSAGES_FILE : "langs/" + language + ".txt";
+            return language.equals(DEFAULT_LANGUAGE) ? DEFAULT_MESSAGES_FILE : "langs/" + language + ".properties";
         }
 
         @Override

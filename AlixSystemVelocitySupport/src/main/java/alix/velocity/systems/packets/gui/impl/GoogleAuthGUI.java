@@ -33,6 +33,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class GoogleAuthGUI extends AlixGUI {
 
@@ -91,7 +92,14 @@ public final class GoogleAuthGUI extends AlixGUI {
 
         GUIItem backGuiItem = new GUIItem(GO_BACK_ITEM, event -> this.originalGui.map());//set the originalGui gui as used
 
-        GUIItem showQRGuiItem = new GUIItem(showQRCodeItem, e -> this.user.getChannel().eventLoop().execute(this::showQrCode));
+        //Shows the persistent secret itself (via QR code) - not a rotating code, so anyone who briefly gets
+        //at an already-logged-in, unattended session could otherwise scan it onto their own device outright,
+        //same as the reset-token/view-recovery-codes buttons below. Same gate as those.
+        //Token rotation for a not-yet-enabled account happens once, in AuthDataChanges#tryApply() right
+        //before the app is actually enabled - not here on every view, which would make the token generally
+        //volatile (other places, e.g. email encryption, rely on it staying stable otherwise).
+        GUIItem showQRGuiItem = new GUIItem(showQRCodeItem, e -> this.user.getChannel().eventLoop().execute(() ->
+                runGatedByAuthAccess(this.user, this::showQrCode)));
 
         int[] resetTokenSlots = menu.getSlotsForInternal("reset-token");
         GUIItem resetTokenGuiItem = new GUIItem(resetTokenItem, event -> {
@@ -144,6 +152,7 @@ public final class GoogleAuthGUI extends AlixGUI {
                 //Covers an account that enabled 2FA before recovery codes existed at all, or one that
                 //somehow otherwise has none yet - generates them here rather than showing an empty list,
                 //see the Spigot GoogleAuthGUI's equivalent handler for the full reasoning.
+                if (codes.length == 0) this.user.getData().persistToken();
                 String[] toShow = codes.length > 0 ? codes : this.user.getData().regenerateRecoveryCodes();
                 this.user.getChannel().eventLoop().execute(() -> sendRecoveryCodes(this.user, toShow));
             }));
@@ -162,7 +171,7 @@ public final class GoogleAuthGUI extends AlixGUI {
             }
         });
 
-        GUIItem applyChangesGuiItem = new GUIItem(applyChangesItem, event -> changes.tryApply(user));
+        GUIItem applyChangesGuiItem = new GUIItem(applyChangesItem, event -> changes.tryApply(user, this::showQrCode));
 
         Map<String, GUIItem> internalItems = Map.of(
                 "back", backGuiItem,
@@ -176,10 +185,33 @@ public final class GoogleAuthGUI extends AlixGUI {
         return MenuBuilder.build(menu, size, this.user, internalItems);
     }
 
+    //The off-hand slot index (window 0) the fake QR-code map item is displayed in - shared with
+    //VerifiedPacketProcessor#endQRCodeShow(), which restores whatever the player's real off-hand item
+    //actually was once the QR view ends, since nothing else ever tells the client to stop showing the fake
+    //one there.
+    public static final int QR_MAP_SLOT = 45;
+
+    //Right after joining, the real off-hand item isn't known yet (see VerifiedPacketProcessor's docs) until
+    //the backend server's own initial inventory sync has actually arrived through the proxy - which can
+    //easily lose a race against a player clicking "Show QR Code" the moment the (proxy-rendered, effectively
+    //instant) account GUI opens. Faking the map in before that point left nothing correct to restore later,
+    //so the item stayed stuck until something else (e.g. a reconnect) forced a fresh sync. Retried every
+    //50ms, capped at 1s - in practice the sync is already in flight, so this just waits it out.
+    private static final int MAX_OFFHAND_WAIT_ATTEMPTS = 20;
+
     //Renders and shows the current Google Authenticator QR code - shared by the "show-qr" button and by a
     //successful "reset-token" confirmation (which needs to show the BRAND NEW code right after generating
     //it). Must run on this.user's event loop - callers are responsible for that (see the two call sites).
     private void showQrCode() {
+        this.showQrCode(0);
+    }
+
+    private void showQrCode(int attempt) {
+        if (!this.user.getDuplexProcessor().isRealOffHandItemKnown() && attempt < MAX_OFFHAND_WAIT_ATTEMPTS) {
+            this.user.getChannel().eventLoop().schedule(() -> this.showQrCode(attempt + 1), 50, TimeUnit.MILLISECONDS);
+            return;
+        }
+
         var token = this.user.getData().getToken();
         try {
             byte[] imgBytes = GoogleAuthUtils.createQRCode(
@@ -194,7 +226,7 @@ public final class GoogleAuthGUI extends AlixGUI {
 
             ItemStack mapItem = ItemStack.builder().type(ItemTypes.FILLED_MAP).amount(1).component(ComponentTypes.MAP_ID, 0).build();
 
-            WrapperPlayServerSetSlot setSlotPacket = new WrapperPlayServerSetSlot(0, 0, 45, mapItem);
+            WrapperPlayServerSetSlot setSlotPacket = new WrapperPlayServerSetSlot(0, 0, QR_MAP_SLOT, mapItem);
 
             WrapperPlayServerMapData mapDataPacket = new WrapperPlayServerMapData(0, (byte) 3, false, true,
                     null, image.getWidth(), image.getHeight(), 0, 0, serialized);
@@ -211,11 +243,18 @@ public final class GoogleAuthGUI extends AlixGUI {
     }
 
     //Runs action immediately if this account already proved app-code access once before (the common case -
-    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams), otherwise prompts for
-    //the CURRENT code first via the same VerifiedPacketProcessor#verifyAuthAccess() flow AuthDataChanges
-    //already uses for changing the auth TYPE, running action only if that's entered correctly.
+    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams) OR if the app currently
+    //isn't required at all - see the Spigot GoogleAuthGUI's equivalent for the full reasoning, including why
+    //this checks params.getAuthSettings().requiresAuthApp() and NOT UserTokensFileManager.hasToken() (a real
+    //bug, found 2026-09-23: since Alix 3.10.0 a token row exists for virtually every account almost
+    //immediately regardless of whether 2FA was ever enabled, so hasToken() alone was never a valid "was 2FA
+    //ever configured" signal - it demanded a code for a secret the player had genuinely never seen).
+    //Otherwise prompts for the CURRENT code first via the same VerifiedPacketProcessor#verifyAuthAccess()
+    //flow AuthDataChanges already uses for changing the auth TYPE, running action only if that's entered correctly.
     private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
-        if (user.getData().getLoginParams().hasProvenAuthAccess()) {
+        LoginParams params = user.getData().getLoginParams();
+
+        if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) {
             action.run();
             return;
         }

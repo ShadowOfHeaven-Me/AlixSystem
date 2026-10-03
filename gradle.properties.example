@@ -12,7 +12,7 @@ velocity-build-dir=C:\\path\\to\\your\\velocity-test-server\\plugins
 #to diverge (e.g. testing against a different packetevents build)
 alix-velocity-version=1.5.1 (DEV-1)
 alix-spigot-version=3.10.1 (DEV-1)
-packet-events-version=2.13.1-SNAPSHOT
+packet-events-version=2.14.0
 
 toolchain-lang-version=21
 enable-preview=false

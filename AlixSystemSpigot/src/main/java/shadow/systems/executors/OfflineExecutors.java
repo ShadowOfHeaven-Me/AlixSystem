@@ -12,6 +12,7 @@ import alix.common.environment.ServerEnvironment;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
+import alix.common.utils.config.ConfigParams;
 import alix.common.utils.file.managers.IpsCacheFileManager;
 import alix.common.utils.multiengine.ban.BukkitBanList;
 import com.github.retrooper.packetevents.protocol.player.User;
@@ -140,19 +141,22 @@ public final class OfflineExecutors extends UniversalExecutors {
             return;
         }
 
-        if (isLinked) {
-            LoginVerdictManager.addOnline(user, ip, PersistentUserData.createDefault(name, e.getAddress(), Password.createRandom()), true, e);
-            return;
-        }
-
-        if (ONLINE_MODE || VerifiedCache.removeAndCheckIfEquals(name, user)) {
-            PremiumData premiumData = PremiumUtils.getOrRequestAndCacheDataSync(null, name);
-            if (!ONLINE_MODE && !premiumData.getStatus().isPremium()) {
-                Main.logWarning("PremiumData " + premiumData.getStatus() + " clarified per PremiumDataCache is not premium, but was in the VerifiedCache! Report this immediately!");
+        //require-register-from-all: mirrors Velocity's onInitialServer()/PacketEventListener gate
+        if (!ConfigParams.requireRegisterFromAll) {
+            if (isLinked) {
+                LoginVerdictManager.addOnline(user, ip, PersistentUserData.createDefault(name, e.getAddress(), Password.createRandom()), true, e);
+                return;
             }
 
-            LoginVerdictManager.addOnline(user, ip, PersistentUserData.createFromPremiumInfo(name, e.getAddress(), premiumData), true, e);
-            return;
+            if (ONLINE_MODE || VerifiedCache.removeAndCheckIfEquals(name, user)) {
+                PremiumData premiumData = PremiumUtils.getOrRequestAndCacheDataSync(null, name);
+                if (!ONLINE_MODE && !premiumData.getStatus().isPremium()) {
+                    Main.logWarning("PremiumData " + premiumData.getStatus() + " clarified per PremiumDataCache is not premium, but was in the VerifiedCache! Report this immediately!");
+                }
+
+                LoginVerdictManager.addOnline(user, ip, PersistentUserData.createFromPremiumInfo(name, e.getAddress(), premiumData), true, e);
+                return;
+            }
         }
         LoginVerdictManager.addOffline(user, ip, data, e);
     }

@@ -2,6 +2,7 @@ package shadow.utils.objects.packet.types.unverified;
 
 import alix.common.data.LoginType;
 import alix.common.messages.Messages;
+import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.network.AlixNetworkDeque;
 import alix.common.utils.other.throwable.AlixError;
@@ -575,7 +576,7 @@ public class PacketBlocker implements PacketProcessor {
     //algorithms could be somewhat heavy
     private void processCommand(char[] cmd) {
         if (this.user.isGUIUser()) {
-            this.user.writeDynamicMessageSilently(Component.text("&cError - Cannot input command cuz you're using a GUI for login!"));
+            this.user.writeDynamicMessageSilently(MessageWrapper.parseLegacy("§cError - Cannot input command cuz you're using a GUI for login!"));
             this.user.flush();
             return;
 

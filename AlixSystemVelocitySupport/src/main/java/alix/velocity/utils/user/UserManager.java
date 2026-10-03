@@ -79,8 +79,11 @@ public final class UserManager {
         var user = new VerifiedUser(player);
         USERS.put(player.getUniqueId(), user);
 
+        //Identity-checked removal, not remove(uuid) - a reconnect can put a brand-new VerifiedUser for this
+        //uuid into USERS before the OLD channel's closeFuture fires, and an unconditional remove(uuid)
+        //would then evict that new, still-live session instead of the stale one.
         user.getChannel().closeFuture().addListener(f -> {
-            USERS.remove(player.getUniqueId());
+            USERS.remove(player.getUniqueId(), user);
         });
         ExecutableCommandList.executeFor(user);
     }

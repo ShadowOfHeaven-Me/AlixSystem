@@ -42,9 +42,16 @@ public final class MessageWrapper {
             return Component.empty();
         }
 
-        // Handle ampersands first if present, then section symbols
+        // Handle ampersands first if present, then section symbols. Re-serializing with
+        // AMPERSAND_SERIALIZER here (as this used to) is a no-op - a LegacyComponentSerializer uses the
+        // same configured character for both directions, so it just writes the '&' codes straight back out.
+        // SECTION_SERIALIZER.deserialize() below then never recognizes any of them (it only looks for '§'),
+        // so every '&'-coded string - most of this plugin's configured text - came out as literal, unparsed
+        // text with the '&' codes still in it. Re-serializing with SECTION_SERIALIZER instead actually
+        // converts '&' codes to '§' codes, which the deserialize() call below can then parse, while still
+        // correctly handling any '§' codes that were already present in the same string.
         String formatConverted = message.indexOf('&') != -1
-                ? AMPERSAND_SERIALIZER.serialize(AMPERSAND_SERIALIZER.deserialize(message))
+                ? SECTION_SERIALIZER.serialize(AMPERSAND_SERIALIZER.deserialize(message))
                 : message;
 
         Component parsed = SECTION_SERIALIZER.deserialize(formatConverted);

@@ -146,7 +146,7 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
 
         @Override
         public char messagesSeparator() {
-            return ':';
+            return '=';
         }
 
         @Override

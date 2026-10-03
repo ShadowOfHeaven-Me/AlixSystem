@@ -15,7 +15,9 @@ import static shadow.utils.main.AlixUtils.captchaVerificationCaseSensitive;
 
 public abstract class Captcha {
 
-    protected static final int maxRotation = Main.config.getInt("captcha-max-random-rotation") % 360;
+    //Clamped to [0, 359] - Java's % keeps the dividend's sign, so a negative config value would produce a
+    //negative maxRotation, and CaptchaImageGenerator's Random#nextInt() throws on a negative bound.
+    protected static final int maxRotation = Math.max(0, Main.config.getInt("captcha-max-random-rotation")) % 360;
     private static final CaptchaPoolManager captchaPool = AlixUtils.requireCaptchaVerification ? new CaptchaPoolManager() : null;
     protected final String captcha;
 
@@ -71,7 +73,12 @@ public abstract class Captcha {
             captchaPool.recycle(future);
             return;
         }
-        if (captcha.isReleased()) return;//can't recycle a used captcha
+        //A shown-but-never-completed captcha (player disconnects before answering) can't be recycled, but
+        //its buffers still need freeing - see SmoothCaptcha/NameCaptcha's buffersFreed docs.
+        if (captcha.isReleased()) {
+            captcha.release();
+            return;
+        }
 
         captchaPool.recycle(future.isCompletedFutureType() ? future : AlixFuture.completedFuture(captcha));
     }

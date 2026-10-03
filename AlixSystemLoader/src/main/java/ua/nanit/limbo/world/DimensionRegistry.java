@@ -46,6 +46,7 @@ public final class DimensionRegistry {
     private final CompoundBinaryTag tags_1_21_11;
     private final CompoundBinaryTag tags_26_1;
     private final CompoundBinaryTag tags_26_2;
+    private final CompoundBinaryTag tags_26_3;
 
     public DimensionRegistry() throws IOException {
         codec_1_16 = readNbtFile("codec_1_16");
@@ -79,6 +80,7 @@ public final class DimensionRegistry {
         tags_1_21_11 = readNbtFile("tags_1_21_11");
         tags_26_1 = readNbtFile("tags_26_1");
         tags_26_2 = readNbtFile("tags_26_2");
+        tags_26_3 = readNbtFile("tags_26_3");
     }
 
     //https://github.com/Nan1t/NanoLimbo/blob/149434d7dc588cfa1b499205778c9aef12ad6341/src/main/java/ua/nanit/limbo/world/DimensionRegistry.java
@@ -122,10 +124,16 @@ public final class DimensionRegistry {
         return this.codec_1_16;
     }
     
+    //26.3's tags differ meaningfully from 26.2's (new block/item/biome/fluid/potion tags, ~80% more total
+    //entries) - captured live from a real 26.3 server, not reused from 26.2. See getCodec()'s moreOrEqual
+    //pattern above for the same forward-compat reasoning on the top entry.
     public CompoundBinaryTag getTags(Version version) {
+        //V26_3 must resolve to its own tags_26_3, not fall back to tags_26_2 - 26.3's tags differ meaningfully
+        //(see the class-level comment above) and this exact mapping was already verified live against a real
+        //26.3 client.
         return switch (version) {
-            //case V26_3 -> null;
-            case V26_3, V26_2 -> this.tags_26_2;
+            case V26_3 -> this.tags_26_3;
+            case V26_2 -> this.tags_26_2;
             case V26_1 -> this.tags_26_1;
             case V1_21_11 -> this.tags_1_21_11;
             case V1_21_9 -> this.tags_1_21_9;

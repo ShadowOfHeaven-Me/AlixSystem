@@ -72,6 +72,10 @@ public final class AdaptiveAnomalyDetector {
     private static final Map<Integer, SourceMetrics<Integer>> IPV4_SUBNET = new ConcurrentHashMap<>(); // /24
     private static final Map<Long, SourceMetrics<Long>> IPV6_PREFIX = new ConcurrentHashMap<>(); // /64
 
+    //Kept in sync with TesterAdaptiveAnomalyDetector's own copy of these same constants (src/test/java) -
+    //that harness can't call through this class directly, since referencing ANY member of
+    //AdaptiveAnomalyDetector triggers its static initializer above, which schedules real background tasks
+    //via AlixScheduler and needs a live Bukkit/Velocity platform on the classpath to do so.
     private static SourceMetrics<InetAddress> newPerIpMetrics() {
         return new SourceMetrics<>(0.1, 30, 1.5, 8, 15, 4_000,
                 2, 3, 8, 20,
@@ -110,15 +114,33 @@ public final class AdaptiveAnomalyDetector {
     }
 
     public static ConnectionVerdict onConnection(InetAddress addr) {
-        connectionsEstablishedCounter.increment();
+        return onConnection(addr, 1);
+    }
+
+    //weight lets a caller (LimboIntegration, via TelemetryProfiler.synSignature(channel)) make a single
+    //connection count as more than 1 toward the CUSUM buckets below when its SYN fingerprint looks
+    //suspicious. See SourceMetrics#recordConnectionEstablished(int).
+    public static ConnectionVerdict onConnection(InetAddress addr, int weight) {
+        connectionsEstablishedCounter.add(weight);
         var ipMetrics = PER_IP.computeIfAbsent(addr, a -> newPerIpMetrics());
-        var ipState = ipMetrics.recordConnectionEstablished();
+        var ipState = ipMetrics.recordConnectionEstablished(weight);
 
         var subnetKey = subnetKey(addr);
         var subnetMetrics = computeSubnetForKey(subnetKey);
-        var subnetState = subnetMetrics.recordConnectionEstablished();
+        var subnetState = subnetMetrics.recordConnectionEstablished(weight);
 
         return handle(addr, subnetKey, ipState, subnetState, ipMetrics, subnetMetrics);
+    }
+
+    //a status ping (server-list refresh) opens a raw connection counted by onConnection() before the
+    //handshake reveals it was never a real join attempt - undoes that count once we know, so a player
+    //idly sitting on/refreshing their server list can never build up toward K1 just from that
+    public static void onStatusPing(InetAddress addr, int weight) {
+        var ipMetrics = PER_IP.get(addr);
+        if (ipMetrics != null) ipMetrics.undoConnectionEstablished(weight);
+
+        var subnetMetrics = getSubnetFor(addr);
+        if (subnetMetrics != null) subnetMetrics.undoConnectionEstablished(weight);
     }
 
     public static void onEmptyClose(InetAddress addr) {
@@ -181,6 +203,12 @@ public final class AdaptiveAnomalyDetector {
         long prefix = 0;
         for (int i = 0; i < 8; i++) prefix = (prefix << 8) | (b[i] & 0xFF); // top 64 bits
         return prefix;
+    }
+
+    //An admin unban (/as ufw) only clears FireWallManager's own entry - without this, this IP's frozen
+    //ATTACK-state baseline/cusum is untouched, so its very next connection re-triggers K1 immediately
+    public static void resetIp(InetAddress addr) {
+        PER_IP.remove(addr);
     }
 
     static void evictIdle() {

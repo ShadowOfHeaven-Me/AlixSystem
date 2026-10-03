@@ -6,6 +6,7 @@ import alix.common.utils.other.annotation.AlixIntrinsified;
 import alix.common.utils.other.keys.str.CharArray;
 import alix.common.utils.other.throwable.AlixError;
 import io.netty.buffer.ByteBuf;
+import shadow.Main;
 import shadow.systems.commands.CommandManager;
 import shadow.systems.commands.alix.verification.VerificationCommand;
 import shadow.utils.misc.packet.constructors.OutMessagePacketConstructor;
@@ -65,7 +66,22 @@ public final class AlixCommandManager {
 
     public static final ByteBuf
             formatRegisterMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatRegister),
-            formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin);
+            formatLoginMessagePacket = OutMessagePacketConstructor.constructConst(CommandManager.formatLogin),
+            formatTermsMessagePacket = constructTermsMessageSafely(),
+            formatVerifyEmailMessagePacket = OutMessagePacketConstructor.constructConst(alix.common.messages.Messages.getWithPrefix("register-email-verification-required"));
+
+    //Same clickable "/terms accept"/"/terms decline" text as the join prompt, with the same ClickEvent fallback.
+    private static ByteBuf constructTermsMessageSafely() {
+        try {
+            return OutMessagePacketConstructor.constructConst(UnverifiedUser.buildTermsPromptComponent(true));
+        } catch (Throwable t) {
+            Main.logWarning("Failed to build the /terms format-hint message with clickable accept/decline text - "
+                    + "falling back to a non-clickable version. This is very likely a packetevents/Adventure "
+                    + "version mismatch on this server build, not something wrong with your AlixSystem setup. "
+                    + "Cause: " + t);
+            return OutMessagePacketConstructor.constructConst(UnverifiedUser.buildTermsPromptComponent(false));
+        }
+    }
 
     //This is a custom verification command handling implementation
     //I've deemed to be the fastest so far
@@ -104,6 +120,14 @@ public final class AlixCommandManager {
                 user.writeAndFlushConstSilently(formatLoginMessagePacket);
                 return;
             }
+            if (consumer == VerificationCommand.OF_TERMS) {
+                user.writeAndFlushConstSilently(formatTermsMessagePacket);
+                return;
+            }
+            if (consumer == VerificationCommand.OF_VERIFYEMAIL) {
+                user.writeAndFlushConstSilently(formatVerifyEmailMessagePacket);
+                return;
+            }
             throw new AlixError("Invalid: " + new String(labelChars) + " for " + new String(cmd));
         }
         //This line of code passes the whole string as the second command argument
@@ -119,6 +143,8 @@ public final class AlixCommandManager {
         //VerificationCommand captcha = VerificationCommand.OF_CAPTCHA;
         VerificationCommand register = VerificationCommand.OF_REGISTER;
         VerificationCommand login = VerificationCommand.OF_LOGIN;
+        VerificationCommand terms = VerificationCommand.OF_TERMS;
+        VerificationCommand verifyEmail = VerificationCommand.OF_VERIFYEMAIL;
 
         for (String commandAlias : CommandsFileManager.getLoginCommands()) {
             AlixCommandInfo alix = getCommand(commandAlias);
@@ -135,6 +161,12 @@ public final class AlixCommandManager {
                     continue;
                 case "login":
                     verificationCommands.put(cmd, login);
+                    continue;
+                case "terms":
+                    verificationCommands.put(cmd, terms);
+                    continue;
+                case "verifyemail":
+                    verificationCommands.put(cmd, verifyEmail);
                     continue;
                 default:
                     throw new AssertionError("Invalid verification command: '" + commandAlias + "' - '" + command + "'!");
