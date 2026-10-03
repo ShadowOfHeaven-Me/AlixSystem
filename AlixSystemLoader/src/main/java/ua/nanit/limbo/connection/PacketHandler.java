@@ -1,5 +1,6 @@
 package ua.nanit.limbo.connection;
 
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
@@ -10,6 +11,7 @@ import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.utils.AlixCommonUtils;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.motd.MotdHandler;
+import ua.nanit.limbo.integration.LimboIntegration;
 import ua.nanit.limbo.integration.PreLoginInfo;
 import ua.nanit.limbo.integration.PreLoginResult;
 import ua.nanit.limbo.protocol.packets.configuration.PacketInFinishConfiguration;
@@ -81,6 +83,7 @@ public final class PacketHandler {
 
         LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.STATUS_REQUEST);
         RegisteredConnectionAlgoImpl.onLoginStartOrStatusRequest(conn.getChannel(), conn.getAddress());
+        AdaptiveAnomalyDetector.onStatusPing(conn.getAddress(), LimboIntegration.connectionWeight(conn.getChannel()));
 
         if (MotdHandler.sendCachedResponse(conn))
             return;
