@@ -24,7 +24,14 @@ final class VolumeAnomalyDetector {
         double jitter = baselineJitter.sigma();
         double z = (current - base) / jitter;
 
-        cusum = Math.max(0, cusum + z - slack); //slack ignores small drift, e.g. 0.5-1.0
+        //capped, not just floored at 0 - without a ceiling, one big enough burst (e.g. a legitimate wave of
+        //reconnects after maintenance ends) can drive cusum into the hundreds against a baseline that's
+        //frozen the moment it leaves NORMAL (see below), so it then takes an unreasonable number of empty/
+        //low buckets to decay back down - in practice it never recovers on a live server that's never
+        //truly idle, latching this source as ATTACK/ELEVATED indefinitely instead of self-healing once the
+        //burst passes. Capping bounds the worst-case recovery time regardless of how large the triggering
+        //burst was, without weakening how fast a real sustained flood still trips attackAt in the first place.
+        cusum = Math.min(attackAt * 2, Math.max(0, cusum + z - slack)); //slack ignores small drift, e.g. 0.5-1.0
 
         if (cusum > attackAt || z > 8 && current > this.minVolumeToInstantAttack) state = State.ATTACK;
         else if (cusum > elevatedAt) state = State.ELEVATED;
