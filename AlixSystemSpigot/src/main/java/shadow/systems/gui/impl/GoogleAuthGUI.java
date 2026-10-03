@@ -180,6 +180,7 @@ public final class GoogleAuthGUI extends AlixGUI {
                 //since regenerateRecoveryCodes() itself is cheap (in-memory generation + a fire-and-forget
                 //DB write) and there's no good reason to make the player go reset their whole 2FA secret
                 //just to get backup codes.
+                if (codes.length == 0) user.getData().persistToken();
                 String[] toShow = codes.length > 0 ? codes : user.getData().regenerateRecoveryCodes();
                 AlixScheduler.sync(() -> sendRecoveryCodes(player, toShow));
             }));

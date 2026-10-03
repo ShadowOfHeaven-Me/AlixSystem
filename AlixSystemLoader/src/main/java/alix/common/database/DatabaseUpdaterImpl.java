@@ -133,6 +133,8 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
             boolean originalAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                //must stay a real upsert (not INSERT IGNORE) - callers regenerate recovery codes right
+                //after this with no persistToken() of their own, relying on this unconditionally creating the row
                 try (PreparedStatement ps = connection.prepareStatement(UPSERT_TOKEN_SQL(this.getType()))) {
                     setUuid(ps, 1, tokenUuid);
                     ps.setString(2, token);

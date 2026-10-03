@@ -152,6 +152,7 @@ public final class GoogleAuthGUI extends AlixGUI {
                 //Covers an account that enabled 2FA before recovery codes existed at all, or one that
                 //somehow otherwise has none yet - generates them here rather than showing an empty list,
                 //see the Spigot GoogleAuthGUI's equivalent handler for the full reasoning.
+                if (codes.length == 0) this.user.getData().persistToken();
                 String[] toShow = codes.length > 0 ? codes : this.user.getData().regenerateRecoveryCodes();
                 this.user.getChannel().eventLoop().execute(() -> sendRecoveryCodes(this.user, toShow));
             }));
