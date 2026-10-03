@@ -3,6 +3,7 @@ package shadow.systems.commands;
 import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.connection.profiler.LimboJoinProfiler;
@@ -79,6 +80,10 @@ public final class AdminAlixCommands implements CommandExecutor {
                             sendMessage(sender, Messages.get("as-ufw-invalid-ip", arg2));
                             return false;
                         }
+
+                        //also resets this IP's adaptive anomaly state - otherwise its frozen attack-state
+                        //baseline makes the very next connection re-trigger K1 and re-firewall it instantly
+                        AdaptiveAnomalyDetector.resetIp(ip);
 
                         if (FireWallManager.removeDynamic(ip))
                             sendMessage(sender, Messages.get("as-ufw-removed", arg2));

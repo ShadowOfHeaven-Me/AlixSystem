@@ -194,6 +194,12 @@ public final class AdaptiveAnomalyDetector {
         return prefix;
     }
 
+    //An admin unban (/as ufw) only clears FireWallManager's own entry - without this, this IP's frozen
+    //ATTACK-state baseline/cusum is untouched, so its very next connection re-triggers K1 immediately
+    public static void resetIp(InetAddress addr) {
+        PER_IP.remove(addr);
+    }
+
     static void evictIdle() {
         long cutoff = System.currentTimeMillis() - 30 * 60_000L;
         PER_IP.values().removeIf(m -> m.lastSeenMillis() < cutoff);

@@ -1,5 +1,6 @@
 package alix.velocity.systems.commands;
 
+import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.antibot.algorithms.any.PanicModeManager;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
@@ -123,6 +124,10 @@ public final class AlixSystemCommand {
                                 sendMessage(sender, Messages.get("as-ufw-invalid-ip", arg2));
                                 return 0; // Return 0 to indicate command failure
                             }
+
+                            //also resets this IP's adaptive anomaly state - otherwise its frozen attack-state
+                            //baseline makes the very next connection re-trigger K1 and re-firewall it instantly
+                            AdaptiveAnomalyDetector.resetIp(ip);
 
                             if (FireWallManager.removeDynamic(ip)) {
                                 sendMessage(sender, Messages.get("as-ufw-removed", arg2));
