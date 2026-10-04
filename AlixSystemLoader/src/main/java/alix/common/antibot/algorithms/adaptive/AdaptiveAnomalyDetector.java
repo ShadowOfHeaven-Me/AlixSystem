@@ -132,17 +132,6 @@ public final class AdaptiveAnomalyDetector {
         return handle(addr, subnetKey, ipState, subnetState, ipMetrics, subnetMetrics);
     }
 
-    //a status ping (server-list refresh) opens a raw connection counted by onConnection() before the
-    //handshake reveals it was never a real join attempt - undoes that count once we know, so a player
-    //idly sitting on/refreshing their server list can never build up toward K1 just from that
-    public static void onStatusPing(InetAddress addr, int weight) {
-        var ipMetrics = PER_IP.get(addr);
-        if (ipMetrics != null) ipMetrics.undoConnectionEstablished(weight);
-
-        var subnetMetrics = getSubnetFor(addr);
-        if (subnetMetrics != null) subnetMetrics.undoConnectionEstablished(weight);
-    }
-
     public static void onEmptyClose(InetAddress addr) {
         emptyCounter.increment();
         var ipMetrics = PER_IP.computeIfAbsent(addr, a -> newPerIpMetrics());

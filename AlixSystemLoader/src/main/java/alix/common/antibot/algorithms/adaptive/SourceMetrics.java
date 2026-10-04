@@ -51,12 +51,6 @@ final class SourceMetrics<K> {
         return this.state;
     }
 
-    //gives back a weight counted by recordConnectionEstablished() once the connection turns out to be a
-    //mere status ping, not a real join attempt - no-ops if it already rolled into a later bucket
-    void undoConnectionEstablished(int weight) {
-        connectionsBucketCount.add(-weight);
-    }
-
     State recordEmptyClose() {
         emptyBucketCount.increment();
         touch();
