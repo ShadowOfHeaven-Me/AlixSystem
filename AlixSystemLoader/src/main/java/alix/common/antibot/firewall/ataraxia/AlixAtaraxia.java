@@ -1,6 +1,7 @@
 package alix.common.antibot.firewall.ataraxia;
 
 import io.netty.channel.epoll.Epoll;
+import ua.nanit.limbo.NanoLimbo;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -32,7 +33,7 @@ public final class AlixAtaraxia {
     }
 
     private static void init0() {
-        if (!Epoll.isAvailable()) return;
+        if (!Epoll.isAvailable() || NanoLimbo.INTEGRATION.isProxyProtocol()) return;
 
         AtaraxiaIPC.start0();
     }

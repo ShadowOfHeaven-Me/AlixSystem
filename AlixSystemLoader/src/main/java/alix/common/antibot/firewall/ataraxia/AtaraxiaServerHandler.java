@@ -96,7 +96,9 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
             return false;
 
         buf.markReaderIndex();
-        int len = buf.readInt();
+        int len = buf.readInt();//min of 1 cuz of intention
+        this.validate(len > 0, "len <= 0: " + len);
+
         if (buf.readableBytes() < len) {
             buf.resetReaderIndex();
             return false;
@@ -113,7 +115,7 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
                 if (protocol != AtaraxiaProtocol.PROTOCOL_VERSION) {
                     AlixCommonMain.logError("Java Alix and Ataraxia have mismatched protocols - ataraxia=" + protocol + " server=" + AtaraxiaProtocol.PROTOCOL_VERSION + "! Shutting off the connection!");
 
-                    this.channel.close();
+                    this.close();
                     return false;
                 }
 
@@ -147,14 +149,14 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
             case R2J_SND_TS -> {
-                //cuz java doesn't have a u32
+                long nanos = buf.readLong();
                 long tsval = Integer.toUnsignedLong(buf.readInt());
                 long tsecr = Integer.toUnsignedLong(buf.readInt());
                 int addr = buf.readInt();
                 int port = Short.toUnsignedInt(buf.readShort());
                 buf.readShort();//padding
 
-                ClockSkew.on_timestamp(addr, port, tsval);
+                ClockSkew.on_timestamp(nanos, addr, port, tsval);
 
                 /*try {
                     AlixCommonMain.logInfo("tsval=" + tsval + " tsecr=" + tsecr + " addr=" + InetAddress.getByAddress(IPUtils.ipv4ByteArray(addr)).getHostAddress() + " port=" + port);
@@ -162,17 +164,29 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
                     throw new RuntimeException(e);
                 }*/
             }
+            default -> {
+                this.error("Unknown intention: " + intention);
+            }
         }
         return true;
     }
 
-
     private void validateState(ConnectionState state) {
-        if (this.state == state)
-            return;
+        this.validate(this.state == state, "Expected: " + state + " has " + this.state);
+    }
 
-        throw new AlixError("Expected: " + state + " has " + this.state);
+    private void validate(boolean b, String s) {
+        if (!b)
+            this.error(s);
+    }
 
+    private void error(String s) {
+        this.close();
+        throw new AlixError(s);
+    }
+
+    public void close() {
+        this.channel.close();
     }
 
     @Override

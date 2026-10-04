@@ -38,7 +38,7 @@ public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter
             try {
                 AlixFastUnsafeEpoll.init(AlixEpollConnection.class);
                 used = FireWallType.FAST_UNSAFE_EPOLL;
-                AlixCommonMain.logInfo("Using Fast Unsafe Epoll for FireWall Protection. Fast IPv4 look-ups are Enabled.");
+                AlixCommonMain.logInfo("Using Fast Unsafe Epoll for L7 FireWall Protection. Fast IPv4 look-ups are Enabled.");
             } catch (Throwable ex) {
                 /*AlixCommonMain.logError("Something went wrong trying to enable the Epoll FireWall, see the error below!");
                 ex.printStackTrace();*/
@@ -47,7 +47,7 @@ public final class ServerChannelInitializer extends ChannelInboundHandlerAdapter
 
         isNettyFireWall = used == FireWallType.NETTY;
         if (isNettyFireWall)
-            AlixCommonMain.logInfo("Using Netty for FireWall Protection.");
+            AlixCommonMain.logInfo("Using Netty for L7 FireWall Protection.");
 
         FireWallType.USED.set(used);
 

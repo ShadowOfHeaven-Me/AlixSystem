@@ -100,10 +100,7 @@ public final class FireWallManager {
         recentFirewalls.increment();
         int sum = (int) recentFirewalls.sum();
 
-        //RECENT_FIREWALL_WINDOW is milliseconds (see its use at line 92 above) - was passed with
-        //TimeUnit.SECONDS, scheduling each decrement ~5.56 hours later instead of ~20 seconds later, so
-        //recentFirewalls only ever grew during a sustained attack and console logging stayed latched off
-        //for its whole duration instead of rolling off every ~20s as intended.
+        //RECENT_FIREWALL_WINDOW is already milliseconds - decrement scheduled in MILLISECONDS, not SECONDS
         AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.MILLISECONDS);
 
         if (sum > MAX_RECENT_FIREWALLS && MESSAGES_LOCKED.compareAndSet(false, true)) {
@@ -285,7 +282,7 @@ public final class FireWallManager {
 
     private static void loadWithBuiltIn0() {
         try (var is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
-            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN, true), false);
+            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN, true), false, "bad_ips.txt");
 
             int builtIn = staticBlocked();
             file.load();

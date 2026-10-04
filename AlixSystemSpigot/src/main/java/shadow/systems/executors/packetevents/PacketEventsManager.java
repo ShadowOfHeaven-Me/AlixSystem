@@ -430,7 +430,7 @@ public final class PacketEventsManager {
 /*    public static void initializeFireWall() {
         boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
         PacketEvents.getAPI().getEventManager().registerListener(fastRaw ? new FastRawFireWall() : new NormalFireWall());
-        Main.logInfo("Using PacketEvents for the FireWall Protection initialization. Fast Mode: " + (fastRaw ? "ON" : "OFF"));
+        Main.logInfo("Using PacketEvents for the L7 FireWall Protection initialization. Fast Mode: " + (fastRaw ? "ON" : "OFF"));
     }*/
 
 /*    private static final class NormalFireWall extends PacketListenerAbstract {
