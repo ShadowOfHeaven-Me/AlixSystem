@@ -7,7 +7,6 @@ import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.antibot.firewall.FireWallType;
-import alix.common.antibot.firewall.ataraxia.AlixAtaraxia;
 import alix.common.environment.ServerEnvironment;
 import alix.common.utils.AlixCommonUtils;
 import io.netty.channel.Channel;
@@ -43,12 +42,12 @@ public final class AlixInterceptor {
         FireWallType type = FireWallType.NETTY;
 
         if (!AlixUtils.antibotService) type = FireWallType.NOT_USED;
-        else if (AlixAtaraxia.isEnabled()) {
+        else /*if (AlixAtaraxia.isEnabled()) {
             type = FireWallType.ATARAXIA;
-            AlixCommonMain.logInfo("Using the optimized Alix Ataraxia eBPF for FireWall Protection.");
-        } else if (!Main.config.getBoolean("unsafe-firewall")) {
+            AlixCommonMain.logInfo("Using the optimized Alix Ataraxia eBPF for L7 FireWall Protection.");
+        } else */if (!Main.config.getBoolean("unsafe-firewall")) {
             type = FireWallType.NETTY;
-            AlixCommonMain.logInfo("Using Netty for FireWall Protection (per config).");
+            AlixCommonMain.logInfo("Using Netty for L7 FireWall Protection (per config).");
         } else if (!PROXY_PROTOCOL) {
             try {
                 if (AlixHandler.isEpollTransport) {
@@ -56,7 +55,7 @@ public final class AlixInterceptor {
                     try {
                         type = FireWallType.FAST_UNSAFE_EPOLL;
                         AlixFastUnsafeEpoll.init(AlixEpollConnection.class);
-                        AlixCommonMain.logInfo("Using Fast Unsafe Epoll for FireWall Protection. Fast IPv4 look-ups are Enabled.");
+                        AlixCommonMain.logInfo("Using Fast Unsafe Epoll for L7 FireWall Protection. Fast IPv4 look-ups are Enabled.");
                     } finally {
                         AlixConsoleFilterHolder.INSTANCE.stopFilteringStd();
                     }
@@ -65,16 +64,16 @@ public final class AlixInterceptor {
                 /*else if (PlatformDependent.javaVersion() <= 8) {//before modularization
                     type = FireWallType.INTERNAL_NIO_INTERCEPTOR;
                     AlixInternalNIOInterceptor.init();
-                    AlixCommonMain.logInfo("Using Internal NIO Interceptor for FireWall Protection.");
+                    AlixCommonMain.logInfo("Using Internal NIO Interceptor for L7 FireWall Protection.");
                 } */
                 else {
                     type = FireWallType.NETTY;
-                    AlixCommonMain.logInfo("Using Netty for FireWall Protection.");
+                    AlixCommonMain.logInfo("Using Netty for L7 FireWall Protection.");
                 }
             } catch (Throwable e) {
                 //e.printStackTrace();
                 type = FireWallType.NETTY;
-                AlixCommonMain.logInfo("Using Netty for FireWall Protection - the faster implementation could not have been used!");
+                AlixCommonMain.logInfo("Using Netty for L7 FireWall Protection - the faster implementation could not have been used!");
                 if (AlixUtils.isDebugEnabled) {
                     AlixCommonMain.debug("Error that occurred when trying to use the faster implementation (send this to the developer):");
                     AlixCommonMain.debug("Epoll: " + AlixHandler.isEpollTransport);

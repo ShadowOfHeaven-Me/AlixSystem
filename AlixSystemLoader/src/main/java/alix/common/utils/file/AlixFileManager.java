@@ -100,10 +100,10 @@ public abstract class AlixFileManager {
     }*/
 
     public static void readLines(File file, Consumer<String> consumer, boolean acceptEmpty) throws IOException {
-        readLines(Files.newInputStream(file.toPath()), consumer, acceptEmpty);
+        readLines(Files.newInputStream(file.toPath()), consumer, acceptEmpty, file.getName());
     }
 
-    public static void readLines(InputStream is, Consumer<String> consumer, boolean acceptEmpty) throws IOException {
+    public static void readLines(InputStream is, Consumer<String> consumer, boolean acceptEmpty, String debugResourceName) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, CHARSET))) {
             //Files.readAllLines(
 
@@ -116,7 +116,8 @@ public abstract class AlixFileManager {
                 try {
                     consumer.accept(line);
                 } catch (Exception e) {
-                    AlixCommonMain.logWarning("Error reading line '" + line + "' in obj=" + is);
+                    AlixCommonMain.logWarning("Error reading line '" + line + "' in resource=" + debugResourceName);
+                    e.printStackTrace();
                 }
             }
         }

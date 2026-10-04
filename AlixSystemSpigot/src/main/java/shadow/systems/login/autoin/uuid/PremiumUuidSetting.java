@@ -21,8 +21,9 @@ public enum PremiumUuidSetting {
                 //todo: account for lower paper?
                 boolean paper = ServerEnvironment.isPaper();
                 var cached = paper ? Bukkit.getOfflinePlayerIfCached(name) : Bukkit.getOfflinePlayer(name);
+                boolean isCached = paper;
                 //give him premium uuid if he wasn't seen before or was already known under this premium uuid
-                yield cached == null || (paper || cached.hasPlayedBefore()) && cached.getUniqueId().equals(premiumUUID);
+                yield cached == null || (isCached || cached.hasPlayedBefore()) && cached.getUniqueId().equals(premiumUUID);
             }
         };
     }

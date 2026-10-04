@@ -94,7 +94,7 @@ virtual-limbo-login: true
 #Defines whether premium players should be given their equivalent mojang-assigned uuid (their data will persist between name changes)
 #Possible values:
 # true -> always assign a premium uuid to premium players (good if you don't already have premium players with an offline uuid)
-# auto -> automatically decide whether to assign the premium player their premium uuid (based on the check that the user never joined was already known under the premium uuid)
+# auto -> automatically decide whether to assign the premium player their premium uuid (based on the check that the user never joined before or was already known under the premium uuid)
 # false -> never assign premium uuid
 premium-uuid: auto
 #Defines whether the blindness effect should be applied to the player during verification (blindness won't be applied if the user is undergoing smooth or particle captcha verification)

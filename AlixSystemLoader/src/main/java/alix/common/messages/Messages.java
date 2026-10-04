@@ -57,7 +57,7 @@ public final class Messages {
                 String[] a = splitPattern.split(line, 2);
                 if (a.length == 1) a = line.split(Pattern.quote(String.valueOf(separator)), 2);
                 if (a.length == 2 && !file.getMap().containsKey(a[0])) missing.add(a[0]);
-            }, false);
+            }, false, activeName);
 
             if (!missing.isEmpty())
                 AlixCommonMain.logWarning("The selected language file '" + activeName + "' is missing " + missing.size()

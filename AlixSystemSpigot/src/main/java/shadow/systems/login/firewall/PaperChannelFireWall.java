@@ -19,7 +19,7 @@ public final class PaperChannelFireWall implements ChannelInitializeListener {
     private final boolean fastRaw = Main.config.getBoolean("fast-raw-firewall");
 
     public PaperChannelFireWall() {
-        Main.logInfo("Using Paper for FireWall Protection initialization. Fast-Mode: " + (fastRaw ? "ON" : "OFF"));
+        Main.logInfo("Using Paper for L7 FireWall Protection initialization. Fast-Mode: " + (fastRaw ? "ON" : "OFF"));
     }
 
     @Override

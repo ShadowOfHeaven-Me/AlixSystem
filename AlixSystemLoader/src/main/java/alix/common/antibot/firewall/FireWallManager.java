@@ -100,7 +100,7 @@ public final class FireWallManager {
         recentFirewalls.increment();
         int sum = (int) recentFirewalls.sum();
 
-        AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.SECONDS);
+        AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.MILLISECONDS);
 
         if (sum > MAX_RECENT_FIREWALLS && MESSAGES_LOCKED.compareAndSet(false, true)) {
             AlixCommonMain.logInfo(firewallLogsExhaustedConsoleMessage);
@@ -277,7 +277,7 @@ public final class FireWallManager {
 
     private static void loadWithBuiltIn0() {
         try (var is = FireWallManager.class.getResourceAsStream("files/bad_ips.txt")) {
-            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN, true), false);
+            AlixFileManager.readLines(is, ip -> add0(IPUtils.fromAddress(ip), FireWallEntry.BUILT_IN, true), false, "bad_ips.txt");
 
             int builtIn = staticBlocked();
             file.load();
