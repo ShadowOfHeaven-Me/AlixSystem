@@ -1,5 +1,6 @@
 package alix.common.data.security.email;
 
+import alix.common.messages.Messages;
 import alix.common.utils.config.alix.AlixYamlConfig;
 import alix.common.utils.file.AlixFileManager;
 
@@ -15,20 +16,17 @@ public final class EmailConfig {
     public final boolean enableWebVerification;
     public final String webVerificationBindAddress, webVerificationPublicUrl;
     public final int webVerificationPort, webVerificationTokenExpiryMinutes;
-    //how long a 6-digit verification code (sent by sendVerifyMail()/sendRecoveryMail() - covers email
-    //registration, account recovery, a player's own "/account verifyemail", and the server's own "/as
-    //verifyemail") stays valid for. Previously these never expired at all (bounded only by a 512-entry LRU
-    //cache and the attempt limit) - generous by default since the console/"/as sendverifyemail" flow in
-    //particular has no real time pressure and shouldn't need redoing just because an admin took a while to
-    //check their inbox.
+    //how long a 6-digit verification code stays valid for (previously never expired). Generous default since
+    //console/"/as sendverifyemail" has no real time pressure.
     public final int verifyCodeExpiryMinutes;
-    //the plain-text (no color codes - this renders in a browser, not in-game) title/message shown on each
-    //outcome page of the web verification link, configurable since they're seen by a player's browser and
-    //an operator may want to reword/rebrand them
+    //title/message shown on each outcome page of the web verification link - see messages.properties'
+    //"web-verification.*" keys, same as every other player-facing string. Rendered in a browser, so any
+    //color codes in them are ignored.
     public final String webVerificationPageInvalidTitle, webVerificationPageInvalidMessage,
             webVerificationPageErrorTitle, webVerificationPageErrorNotFoundMessage, webVerificationPageErrorGenericMessage,
             webVerificationPageSuccessTitle, webVerificationPageSuccessMessage,
-            webVerificationPageMethodNotAllowedTitle, webVerificationPageMethodNotAllowedMessage;
+            webVerificationPageMethodNotAllowedTitle, webVerificationPageMethodNotAllowedMessage,
+            webVerificationPageConfirmTitle, webVerificationPageConfirmMessage, webVerificationPageConfirmButton;
 
     EmailConfig() {
         var file = AlixFileManager.getOrCreatePluginFile("email-config.yml", AlixFileManager.FileType.CONFIG);
@@ -46,19 +44,21 @@ public final class EmailConfig {
         this.webVerificationPublicUrl = config.getString("web-verification-public-url", "");
         this.webVerificationTokenExpiryMinutes = config.getInt("web-verification-token-expiry-minutes", 30);
         this.verifyCodeExpiryMinutes = config.getInt("verify-code-expiry-minutes", 60);
-        this.webVerificationPageInvalidTitle = config.getString("web-verification-page-invalid-title", "Link invalid or expired");
-        this.webVerificationPageInvalidMessage = config.getString("web-verification-page-invalid-message", "This verification link is no longer valid. Please request a new one in-game via /account sendverifyemail.");
-        this.webVerificationPageErrorTitle = config.getString("web-verification-page-error-title", "Something went wrong");
-        this.webVerificationPageErrorNotFoundMessage = config.getString("web-verification-page-error-not-found-message", "Your account could not be found or the email could not be saved. Please try again in-game.");
-        this.webVerificationPageErrorGenericMessage = config.getString("web-verification-page-error-generic-message", "Please try again in-game.");
-        this.webVerificationPageSuccessTitle = config.getString("web-verification-page-success-title", "Email verified!");
-        this.webVerificationPageSuccessMessage = config.getString("web-verification-page-success-message", "Your email has been successfully verified. You can now close this page.");
-        this.webVerificationPageMethodNotAllowedTitle = config.getString("web-verification-page-method-not-allowed-title", "Method not allowed");
-        this.webVerificationPageMethodNotAllowedMessage = config.getString("web-verification-page-method-not-allowed-message", "Only GET requests are supported.");
+        this.webVerificationPageInvalidTitle = Messages.get("web-verification.invalid-title");
+        this.webVerificationPageInvalidMessage = Messages.get("web-verification.invalid-message");
+        this.webVerificationPageErrorTitle = Messages.get("web-verification.error-title");
+        this.webVerificationPageErrorNotFoundMessage = Messages.get("web-verification.error-not-found-message");
+        this.webVerificationPageErrorGenericMessage = Messages.get("web-verification.error-generic-message");
+        this.webVerificationPageSuccessTitle = Messages.get("web-verification.success-title");
+        this.webVerificationPageSuccessMessage = Messages.get("web-verification.success-message");
+        this.webVerificationPageMethodNotAllowedTitle = Messages.get("web-verification.method-not-allowed-title");
+        this.webVerificationPageMethodNotAllowedMessage = Messages.get("web-verification.method-not-allowed-message");
+        this.webVerificationPageConfirmTitle = Messages.get("web-verification.confirm-title");
+        this.webVerificationPageConfirmMessage = Messages.get("web-verification.confirm-message");
+        this.webVerificationPageConfirmButton = Messages.get("web-verification.confirm-button");
 
-        //Create the "email-templates" (+ "images") folder right away rather than only as a side effect of
-        //actually sending a custom-templated email - see EmailTemplateLoader#ensureFoldersExist() for why
-        //that lazy behavior meant the folder could simply never appear for an operator.
+        //Create the "email-templates" (+ "images") folder on startup rather than lazily - see
+        //EmailTemplateLoader#ensureFoldersExist().
         EmailTemplateLoader.ensureFoldersExist();
     }
 

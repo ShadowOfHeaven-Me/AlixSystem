@@ -71,6 +71,11 @@ public interface DatabaseUpdater {
 
     void loadRecoveryCodes(Identity identity, Consumer<String> consumer);
 
+    //Looks up this identity's CURRENT token, straight from the database - see UserTokensFileManager's
+    //refreshFromDatabase() for why this matters (an externally-created/changed token, e.g. via a linked
+    //website's own 2FA setup, wouldn't otherwise be reflected in the locally-cached copy).
+    void loadToken(Identity identity, Consumer<String> consumer);
+
     //Atomic read-check-write, unlike a caller doing loadRecoveryCodes() then saveRecoveryCodes() itself -
     //see DatabaseUpdaterImpl's implementation for why that split would race a concurrent attempt for the
     //same player.
@@ -93,6 +98,11 @@ public interface DatabaseUpdater {
     void updateEmailByName(Identity identity, String name, String email);
 
     void removeByName(String name);
+
+    //Deletes this identity's row in alix_user_tokens (2FA secret, encrypted email backup and recovery
+    //codes) - removeByName() above only touches alix_users2/alix_passwords2, so a full account-data wipe
+    //(see UserFileManager#remove()) needs this call too.
+    void removeUserToken(Identity identity);
 
     DatabaseType getType();
 

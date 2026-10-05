@@ -1,5 +1,6 @@
 package alix.common.utils.floodgate;
 
+import alix.common.AlixCommonMain;
 import alix.common.reflection.CommonReflection;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
@@ -63,16 +64,27 @@ final class FloodgateAccess {
     }
 
     public static boolean isGeyserWrapperClazz(Channel channel) {
-        return channel.getClass() == LazyLoad.CHANNEL_WRAPPER_CLAZZ;// || getBedrockPlayer(channel) != null;
-        //channel.hasAttr(floodgate_player);
+        Class<?> clazz = LazyLoad.CHANNEL_WRAPPER_CLAZZ;
+        return clazz != null && channel.getClass() == clazz;
     }
 
     private static final class LazyLoad {
 
         //https://github.com/GeyserMC/Geyser/blob/be6749dfbb233aaf3a428afcfc5b5905a38169a4/core/src/main/java/org/geysermc/geyser/network/java/ChannelWrapper.java
-        private static final Class<?> CHANNEL_WRAPPER_CLAZZ = CommonReflection.forName(
+        //None of these hardcoded names are a public Geyser API, so a Geyser internal refactor can move this
+        //class again at any point (as already happened once between these two names) - forNameOrNull()
+        //degrades to null instead of throwing so a future rename doesn't crash every connection's
+        //isBedrock() check, just silently disables this one detection path (isGeyserWrapperClazz() below)
+        //until the name list here is updated; Floodgate's own attribute-based detection is unaffected.
+        private static final Class<?> CHANNEL_WRAPPER_CLAZZ = CommonReflection.forNameOrNull(
                 "org.geysermc.geyser.network.java.ChannelWrapper",//newest version
                 "org.geysermc.geyser.network.netty.ChannelWrapper");
+
+        static {
+            if (CHANNEL_WRAPPER_CLAZZ == null)
+                AlixCommonMain.logWarning("Could not locate Geyser's internal ChannelWrapper class under any known name - " +
+                        "Bedrock player detection via this path is disabled until AlixSystem is updated for this Geyser version.");
+        }
     }
 
     /*public static String getName(Channel channel, String name) {

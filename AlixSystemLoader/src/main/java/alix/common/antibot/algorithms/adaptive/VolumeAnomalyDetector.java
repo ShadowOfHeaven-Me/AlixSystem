@@ -24,7 +24,8 @@ final class VolumeAnomalyDetector {
         double jitter = baselineJitter.sigma();
         double z = (current - base) / jitter;
 
-        cusum = Math.max(0, cusum + z - slack); //slack ignores small drift, e.g. 0.5-1.0
+        //capped so a one-off legitimate burst can't take forever to decay back from a frozen baseline
+        cusum = Math.min(attackAt * 2, Math.max(0, cusum + z - slack)); //slack ignores small drift, e.g. 0.5-1.0
 
         if (cusum > attackAt || z > 8 && current > this.minVolumeToInstantAttack) state = State.ATTACK;
         else if (cusum > elevatedAt) state = State.ELEVATED;

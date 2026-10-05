@@ -2,6 +2,10 @@
 /out/
 gradle.properties
 
+# IDE project files - per-machine/per-editor state, never shared across contributors.
+.idea/
+.vscode/
+
 # Local Gradle tooling caches (daemon/build/configuration-cache state) - not build outputs, purely
 # derived/regenerable local state that shouldn't be tracked.
 .gradle/

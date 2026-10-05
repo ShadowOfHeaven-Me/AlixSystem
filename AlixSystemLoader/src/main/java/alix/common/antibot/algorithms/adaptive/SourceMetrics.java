@@ -38,7 +38,15 @@ final class SourceMetrics<K> {
     }
 
     State recordConnectionEstablished() {
-        connectionsBucketCount.increment();
+        return recordConnectionEstablished(1);
+    }
+
+    //weight lets a caller count one connection as more than one toward this bucket's CUSUM input, e.g. for a
+    //suspicious SYN fingerprint. A sustained burst of such connections trips ELEVATED/ATTACK faster than an
+    //equal-sized burst of ordinary ones, while a single suspicious connection barely moves the needle -
+    //isolated anomalous fingerprints are common, benign noise (VPNs, mobile carriers, corporate NAT).
+    State recordConnectionEstablished(int weight) {
+        connectionsBucketCount.add(weight);
         touch();
         return this.state;
     }
@@ -70,20 +78,33 @@ final class SourceMetrics<K> {
 
         long connectionsCnt = connectionsBucketCount.sumThenReset();
         long emptyCnt = emptyBucketCount.sumThenReset();
+        this.bucketStart = now;
 
+        processBucket(connectionsCnt, emptyCnt);
+    }
+
+    private synchronized State processBucket(long connectionsCnt, long emptyCnt) {
         State j = joins.onBucket(connectionsCnt);
         State e = emptyCloses.onBucket(emptyCnt);
 
-        this.bucketStart = now;
         this.bucketsProcessed++;
 
         if (this.bucketsProcessed < this.minBucketsToArm) {
             //even though connectionsCnt >= emptyCnt is supposed to hold true, if we ever change the params the buckets can technically be different
             this.state = this.heuristic(Math.max(connectionsCnt, emptyCnt));
-            return;
+        } else {
+            this.state = j.worst(e);
         }
+        return this.state;
+    }
 
-        this.state = j.worst(e);
+    //test-only: TesterAdaptiveAnomalyDetector (src/test/java, same package) drives buckets synthetically,
+    //bypassing the bucketMillis wall-clock wait this class normally enforces, so a tuning simulation
+    //covering hours of real traffic runs instantly instead of actually sleeping through it. Reuses the
+    //exact same cold-start-heuristic/CUSUM logic real traffic goes through - never called from production
+    //code.
+    State forceBucketForTest(long connectionsCnt, long emptyCnt) {
+        return processBucket(connectionsCnt, emptyCnt);
     }
 
     private double bucketSeconds() {

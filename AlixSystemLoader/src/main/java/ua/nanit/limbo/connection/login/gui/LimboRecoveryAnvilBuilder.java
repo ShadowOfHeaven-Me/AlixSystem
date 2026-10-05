@@ -44,6 +44,9 @@ public final class LimboRecoveryAnvilBuilder extends AbstractAnvilBuilder<LimboR
                             return;
                         }
                     }
+                    //see LoginState#registerInvalidRecoveryEmailAttempt()'s own docs - without this, the GUI
+                    //path let an attacker guess indefinitely with no lockout, unlike the equivalent chat command.
+                    if (this.loginState.registerInvalidRecoveryEmailAttempt()) return;
                     this.loginState.writeMessage(Messages.get("email-recovery-invalid-email"));
                     this.spoofValidAccordingly();
                 } else {
@@ -51,6 +54,7 @@ public final class LimboRecoveryAnvilBuilder extends AbstractAnvilBuilder<LimboR
                         this.loginState.writeMessage(Messages.get("email-recovery-success"));
                         this.loginState.tryLogIn();
                     } else {
+                        if (this.loginState.registerInvalidRecoveryCodeAttempt()) return;
                         this.loginState.writeMessage(Messages.get("email-recovery-code-invalid"));
                         this.spoofValidAccordingly();
                     }

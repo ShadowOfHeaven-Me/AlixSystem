@@ -1,5 +1,6 @@
 package shadow;
 
+import alix.common.data.security.email.WebVerificationServer;
 import alix.common.data.security.password.hashing.Hashing;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.scheduler.runnables.AlixThread;
@@ -86,6 +87,7 @@ public final class Main implements LoaderBootstrap {
 
     @Override
     public void onDisable() {
+        WebVerificationServer.stop();
         FileManager.saveFiles();
         UserSemiVirtualization.returnOriginalSetup();
         Captcha.cleanUp();
@@ -133,6 +135,7 @@ public final class Main implements LoaderBootstrap {
             logWarning("As of version 3.5.0, Alix no longer needs FastLogin! Premium verification has been built into it!");
 
         FileManager.loadFiles();//load all the classes before enabling the ability to join
+        WebVerificationServer.startIfEnabled();
         AlixHandler.initSynSaving();
         HandlerList.unregisterAll(preStartUpExecutors);
         logConsoleInfo(en ? "AlixSystem has been successfully enabled." : "AlixSystem zostało poprawnie włączone.");

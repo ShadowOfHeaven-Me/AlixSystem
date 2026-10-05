@@ -17,6 +17,7 @@ import alix.common.utils.other.annotation.OptimizationCandidate;
 import com.github.retrooper.packetevents.protocol.ConnectionState;
 import com.github.retrooper.packetevents.protocol.player.User;
 import io.netty.buffer.ByteBuf;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +41,7 @@ import shadow.utils.objects.packet.types.unverified.PacketBlocker;
 import shadow.utils.objects.savable.data.gui.AlixVerificationGui;
 import shadow.utils.objects.savable.data.gui.PasswordGui;
 import shadow.utils.users.UserManager;
+import ua.nanit.limbo.connection.login.LoginState;
 import ua.nanit.limbo.integration.LimboIntegration;
 
 import java.net.InetAddress;
@@ -77,6 +79,11 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     private AlixVerificationGui alixGui;
     public int loginAttempts, captchaAttempts, authAppAttempts;
     private boolean hasCompletedCaptcha, isGuiUser;//, isGUIInitialized;
+    //Mirrors LoginState#termsAccepted on Velocity.
+    private boolean termsAccepted;
+    //Set while waiting on '/verifyemail <code>' - mirrors LoginState's pendingRegisterPassword/Email.
+    private String pendingRegisterPassword, pendingRegisterEmail;
+    public int invalidRegisterCodeAttempts;
     //Virtualization values
     public boolean blindnessSent;
     public String originalJoinMessage;
@@ -86,7 +93,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     //public long armSwingSent, keepAliveSent;
 
     public UnverifiedUser(Player player, TemporaryUser tempUser) {
-        super(NettyUtils.getSilentContext(tempUser.getChannel()));
+        super(tempUser.getChannel(), NettyUtils.getSilentContext(tempUser.getChannel()));
         //UserManager.putAttr(this);
         this.player = player;
         this.data = tempUser.getLoginInfo().getData();
@@ -114,6 +121,19 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //auth app support
         boolean justAuthApp = registered && this.data.getLoginParams().getAuthSettings() == AuthSetting.AUTH_APP;
 
+        //IP auto-login is only a password-equivalent trust signal (see LoginVerdictManager#getVerdict()'s own
+        //comment for the full reasoning) - it must never silently satisfy a 2FA requirement too. An account
+        //that's both IP-auto-login-trusted AND requires the auth app (AUTH_APP/PASSWORD_AND_AUTH_APP) skips
+        //straight to the 2FA prompt below, exactly like justAuthApp, instead of ever reaching the password
+        //step. Mirrors the same gate LoginVerdictManager itself already applies (minus the AuthSetting
+        //exclusion, which is the whole point here) so this only fires for a connection that would otherwise
+        //have been fully IP-auto-logged-in were it not for the 2FA requirement.
+        boolean ipAutoLoginSkipsPassword = registered
+                && this.data.getLoginParams().getAuthSettings().requiresAuthApp()
+                && !AlixUtils.forcefullyDisableIpAutoLogin
+                && this.data.getLoginParams().getIpAutoLogin()
+                && this.data.getSavedIP().equals(this.address);
+
         //bedrock support
         Object bedrockPlayer = Dependencies.getBedrockPlayer(this.player);
         this.isBedrock = bedrockPlayer != null;
@@ -132,17 +152,21 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         this.verificationMessage = VerificationMessage.createFor(this);
 
         if (isBedrock) this.alixGui = PasswordGui.newBuilderBedrock(this, bedrockPlayer);
-        else if (justAuthApp) this.alixGui = PasswordGui.newBuilder2FA(this);
+        else if (justAuthApp || ipAutoLoginSkipsPassword) this.alixGui = PasswordGui.newBuilder2FA(this);
         else if (isGuiUser && hasCompletedCaptcha)
             this.alixGui = PasswordGui.newBuilder(this, this.loginType);
         //else this.getChannel().eventLoop().schedule(() -> this.setVerificationMessageBuffer(getVerificationReminderMessagePacket(registered, hasAccount)), 500, TimeUnit.MILLISECONDS);
 
-        if (registered && !justAuthApp) this.loginVerification = new LoginVerification(this.data.getPassword(), true);
+        if (registered && !justAuthApp && !ipAutoLoginSkipsPassword) this.loginVerification = new LoginVerification(this.data.getPassword(), true);
 
-        this.blocker = justAuthApp ? PacketBlocker.getPacketBlocker2FA(this, tempUser) : PacketBlocker.getPacketBlocker(this, tempUser, this.loginType);
+        this.blocker = (justAuthApp || ipAutoLoginSkipsPassword) ? PacketBlocker.getPacketBlocker2FA(this, tempUser) : PacketBlocker.getPacketBlocker(this, tempUser, this.loginType);
         this.reminderTask = VerificationReminder.reminderFor(this);//probably the most efficient way, since all packet sending methods need to be invoked on the eventLoop thread
         //this.openPasswordBuilderGUI();
         //if (!captchaInitialized) this.spoofVerificationPackets();//spoof the verification packets immediately
+
+        //mirrors LoginState's "sent once on join" terms prompt
+        if (!registered && hasCompletedCaptcha && this.isTermsGateBlocking())
+            this.getChannel().eventLoop().execute(this::sendTermsPrompt);
     }
 
 
@@ -475,8 +499,12 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
     }*/
 
     public void registerAsync(String password) {//invoked async
+        this.registerAsync(password, null);
+    }
+
+    public void registerAsync(String password, String email) {//invoked async
         try {
-            this.register0(password);
+            this.register0(password, email);
         } finally {
             AlixScheduler.sync(this::register1);//invoke this method at all cost
         }
@@ -497,7 +525,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         //this.player.setGameMode(this.originalGameMode);
     }
 
-    private void register0(String password) {//the common part
+    private void register0(String password, String email) {//the common part
         //AlixScheduler.async(() -> {
         VerifiedUser verifiedUser = UserManager.register(this.player, password, this.getIPAddress(), this.retrooperUser, this.silentContext());
         PersistentUserData data = verifiedUser.getData();
@@ -505,6 +533,7 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
         AlixEventInvoker.callOnAuthInferThread(AuthReason.MANUAL_REGISTER, verifiedUser);
         //data.updateLastSuccessfulLoginTime();
         data.setLoginType(this.loginType);
+        if (email != null) data.setEmail(email);
 
         if (data.getPremiumData().getStatus().isUnknown()) {
             boolean premium = VerifiedCache.getAndCheckIfEquals(this.getName(), this.retrooperUser);
@@ -514,8 +543,10 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
                 data.setPremiumData(PremiumData.NON_PREMIUM);//if the player wasn't automatically logged in, we can assume he's non-premium
         }
 
+        //register0() can run off the main thread (e.g. the HaveIBeenPwned breach-check callback) - invoke()
+        //ends up at Bukkit.dispatchCommand(), which needs the main thread
         if (data.getPremiumData().getStatus().isPremium())
-            premiumJoinCommands.invoke(this.player);
+            AlixScheduler.sync(() -> premiumJoinCommands.invoke(this.player));
 
         this.onSuccessfulVerification();
         AlixHandler.resetBlindness(this);
@@ -545,6 +576,95 @@ public final class UnverifiedUser extends AbstractAlixCtxUser {
 
     public boolean isRegistered() {
         return PersistentUserData.isRegistered(this.data); //this.hasAccount() && data.getPassword().isSet();
+    }
+
+    //Mirrors LoginState#isTermsGateBlocking().
+    public boolean isTermsGateBlocking() {
+        return !this.isRegistered() && LoginState.requireTermsAcceptance && !this.termsAccepted;
+    }
+
+    public void acceptTerms() {
+        this.termsAccepted = true;
+    }
+
+    //Mirrors LoginState#sendTermsPrompt() - falls back to plain text if a ClickEvent fails to serialize.
+    public void sendTermsPrompt() {
+        this.sendDynamicMessageSilently(Messages.getWithPrefix("terms-required-explanation"));
+        try {
+            this.writeDynamicMessageSilently(buildTermsLinkComponent(true));
+        } catch (Throwable t) {
+            this.writeDynamicMessageSilently(buildTermsLinkComponent(false));
+        }
+        try {
+            this.writeDynamicMessageSilently(buildTermsPromptComponent(true));
+        } catch (Throwable t) {
+            this.writeDynamicMessageSilently(buildTermsPromptComponent(false));
+        }
+        this.flush();
+    }
+
+    //Makes "/terms accept"/"/terms decline" clickable - mirrors LoginState on Velocity.
+    public static Component buildTermsPromptComponent(boolean includeClickEvents) {
+        String template = alix.common.utils.formatter.AlixFormatter.appendPrefix(Messages.get("terms-required-prompt"));
+        Component result = Component.empty();
+        int cursor = 0;
+
+        for (String cmd : new String[]{"/terms accept", "/terms decline"}) {
+            int idx = template.indexOf(cmd, cursor);
+            if (idx < 0) return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template);
+
+            //keep a preceding color code (e.g. "&f") in the clickable span, not the plain-text chunk before it
+            int chunkStart = idx >= 2 && template.charAt(idx - 2) == '&' ? idx - 2 : idx;
+
+            result = result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor, chunkStart)));
+
+            Component cmdComponent = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(chunkStart, idx + cmd.length()));
+            if (includeClickEvents) cmdComponent = cmdComponent.clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(cmd));
+            result = result.append(cmdComponent);
+
+            cursor = idx + cmd.length();
+        }
+
+        return result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(template.substring(cursor)));
+    }
+
+    private static Component buildTermsLinkComponent(boolean includeClickEvent) {
+        String termsUrl = LoginState.termsUrl;
+        String template = alix.common.utils.formatter.AlixFormatter.appendPrefix(Messages.get("terms-required-link"));
+        String[] parts = template.split("\\{0\\}", 2);
+
+        Component link = Component.text(termsUrl);
+        if (includeClickEvent) link = link.clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl(termsUrl));
+        link = link.hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text(termsUrl)))
+                .decorate(net.kyori.adventure.text.format.TextDecoration.UNDERLINED);
+
+        Component result = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(parts[0]).append(link);
+        if (parts.length > 1 && !parts[1].isEmpty())
+            result = result.append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(parts[1]));
+        return result;
+    }
+
+    //Mirrors LoginState#isEmailRegisterGateBlocking().
+    public boolean isEmailRegisterGateBlocking() {
+        return this.pendingRegisterPassword != null;
+    }
+
+    public void armPendingEmailRegistration(String password, String email) {
+        this.pendingRegisterPassword = password;
+        this.pendingRegisterEmail = email;
+    }
+
+    public String getPendingRegisterPassword() {
+        return this.pendingRegisterPassword;
+    }
+
+    public String getPendingRegisterEmail() {
+        return this.pendingRegisterEmail;
+    }
+
+    public void clearPendingEmailRegistration() {
+        this.pendingRegisterPassword = null;
+        this.pendingRegisterEmail = null;
     }
 
     @Override

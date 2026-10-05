@@ -117,7 +117,7 @@ public final class ReCaptchaConsumer extends AbstractCaptchaConsumer<ReCaptcha> 
         if (clickDist < 0.21) {
             //this.user.debug("VALID CLICK");
             if (!this.captchaSuccess()) {
-                if (++this.user.captchaAttempts == AlixUtils.maxCaptchaAttempts) MethodProvider.kickAsync(this.user, captchaFailedKickPacket);
+                if (++this.user.captchaAttempts >= AlixUtils.maxCaptchaAttempts) MethodProvider.kickAsync(this.user, captchaFailedKickPacket);
                 else {
                     this.user.writeConstSilently(captchaFailedMessagePacket);
                     this.user.getPacketBlocker().getFallPhase().tpPosCorrect();
