@@ -8,8 +8,8 @@
 #
 # Valid internal ids:
 #   ip-autologin    - toggles IP auto-login on/off
-#   email-recovery   - shows whether an email is set (informational only; only appears at all
-#                       if email-based account recovery is enabled on this server)
+#   email-recovery   - shows whether an email is set; click to set/change it (sends a verification
+#                       code); only appears at all if email-based account recovery is enabled
 #   device-passkey    - creates/replaces this device's fingerprinting passkey; only appears at all
 #                       if 'fingerprinting-port' is set in config.yml
 #   back              - returns to the menu that opened this one
