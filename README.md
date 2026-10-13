@@ -21,17 +21,17 @@ Alix uses [PacketEvents](https://github.com/retrooper/packetevents) for it's pac
 Due to different environments, Alix cannot always use the very best firewall methods there are. For that reason, currently 3 different firewall types exist within Alix.
 Starting from the least optimized:
 
-### Netty
+### Netty (L7)
 This type uses netty's API methods to close a connection as soon as it reaches the event loop. Due to API methods being for generalized use and the delayed nature of the event loop, this firewall type is only used whenever the faster alternative for NIO or Epoll (more info below) could not have been used. If you ever get the message that the faster implementation cannot be used, it's best to contact the developer.
 
-### Fast Unsafe Epoll
+### Fast Unsafe Epoll (L7)
 
-Currently the most optimized non-OS solution Alix can offer. Used on Linux machines whenever Epoll is used for netty transport. This firewall type transforms the bytecode of the server socket object. Right after accepting the connection, it can be efficiently closed without much overhead. This implementation is (or at least should be, depending on whatever the C netty code impl does) zero-garbage. This method also possesses a fast ipv4 look-up table, which further optimizes it's performance. For ipv6 a fast threadlocal cache is used instead.
+Currently the most optimized solution Alix can offer without root access. Used on Linux machines whenever Epoll is used for netty transport. This firewall type transforms the bytecode of the server socket object. Right after accepting the connection, it can be efficiently closed without much overhead. This implementation is (or at least should be, depending on whatever the C netty code impl does) zero-garbage. This method also possesses a fast ipv4 look-up table, which further optimizes it's performance. For ipv6 a fast threadlocal cache is used instead.
 The "Unsafe" in the name refers to the operations used in order to achieve this performance:  
 Dynamic agent loading - used for the bytecode transformation, will have greater restrictions in later java releases  
 Unsafe - a low-level (at least in java) memory manipulation class, scheduled for removal in later java versions  
 
-### Ataraxia
+### Ataraxia (L4)
 
 The only "true" firewall option here, and the absolutely most optimized one. All of the other options need to first accept a connection and can only then close it, due to the given restrictions, which is, to say the least, unideal.
 [Alix Ataraxia](https://github.com/ShadowOfHeaven-Me/AlixAtaraxia) is an eBPF (Layer 4, kernel component) available on modern linux versions. It was written in Rust, using Aya. It hasn't yet reached full safety for general use, so it isn't officially available yet. Requires root privileges to run.
