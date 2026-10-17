@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="AlixSystemVelocitySupport">
-    <output-path>$PROJECT_DIR$/out/artifacts/AlixSystemVelocitySupport</output-path>
-    <root id="archive" name="AlixSystemVelocity.jarinjar">
-      <element id="extracted-dir" path="$USER_HOME$/Downloads/limboapi-1.1.26.jar" path-in-jar="/" />
-    </root>
-  </artifact>
-</component>

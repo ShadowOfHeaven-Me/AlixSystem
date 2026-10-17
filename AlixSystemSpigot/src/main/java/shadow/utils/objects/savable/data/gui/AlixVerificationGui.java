@@ -71,7 +71,7 @@ public interface AlixVerificationGui {
                         if (user.isPasswordCorrect(password)) {
                             user.logIn();
                             return;
-                        } else if (++user.loginAttempts == maxLoginAttempts)
+                        } else if (++user.loginAttempts >= maxLoginAttempts)
                             MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
                         return;
                     }
@@ -105,7 +105,7 @@ public interface AlixVerificationGui {
                         if (user.isPasswordCorrect(password)) {
                             user.logIn();
                             return;
-                        } else if (++user.loginAttempts == maxLoginAttempts)
+                        } else if (++user.loginAttempts >= maxLoginAttempts)
                             MethodProvider.kickAsync(user, CommandManager.incorrectPasswordKickPacket);
                         return;
                     }

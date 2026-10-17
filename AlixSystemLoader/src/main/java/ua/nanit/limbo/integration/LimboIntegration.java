@@ -1,7 +1,13 @@
 package ua.nanit.limbo.integration;
 
+import alix.common.antibot.algorithms.adaptive.ConnectionVerdict;
 import alix.common.antibot.algorithms.any.RegisteredConnectionAlgoImpl;
 import alix.common.antibot.algorithms.connection.AntiBotStatistics;
+import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
+import alix.common.antibot.epoll.TelemetryProfiler;
+import alix.common.antibot.epoll.syn.analysis.MTUEnvironment;
+import alix.common.antibot.epoll.syn.analysis.OS;
+import alix.common.antibot.epoll.syn.signature.SynSignature;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.AntiVPN;
 import alix.common.connection.filters.ConnectionManager;
@@ -105,7 +111,36 @@ public abstract class LimboIntegration<T extends ClientConnection> {
             return;*/
 
         RegisteredConnectionAlgoImpl.onConnection(channel, addr);
-        AntiBotStatistics.INSTANCE.incrementConnections(addr);
+        ConnectionVerdict verdict = AntiBotStatistics.INSTANCE.incrementConnections(addr, connectionWeight(channel));
+        //RATE_LIMITED (per-IP/subnet ELEVATED, token bucket exhausted) and FIREWALLED (ATTACK, the IP was
+        //just added to FireWallManager as a side effect but THIS connection - the one that tripped it -
+        //hasn't been rejected by that check above yet, since it ran before the verdict existed) both mean
+        //this specific connection shouldn't proceed either.
+        if (verdict != ConnectionVerdict.ALLOWED)
+            channel.close();
+    }
+
+    //synSignature(channel) is only non-null when epoll mode fingerprinted this connection's SYN at
+    //accept-time with no PROXY protocol in front (TelemetryProfilerImpl.onConnection); every other case
+    //(disabled, TCP_SAVE_SYN failure, unidentified OS) falls back to the neutral weight of 1. Combines the
+    //MTU and OS suspicion scores rather than picking one, since they're derived from independent packet
+    //features and can legitimately disagree.
+    //
+    //Public (was private): its old sole caller, onProxyAddress(), only runs when a PROXY header IS present -
+    //the exact case where synSignature(channel) is always null - making it structurally unreachable with a
+    //real signature. AlixInterceptor/ServerChannelInitializer's channelRead() sites (reached when PROXY
+    //protocol is NOT in front) now call this too, instead of the unweighted 1-arg overload.
+    public static int connectionWeight(Channel channel) {
+        SynSignature sig = TelemetryProfiler.synSignature(channel);
+        if (sig == null) return 1;
+
+        int mtuSuspicion = sig.mtuEnv != null ? sig.mtuEnv.getSuspicionScore() : 0;
+        int osSuspicion = sig.os != null ? sig.os.getSuspicionScore() : 0;
+
+        //1.0-3.0 in the original double-weight framing, rounded to the nearest int since the buckets below
+        //this accumulate as whole connection counts - a single 0-suspicion connection still weighs exactly
+        //1, same as always, and both scores maxed out (200 combined) tops out at 3.
+        return 1 + Math.round((mtuSuspicion + osSuspicion) / 100f);
     }
 
     public void invokeChannelInit(ClientConnection connection) {
@@ -120,12 +155,33 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         String nameSent = packet.getUsername();
         var channel = connection.getChannel();
         if (DatabaseCachingStrategy.STRATEGY.requestData(nameSent)) {
+            //loadUser()'s consumer only ever fires with a non-null, freshly-loaded row (never called at
+            //all if none exists) - refresh the 2FA token cache for this specific identity before anything
+            //downstream (the login-time app-code prompt, email decryption, the Account Settings GUI) could
+            //possibly touch it, alongside the just-refreshed PersistentUserData/LoginParams above. See
+            //UserTokensFileManager#refreshFromDatabase() for why this matters.
             database.loadUser(nameSent, data ->
-                    channel.eventLoop().execute(() ->
-                            this.onLoginStart0(connection, data, packet, consumer)));
+                    UserTokensFileManager.refreshFromDatabase(data.identity(), () ->
+                            channel.eventLoop().execute(() ->
+                                    this.onLoginStart0(connection, data, packet, consumer))));
             return;
         }
-        this.onLoginStart0(connection, UserFileManager.get(nameSent), packet, consumer);
+
+        PersistentUserData cached = UserFileManager.get(nameSent);
+        //The token refresh above only runs when DatabaseCachingStrategy actually re-requests this player's
+        //row (ON_CONNECTION/ON_CONNECTION_IF_EXISTS) - under PRELOAD (the default), that branch is never
+        //taken at all, even with a real external database configured, since PRELOAD only governs whether
+        //PersistentUserData/LoginParams themselves get re-fetched, a separate, unrelated setting from
+        //whether the TOKEN specifically needs refreshing. Gate this on database.isImpl() (a real external
+        //DB is actually configured, e.g. for a linked website) directly instead, so a PRELOAD operator
+        //with such a setup still gets it - same reasoning as UserTokensFileManager#refreshFromDatabase().
+        if (cached != null && database.isImpl()) {
+            UserTokensFileManager.refreshFromDatabase(cached.identity(), () ->
+                    channel.eventLoop().execute(() ->
+                            this.onLoginStart0(connection, cached, packet, consumer)));
+            return;
+        }
+        this.onLoginStart0(connection, cached, packet, consumer);
     }
 
     private void onLoginStart0(T connection, PersistentUserData data, PacketLoginStart packet, Consumer<PreLoginInfo> consumer) {

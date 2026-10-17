@@ -1,5 +1,6 @@
 package shadow.utils.misc;
 
+import alix.common.AlixCommonMain;
 import alix.common.reflection.BukkitReflection;
 import alix.common.reflection.CommonReflection;
 import alix.common.utils.other.throwable.AlixError;
@@ -239,8 +240,16 @@ public final class ReflectionUtils {
         try {
             method.invoke(obj, args);
             return true;
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            //The method exists but threw once actually called (e.g. a server build that declares the API
+            //but hasn't finished implementing it, like Paper's setSendViewDistance throwing "Not implemented
+            //yet" on some builds) - every current caller treats this as a best-effort optimization it's fine
+            //to skip, so this is silently swallowed the same as "not present" rather than propagating and
+            //crashing the caller's whole static-init chain.
+            AlixCommonMain.logWarning("Optional method " + method + " exists but failed when called: " + e.getCause());
+            return false;
         }
     }
 

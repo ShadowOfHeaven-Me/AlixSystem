@@ -29,12 +29,12 @@ public abstract class ReminderStrategy implements Runnable {
         return !needsTask(user) ? null : user.getChannel().eventLoop().scheduleAtFixedRate(strategy(user), 500L, TICK_DELAY, TimeUnit.MILLISECONDS);
     }
 
+    //both strategies always need the task - run() also drives the countdown/kick, not just the reminder spoof
     private static boolean needsTask(UnverifiedUser user) {
         switch (VerificationReminder.STRATEGY) {
             case ACTION_BAR:
-                return true;
             case TITLE:
-                return user.captchaInitialized();
+                return true;
             default:
                 throw new AlixError("Invalid: " + VerificationReminder.STRATEGY);
         }

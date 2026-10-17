@@ -8,7 +8,7 @@ public class SpigotMessagesMaker {
 
     public static void main(String[] args) throws IOException {
         String separator = ":";
-        try (var in = SpigotMessagesMaker.class.getClassLoader().getResourceAsStream("messages.txt")) {
+        try (var in = SpigotMessagesMaker.class.getClassLoader().getResourceAsStream("messages.properties")) {
             var reader = new BufferedReader(new InputStreamReader(in));
 
             String line;

@@ -13,7 +13,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class NameCaptcha extends Captcha {
 
     private final ByteBuf[] buffers;
-    private final AtomicBoolean released = new AtomicBoolean();
+    //Whether this captcha has been SHOWN to a player - used by Captcha#uninject() to decide whether it's
+    //safe to recycle back into the pre-generation pool, never gets set back to false.
+    private final AtomicBoolean shown = new AtomicBoolean();
+    //Separate from "shown" above - see SmoothCaptcha's matching field for why.
+    private final AtomicBoolean buffersFreed = new AtomicBoolean();
 
     public NameCaptcha() {
         BufferedImage image = CaptchaImageGenerator.generateCaptchaImageX256(captcha, maxRotation, false, false);
@@ -22,7 +26,7 @@ public final class NameCaptcha extends Captcha {
 
     @Override
     public void sendPackets(UnverifiedUser user) {
-        this.released.set(true);
+        this.shown.set(true);
         //created to spread out the packet sending, even just a bit
         user.writeAndFlushWithThresholdSilently(this.buffers, Math.min(this.buffers.length / 5 + 1, 100));
         //Main.logInfo("SENT CAPTCHAAA " + buffers.length);
@@ -30,7 +34,7 @@ public final class NameCaptcha extends Captcha {
 
     @Override
     protected boolean isReleased() {
-        return this.released.get();
+        return this.shown.get();
     }
 
     @Override
@@ -38,11 +42,12 @@ public final class NameCaptcha extends Captcha {
         int idStart = ImageRenderer.ENTITY_ID_START + 1;
 
         user.writeAndFlushSilently(OutEntityDestroyPacketConstructor.constructDynamic(idStart, this.buffers.length >> 1));
+        this.release();
     }
 
     @Override
     public void release() {
-        if (this.released.compareAndSet(false, true))
+        if (this.buffersFreed.compareAndSet(false, true))
             for (ByteBuf buf : buffers) buf.release();
     }
 }

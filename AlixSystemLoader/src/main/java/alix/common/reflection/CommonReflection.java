@@ -130,4 +130,15 @@ public final class CommonReflection {
         }
         throw new AlixError("Not found: " + Arrays.toString(names));
     }
+
+    public static Class<?> forNameOrNull(String... names) {
+        for (String s : names) {
+            try {
+                return Class.forName(s);
+            } catch (ClassNotFoundException ignored) {
+
+            }
+        }
+        return null;
+    }
 }

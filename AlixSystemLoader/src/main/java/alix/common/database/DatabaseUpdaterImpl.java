@@ -133,6 +133,8 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
             boolean originalAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
+                //must stay a real upsert (not INSERT IGNORE) - callers regenerate recovery codes right
+                //after this with no persistToken() of their own, relying on this unconditionally creating the row
                 try (PreparedStatement ps = connection.prepareStatement(UPSERT_TOKEN_SQL(this.getType()))) {
                     setUuid(ps, 1, tokenUuid);
                     ps.setString(2, token);
@@ -184,6 +186,36 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
                 try (ResultSet rs = ps.executeQuery()) {
                     consumer.accept(rs.next() ? rs.getString(1) : null);
                 }
+            }
+        });
+    }
+
+    @Override
+    public void loadToken(Identity identity, Consumer<String> consumer) {
+        UUID tokenUuid = identity.tokenKey().key();
+        //Same queryAsync reasoning as loadRecoveryCodes() above - offloaded, and chained onto this player's
+        //own execution queue so this can never interleave with a concurrent write for the SAME player
+        //(saveUserToken()/commitTokenAndEmail()/removeUserToken() all key on the same identity string).
+        //
+        //Unlike every other queryAsync() call in this class, this one is on the LOGIN critical path (see
+        //UserTokensFileManager#refreshFromDatabase()/LimboIntegration#onLoginStart()) - queryAsync() wraps
+        //the query in AutoErrorReport, which only logs a failure and never itself calls the consumer, so a
+        //transient DB error here (unlike everywhere else it's merely logged) would otherwise leave the
+        //connecting player's login hung forever, since nothing downstream would ever run. Catching and
+        //falling back to null (treat a failed lookup the same as "no externally-set token found", refresh
+        //skipped for this login rather than the whole login stalling on a DB hiccup) keeps that guarantee
+        //local to this one query instead of having to touch the shared, more broadly-used queryAsync()/
+        //AutoErrorReport() machinery.
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_TOKEN_SQL)) {
+                setUuid(ps, 1, tokenUuid);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    consumer.accept(rs.next() ? rs.getString(1) : null);
+                }
+            } catch (Exception e) {
+                AlixCommonUtils.logException(e);
+                consumer.accept(null);
             }
         });
     }
@@ -626,7 +658,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateAuthSettingsByName(String name, AuthSetting authSettings) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_AUTH_SETTINGS_BY_NAME)) {
                 ps.setString(1, authSettings != null ? authSettings.name() : null);
                 ps.setString(2, name);
@@ -637,7 +669,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateHasProvenAuthAccessByName(String name, boolean hasProvenAuthAccess) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_HAS_PROVEN_AUTH_ACCESS_BY_NAME)) {
                 ps.setBoolean(1, hasProvenAuthAccess);
                 ps.setString(2, name);
@@ -648,7 +680,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateIpAutoLoginByName(String name, Boolean ipAutoLogin) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_IP_AUTO_LOGIN_BY_NAME)) {
                 ps.setObject(1, ipAutoLogin);
                 ps.setString(2, name);
@@ -659,7 +691,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateLoginTypeByName(String name, LoginType loginType) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_LOGIN_TYPE_BY_NAME)) {
                 ps.setString(1, loginType != null ? loginType.name() : null);
                 ps.setString(2, name);
@@ -670,7 +702,7 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
 
     @Override
     public void updateExtraLoginTypeByName(String name, LoginType extraLoginType) {
-        this.query(connection -> {
+        this.queryAsync(name, connection -> {
             try (PreparedStatement ps = connection.prepareStatement(UPDATE_EXTRA_LOGIN_TYPE_BY_NAME)) {
                 ps.setString(1, extraLoginType != null ? extraLoginType.name() : null);
                 ps.setString(2, name);
@@ -700,6 +732,17 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
             this.clearPasswordPointers0(name, connection);
             try (PreparedStatement ps = connection.prepareStatement(REMOVE_USER_BY_NAME)) {
                 ps.setString(1, name);
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    @Override
+    public void removeUserToken(Identity identity) {
+        UUID tokenUuid = identity.tokenKey().key();
+        this.queryAsync(identity.identity(), connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(DELETE_TOKEN_SQL)) {
+                setUuid(ps, 1, tokenUuid);
                 ps.executeUpdate();
             }
         });
@@ -781,7 +824,14 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     }
 
     void query(ThrowableConsumer<Connection, Exception> func) {
-        this.database.query(new AutoErrorReport(func, this.getType()));
+        try {
+            this.database.query(new AutoErrorReport(func, this.getType()));
+        } catch (Throwable t) {
+            //AutoErrorReport only covers the delegate - a failure to even obtain a connection (pool
+            //exhausted, DB down) throws here instead, which would otherwise go completely unlogged for
+            //async callers
+            AlixCommonUtils.logException(t);
+        }
     }
 
     void async(Runnable r) {

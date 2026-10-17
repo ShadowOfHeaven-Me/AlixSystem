@@ -4,6 +4,7 @@ import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
 import alix.common.data.loc.impl.bukkit.BukkitHomeList;
 import com.github.retrooper.packetevents.protocol.player.User;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -34,7 +35,10 @@ public final class VerifiedUser extends AbstractAlixCtxUser {// implements Objec
 
 
     public VerifiedUser(Player player, PersistentUserData data, User retrooperUser, ChannelHandlerContext silentContext, Consumer<VerifiedUser> onFirstPlayPacket) {
-        super(silentContext);
+        //retrooperUser.getChannel(), not silentContext.channel() - see AbstractAlixCtxUser's docs: silentContext
+        //can legitimately be null here (e.g. handed off from an UnverifiedUser whose connection was already
+        //closing), and a packetevents User's channel reference stays valid regardless.
+        super((Channel) retrooperUser.getChannel(), silentContext);
         Objects.requireNonNull(data);//require the data to be non-null
         //Main.logError("VERIFIED MADE");
         this.player = player;

@@ -1,5 +1,6 @@
 package shadow.utils.misc.packet.buffered;
 
+import alix.common.utils.config.ConfigParams;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetExperience;
 import io.netty.buffer.ByteBuf;
 import shadow.utils.main.AlixUtils;
@@ -13,10 +14,15 @@ public final class BufferedPackets {
     public static final ByteBuf[] captchaOutExperiencePackets = AlixUtils.requireCaptchaVerification ? new ByteBuf[captchaPacketArraySize] : null;
     public static final ByteBuf[] loginOutExperiencePackets = new ByteBuf[loginPacketArraySize];
 
+    //Packet set for VirtualCountdown's email-verification-wait mode - mirrors ExperiencePackets on Velocity.
+    public static final int emailVerificationPacketArraySize = ConfigParams.hasEmailVerificationTime ? ConfigParams.emailVerificationTime * EXPERIENCE_UPDATES_PER_SECOND : 0;
+    public static final ByteBuf[] emailVerificationOutExperiencePackets = ConfigParams.hasEmailVerificationTime ? new ByteBuf[emailVerificationPacketArraySize] : null;
+
     public static void init() {
         preGen(loginOutExperiencePackets);
 
         if (AlixUtils.requireCaptchaVerification) preGen(captchaOutExperiencePackets);
+        if (ConfigParams.hasEmailVerificationTime) preGen(emailVerificationOutExperiencePackets);
     }
 
     private static void preGen(ByteBuf[] buffers) {

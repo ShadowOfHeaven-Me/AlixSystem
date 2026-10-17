@@ -11,6 +11,7 @@ import shadow.utils.misc.packet.constructors.OutTitlePacketConstructor;
 import shadow.utils.netty.NettyUtils;
 import shadow.utils.netty.packets.AlixPacket;
 import shadow.utils.users.types.UnverifiedUser;
+import ua.nanit.limbo.connection.login.LoginState;
 
 import static shadow.utils.main.AlixUtils.maxLoginTime;
 
@@ -21,9 +22,19 @@ final class TitleVerificationMessage extends AbstractVerificationMessage {
             NettyUtils.exists(PacketType.Play.Server.CLEAR_TITLES) ?
                     new ByteBuf[]{NettyUtils.constBuffer(new WrapperPlayServerClearTitles(true))} :
                     OutTitlePacketConstructor.constructConst("", "", 0, 0, 0);
+    //mirrors LimboConfig's 4-way combination of these two toggles
+    private static final String registerSubtitleKey =
+            AlixUtils.requirePasswordRepeatInRegister && LoginState.requireEmailInRegister ? "reminder-register-subtitle-repeat-email"
+                    : AlixUtils.requirePasswordRepeatInRegister ? "reminder-register-subtitle-repeat"
+                    : LoginState.requireEmailInRegister ? "reminder-register-subtitle-email"
+                    : "reminder-register-subtitle";
     private static final ByteBuf[]
             loginTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-login-title"), Messages.get("reminder-login-subtitle"), 0, maxLoginTime * 60, 0),
-            registerTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-register-title"), AlixUtils.requirePasswordRepeatInRegister ? Messages.get("reminder-register-subtitle-repeat") : Messages.get("reminder-register-subtitle"), 0, maxLoginTime * 60, 0);
+            registerTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-register-title"), Messages.get(registerSubtitleKey), 0, maxLoginTime * 60, 0),
+            //mirrors LimboConfig's termsTitle on Velocity
+            termsTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-terms-title"), Messages.get("reminder-terms-subtitle"), 0, maxLoginTime * 60, 0),
+            //mirrors LimboConfig's emailVerifyTitle on Velocity
+            emailVerifyTitleConstBuffer = OutTitlePacketConstructor.constructConst(Messages.get("reminder-verifyemail-title"), Messages.get("reminder-verifyemail-subtitle"), 0, maxLoginTime * 60, 0);
     private volatile AlixPacket captchaMsg;
     //private volatile ByteBuf rawCaptchaMsgBuffer;
 
@@ -68,7 +79,10 @@ final class TitleVerificationMessage extends AbstractVerificationMessage {
         }
         if (this.user.captchaInitialized()) this.user.writeConstSilently(emptyActionBar);
 
-        ByteBuf[] bufs = this.user.isRegistered() ? loginTitleConstBuffer : registerTitleConstBuffer;
+        ByteBuf[] bufs = this.user.isRegistered() ? loginTitleConstBuffer
+                : this.user.isTermsGateBlocking() ? termsTitleConstBuffer
+                : this.user.isEmailRegisterGateBlocking() ? emailVerifyTitleConstBuffer
+                : registerTitleConstBuffer;
         this.user.writeConstAndFlushSilently(bufs);
     }
 

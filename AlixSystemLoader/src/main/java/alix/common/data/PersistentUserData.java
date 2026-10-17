@@ -483,6 +483,13 @@ public final class PersistentUserData implements AlixUserData {
 
     public void updateLastSuccessfulLoginTime() {
         this.setLastSuccessfulLogin(System.currentTimeMillis());
+        this.persistToken();
+    }
+
+    //INSERT IGNORE/ON CONFLICT DO NOTHING - fixes an account whose token only ever lived in the local
+    //user-tokens file (predates DB token saving) getting a row on next login, instead of never
+    public void persistToken() {
+        database.saveUserToken(this.identity, this.getToken());
     }
 
     public LoginType getLoginType() {
@@ -528,7 +535,11 @@ public final class PersistentUserData implements AlixUserData {
         database.clearPasswordPointers(this.name);
     }
 
-    public PersistentUserData setIP(InetAddress ip) {
+    //synchronized: two connections authenticating as the same username in close succession share this same
+    //instance (no de-dup on the Limbo/proxy login path) and could otherwise race on the
+    //read-then-GeoIPTracker-calls-then-write below, drifting EXISTING_ACCOUNTS out of sync and weakening
+    //GeoIPTracker#disallowJoin()'s max-accounts-per-IP check.
+    public synchronized PersistentUserData setIP(InetAddress ip) {
         var oldIp = this.ip;
         if (oldIp.equals(ip))
             return this;

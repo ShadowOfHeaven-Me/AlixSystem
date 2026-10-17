@@ -226,7 +226,10 @@ public final class Hashing {
 
         hashingAlgorithms = new HashingAlgorithm[]{new Hash0(), new Hash1(), new Hash2(), UUID_SHA256_ALIX, SHA256_MIGRATE, SHA512_MIGRATE, BCRYPT};
 
-        byte def = 3;
+        //Matches config.yml's own shipped password-hash-type default (4, full SHA-256) - only matters when
+        //the key is entirely absent (an old/corrupted config), but should still match the real default
+        //rather than silently falling back to 3's weaker, lossily-truncated digest.
+        byte def = 4;
         int i = ConfigProvider.config.getInt("password-hash-type", def);
         byte b = (byte) i;
         byte highestId = hashingAlgorithms[hashingAlgorithms.length - 1].hashId();//Or hashingAlgorithms.length - 1

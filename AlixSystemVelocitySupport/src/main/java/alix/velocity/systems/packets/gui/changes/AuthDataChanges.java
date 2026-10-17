@@ -16,7 +16,10 @@ public final class AuthDataChanges {
     public AuthDataChanges() {
     }
 
-    public void tryApply(VerifiedUser user) {
+    //showQrCode is passed in by the caller (GoogleAuthGUI, via this::showQrCode) rather than called
+    //statically, since Velocity's QR-display logic lives as instance state on that GUI, unlike Spigot's
+    //standalone GoogleAuth utility class.
+    public void tryApply(VerifiedUser user, Runnable showQrCode) {
         if (authSetting == null) return;
         LoginParams params = user.getData().getLoginParams();
 
@@ -30,7 +33,36 @@ public final class AuthDataChanges {
         switch (authSetting) {
             case AUTH_APP:
             case PASSWORD_AND_AUTH_APP:
-                user.getDuplexProcessor().verifyAuthAccess(() -> this.apply0(user));
+                //Checks the CURRENT authSetting, not token existence - since Alix 3.10.0 eagerly generates a
+                //token for every account on first save, token existence alone no longer signals whether the
+                //app was ever enabled. Covers both a brand-new account and an admin '/as resetpassword'
+                //clearing AuthSettings without invalidating the token.
+                if (!requiresApp(params.getAuthSettings())) {
+                    //Rotates the token right before showing it, so anyone who saw an earlier, never-enabled
+                    //QR code can't have it become real 2FA the moment this flow completes - without making
+                    //the token generally volatile (other places, e.g. email encryption, rely on it staying
+                    //stable otherwise). Nothing is armed yet (confirmQRCodeThenRun() below hasn't run), so a
+                    //failure here just propagates.
+                    user.getData().regenerateAuthToken();
+                    //Show the QR code first - nothing sensitive to leak yet - then only actually apply the
+                    //change once the player proves they scanned it correctly.
+                    user.getDuplexProcessor().confirmQRCodeThenRun(() -> this.apply0(user));
+                    try {
+                        showQrCode.run();
+                    } catch (RuntimeException e) {
+                        //showQrCode() can fail before ever entering the QR-view state (e.g. QR image
+                        //generation itself throwing) - endQRCodeShow()'s own cleanup only ever runs once
+                        //that state is actually entered, so without this the pending action above would be
+                        //left armed and could later fire on a completely unrelated QR confirmation (the
+                        //plain, ungated "show-qr" button reuses this same method).
+                        user.getDuplexProcessor().confirmQRCodeThenRun(null);
+                        throw e;
+                    }
+                } else {
+                    //The app is already required right now - showing its QR to an unproven session would
+                    //leak the account's real, still-live 2FA factor. Require proof of the EXISTING code first.
+                    user.getDuplexProcessor().verifyAuthAccess(() -> this.apply0(user));
+                }
         }
     }
 
@@ -47,6 +79,8 @@ public final class AuthDataChanges {
         //none until they happen to click "Recovery Codes" or "Reset Code" separately - see the Spigot
         //AuthDataChanges' equivalent for the full reasoning.
         if (!wasRequired && requiresApp(this.authSetting)) {
+            //see the Spigot AuthDataChanges equivalent for why this must land first
+            user.getData().persistToken();
             String[] codes = user.getData().regenerateRecoveryCodes();
             sendRecoveryCodes(user, codes);
         }

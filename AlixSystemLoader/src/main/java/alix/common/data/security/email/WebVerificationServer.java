@@ -26,6 +26,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
@@ -93,6 +94,10 @@ public final class WebVerificationServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
+                            //HttpServerCodec/HttpObjectAggregator don't time idle connections out on their
+                            //own (a slowloris client would hang open indefinitely) - matches every other
+                            //Netty listener in this codebase.
+                            ch.pipeline().addLast(new ReadTimeoutHandler(30));
                             ch.pipeline().addLast(new HttpServerCodec());
                             ch.pipeline().addLast(new HttpObjectAggregator(1 << 16));
                             ch.pipeline().addLast(new RequestHandler());
@@ -179,14 +184,37 @@ public final class WebVerificationServer {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
             try {
-                if (request.method() != HttpMethod.GET) {
+                QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+
+                //Restricted to the literal /verify path - otherwise any request carrying the token as a
+                //query param (a browser's favicon fetch, a crawler) could consume it.
+                if (!"/verify".equals(decoder.path())) {
+                    respond(ctx, HttpResponseStatus.NOT_FOUND, page(EmailConfig.INSTANCE.webVerificationPageInvalidTitle, EmailConfig.INSTANCE.webVerificationPageInvalidMessage, false));
+                    return;
+                }
+
+                List<String> tokenParam = decoder.parameters().get("token");
+                String token = tokenParam == null || tokenParam.isEmpty() ? null : tokenParam.get(0);
+
+                //GET only peeks (getIfPresent, not remove) and renders a confirmation page with a real POST
+                //form - GET must stay side-effect-free (RFC 7231 §4.2.1) since mail-gateway link scanners
+                //and unfurl bots auto-GET every URL in an email before a human opens it, which would
+                //otherwise burn the token before the player ever clicks it.
+                if (request.method() == HttpMethod.GET) {
+                    PendingWebVerification pending = token != null ? TOKENS.getIfPresent(token) : null;
+                    if (pending == null) {
+                        respond(ctx, HttpResponseStatus.BAD_REQUEST, page(EmailConfig.INSTANCE.webVerificationPageInvalidTitle, EmailConfig.INSTANCE.webVerificationPageInvalidMessage, false));
+                        return;
+                    }
+                    respond(ctx, HttpResponseStatus.OK, confirmPage(token));
+                    return;
+                }
+
+                if (request.method() != HttpMethod.POST) {
                     respond(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, page(EmailConfig.INSTANCE.webVerificationPageMethodNotAllowedTitle, EmailConfig.INSTANCE.webVerificationPageMethodNotAllowedMessage, false));
                     return;
                 }
 
-                QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-                List<String> tokenParam = decoder.parameters().get("token");
-                String token = tokenParam == null || tokenParam.isEmpty() ? null : tokenParam.get(0);
                 //single-use: the token is removed as soon as it's looked up, regardless of outcome
                 PendingWebVerification pending = token != null ? TOKENS.asMap().remove(token) : null;
 
@@ -240,6 +268,23 @@ public final class WebVerificationServer {
                + "<style>body{font-family:sans-serif;background:#111;color:#eee;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}"
                + ".box{text-align:center;padding:2rem;max-width:32rem}h1{color:" + color + "}</style></head>"
                + "<body><div class=\"box\"><h1>" + escape(title) + "</h1><p>" + escape(message) + "</p></div></body></html>";
+    }
+
+    //The GET-time confirmation page - a real HTML form the human has to actually submit (a plain link-
+    //scanner bot GET-ing this page never does), whose POST is what actually consumes the token and performs
+    //the real action. token is our own SecureRandom-generated Base64 (URL-safe alphabet only, per
+    //generateToken()), so it never needs HTML-escaping, but escape() is applied anyway as defense in depth
+    //in case that ever changes.
+    private static String confirmPage(String token) {
+        return "<!doctype html><html><head><meta charset=\"utf-8\"><title>" + escape(EmailConfig.INSTANCE.webVerificationPageConfirmTitle) + "</title>"
+               + "<style>body{font-family:sans-serif;background:#111;color:#eee;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}"
+               + ".box{text-align:center;padding:2rem;max-width:32rem}"
+               + "button{font:inherit;padding:0.75rem 2rem;border:0;border-radius:0.5rem;background:#2e7d32;color:#eee;cursor:pointer}</style></head>"
+               + "<body><div class=\"box\"><h1>" + escape(EmailConfig.INSTANCE.webVerificationPageConfirmTitle) + "</h1>"
+               + "<p>" + escape(EmailConfig.INSTANCE.webVerificationPageConfirmMessage) + "</p>"
+               + "<form method=\"POST\" action=\"/verify?token=" + escape(token) + "\">"
+               + "<button type=\"submit\">" + escape(EmailConfig.INSTANCE.webVerificationPageConfirmButton) + "</button>"
+               + "</form></div></body></html>";
     }
 
     private static String escape(String s) {

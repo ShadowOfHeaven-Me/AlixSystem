@@ -23,6 +23,15 @@ final class ActionBarVerificationMessage extends AbstractVerificationMessage {
 
     @Override
     public void updateMessage() {
+        //mirrors TitleVerificationMessage#update()'s terms/email-gate check
+        if (this.user.isTermsGateBlocking()) {
+            this.setVerificationMessageBuffer(AlixUtils.termsRequiredActionBarMessagePacket);
+            return;
+        }
+        if (this.user.isEmailRegisterGateBlocking()) {
+            this.setVerificationMessageBuffer(AlixUtils.emailVerificationRequiredActionBarMessagePacket);
+            return;
+        }
         this.setVerificationMessageBuffer(getVerificationReminderMessagePacket(this.user.isRegistered(), this.user.hasAccount()));
     }
 

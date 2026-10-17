@@ -22,6 +22,22 @@ public final class CommandsPacketManager {
     private static final boolean supportAllChars = Main.config.getBoolean("command-support-all-characters");
     public static final ByteBuf REGISTER = constructRegister();
     public static final ByteBuf LOGIN = constructLogin();
+    public static final ByteBuf TERMS = constructTerms();
+    public static final ByteBuf VERIFY_EMAIL = constructVerifyEmail();
+
+    private static ByteBuf constructTerms() {
+        List<String> aliases = AlixCommandManager.getCommand("terms").createAliasesList();
+        aliases.add("terms");
+
+        return constructOneArg(aliases, Messages.get("commands-terms-arg"), WrapperTransformer.CONST, version);
+    }
+
+    private static ByteBuf constructVerifyEmail() {
+        List<String> aliases = AlixCommandManager.getCommand("verifyemail").createAliasesList();
+        aliases.add("verifyemail");
+
+        return constructOneArg(aliases, Messages.get("commands-verifyemail-code-arg"), WrapperTransformer.CONST, version);
+    }
 
     //https://wiki.vg/Command_Data
     private static ByteBuf constructLogin() {
@@ -49,7 +65,12 @@ public final class CommandsPacketManager {
         if (user.hasCompletedCaptcha()) user.writeConstSilently(buffer(user));
     }
 
+    //The advertised command list always needs to match whichever command the player is actually expected to
+    //type next, or the client shows it in red as if it doesn't exist (even though it's handled fine
+    //server-side) - mirrors LoginState#writeCommands() on Velocity.
     private static ByteBuf buffer(UnverifiedUser user) {
+        if (user.isTermsGateBlocking()) return TERMS;
+        if (user.isEmailRegisterGateBlocking()) return VERIFY_EMAIL;
         return user.isRegistered() ? LOGIN : REGISTER;
     }
 }
