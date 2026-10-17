@@ -8,6 +8,8 @@ import alix.common.antibot.firewall.FireWallManager;
 import alix.common.commands.file.CommandsFileManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.connection.timestamp.ClockSkew;
+import alix.common.connection.timestamp.ClockSkewValue;
 import alix.common.data.AuthSetting;
 import alix.common.data.LoginType;
 import alix.common.data.PersistentUserData;
@@ -25,6 +27,7 @@ import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
+import alix.common.utils.AlixMathUtils;
 import alix.velocity.Main;
 import alix.velocity.utils.AlixUtils;
 import alix.velocity.utils.file.FileManager;
@@ -411,6 +414,21 @@ public final class AlixSystemCommand {
                                         sendMessage(sender, Messages.get("as-user-syn-signature-error"));
                                 }
 
+                                if (ClockSkew.ENABLED) {
+                                    ClockSkewValue skew = ClockSkew.getClockSkew(channel);
+                                    var confidence = skew.confidence();
+                                    if (confidence.isAny()) {
+                                        boolean measuring = confidence.isVeryEarlyEstimation();
+                                        var skewStr = measuring ? "Measuring..." : AlixMathUtils.round(skew.skew(), 3) + " ppm";
+
+                                        sendMessage(sender, "Clock Skew: &c" + skewStr);
+                                        if (!measuring) {
+                                            String extra = confidence.isStillMeasuring() ? " (Still measuring...)" : "";
+                                            sendMessage(sender, "Skew Measurement Confidence: &c" + confidence.readableName() + extra);
+                                        }
+                                    }
+                                }
+
                                 if (!data.getSavedIP().equals(PersistentUserData.UNKNOWN_IP)) {//I guess possibly incorrect info when testing on localhost
                                     var accounts = UserFileManager.getAllData().stream().filter(d -> d.getSavedIP().equals(data.getSavedIP()))
                                             .map(PersistentUserData::getName).toList();
@@ -449,7 +467,7 @@ public final class AlixSystemCommand {
                                         default:
                                             throw new RuntimeException("Invalid - " + data.getLoginParams().getAuthSettings());
                                     }
-                                    sendMessage(sender, Messages.get("as-user-totp", authApp));
+                                    sendMessage(sender, Messages.get("as-user-`totp", authApp));
                                     sendMessage(sender, Messages.get("as-user-totp-linked", stateOf(data.getLoginParams().hasProvenAuthAccess(), true)));
                                 }
                                 sendMessage(sender, "");

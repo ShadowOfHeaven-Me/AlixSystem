@@ -156,12 +156,27 @@ final class CaptchaStateImpl {
         this.tpConfirmsReceived++;
         if (duplexHandler.isGeyser)
             return;
+        boolean v26_3 = this.version().moreOrEqual(Version.V26_3);
+        if (v26_3) {
+            this.x = tpConfirm.getX();
+            this.y = tpConfirm.getY();
+            this.z = tpConfirm.getZ();
+
+            this.failIf(this.x != PacketSnapshots.VALID_XZ || this.z != PacketSnapshots.VALID_XZ);
+        }
+
         switch (tpConfirm.getTeleportId()) {
             case 1:
                 this.failIf(this.movementsReceived != 0 || this.tpConfirmsReceived != 1);
+                this.failIf(v26_3 && (int) this.y != TELEPORT_Y);
                 return;
             case 2:
-                this.failIf(this.movementsReceived != 1 || this.tpConfirmsReceived != 2);
+                //Log.error("movementsReceived=" + movementsReceived + " tpConfirmsReceived=" + this.tpConfirmsReceived);
+                int movementsExpected = v26_3 ? 0 : 1;
+                this.failIf(this.movementsReceived != movementsExpected || this.tpConfirmsReceived != 2);
+                this.failIf(v26_3 && (int) this.y != TELEPORT_VALID_Y);
+                if (v26_3)
+                    this.startFalling();
                 return;
             default: {
                 this.fail();
@@ -322,7 +337,7 @@ final class CaptchaStateImpl {
     void handle(WrapperPlayClientHeldItemChange packet) {
         int slot = packet.getSlot();
         this.failIf(slot == this.currentSlot//the player cannot send duplicate item selects
-                    || slot < 0 || slot > 8);
+                || slot < 0 || slot > 8);
         this.currentSlot = slot;
 
         if (this.awaitingHeldSlot && slot == HeldItemSlots.VALID_SLOT) {
@@ -351,23 +366,22 @@ final class CaptchaStateImpl {
 
     //private boolean awaitingArmAnimation;
 
-    void handle(WrapperPlayClientAnimation packet) {
-        /*if (!this.awaitingArmAnimation) return;
+    /*void handle(WrapperPlayClientAnimation packet) {
+     *//*if (!this.awaitingArmAnimation) return;
 
         this.failIf(packet.getHand() != InteractionHand.MAIN_HAND);
 
         this.cancelTask();
         this.awaitingArmAnimation = false;
         ////Log.error("ALL CHECKS PASSED IN: " + (System.currentTimeMillis() - this.keepAliveSentTime));
-        this.connection.verify();*/
-    }
+        this.connection.verify();*//*
+    }*/
 
     private long lastKeepAliveSentTime;
     private double deltaY, lastDeltaY, expectedYCollision;
     private boolean isFalling, isCheckingCollision, checkedCollision, isMovementDisabledAck;
 
     private void startFalling() {
-        this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
         this.isFalling = true;
     }
 
@@ -402,6 +416,9 @@ final class CaptchaStateImpl {
         //this.failIf(!flying.hasPositionChanged() && this.isFalling/*|| flying.hasPositionChanged() && !this.isFalling*/);
         //int startFallingTick = version().moreOrEqual(Version.V1_9) ? 3 : 2;
 
+        //no longer sends movement at tp, instead includes pos at tp confirm
+        boolean v26_3 = this.version().moreOrEqual(Version.V26_3);
+
         this.movementsReceived++;
         if (!NanoLimbo.allowFreeMovement) {
             //can't really go up (after the teleports)
@@ -409,11 +426,14 @@ final class CaptchaStateImpl {
             //we received 5 or more (this packet included) and the client still hasn't started falling. Hmmm
             this.failIf(this.deltaY == 0 && this.movementsReceived >= 5);
 
+            //skip the two first teleport packet responses <26.3
+            int fallingStartTick = v26_3 ? 0 : 2;
+
             if (
                 //humour the client, if it wants to delay sending the actual movement packets
                     this.deltaY < 0 /*&& this.movementsReceived >= startFallingTick*/
-                    && this.movementsReceived > 2//skip the two first teleport packet responses
-                    && !flying.isOnGround()) {
+                            && this.movementsReceived > fallingStartTick
+                            && !flying.isOnGround()) {
                 double predictedDeltaY = (this.lastDeltaY - 0.08) * 0.98;
                 double diff = this.deltaY - predictedDeltaY;
 
@@ -475,11 +495,12 @@ final class CaptchaStateImpl {
 
         switch (this.movementsReceived) {
             case 1: {
-                this.failIf(!flying.hasRotationChanged());
+                this.failIf(!v26_3 && !flying.hasRotationChanged());
                 if (version().moreOrEqual(Version.V1_9)) {
                     //Log.error("tpConfirmsReceived=" + this.tpConfirmsReceived);
-                    this.failIf(this.tpConfirmsReceived != 1);
-                    this.failIf((int) this.y != TELEPORT_Y);
+                    int expected = v26_3 ? 2 : 1;
+                    this.failIf(this.tpConfirmsReceived != expected);
+                    this.failIf(!v26_3 && (int) this.y != TELEPORT_Y);
                 } else {
                     this.failIf((int) this.y != TELEPORT_VALID_Y);
                     this.failIf(this.keepAlivesReceived != 2);
@@ -487,12 +508,13 @@ final class CaptchaStateImpl {
                 return;
             }
             case 2: {
+                this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
                 if (version().moreOrEqual(Version.V1_9)) {
                     this.failIf(this.tpConfirmsReceived != 2);
                     ////Log.error("Y: " + this.y + " TELEPORT_Y: " + TELEPORT_Y + " EQUAL: " + (TELEPORT_VALID_Y == this.y));
-                    this.failIf((int) this.y != TELEPORT_VALID_Y);
+                    this.failIf(!v26_3 && (int) this.y != TELEPORT_VALID_Y);
                     this.failIf(this.keepAlivesReceived != 2);
-                    this.failIf(!flying.hasRotationChanged());
+                    this.failIf(!v26_3 && !flying.hasRotationChanged());
                 } else this.startFalling();
                 //this.duplexHandler.writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_VALID);
 
@@ -504,7 +526,7 @@ final class CaptchaStateImpl {
             }
             case 3: {
                 //same as the second movement, the client will start falling only after sending this packet
-                if (version().moreOrEqual(Version.V1_9)) {
+                if (version().moreOrEqual(Version.V1_9) && !v26_3) {
                     this.failIf((int) this.y != TELEPORT_VALID_Y);
                     this.startFalling();
                 }//< 1.9 already falling

@@ -26,6 +26,7 @@ import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.PacketUtils;
+import ua.nanit.limbo.protocol.packets.factory.PacketCache;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
@@ -110,6 +111,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
             Log.error("Error during packet handle", e);
         } finally {
             this.flushBatcher.readComplete();
+            PacketCache.recycle(packet);
         }
     }
 

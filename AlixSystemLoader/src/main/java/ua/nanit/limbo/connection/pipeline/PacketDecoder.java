@@ -6,8 +6,8 @@ import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.Packet;
+import ua.nanit.limbo.protocol.packets.factory.PacketFactory;
 import ua.nanit.limbo.protocol.registry.State;
-import ua.nanit.limbo.protocol.registry.State.PacketFactory;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.Log;
 
@@ -53,7 +53,8 @@ public final class PacketDecoder {//extends MessageToMessageDecoder<ByteBuf> {
             if (connection != null)
                 connection.closeInvalidPacket();
 
-            if (NanoLimbo.suppress(e)) return null;
+            if (NanoLimbo.suppress(e))
+                return null;
 
             Log.error("Cannot decode %s packet 0x%s: %s", e, packet.getClass().getSimpleName(), Integer.toHexString(packetId), e.getMessage());
             return null;

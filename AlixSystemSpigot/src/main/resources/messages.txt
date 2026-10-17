@@ -155,8 +155,6 @@ chat-set-on: Chat was turned &aON &7by {0}
 command-does-not-exist: &cThe given command does not exist!
 command-unreachable: &cThis command is unreachable.
 commands-login-password-arg: password
-commands-recovery-email-arg: email
-commands-recovery-email-arg= email
 commands-register-email-arg: email
 commands-register-password-arg: password
 commands-register-password-second-arg: repeat password

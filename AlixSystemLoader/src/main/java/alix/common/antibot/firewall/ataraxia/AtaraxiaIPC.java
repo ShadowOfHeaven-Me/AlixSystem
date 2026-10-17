@@ -34,6 +34,7 @@ final class AtaraxiaIPC {
         SOCKET_FILE = new File(ipcFolder, "ipc.sock");
     }
 
+    //todo: forget previous lists when disconnected in ebpf
     static void syncAll(AtaraxiaServerHandler handler) {
         handler.write(encodeJ2RMapUpdate(false, true, GeoIPTracker.EXISTING_ACCOUNTS.keySet()));
 

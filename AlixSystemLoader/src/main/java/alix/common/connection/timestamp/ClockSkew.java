@@ -2,8 +2,13 @@ package alix.common.connection.timestamp;
 
 import alix.common.AlixCommonMain;
 import alix.common.antibot.ip.IPUtils;
+import alix.common.utils.AlixCommonUtils;
+import io.netty.channel.Channel;
+import io.netty.util.collection.LongObjectHashMap;
+import io.netty.util.collection.LongObjectMap;
 import lombok.SneakyThrows;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.Map;
@@ -11,23 +16,60 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ClockSkew {
 
-    static final Map<Long, ClockSkewEstimator> MAP = new ConcurrentHashMap<>();
+    public static final boolean ENABLED = true;
+    public static final double SKEW_MEASURE_NOT_CONFIDENT = Double.MAX_VALUE;
+    static final LongObjectMap<ClockSkewEstimator> MAP = new LongObjectHashMap<>();
+
+    public static ClockSkewValue getClockSkew(Channel channel) {
+        var es = MAP.get(key(channel));
+
+        if (es == null) return new ClockSkewValue(Double.NaN, ClockSkewConfidence.NONE);
+
+        double est = es.estimateFrequencyHz();
+        double nominalHz = ClockSkewEstimator.snapNominalHz(est);
+        double skew = ClockSkewEstimator.skewPpm(est, nominalHz);
+
+        return new ClockSkewValue(skew, ClockSkewConfidence.of(es.spanSeconds()));
+    }
+
+    public static void on_disconnect(Channel channel) {
+        MAP.remove(key(channel));
+    }
+
+    private static ClockSkewEstimator get(Channel channel) {
+        return compute(key(channel));
+    }
+
+    private static long key(Channel channel) {
+        var ip = AlixCommonUtils.getSocketAddress(channel);
+        if (!(ip.getAddress() instanceof Inet4Address v4)) return 0;
+
+        int addr = IPUtils.ipv4Value(v4);
+        short port = (short) ip.getPort();
+
+        return key(addr, port);
+    }
+
+    private static long key(int addr, short port) {
+        return ((long) addr << 32) | port;
+    }
+
+    private static ClockSkewEstimator compute(long key) {
+        return MAP.computeIfAbsent(key, sex -> new ClockSkewEstimator());
+    }
 
     @SneakyThrows
-    public static void on_timestamp(long nanos, int addr, int port, long tsval) {
-        long key = ((long) addr << 32) | port;
-
-        var es = MAP.computeIfAbsent(key, sex -> new ClockSkewEstimator());
-
+    public static void on_timestamp(long nanos, int addr, short port, int tsval) {
+        var es = compute(key(addr, port));
         es.addSample(nanos, tsval);
 
         double est = es.estimateFrequencyHz();
         double nominalHz = ClockSkewEstimator.snapNominalHz(est);
-        double skew = es.skewPpm(nominalHz);
+        double skew = ClockSkewEstimator.skewPpm(est, nominalHz);
 
         Duration duration = Duration.ofNanos(nanos - es.startNanos);
 
         AlixCommonMain.logInfo("addr=" + InetAddress.getByAddress(IPUtils.ipv4ByteArray(addr)).getHostAddress() +
-                               " nominalHz=" + nominalHz + " count=" + es.count + " duration= "+ duration + " estimateFrequencyHz=" + est + " skew=" + skew);
+                " nominalHz=" + nominalHz + " count=" + es.count + " duration= " + duration + " estimateFrequencyHz=" + est + " skew=" + skew);
     }
 }

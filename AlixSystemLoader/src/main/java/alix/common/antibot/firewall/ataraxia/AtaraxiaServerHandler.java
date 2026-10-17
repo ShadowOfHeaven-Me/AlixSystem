@@ -40,6 +40,12 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
     volatile Channel channel;
     private long totalBytesRead = 0;
 
+    /*static final MpscUnboundedArrayQueue<Runnable> MPSC_TASKS = new MpscUnboundedArrayQueue<>(10);
+
+    static void lazyExecute(Runnable r) {
+        MPSC_TASKS.offer(r);
+    }*/
+
     static ByteBuf buffer() {
         var ch = HANDLER.channel;
         return ch != null ? ch.alloc().buffer() : Unpooled.directBuffer();
@@ -50,11 +56,17 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     public void write(ByteBuf buf) {
-        this.channel.write(buf, this.channel.voidPromise());
+        var ch = this.channel;
+        if (ch == null) return;
+
+        ch.write(buf, ch.voidPromise());
     }
 
     public void flush() {
-        this.channel.flush();
+        var ch = this.channel;
+        if (ch == null) return;
+
+        ch.flush();
     }
 
     public void writeAndFlush(ByteBuf buf) {
@@ -150,10 +162,10 @@ final class AtaraxiaServerHandler extends ChannelInboundHandlerAdapter {
             }
             case R2J_SND_TS -> {
                 long nanos = buf.readLong();
-                long tsval = Integer.toUnsignedLong(buf.readInt());
-                long tsecr = Integer.toUnsignedLong(buf.readInt());
+                int tsval = buf.readInt();
+                int tsecr = buf.readInt();
                 int addr = buf.readInt();
-                int port = Short.toUnsignedInt(buf.readShort());
+                short port = buf.readShort();
                 buf.readShort();//padding
 
                 ClockSkew.on_timestamp(nanos, addr, port, tsval);

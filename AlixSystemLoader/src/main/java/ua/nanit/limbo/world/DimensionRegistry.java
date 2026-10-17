@@ -34,6 +34,7 @@ public final class DimensionRegistry {
     private final CompoundBinaryTag codec_1_21_11;
     private final CompoundBinaryTag codec_26_1;
     private final CompoundBinaryTag codec_26_2;
+    private final CompoundBinaryTag codec_26_3;
     //private final CompoundBinaryTag oldCodec;
     private final CompoundBinaryTag tags_1_20_5;
     private final CompoundBinaryTag tags_1_21;
@@ -46,6 +47,7 @@ public final class DimensionRegistry {
     private final CompoundBinaryTag tags_1_21_11;
     private final CompoundBinaryTag tags_26_1;
     private final CompoundBinaryTag tags_26_2;
+    private final CompoundBinaryTag tags_26_3;
 
     public DimensionRegistry() throws IOException {
         codec_1_16 = readNbtFile("codec_1_16");
@@ -67,6 +69,7 @@ public final class DimensionRegistry {
         codec_1_21_11 = readNbtFile("codec_1_21_11");
         codec_26_1 = readNbtFile("codec_26_1");
         codec_26_2 = readNbtFile("codec_26_2");
+        codec_26_3 = readNbtFile("codec_26_3");
 
         tags_1_20_5 = readNbtFile("tags_1_20_5");
         tags_1_21 = readNbtFile("tags_1_21");
@@ -79,10 +82,13 @@ public final class DimensionRegistry {
         tags_1_21_11 = readNbtFile("tags_1_21_11");
         tags_26_1 = readNbtFile("tags_26_1");
         tags_26_2 = readNbtFile("tags_26_2");
+        tags_26_3 = readNbtFile("tags_26_3");
     }
 
     //https://github.com/Nan1t/NanoLimbo/blob/149434d7dc588cfa1b499205778c9aef12ad6341/src/main/java/ua/nanit/limbo/world/DimensionRegistry.java
     public CompoundBinaryTag getCodec(Version version) {
+        if (version.moreOrEqual(Version.V26_3))
+            return this.codec_26_3;
         if (version.moreOrEqual(Version.V26_2))
             return this.codec_26_2;
         if (version.moreOrEqual(Version.V26_1))
@@ -124,8 +130,8 @@ public final class DimensionRegistry {
     
     public CompoundBinaryTag getTags(Version version) {
         return switch (version) {
-            //case V26_3 -> null;
-            case V26_3, V26_2 -> this.tags_26_2;
+            case V26_3 -> this.tags_26_3;
+            case V26_2 -> this.tags_26_2;
             case V26_1 -> this.tags_26_1;
             case V1_21_11 -> this.tags_1_21_11;
             case V1_21_9 -> this.tags_1_21_9;
