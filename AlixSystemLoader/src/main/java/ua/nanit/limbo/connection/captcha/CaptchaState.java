@@ -77,9 +77,9 @@ public final class CaptchaState implements VerifyState {
             case KEEP_ALIVE:
                 this.impl.handle((WrapperPlayClientKeepAlive) packet);
                 return;
-            case ANIMATION:
+            /*case ANIMATION:
                 this.impl.handle((WrapperPlayClientAnimation) packet);
-                return;
+                return;*/
             case HELD_SLOT:
                 this.impl.handle((WrapperPlayClientHeldItemChange) packet);
                 return;
@@ -139,7 +139,7 @@ public final class CaptchaState implements VerifyState {
 
     @Override
     public void handle(PacketPlayInAnimation packet) {
-        this.handle0(packet.wrapper(), ANIMATION);
+        //this.handle0(packet.wrapper(), ANIMATION);
     }
 
     @Override

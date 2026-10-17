@@ -3,6 +3,7 @@ package ua.nanit.limbo.connection;
 import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.connection.timestamp.ClockSkew;
 import alix.common.data.fingerprinting.FingerprintManager;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.annotation.OptimizationCandidate;
@@ -85,6 +86,10 @@ public final class ClientConnection {
                 new Exception("DISCONNECT AT=").printStackTrace();
             });
         }
+
+        channel.closeFuture().addListener(f -> {
+            ClockSkew.on_disconnect(channel);
+        });
     }
 
     public void setVerifyState(StateSupplier state) {

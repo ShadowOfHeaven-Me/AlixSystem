@@ -5,6 +5,7 @@ import alix.common.utils.netty.safety.NettySafety;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketIn;
+import ua.nanit.limbo.protocol.packets.factory.NoPacketCache;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
@@ -13,7 +14,7 @@ import ua.nanit.limbo.util.DomainUtils;
 
 import static com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake.ConnectionIntention;
 
-public final class PacketHandshake implements PacketIn {
+public final class PacketHandshake implements PacketIn, NoPacketCache {
 
     private Version version;
     private String host;

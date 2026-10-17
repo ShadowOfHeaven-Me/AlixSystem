@@ -11,10 +11,6 @@ public final class PacketPlayOutDisconnect extends OutRetrooperPacket<WrapperPla
         super(WrapperPlayServerDisconnect.class);
     }
 
-    //Was Component.text(reason) - that treats 'reason' (already legacy-color-translated by the caller, e.g.
-    //via Messages.getWithPrefix()) as flat, unparsed text, so a "&#RRGGBB" hex code in it would show up as
-    //literal '§x§...' characters instead of an actual color - parseLegacy() is the same hex-aware Adventure
-    //legacy parser chat messages already use (see PacketPlayOutMessage#withMessage()).
     public PacketPlayOutDisconnect setReason(String reason) {
         this.wrapper().setReason(MessageWrapper.parseLegacy(reason));
         return this;

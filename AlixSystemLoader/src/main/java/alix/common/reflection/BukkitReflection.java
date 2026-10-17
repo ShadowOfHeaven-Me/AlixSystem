@@ -48,7 +48,8 @@ public final class BukkitReflection {
             //getVersion         3871-Spigot-d2eba2c-3f9263b (MC: 1.20.1)
             //getBukkitVersion   1.20.1-R0.1-SNAPSHOT
             String version = (String) CommonReflection.getMethod(Bukkit.class, "getBukkitVersion").invoke(null);
-            bukkitVersion0 = Integer.parseInt(maxLen(version.split("\\.")[1], 2));
+            var a = version.split("\\.");
+            bukkitVersion0 = Integer.parseInt(maxLen(a[0].equals("1") ? a[1] : a[0], 2));
             obc0 = null;
         } catch (ClassNotFoundException e) {
             //AlixCommonMain.logError("SDFGBHJKLIJUGFDXSCVBNJHUY76TRDFVBNJKI6RSDX");

@@ -7,14 +7,13 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
-import ua.nanit.limbo.connection.ClientConnection;
-import ua.nanit.limbo.protocol.HandleMask;
 import ua.nanit.limbo.protocol.Packet;
 import ua.nanit.limbo.protocol.PacketIn;
 import ua.nanit.limbo.protocol.PacketOut;
 import ua.nanit.limbo.protocol.packets.configuration.*;
 import ua.nanit.limbo.protocol.packets.configuration.resourcepack.PacketConfigInResourcePackResponse;
 import ua.nanit.limbo.protocol.packets.configuration.resourcepack.PacketConfigOutResourcePack;
+import ua.nanit.limbo.protocol.packets.factory.PacketFactory;
 import ua.nanit.limbo.protocol.packets.handshake.PacketHandshake;
 import ua.nanit.limbo.protocol.packets.login.*;
 import ua.nanit.limbo.protocol.packets.login.cookies.PacketInLoginCookieResponse;
@@ -414,29 +413,6 @@ public enum State {
         public void register(int packetId, Supplier<? extends Packet> supplier) {
             this.packetsById.put(packetId, new PacketFactory(supplier));
             this.packetIdByClass.put(supplier.get().getClass(), packetId);
-        }
-    }
-
-    public static final class PacketFactory {
-        private final Supplier<? extends Packet> supplier;
-        private final Packet cached;//empty, used only for isSkippable
-        private final boolean skippable;
-
-        private PacketFactory(Supplier<? extends Packet> supplier) {
-            this.supplier = supplier;
-
-            var cached = supplier.get();
-            this.skippable = HandleMask.isSkippable0(cached.getClass());
-            //let the instance be gc'ed if not needed
-            this.cached = this.skippable ? null : cached;
-        }
-
-        public boolean isPacketSkippable(ClientConnection connection) {
-            return this.skippable || this.cached.isSkippable(connection);
-        }
-
-        public Packet newPacket() {
-            return this.supplier.get();
         }
     }
 

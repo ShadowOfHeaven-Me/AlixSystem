@@ -28,7 +28,7 @@ public enum PremiumStatus {
         return this.readableName;
     }
 
-    private static String firstUpperRestLower(String name) {
+    public static String firstUpperRestLower(String name) {
         return Character.toUpperCase(name.charAt(0)) + name.substring(1).toLowerCase().replace('_','-');
     }
 }
