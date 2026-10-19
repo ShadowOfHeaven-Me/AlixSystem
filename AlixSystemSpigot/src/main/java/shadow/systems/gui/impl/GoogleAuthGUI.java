@@ -153,16 +153,13 @@ public final class GoogleAuthGUI extends AlixGUI {
 
                 String[] codes = user.getData().regenerateRecoveryCodes();
 
+                //Doesn't auto-show the new QR here - a reset is already two confirm clicks plus a chat dump
+                //of fresh recovery codes; forcing the QR onto the screen too is one unrequested thing too
+                //many. The player clicks "Show QR Code" themselves, same as anyone viewing the current one.
                 AlixScheduler.sync(() -> {
                     player.sendMessage(MessageWrapper.parseLegacy(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat")));
                     sendRecoveryCodes(player, codes);
                 });
-
-                //showQRCode() is already designed to be called from an async context, same as the
-                //pre-existing "Show QR Code" button above - it hops back to the main thread internally only
-                //where it actually needs to (the teleport), so it's left running on THIS async thread rather
-                //than nested inside the sync() block above.
-                GoogleAuth.showQRCode(user, player);
             }));
         });
 

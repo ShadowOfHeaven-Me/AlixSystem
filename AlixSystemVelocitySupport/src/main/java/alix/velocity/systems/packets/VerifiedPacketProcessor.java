@@ -226,12 +226,18 @@ public final class VerifiedPacketProcessor {
                 if (!this.user.getData().getLoginParams().hasProvenAuthAccess()) {
                     Runnable pending = this.pendingQRConfirmAction;
                     this.pendingQRConfirmAction = null;
-                    //grantsProvenAccess = (pending != null) - see verifyAuthAccess()'s docs above.
-                    this.verifyAuthAccess(pending, pending != null);
+                    this.verifyAuthAccess(pending);
                 } else this.endQRCodeShow();
                 return;
             }
             case "cancel": {
+                this.user.sendMessage(authCancelMessagePacket);
+                this.endQRCodeShow();
+                return;
+            }
+            default: {
+                //Any other command typed mid-setup used to just be silently eaten (cancelled with no
+                //feedback) - cancel the setup outright instead, same as an explicit "cancel".
                 this.user.sendMessage(authCancelMessagePacket);
                 this.endQRCodeShow();
             }
@@ -334,19 +340,13 @@ public final class VerifiedPacketProcessor {
         this.items = null;
     }
 
+    //A correct code always proves access, so it always sets hasProvenAuthAccess - no exceptions.
     public void verifyAuthAccess(Runnable actionOnCorrectInput) {
-        this.verifyAuthAccess(actionOnCorrectInput, true);
-    }
-
-    //grantsProvenAccess must be false for a "confirm" with no pending action behind it (see processChat()) -
-    //otherwise proving a code for an account's not-yet-enabled, freely-viewable QR code could permanently
-    //bypass every future proof-of-access gate on it.
-    public void verifyAuthAccess(Runnable actionOnCorrectInput, boolean grantsProvenAccess) {
         this.currentAction = CurrentAction.VERIFYING_AUTH_ACCESS;
         this.authBuilder = new VelocityAuthBuilder(this.user, correct -> {
             if (correct) {
                 VelocityAuthBuilder.visualsOnProvenAccess(this.authBuilder, this.user);
-                if (grantsProvenAccess) this.user.getData().getLoginParams().setHasProvenAuthAccess(true);
+                this.user.getData().getLoginParams().setHasProvenAuthAccess(true);
                 this.endQRCodeShow();
                 if (actionOnCorrectInput != null) actionOnCorrectInput.run();
                 this.user.closeInventory();
