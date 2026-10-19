@@ -169,19 +169,13 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
     private static final ByteBuf
             authCancelMessagePacket = OutMessagePacketConstructor.constructConst(Messages.getWithPrefix("google-auth-setting-cancel-chat"));
 
+    //A correct code always proves access, so it always sets hasProvenAuthAccess - no exceptions.
     public void verifyAuthAccess(Runnable actionOnCorrectInput) {
-        this.verifyAuthAccess(actionOnCorrectInput, true);
-    }
-
-    //grantsProvenAccess must be false for a "confirm" with no pending action behind it (see processChat()) -
-    //otherwise proving a code for an account's not-yet-enabled, freely-viewable QR code could permanently
-    //bypass every future proof-of-access gate on it.
-    public void verifyAuthAccess(Runnable actionOnCorrectInput, boolean grantsProvenAccess) {
         this.currentAction = CurrentAction.VERIFYING_AUTH_ACCESS;
         this.authBuilder = new VerifiedVirtualAuthBuilder(this.user, correct -> {
             if (correct) {
                 VerifiedVirtualAuthBuilder.visualsOnProvenAccess(this.user);
-                if (grantsProvenAccess) this.user.getData().getLoginParams().setHasProvenAuthAccess(true);
+                this.user.getData().getLoginParams().setHasProvenAuthAccess(true);
                 this.endQRCodeShowAndTeleportBack();
                 if (actionOnCorrectInput != null) actionOnCorrectInput.run();
                 return;
@@ -208,15 +202,18 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
                 if (!this.user.getData().getLoginParams().hasProvenAuthAccess()) {
                     Runnable pending = this.pendingQRConfirmAction;
                     this.pendingQRConfirmAction = null;
-                    //grantsProvenAccess = (pending != null): a confirm with no pending action only ever
-                    //happens from the plain "Show QR Code" button on a not-yet-required account (see
-                    //verifyAuthAccess()'s docs above) - proving a code for a secret nobody actually
-                    //committed to enabling yet must not grant lasting trust.
-                    this.verifyAuthAccess(pending, pending != null);
+                    this.verifyAuthAccess(pending);
                 } else this.endQRCodeShowAndTeleportBack();
                 return;
             }
             case "cancel": {
+                this.user.writeAndFlushConstSilently(authCancelMessagePacket);
+                this.endQRCodeShowAndTeleportBack();
+                return;
+            }
+            default: {
+                //Any other command typed mid-setup used to just be silently eaten (cancelled with no
+                //feedback) - cancel the setup outright instead, same as an explicit "cancel".
                 this.user.writeAndFlushConstSilently(authCancelMessagePacket);
                 this.endQRCodeShowAndTeleportBack();
             }

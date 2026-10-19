@@ -135,11 +135,12 @@ public final class GoogleAuthGUI extends AlixGUI {
 
                 String[] codes = this.user.getData().regenerateRecoveryCodes();
 
+                //Doesn't auto-show the new QR here - a reset is already two confirm clicks plus a chat dump
+                //of fresh recovery codes; forcing the QR onto the screen too is one unrequested thing too
+                //many. The player clicks "Show QR Code" themselves, same as anyone viewing the current one.
                 this.user.getChannel().eventLoop().execute(() -> {
                     this.user.user.sendMessage(Messages.getWithPrefix("gui-google-auth-reset-token-success-chat"));
                     sendRecoveryCodes(this.user, codes);
-
-                    this.showQrCode();
                 });
             }));
         });
