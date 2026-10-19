@@ -106,7 +106,13 @@ public final class Events {
             return;
         }
 
-        if (data != null && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(player.getRemoteAddress().getAddress())) {
+        //IP auto-login is only a password-equivalent trust signal - an account that also requires the
+        //auth app (AUTH_APP/PASSWORD_AND_AUTH_APP) must still fall through to the normal Limbo flow below,
+        //where LoginState#setData() recognizes this same IP-trust condition and skips straight to the 2FA
+        //prompt instead of the password one. Otherwise this full bypass would let anyone connecting from the
+        //saved IP in without ever being asked for the 2FA code, defeating the whole point of enabling it.
+        if (data != null && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(player.getRemoteAddress().getAddress())
+                && !data.getLoginParams().getAuthSettings().requiresAuthApp()) {
             LoginInfo.set(channel, true, LoginVerdict.IP_AUTO_LOGIN);
             UserManager.add(player);
             continuation.resume();

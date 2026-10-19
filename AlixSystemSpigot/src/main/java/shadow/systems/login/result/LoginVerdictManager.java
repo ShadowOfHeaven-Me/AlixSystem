@@ -45,7 +45,13 @@ public final class LoginVerdictManager {
         if (!data.getPassword().isSet())//not registered - password was reset
             return LoginVerdict.DISALLOWED_PASSWORD_RESET;
 
-        if (!AlixUtils.forcefullyDisableIpAutoLogin && isSessionNotExpired(data) && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip))//ip auto login
+        //IP auto-login is only a password-equivalent trust signal - an account that also requires the auth
+        //app (AUTH_APP/PASSWORD_AND_AUTH_APP) must NOT get this full bypass, or anyone connecting from the
+        //saved IP would get in without ever being asked for the 2FA code. Such an account still falls
+        //through to DISALLOWED_LOGIN_REQUIRED below, where UnverifiedUser's own IP-trust check (see its
+        //constructor) skips straight to the 2FA prompt instead of the password one.
+        if (!AlixUtils.forcefullyDisableIpAutoLogin && isSessionNotExpired(data) && data.getLoginParams().getIpAutoLogin() && data.getSavedIP().equals(ip)
+                && !data.getLoginParams().getAuthSettings().requiresAuthApp())//ip auto login
             return LoginVerdict.IP_AUTO_LOGIN;
 
         if (BukkitLimboIntegration.hasVerifiedInLimbo(data.getName(), ip))

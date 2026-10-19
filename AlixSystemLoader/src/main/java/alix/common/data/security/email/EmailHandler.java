@@ -185,6 +185,10 @@ public final class EmailHandler {
         return matched[0];
     }
 
+    //MAX_CODE_ATTEMPTS: same config key as the login-flow recovery/registration code checks (LoginState) -
+    //a generic "how many wrong code entries before giving up" limit, reused here rather than duplicated.
+    private static final int MAX_CODE_ATTEMPTS = EmailConfig.getConfig().getInt("max-code-attempts");
+
     public static <T> void verifyMail(T caller, PersistentUserData data, String code, boolean console, BiConsumer<T, String> sendMessage) {
         var session = VERIFY_CODES.get(caller);
         if (session == null) {
@@ -192,9 +196,20 @@ public final class EmailHandler {
             return;
         }
         if (!code.equals(session.code())) {
+            if (session.wrongAttempts().incrementAndGet() >= MAX_CODE_ATTEMPTS) {
+                //invalidates the session so this code can no longer be brute-forced - conditional remove so a
+                //session already replaced by a newer sendVerifyMail() call in the meantime isn't wiped out
+                VERIFY_CODES.remove(caller, session);
+                sendMessage.accept(caller, Messages.get("verify-mail.too-many-attempts", console ? "/as sendverifyemail" : "/account sendverifyemail"));
+                return;
+            }
             sendMessage.accept(caller, Messages.get("verify-mail.code-mismatch"));
             return;
         }
+
+        //single-use: consume the session on a correct match, same as verifyCode()'s computeIfPresent pattern -
+        //without this, the same code stayed valid for repeated reuse until it naturally expired.
+        VERIFY_CODES.remove(caller, session);
 
         if (console) {
             ServerSettingsManager.set(Setting.VERIFIED_EMAIL, true);

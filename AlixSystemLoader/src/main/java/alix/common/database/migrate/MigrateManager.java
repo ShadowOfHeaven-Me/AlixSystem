@@ -2,13 +2,20 @@ package alix.common.database.migrate;
 
 import alix.common.database.connect.DatabaseConnector;
 import alix.common.database.file.DatabaseConfig;
+import alix.common.utils.other.throwable.AlixError;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.regex.Pattern;
 
 public final class MigrateManager {
+
+    //A table name can't be parameterized via a PreparedStatement '?' (JDBC only supports that for values),
+    //so database.yml's migrate-table-name is spliced directly into the query text - validated against this
+    //allow-list first so an admin-editable config value isn't a SQL injection primitive.
+    private static final Pattern SAFE_IDENTIFIER = Pattern.compile("^[A-Za-z0-9_]+$");
 
     @SneakyThrows
     private static void migrateWith0(DatabaseConnector reader, MigrateProvider migrateProvider, String query) {
@@ -23,6 +30,10 @@ public final class MigrateManager {
     }
 
     public static void migrate(MigrateType type) {
-        migrateWith0(type.getConnector(), type.getMigrateProvider(), type.getQuery().formatted(DatabaseConfig.MIGRATE.TABLE_NAME()));
+        String tableName = DatabaseConfig.MIGRATE.TABLE_NAME();
+        if (!SAFE_IDENTIFIER.matcher(tableName).matches())
+            throw new AlixError("Invalid migrate-table-name in database.yml: \"" + tableName + "\" - only letters, digits and underscores are allowed!");
+
+        migrateWith0(type.getConnector(), type.getMigrateProvider(), type.getQuery().formatted(tableName));
     }
 }

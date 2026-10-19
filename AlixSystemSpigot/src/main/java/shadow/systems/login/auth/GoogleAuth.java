@@ -58,7 +58,20 @@ public final class GoogleAuth {
 
     private static final ByteBuf PLAYER_ABILITIES_PACKET = NettyUtils.constBuffer(new WrapperPlayServerPlayerAbilities(true, false, false, false, 0.05f, 0.1f));
 
-    public static final ByteBuf MESSAGE = OutMessagePacketConstructor.constructConst(GoogleAuthExplanation.COMBINED);
+    //falls back to the click-event-free version if serializing the clickable one throws
+    public static final ByteBuf MESSAGE = constructMessageSafely();
+
+    private static ByteBuf constructMessageSafely() {
+        try {
+            return OutMessagePacketConstructor.constructConst(GoogleAuthExplanation.COMBINED);
+        } catch (Throwable t) {
+            shadow.Main.logWarning("Failed to build the 2FA QR code message with clickable confirm/cancel text - "
+                    + "falling back to a non-clickable version. This is very likely a packetevents/Adventure "
+                    + "version mismatch on this server build, not something wrong with your AlixSystem setup. "
+                    + "Cause: " + t);
+            return OutMessagePacketConstructor.constructConst(GoogleAuthExplanation.COMBINED_NO_CLICK_EVENTS);
+        }
+    }
 
     public static void showQRCode(VerifiedUser user, Player player) {
         if (user == null) return;
@@ -73,10 +86,6 @@ public final class GoogleAuth {
 
             ByteBuf[] buffers = ImageRenderer.qrCode(image);
 
-            /*AlixScheduler.repeatAsync(() -> {
-                Main.logError("CODE: " + GoogleAuthUtils.getTOTPCode(token) + " TOKEN: " + token);
-            }, 1, TimeUnit.SECONDS);*/
-
             Channel channel = user.getChannel();
 
             user.getDuplexProcessor().startQRCodeShow();
@@ -86,6 +95,9 @@ public final class GoogleAuth {
             OriginalLocationsManager.add(player, loc);//try to prevent any potential data loss
 
             AlixScheduler.sync(() -> {
+                //a cross-world teleport can otherwise lose an actively-used item (trident wind-up, drawn bow...)
+                if (player.hasActiveItem()) player.clearActiveItem();
+
                 MethodProvider.teleportAsyncPluginCause(player, QR_CODE_TP_LOC).thenAccept(b -> {
                     if (!b) {
                         for (ByteBuf buf : buffers) buf.release();

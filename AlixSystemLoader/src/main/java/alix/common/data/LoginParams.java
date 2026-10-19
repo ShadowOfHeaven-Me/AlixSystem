@@ -97,12 +97,12 @@ public final class LoginParams {
 
     public void setLoginType(LoginType loginType) {
         this.loginType = loginType;
-        database.updateExtraLoginTypeByName(this.name(), extraLoginType);
+        database.updateLoginTypeByName(this.name(), loginType);
     }
 
     public void setExtraLoginType(LoginType extraLoginType) {
         this.extraLoginType = extraLoginType;
-        database.updateLoginTypeByName(this.name(), loginType);
+        database.updateExtraLoginTypeByName(this.name(), extraLoginType);
     }
 
     String name() {

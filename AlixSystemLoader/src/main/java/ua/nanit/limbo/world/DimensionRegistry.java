@@ -128,7 +128,13 @@ public final class DimensionRegistry {
         return this.codec_1_16;
     }
     
+    //26.3's tags differ meaningfully from 26.2's (new block/item/biome/fluid/potion tags, ~80% more total
+    //entries) - captured live from a real 26.3 server, not reused from 26.2. See getCodec()'s moreOrEqual
+    //pattern above for the same forward-compat reasoning on the top entry.
     public CompoundBinaryTag getTags(Version version) {
+        //V26_3 must resolve to its own tags_26_3, not fall back to tags_26_2 - 26.3's tags differ meaningfully
+        //(see the class-level comment above) and this exact mapping was already verified live against a real
+        //26.3 client.
         return switch (version) {
             case V26_3 -> this.tags_26_3;
             case V26_2 -> this.tags_26_2;

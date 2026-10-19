@@ -13,13 +13,17 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
     private static final ByteBuf
             captchaTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("captcha-time-passed")),
             registerTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("register-time-passed")),
-            loginTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("login-time-passed"));
+            loginTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("login-time-passed")),
+            //Mirrors LimboCountdown's own emailVerificationTimePassedKickPacket on Velocity.
+            registerEmailVerificationTimePassedKickPacket = OutDisconnectPacketConstructor.constAtPlay(Messages.get("register-email-verification-time-passed"));
 
     private static final ByteBuf timeOutError = OutDisconnectPacketConstructor.constAtPlay("§cTimed Out No Packet [Alix]");
     //private final ChannelHandlerContext ctx;
     private final UnverifiedUser user;
     private ByteBuf[] packets;
     private int index;
+    //Whether this is currently the email-verification-wait countdown (see restartAsEmailVerification()).
+    private boolean emailVerificationMode;
 
     public VirtualCountdown(UnverifiedUser user) {
         boolean completedCaptcha = user.hasCompletedCaptcha();
@@ -34,7 +38,8 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
     public void tick() {
         //Main.logError("TICKKKKK");
         if (index != 0) this.user.writeAndFlushConstSilently(this.packets[--this.index]);
-        else MethodProvider.kickAsync(user, user.hasCompletedCaptcha() ? user.isRegistered() ? loginTimePassedKickPacket : registerTimePassedKickPacket : captchaTimePassedKickPacket);
+        else MethodProvider.kickAsync(user, emailVerificationMode ? registerEmailVerificationTimePassedKickPacket
+                : user.hasCompletedCaptcha() ? user.isRegistered() ? loginTimePassedKickPacket : registerTimePassedKickPacket : captchaTimePassedKickPacket);
     }
 
     public void tickNoPacket() {
@@ -44,6 +49,14 @@ public final class VirtualCountdown {//shows xp countdown and kicks out
     public void restartAsLogin() {
         this.packets = BufferedPackets.loginOutExperiencePackets;
         this.index = BufferedPackets.loginPacketArraySize;
+        this.emailVerificationMode = false;
+    }
+
+    //Swaps to the (typically longer) email-verification-time countdown - mirrors LoginState on Velocity.
+    public void restartAsEmailVerification() {
+        this.packets = BufferedPackets.emailVerificationOutExperiencePackets;
+        this.index = BufferedPackets.emailVerificationPacketArraySize;
+        this.emailVerificationMode = true;
     }
 
     public static void pregenerate() {

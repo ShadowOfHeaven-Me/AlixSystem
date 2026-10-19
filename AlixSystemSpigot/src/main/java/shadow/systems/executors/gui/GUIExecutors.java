@@ -1,5 +1,6 @@
 package shadow.systems.executors.gui;
 
+import alix.common.messages.Messages;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,7 +24,7 @@ public final class GUIExecutors implements Listener {
                 gui.onClick(event);
             } catch (Exception e) {
                 gui.getGUI().close();
-                AlixUtils.sendMessage(player, "&cSomething went wrong with the GUI!");
+                AlixUtils.sendMessage(player, Messages.getWithPrefix("error-generic"));
             }
         }
     }

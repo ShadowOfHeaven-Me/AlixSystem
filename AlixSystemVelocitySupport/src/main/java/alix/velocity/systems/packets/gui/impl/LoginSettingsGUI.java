@@ -1,5 +1,6 @@
 package alix.velocity.systems.packets.gui.impl;
 
+import alix.common.data.LoginParams;
 import alix.common.data.PersistentUserData;
 import alix.common.data.fingerprinting.FingerprintGateway;
 import alix.common.data.settings.ServerSettingsManager;
@@ -73,8 +74,12 @@ public final class LoginSettingsGUI extends AlixGUI {
         internalItems.put("back", backGuiItem);
 
         if (ServerSettingsManager.is(Setting.VERIFIED_EMAIL, true)) {
-            //Email changes require chat input rather than a direct GUI toggle - this button is informational only.
-            internalItems.put("email-recovery", new GUIItem(EMAIL_RECOVERY_GET.apply(data)));
+            //Clicking prompts for a new email in chat (send/confirm code) rather than a direct GUI toggle -
+            //there's no valid "off" value to switch to, unlike the other settings on this screen.
+            internalItems.put("email-recovery", new GUIItem(EMAIL_RECOVERY_GET.apply(data), event -> {
+                user.closeInventory();
+                runGatedByAuthAccess(user, () -> user.sendMessage(Messages.getWithPrefix("gui-account-change-email-chat")));
+            }));
         }
 
         if (ConfigParams.fingerprintingEnabled) {
@@ -93,5 +98,17 @@ public final class LoginSettingsGUI extends AlixGUI {
 
     public static void add(VerifiedUser user, AbstractAlixGUI originalGui) {
         AlixScheduler.async(() -> new LoginSettingsGUI(user, originalGui).map());
+    }
+
+    //The email is this account's recovery channel, so changing it unattended would let anyone silently
+    //redirect recovery to themselves - see GoogleAuthGUI's own copy of this check for the full reasoning.
+    private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
+        LoginParams params = user.getData().getLoginParams();
+
+        if (params.hasProvenAuthAccess() || !params.getAuthSettings().requiresAuthApp()) {
+            action.run();
+            return;
+        }
+        user.getDuplexProcessor().verifyAuthAccess(action);
     }
 }

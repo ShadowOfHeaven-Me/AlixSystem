@@ -100,6 +100,7 @@ public final class FireWallManager {
         recentFirewalls.increment();
         int sum = (int) recentFirewalls.sum();
 
+        //RECENT_FIREWALL_WINDOW is already milliseconds - decrement scheduled in MILLISECONDS, not SECONDS
         AlixScheduler.runLaterAsync(recentFirewalls::decrement, RECENT_FIREWALL_WINDOW, TimeUnit.MILLISECONDS);
 
         if (sum > MAX_RECENT_FIREWALLS && MESSAGES_LOCKED.compareAndSet(false, true)) {
@@ -141,7 +142,11 @@ public final class FireWallManager {
 
         if (!loaded) {
             AdaptiveAnomalyDetector.onFirewall();
-            AlixAtaraxia.blacklist(ip);
+            //Must stay guarded like every other Ataraxia call site - AtaraxiaServerHandler#write()/flush()
+            //dereference its Channel field directly with no null check, so calling blacklist() with no
+            //companion process actually connected NPEs instead of no-op'ing.
+            if (AlixAtaraxia.isEnabled())
+                AlixAtaraxia.blacklist(ip);
         }
         // Dynamic
         FireWallEntry previous = dynamicMap.putIfAbsent(ip, entry);

@@ -337,6 +337,22 @@ interface QueryConstants {
     String LOAD_RECOVERY_CODES_SQL =
             "SELECT recovery_codes FROM alix_user_tokens WHERE uuid = ?";
 
+    //Looks up a single identity's CURRENT token - used to refresh UserTokensFileManager's local cache for
+    //one specific player right before it's needed (e.g. on login), rather than trusting the in-memory map
+    //(only ever bulk-loaded once, at plugin startup) blindly. Without this, an account whose token was
+    //created or changed by an external source (a linked website's own 2FA setup, for instance) while this
+    //server was already running would silently get a brand-new, DIFFERENT token generated locally on first
+    //use - overwriting the real one in the database and permanently desyncing the account from whatever
+    //device the player actually scanned the QR code with.
+    String LOAD_TOKEN_SQL =
+            "SELECT token FROM alix_user_tokens WHERE uuid = ?";
+
+    //Used for a full account-data wipe (see DatabaseUpdater#removeUserToken()) - deletes the 2FA secret,
+    //encrypted email backup and recovery codes together, since they all live in this one row.
+    String DELETE_TOKEN_SQL =
+            "DELETE FROM alix_user_tokens WHERE uuid = ?";
+
+
     static String CREATE_TOKENS_SQL(DatabaseType type) {
         return switch (type) {
             case MYSQL -> CREATE_TOKENS_SQL_MYSQL;

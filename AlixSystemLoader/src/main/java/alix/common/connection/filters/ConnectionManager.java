@@ -12,7 +12,9 @@ public final class ConnectionManager {
     public static final boolean isEnabled = ConfigProvider.config.getBoolean("prevent-first-time-join-during-high-traffic");
     public static final String preventFirstTimeJoinMessage = Messages.get("prevent-first-time-join");
     //private static final ConcurrentLoopSet<ArrayKey> set;
-    private static final long forgetInMillis = ConfigProvider.config.getInt("forget-connection-in") * 1000L;
+    //Clamped to a 1-second floor - AlixCache's expireAfterWrite() throws on a non-positive duration, which
+    //would crash plugin boot for a "0 or less = disable" config value (this file's own convention).
+    private static final long forgetInMillis = Math.max(1, ConfigProvider.config.getInt("forget-connection-in")) * 1000L;
     private static final Map<String, Boolean> CACHE;
 
     static {

@@ -34,11 +34,15 @@ public abstract class AlixFileManager {
         SECRETS_FOLDER = new File(path + File.separator + "secrets");
         SECRETS_FOLDER.mkdir();
 
-        try {
-            Files.setPosixFilePermissions(SECRETS_FOLDER.toPath(), EnumSet.of(OWNER_EXECUTE, OWNER_WRITE, OWNER_READ));
-        } catch (Throwable e) {
-            //just swallow
-            //AlixCommonMain.logWarning("Could not set POSIX file perms: " + e.getMessage());
+        //INTERNAL_FOLDER gets the same owner-only lockdown as SECRETS_FOLDER - users.yml holds every
+        //account's password hash+salt, IP and UUID, just as sensitive on a shared host.
+        for (File folder : new File[]{INTERNAL_FOLDER, SECRETS_FOLDER}) {
+            try {
+                Files.setPosixFilePermissions(folder.toPath(), EnumSet.of(OWNER_EXECUTE, OWNER_WRITE, OWNER_READ));
+            } catch (Throwable e) {
+                //just swallow
+                //AlixCommonMain.logWarning("Could not set POSIX file perms: " + e.getMessage());
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package shadow.utils.main;
 
 import alix.api.event.types.AuthReason;
+import alix.common.AlixCommonMain;
 import alix.common.antibot.epoll.Telemetry;
 import alix.common.antibot.epoll.TelemetryProfiler;
 import alix.common.connection.filters.GeoIPTracker;
@@ -206,24 +207,30 @@ public final class AlixHandler {
         user.blindnessSent = true;
     }
 
+    //Shared by getServerChannels() below and purgeNullChannelConnections() - both need the live
+    //ServerConnection[Listener] instance off of MinecraftServer.getServer(). Callers get its exact runtime
+    //type via serverConnection.getClass() rather than this method also having to hand back the
+    //Class<?> it resolved internally.
+    private static Object getServerConnection() throws ReflectiveOperationException {
+        Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
+        Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
+
+        Class<?> serverConnectionClass = ReflectionUtils.nms2("server.network.ServerConnection", "server.network.ServerConnectionListener");
+
+        for (Field f : mcServerClass.getDeclaredFields()) {
+            if (f.getType() == serverConnectionClass) {
+                f.setAccessible(true);
+                return f.get(mcServer);
+            }
+        }
+        return null;
+    }
+
     private static List<Channel> getServerChannels() {
         try {
-            Class<?> mcServerClass = ReflectionUtils.nms2("server.MinecraftServer");
-            Object mcServer = mcServerClass.getMethod("getServer").invoke(null);
-
-            Class<?> serverConnectionClass = ReflectionUtils.nms2("server.network.ServerConnection", "server.network.ServerConnectionListener");
-            Object serverConnection = null;
-
-            //ServerConnection c;
-
-            for (Field f : mcServerClass.getDeclaredFields()) {
-                if (f.getType() == serverConnectionClass) {
-                    f.setAccessible(true);
-                    serverConnection = f.get(mcServer);
-                    break;
-                }
-            }
+            Object serverConnection = getServerConnection();
             if (serverConnection == null) throw new AlixError();
+            Class<?> serverConnectionClass = serverConnection.getClass();
 
             for (Field f : serverConnectionClass.getDeclaredFields()) {
                 if (f.getType() == List.class && ((ParameterizedType) f.getGenericType()).getActualTypeArguments()[0] == ChannelFuture.class) {//we know it's a parameterized type since it's a List
@@ -240,6 +247,45 @@ public final class AlixHandler {
             throw new AlixError("No Server Channel found! - " + Arrays.toString(serverConnectionClass.getDeclaredFields()));
         } catch (Exception e) {
             throw new AlixError(e);
+        }
+    }
+
+    //Connections that never reach vanilla's channelActive()/channelRegistered() (suppressed by
+    //AlixInterceptor's limbo/anti-bot interception, passActiveEvents=false) keep a null Connection#channel.
+    //On shutdown, ServerConnectionListener#handleAllDisconnections() unconditionally calls
+    //connection.channel.close() on every tracked entry, NPEing on these and hanging the JVM (confirmed live
+    //on Paper 26.3; stock Paper with no plugin shuts down clean). Sweeps the null-channel entries out of
+    //ServerConnectionListener's "connections" list right before shutdown so vanilla's cleanup never reaches
+    //them. Best-effort: if NMS's shape changes enough that the reflection stops resolving, this silently
+    //no-ops.
+    public static void purgeNullChannelConnections() {
+        try {
+            Object serverConnection = getServerConnection();
+            if (serverConnection == null) return;
+
+            List<?> connections = (List<?>) serverConnection.getClass().getMethod("getConnections").invoke(serverConnection);
+
+            Class<?> connectionClass = ReflectionUtils.nms2("network.Connection", "network.NetworkManager");
+            Field channelField = connectionClass.getField("channel");//public on vanilla's Connection
+
+            int removed = 0;
+            synchronized (connections) {
+                Iterator<?> it = connections.iterator();
+                while (it.hasNext()) {
+                    Object connection = it.next();
+                    if (channelField.get(connection) == null) {
+                        it.remove();
+                        removed++;
+                    }
+                }
+            }
+            if (removed > 0)
+                AlixCommonMain.logInfo("Removed " + removed + " stale (never-activated) connection(s) before shutdown, avoiding a known vanilla NPE.");
+        } catch (Throwable e) {
+            if (AlixUtils.isDebugEnabled) {
+                AlixCommonMain.debug("Could not purge stale null-channel connections before shutdown (best-effort, non-fatal):");
+                e.printStackTrace();
+            }
         }
     }
 

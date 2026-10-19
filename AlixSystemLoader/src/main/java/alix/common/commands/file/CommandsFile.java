@@ -34,6 +34,8 @@ public final class CommandsFile extends AlixFileManager {
             //case "captcha":
             case "register":
             case "login":
+            case "terms":
+            case "verifyemail":
                 this.loginCommands.add(cmd);
                 if (aliases != null) this.loginCommands.addAll(Arrays.asList(aliases));
         }
