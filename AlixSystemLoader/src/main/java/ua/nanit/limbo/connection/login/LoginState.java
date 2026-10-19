@@ -350,6 +350,10 @@ public final class LoginState implements VerifyState {
 
         return new LimboAuthBuilder(this.connection, this.data, correct -> {
             if (correct) {
+                //A live TOTP code is at least as strong proof as a recovery code (which already does this,
+                //see handleRecoveryCodeCommand()) - without this, every normal 2FA login left the player
+                //re-prompted for the same code again the first time they opened the in-game auth GUI.
+                this.data.getLoginParams().setHasProvenAuthAccess(true);
                 this.logIn();
                 return;
             }
