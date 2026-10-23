@@ -34,7 +34,7 @@ public final class MotdHandler {
     public static void sendPong(ClientConnection connection) {
         connection.write(PONG);
         connection.getChannel().unsafe().flush();
-        connection.flush();
+        //connection.flush();
 
         connection.close();
     }

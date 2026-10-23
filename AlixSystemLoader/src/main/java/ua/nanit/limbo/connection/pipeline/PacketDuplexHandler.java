@@ -444,6 +444,14 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
         this.encoderMappings = state.clientBound.getRegistry(this.version());
     }
 
+    public ClientConnection getConnection() {
+        return this.connection;
+    }
+
+    public Version getVersion() {
+        return this.version();
+    }
+
     private Version version() {
         return this.connection.getClientVersion();
     }

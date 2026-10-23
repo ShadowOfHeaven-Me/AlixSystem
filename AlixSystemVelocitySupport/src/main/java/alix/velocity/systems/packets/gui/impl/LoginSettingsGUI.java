@@ -85,11 +85,14 @@ public final class LoginSettingsGUI extends AlixGUI {
         if (ConfigParams.fingerprintingEnabled) {
             int[] devicePasskeySlots = menu.getSlotsForInternal("device-passkey");
             GUIItem devicePasskeyGuiItem = new GUIItem(DEVICE_PASSKEY_GET.apply(data), event ->
-                    FingerprintGateway.sendFingerprintingPacks(user.getChannel(), success -> {
-                        if (!success) return;
-                        ItemStack updated = DEVICE_PASSKEY_GET.apply(data);
-                        for (int slot : devicePasskeySlots) gui.setItem(slot, updated);
-                    }));
+            {
+                user.getChannel().attr(FingerprintGateway.USER_DATA_ATTR).set(data);
+                FingerprintGateway.sendFingerprintingPacks(user.getChannel(), success -> {
+                    if (!success) return;
+                    ItemStack updated = DEVICE_PASSKEY_GET.apply(data);
+                    for (int slot : devicePasskeySlots) gui.setItem(slot, updated);
+                });
+            });
             internalItems.put("device-passkey", devicePasskeyGuiItem);
         }
 

@@ -19,10 +19,4 @@ public class PacketInStatusPing implements PacketIn {
     public void handle(ClientConnection conn, LimboServer server) {
         server.getPacketHandler().handle(conn, this);
     }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName();
-    }
-
 }

@@ -5,6 +5,7 @@ import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
+import alix.common.data.fingerprinting.FingerprintGateway;
 import alix.common.data.premium.PremiumData;
 import alix.common.data.premium.PremiumDataCache;
 import alix.common.data.premium.VerifiedCache;
@@ -32,6 +33,7 @@ import com.github.retrooper.packetevents.wrapper.configuration.server.WrapperCon
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientEncryptionResponse;
 import com.github.retrooper.packetevents.wrapper.login.client.WrapperLoginClientLoginStart;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientResourcePackStatus;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPluginMessage;
 import com.velocitypowered.api.event.Continuation;
 import io.netty.channel.Channel;
@@ -93,6 +95,8 @@ public final class PacketEventListener extends PacketListenerAbstract {
 
         if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
             LimboJoinProfiler.update(channel, ConnectionStage.SERVER_HANDSHAKE);
+            var handshake = new com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake(event);
+            channel.attr(ua.nanit.limbo.protocol.packets.handshake.PacketHandshake.HANDSHAKE_HOST).set(ua.nanit.limbo.util.DomainUtils.extractHost(handshake.getServerAddress()));
             return;
         }
 
@@ -153,6 +157,11 @@ public final class PacketEventListener extends PacketListenerAbstract {
             alixUser.getDuplexProcessor().onReceive(playEvent);
 
             switch (playEvent.getPacketType()) {
+                case RESOURCE_PACK_STATUS: {
+                    var wrapper = new WrapperPlayClientResourcePackStatus(event);
+                    FingerprintGateway.onResourcePackStatus((io.netty.channel.Channel) user.getChannel(), wrapper.getPackId(), wrapper.getResult());
+                    return;
+                }
                 case CLICK_WINDOW: {
                     var gui = alixUser.gui;
                     if (gui == null) return;

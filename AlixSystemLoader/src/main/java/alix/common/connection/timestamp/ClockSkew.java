@@ -1,6 +1,5 @@
 package alix.common.connection.timestamp;
 
-import alix.common.AlixCommonMain;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.utils.AlixCommonUtils;
 import io.netty.channel.Channel;
@@ -9,15 +8,10 @@ import io.netty.util.collection.LongObjectMap;
 import lombok.SneakyThrows;
 
 import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class ClockSkew {
 
     public static final boolean ENABLED = true;
-    public static final double SKEW_MEASURE_NOT_CONFIDENT = Double.MAX_VALUE;
     static final LongObjectMap<ClockSkewEstimator> MAP = new LongObjectHashMap<>();
 
     public static ClockSkewValue getClockSkew(Channel channel) {
@@ -63,7 +57,7 @@ public final class ClockSkew {
         var es = compute(key(addr, port));
         es.addSample(nanos, tsval);
 
-        double est = es.estimateFrequencyHz();
+        /*double est = es.estimateFrequencyHz();
         double nominalHz = ClockSkewEstimator.snapNominalHz(est);
         double skew = ClockSkewEstimator.skewPpm(est, nominalHz);
 
@@ -71,5 +65,6 @@ public final class ClockSkew {
 
         AlixCommonMain.logInfo("addr=" + InetAddress.getByAddress(IPUtils.ipv4ByteArray(addr)).getHostAddress() +
                 " nominalHz=" + nominalHz + " count=" + es.count + " duration= " + duration + " estimateFrequencyHz=" + est + " skew=" + skew);
+    */
     }
 }

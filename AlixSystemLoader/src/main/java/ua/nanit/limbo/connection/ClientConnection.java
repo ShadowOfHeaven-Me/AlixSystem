@@ -192,6 +192,7 @@ public final class ClientConnection {
 
     public void setHandshakePacket(PacketHandshake handshakePacket) {
         this.handshakePacket = handshakePacket;
+        if (handshakePacket != null) this.channel.attr(PacketHandshake.HANDSHAKE_HOST).set(handshakePacket.getExtractedHost());
     }
 
     public void ensureFirst() {
@@ -432,7 +433,7 @@ public final class ClientConnection {
 
         if (NanoLimbo.enableFingerprinting) {
             //this.writeAndFlushPacket(FingerprintManager.NOT_LOADED_HIDER);
-            this.writeAndFlushPacket(FingerprintManager.INVALID_URLS[0]);
+            //this.writeAndFlushPacket(FingerprintManager.INVALID_URLS[0]);
             return;
         }
 

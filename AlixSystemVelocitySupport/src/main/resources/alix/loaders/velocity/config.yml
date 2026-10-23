@@ -47,7 +47,7 @@ allow-case-sensitive-nicknames: false
 # command - The user registers/logs in using the traditional password typed in the verification command
 # anvil - The user registers/logs in using an anvil rename gui
 # pin - The user registers/logs in using a pin gui
-password-type: command
+password-type: anvil
 #Defines whether a new/changed password is checked against the HaveIBeenPwned breached-password database
 #(https://haveibeenpwned.com/API/v3#PwnedPasswords) before being accepted, rejecting it if it's already
 #known to be publicly breached. Uses their "k-anonymity" range API: only the first 5 characters of the

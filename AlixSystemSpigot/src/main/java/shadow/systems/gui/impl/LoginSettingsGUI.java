@@ -94,11 +94,14 @@ public final class LoginSettingsGUI extends AlixGUI {
         });
 
         if (ConfigParams.fingerprintingEnabled) {
-            items[1] = new GUIItem(DEVICE_PASSKEY_GET.apply(data), event ->
-                    FingerprintGateway.sendFingerprintingPacks(SpigotEncryption.channel(data), success -> {
+            items[1] = new GUIItem(DEVICE_PASSKEY_GET.apply(data), event -> {
+                    var ch = SpigotEncryption.channel(data);
+                    if (ch != null) ch.attr(FingerprintGateway.USER_DATA_ATTR).set(data);
+                    FingerprintGateway.sendFingerprintingPacks(ch, success -> {
                         if (!success) return;
                         gui.setItem(1, DEVICE_PASSKEY_GET.apply(data));
-                    }));
+                    });
+            });
         }
 
         if (ServerSettingsManager.is(Setting.VERIFIED_EMAIL, true)) {

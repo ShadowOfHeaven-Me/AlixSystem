@@ -2,6 +2,7 @@ package ua.nanit.limbo.protocol.packets.handshake;
 
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.netty.safety.NettySafety;
+import io.netty.util.AttributeKey;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.protocol.ByteMessage;
 import ua.nanit.limbo.protocol.PacketIn;
@@ -15,6 +16,8 @@ import ua.nanit.limbo.util.DomainUtils;
 import static com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake.ConnectionIntention;
 
 public final class PacketHandshake implements PacketIn, NoPacketCache {
+
+    public static final AttributeKey<String> HANDSHAKE_HOST = AttributeKey.valueOf("alix-joined-with-ip");
 
     private Version version;
     private String host;

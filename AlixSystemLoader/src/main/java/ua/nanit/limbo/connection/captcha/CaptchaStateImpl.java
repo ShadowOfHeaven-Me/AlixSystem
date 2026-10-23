@@ -508,7 +508,6 @@ final class CaptchaStateImpl {
                 return;
             }
             case 2: {
-                this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
                 if (version().moreOrEqual(Version.V1_9)) {
                     this.failIf(this.tpConfirmsReceived != 2);
                     ////Log.error("Y: " + this.y + " TELEPORT_Y: " + TELEPORT_Y + " EQUAL: " + (TELEPORT_VALID_Y == this.y));
@@ -525,6 +524,7 @@ final class CaptchaStateImpl {
                 return;
             }
             case 3: {
+                this.failIf(this.isAwaitingTransaction && !this.hasReceivedTransaction);
                 //same as the second movement, the client will start falling only after sending this packet
                 if (version().moreOrEqual(Version.V1_9) && !v26_3) {
                     this.failIf((int) this.y != TELEPORT_VALID_Y);

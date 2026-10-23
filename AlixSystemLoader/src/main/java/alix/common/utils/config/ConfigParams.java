@@ -9,6 +9,7 @@ public final class ConfigParams {
             requireRegisterFromAll, loadBuiltInIps, checkBreachedPasswords, fingerprintingEnabled, hasEmailVerificationTime,
             supportMobileConnections;
     public static final LoginType defaultLoginType;
+    private static final boolean __ENABLE_FP = false;
 
     static {
         ConfigProvider config = ConfigProvider.config;
@@ -24,7 +25,8 @@ public final class ConfigParams {
         hasMaxLoginTime = maxLoginTime > 0;
         checkBreachedPasswords = config.getBoolean("check-breached-passwords");
         fingerprintingPort = config.getInt("fingerprinting-port");
-        fingerprintingEnabled = fingerprintingPort > 0;
+        fingerprintingEnabled = fingerprintingPort > 0 && __ENABLE_FP;
+        if (fingerprintingEnabled) alix.common.data.fingerprinting.FingerprintServer.init();
         //A separate, typically longer, countdown used only while a 'require-email-in-register' registration
         //is waiting on the verification email to arrive (see LoginState#handleRegisterCommandWithEmail()) -
         //receiving an email can easily take longer than max-login-time allows for the rest of the

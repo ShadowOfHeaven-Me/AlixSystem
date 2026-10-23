@@ -90,9 +90,11 @@ public final class AdaptiveAnomalyDetector {
 
     private static <T> ConnectionVerdict handle(InetAddress addr, T subnetKey, State ipState, State subnetState, SourceMetrics<InetAddress> ipMetrics,
                                                 SourceMetrics<T> subnetMetrics) {
+        //todo: fine-tune tcp hints & other metrics
         if (ipState == State.ATTACK) {
-            FireWallManager.add(addr, AlgorithmId.K1, true);
-            return ConnectionVerdict.FIREWALLED;
+            return ConnectionVerdict.RATE_LIMITED;
+            /*FireWallManager.add(addr, AlgorithmId.K1, true);
+            return ConnectionVerdict.FIREWALLED;*/
         }
 
         if (ipState == State.ELEVATED) {
@@ -102,7 +104,7 @@ public final class AdaptiveAnomalyDetector {
             return ConnectionVerdict.RATE_LIMITED;
         }
 
-        //todo: finish this with tcp hints & other metrics
+
         if (subnetState == State.ELEVATED && !GeoIPTracker.isMapped(addr) || subnetState == State.ATTACK) {
             if (subnetMetrics.getRateLimiter().tryAcquire(subnetKey))
                 return ConnectionVerdict.ALLOWED;
