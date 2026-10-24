@@ -33,34 +33,16 @@ public final class AuthDataChanges {
         switch (authSetting) {
             case AUTH_APP:
             case PASSWORD_AND_AUTH_APP:
-                //Checks the CURRENT authSetting, not token existence - since Alix 3.10.0 eagerly generates a
-                //token for every account on first save, token existence alone no longer signals whether the
-                //app was ever enabled. Covers both a brand-new account and an admin '/as resetpassword'
-                //clearing AuthSettings without invalidating the token.
                 if (!requiresApp(params.getAuthSettings())) {
-                    //Rotates the token right before showing it, so anyone who saw an earlier, never-enabled
-                    //QR code can't have it become real 2FA the moment this flow completes - without making
-                    //the token generally volatile (other places, e.g. email encryption, rely on it staying
-                    //stable otherwise). Nothing is armed yet (confirmQRCodeThenRun() below hasn't run), so a
-                    //failure here just propagates.
                     user.getData().regenerateAuthToken();
-                    //Show the QR code first - nothing sensitive to leak yet - then only actually apply the
-                    //change once the player proves they scanned it correctly.
                     user.getDuplexProcessor().confirmQRCodeThenRun(() -> this.apply0(user));
                     try {
                         showQrCode.run();
                     } catch (RuntimeException e) {
-                        //showQrCode() can fail before ever entering the QR-view state (e.g. QR image
-                        //generation itself throwing) - endQRCodeShow()'s own cleanup only ever runs once
-                        //that state is actually entered, so without this the pending action above would be
-                        //left armed and could later fire on a completely unrelated QR confirmation (the
-                        //plain, ungated "show-qr" button reuses this same method).
                         user.getDuplexProcessor().confirmQRCodeThenRun(null);
                         throw e;
                     }
                 } else {
-                    //The app is already required right now - showing its QR to an unproven session would
-                    //leak the account's real, still-live 2FA factor. Require proof of the EXISTING code first.
                     user.getDuplexProcessor().verifyAuthAccess(() -> this.apply0(user));
                 }
         }

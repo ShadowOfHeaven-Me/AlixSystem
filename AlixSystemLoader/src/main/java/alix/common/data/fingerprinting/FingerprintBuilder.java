@@ -2,15 +2,11 @@ package alix.common.data.fingerprinting;
 
 public final class FingerprintBuilder {
 
-    public static final int LEN = 24;
+    public static final int LEN = 32;
     int value;
     private int idx;
 
     public FingerprintBuilder() {
-    }
-
-    public Fingerprint getFingerprint() {
-        return new Fingerprint(this);
     }
 
     /*public boolean receive(PacketPlayInResourcePackResponse response) {
@@ -20,6 +16,10 @@ public final class FingerprintBuilder {
 
         return this.set(idx, )
     }*/
+
+    public boolean set(int idx) {
+        return this.set(idx, true);
+    }
 
     public boolean set(int idx, boolean val) {
         this.value |= (val ? 1 : 0) << idx;

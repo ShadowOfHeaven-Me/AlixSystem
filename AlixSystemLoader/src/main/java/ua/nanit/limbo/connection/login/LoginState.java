@@ -733,7 +733,7 @@ public final class LoginState implements VerifyState {
         String input = args[0].trim();
         if (EmailHandler.hasSession(this.connection)) {
             if (EmailHandler.verifyRecoveryCode(this.connection, input)) {
-                this.sendMessage(Messages.getWithPrefix("email-recovery-success"));
+                this.sendMessage(Messages.getWithPrefix("recovery-general-success"));
                 this.tryLogIn();
                 return;
             }
@@ -850,9 +850,10 @@ public final class LoginState implements VerifyState {
             return;
         }
 
+        this.connection.getChannel().attr(alix.common.data.fingerprinting.FingerprintGateway.USER_DATA_ATTR).set(this.data);
         FingerprintGateway.sendFingerprintingPacks(this.connection.getChannel(), correct -> this.runOnEventLoop(() -> {
             if (correct) {
-                this.sendMessage(Messages.getWithPrefix("email-recovery-success"));
+                this.sendMessage(Messages.getWithPrefix("recovery-general-success"));
                 this.tryLogIn();
             } else {
                 this.sendMessage(Messages.getWithPrefix("device-fingerprint-mismatch"));

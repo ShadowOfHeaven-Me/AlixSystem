@@ -167,16 +167,7 @@ public final class GoogleAuthGUI extends AlixGUI {
             MAP.remove(player.getUniqueId());
             //this GUI click can be handled off the main thread - closeInventory() needs main thread
             AlixScheduler.sync(player::closeInventory);
-            //Recovery codes are plaintext, fully-usable-remotely substitutes for the app code (see
-            ///recoverycode) - anyone who reads them off an unattended session can log in as this player
-            //from anywhere afterward, same severity as reading the password itself. Same gate as the reset
-            //button above.
             runGatedByAuthAccess(user, () -> user.getData().loadRecoveryCodes(codes -> {
-                //Covers an account that enabled 2FA before recovery codes existed at all, or one that
-                //somehow otherwise has none yet - generates them here rather than showing an empty list,
-                //since regenerateRecoveryCodes() itself is cheap (in-memory generation + a fire-and-forget
-                //DB write) and there's no good reason to make the player go reset their whole 2FA secret
-                //just to get backup codes.
                 if (codes.length == 0) user.getData().persistToken();
                 String[] toShow = codes.length > 0 ? codes : user.getData().regenerateRecoveryCodes();
                 AlixScheduler.sync(() -> sendRecoveryCodes(player, toShow));
@@ -187,25 +178,6 @@ public final class GoogleAuthGUI extends AlixGUI {
         return items;
     }
 
-    //Runs action immediately if this account already proved app-code access once before (the common case -
-    //hasProvenAuthAccess is a persistent, not per-session, flag - see LoginParams) OR if the app currently
-    //isn't required at all - there's nothing to protect yet, and these buttons are reachable even while the
-    //account is still PASSWORD-only (never went through AuthDataChanges).
-    //
-    //Checks params.getAuthSettings().requiresAuthApp(), NOT UserTokensFileManager.hasToken() (an earlier,
-    //WRONG version of this check, found+fixed 2026-09-23 after a real player hit it on a totally fresh
-    //account): since Alix 3.10.0, PersistentUserData.saveToDatabase() eagerly generates+persists a token for
-    //EVERY account on its very first save, whether or not the app was ever enabled - so hasToken() is true
-    //for virtually every account almost immediately and is not a "was 2FA ever configured" signal at all.
-    //Gating on it meant these buttons demanded a code for a secret the player had genuinely never seen -
-    //exactly the catch-22 this whole gating mechanism was built to prevent in the first place.
-    //Without SOME check here, opening the verification prompt itself (AbstractAuthBuilder's constructor
-    //calls data.getToken(), which LAZILY GENERATES a fresh secret as a side effect of just being shown, on
-    //top of the one saveToDatabase() already silently created) would still be harmless data-wise but would
-    //still demand a code nobody has ever seen - see AuthDataChanges' equivalent reasoning for "first time
-    //enabling" the app.
-    //Otherwise prompts for the CURRENT code first via the same VerifiedVirtualAuthBuilder GUI/flow
-    //AuthDataChanges already uses for changing the auth TYPE, running action only if that's entered correctly.
     private static void runGatedByAuthAccess(VerifiedUser user, Runnable action) {
         LoginParams params = user.getData().getLoginParams();
 

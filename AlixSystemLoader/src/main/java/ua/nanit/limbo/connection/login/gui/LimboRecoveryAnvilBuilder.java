@@ -22,7 +22,8 @@ public final class LimboRecoveryAnvilBuilder extends AbstractAnvilBuilder<LimboR
     @Override
     public void select(int slot) {
         switch (slot) {
-            case 0:
+            //case 0:
+            default:
                 this.spoofValidAccordingly();
                 return;
             case 1:
@@ -51,7 +52,7 @@ public final class LimboRecoveryAnvilBuilder extends AbstractAnvilBuilder<LimboR
                     this.spoofValidAccordingly();
                 } else {
                     if (EmailHandler.verifyRecoveryCode(this.connection, text)) {
-                        this.loginState.writeMessage(Messages.get("email-recovery-success"));
+                        this.loginState.writeMessage(Messages.get("recovery-general-success"));
                         this.loginState.tryLogIn();
                     } else {
                         if (this.loginState.registerInvalidRecoveryCodeAttempt()) return;

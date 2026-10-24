@@ -59,6 +59,8 @@ import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayInPong;
 import ua.nanit.limbo.protocol.packets.play.ping.PacketPlayOutPing;
 import ua.nanit.limbo.protocol.packets.play.rename.PacketPlayInItemRename;
 import ua.nanit.limbo.protocol.packets.play.sound.PacketPlayOutSound;
+import ua.nanit.limbo.protocol.packets.play.resourcepack.PacketPlayInResourcePackResponse;
+import ua.nanit.limbo.protocol.packets.play.resourcepack.PacketPlayOutResourcePack;
 import ua.nanit.limbo.protocol.packets.play.teleport.PacketPlayInTeleportConfirm;
 import ua.nanit.limbo.protocol.packets.play.tick.PacketPlayInTickEnd;
 import ua.nanit.limbo.protocol.packets.play.transaction.PacketPlayInTransaction;
@@ -147,6 +149,7 @@ public enum State {
             serverBound.registerRetrooper(PacketPlayInItemRename::new, PacketType.Play.Client.NAME_ITEM);
             serverBound.registerRetrooper(PacketPlayInReconfigureAck::new, PacketType.Play.Client.CONFIGURATION_ACK);
             serverBound.registerRetrooper(PacketInPlayKeepAlive::new, PacketType.Play.Client.KEEP_ALIVE);
+            serverBound.registerRetrooper(PacketPlayInResourcePackResponse::new, PacketType.Play.Client.RESOURCE_PACK_STATUS);
 
             clientBound.registerRetrooper(PacketPlayOutShowDialog::new, PacketType.Play.Server.SHOW_DIALOG);
             clientBound.registerRetrooper(PacketPlayOutTransaction::new, PacketType.Play.Server.WINDOW_CONFIRMATION);
@@ -168,6 +171,7 @@ public enum State {
             clientBound.registerRetrooper(PacketPlayOutSetSlot::new, PacketType.Play.Server.SET_SLOT);
             clientBound.registerRetrooper(PacketPlayOutSound::new, PacketType.Play.Server.SOUND_EFFECT);
             clientBound.registerRetrooper(PacketPlayOutHeldSlot::new, PacketType.Play.Server.HELD_ITEM_CHANGE);
+            clientBound.registerRetrooper(PacketPlayOutResourcePack::new, PacketType.Play.Server.RESOURCE_PACK_SEND);
             clientBound.registerRetrooper(PacketPlayOutAnimation::new, PacketType.Play.Server.ENTITY_ANIMATION);
             clientBound.registerRetrooper(PacketPlayOutChunkBatchStart::new, PacketType.Play.Server.CHUNK_BATCH_BEGIN);
             clientBound.registerRetrooper(PacketPlayOutChunkBatchEnd::new, PacketType.Play.Server.CHUNK_BATCH_END);

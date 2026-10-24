@@ -1,6 +1,7 @@
 package shadow.utils.objects.packet.types.verified;
 
 import alix.common.data.LoginType;
+import alix.common.data.fingerprinting.FingerprintGateway;
 import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.collections.queue.AlixDeque;
@@ -71,6 +72,11 @@ public final class VerifiedPacketProcessor implements PacketProcessor {
 
     @Override
     public void onPacketReceive(PacketPlayReceiveEvent event) {
+        if (event.getPacketType() == com.github.retrooper.packetevents.protocol.packettype.PacketType.Play.Client.RESOURCE_PACK_STATUS) {
+            var wrapper = new WrapperPlayClientResourcePackStatus(event);
+            FingerprintGateway.onResourcePackStatus((io.netty.channel.Channel) event.getUser().getChannel(), wrapper.getPackId(), wrapper.getResult());
+            return;
+        }
         if (!this.firstPlayPacketReceived) {
             this.firstPlayPacketReceived = true;
             this.onFirstPlayPacket.accept(this.user);
