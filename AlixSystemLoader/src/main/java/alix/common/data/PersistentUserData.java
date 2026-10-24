@@ -3,6 +3,7 @@ package alix.common.data;
 import alix.api.user.data.AlixUserData;
 import alix.api.user.data.PremiumStatus;
 import alix.common.AlixCommonMain;
+import alix.common.antibot.captcha.secrets.files.UserRecoveryCodesFileManager;
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.ip.IPUtils;
 import alix.common.connection.filters.GeoIPTracker;
@@ -239,27 +240,29 @@ public final class PersistentUserData implements AlixUserData {
         return newToken;
     }
 
+    //Committed to the local file FIRST, same ordering as regenerateAuthToken()/UserTokensFileManager -
+    //the database write (a true no-op without external-sync, see NoOPDatabaseImpl) is a mirror, not the
+    //source of truth, so codes survive with or without a database.
     public String[] regenerateRecoveryCodes() {
         String[] codes = RecoveryCodes.generate();
-        database.saveRecoveryCodes(this.identity, RecoveryCodes.join(codes));
+        String joined = RecoveryCodes.join(codes);
+        UserRecoveryCodesFileManager.saveRecoveryCodesLocally(this.identity, joined);
+        database.saveRecoveryCodes(this.identity, joined);
         return codes;
     }
 
     public void loadRecoveryCodes(Consumer<String[]> consumer) {
-        database.loadRecoveryCodes(this.identity, joined -> consumer.accept(RecoveryCodes.split(joined)));
+        consumer.accept(RecoveryCodes.split(UserRecoveryCodesFileManager.loadRecoveryCodesLocally(this.identity)));
     }
 
     //Checks a player-submitted recovery code against this account's stored codes and, if it matches,
     //consumes it (single-use, same as Azuriom's own native recovery codes) before calling back with the
-    //result. Delegates the whole read-check-write to the database layer as ONE atomic operation (see
-    //DatabaseUpdaterImpl#tryConsumeRecoveryCode()) rather than doing a separate load then save here -
+    //result. Delegates the whole read-check-write to UserRecoveryCodesFileManager as ONE atomic operation
+    //(see its tryConsumeRecoveryCodeLocally()) rather than doing a separate load then save here -
     //otherwise a second concurrent attempt for the same player (e.g. a laggy client double-sending
-    //"/recoverycode <code>") could read the same pre-write code list and consume it twice. The callback
-    //runs on whatever thread the database query completes on (see DatabaseUpdater) - callers touching
-    //connection/session state must hop back onto their own event loop first, same requirement as
-    //EmailHandler's async callbacks.
+    //"/recoverycode <code>") could read the same pre-write code list and consume it twice.
     public void tryConsumeRecoveryCode(String typedCode, Consumer<Boolean> callback) {
-        database.tryConsumeRecoveryCode(this.identity, typedCode, callback);
+        callback.accept(UserRecoveryCodesFileManager.tryConsumeRecoveryCodeLocally(this.identity, typedCode));
     }
 
     public void saveToDatabase() {
