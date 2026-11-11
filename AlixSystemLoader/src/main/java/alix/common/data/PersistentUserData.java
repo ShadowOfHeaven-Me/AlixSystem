@@ -51,9 +51,7 @@ public final class PersistentUserData implements AlixUserData {
     private volatile long mutedUntil, lastSuccessfulLogin;
     private final Identity identity;
     private volatile Email email;
-    //The device's fingerprinting passkey, as a raw 32-bit value - never null, 0 means "none set" (see
-    //hasFingerprint()) so every load path (all constructors below) can just default it to 0 rather than
-    //needing null-handling everywhere a fingerprint is read.
+    //0 is "none set"
     private volatile int fingerprint;
 
     //name | password1 ; password2 | ip | homes | mutedUntil | login type1 ; login type2 | login settings | lastSuccessfulLogin | premium data

@@ -27,6 +27,7 @@ abstract class AbstractVersionMap<T> implements VersionMap<T> {
         Arrays.fill(this.data, elem);
     }
 
+    @SuppressWarnings("unchecked")
     public <R> R[] values(Class<R> component, Function<T, R> transformer) {
         R[] arr = (R[]) Array.newInstance(component, this.data.length);
         for (int i = 0; i < this.data.length; i++)

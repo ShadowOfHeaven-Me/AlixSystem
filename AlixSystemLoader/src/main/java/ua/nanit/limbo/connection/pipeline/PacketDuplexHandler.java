@@ -14,6 +14,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
@@ -52,6 +53,7 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
     public final boolean passPayloads;
     public boolean disableCompression;
     public boolean disablePacketWriting;
+    @Setter
     private CipherHandler cipher;
     private CompressionHandler compression;
     private State.PacketRegistry encoderMappings, decoderMappings;
@@ -176,10 +178,10 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
                 return;
             }
 
-            Class lastOut = this.lastOut;
+            Class<?> lastOut = this.lastOut;
 
             this.connection.closeInvalidPacket();
-            if (NanoLimbo.suppress(cause)) return;
+            //if (NanoLimbo.suppress(cause)) return;
 
             Log.error("Error in pipeline, encoder state=" + this.connection.getEncoderState() + " decoder state=" + this.connection.getDecoderState()
                       + " lastIn=" + this.lastIn + " lastOut=" + lastOut + " isGeyser=" + this.isGeyser + " disableCompression=" + this.disableCompression
@@ -454,10 +456,6 @@ public final class PacketDuplexHandler extends ChannelDuplexHandler {
 
     private Version version() {
         return this.connection.getClientVersion();
-    }
-
-    public void setCipher(CipherHandler cipher) {
-        this.cipher = cipher;
     }
 
     public CompressionHandler compressionHandler() {

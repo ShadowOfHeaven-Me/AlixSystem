@@ -4,7 +4,6 @@ import alix.common.antibot.algorithms.adaptive.AdaptiveAnomalyDetector;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
 import alix.common.connection.timestamp.ClockSkew;
-import alix.common.data.fingerprinting.FingerprintManager;
 import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.other.annotation.OptimizationCandidate;
 import alix.common.utils.other.throwable.AlixException;
@@ -153,7 +152,7 @@ public final class ClientConnection {
         this.uninject0(() -> this.resend(buf));
     }
 
-    private void resend(ByteBuf buf) {
+    public void resend(ByteBuf buf) {
         this.channel.pipeline().fireChannelRead(buf);
     }
 

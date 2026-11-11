@@ -39,13 +39,8 @@ public final class BukkitAlixMain extends JavaPlugin implements AlixLoggerProvid
         AlixException.init();
         AlixError.init();
         instance = this;
-        //CommonAlixMain.loggerManager = this;
-        this.logger = new BukkitAlixLogger();
+        this.logger = new BukkitAlixLogger("§c[AlixSystem] §7");
         this.loggerAdapter = LoggerAdapter.createAdapter(this.logger);
-        //this.logger.info("LOADER BUKKIT ALIX.Main: " + BukkitAlixMain.class.getClassLoader());
-
-        //this.loader = new JarInJarClassLoader(getClass().getClassLoader(), JAR_NAME);
-        //this.bootstrap = (LoaderBootstrap) loader.instantiatePlugin(BOOTSTRAP_CLASS, BukkitAlixMain.class, this);
         this.bootstrap = (LoaderBootstrap) Class.forName(BOOTSTRAP_CLASS).getConstructor(BukkitAlixMain.class).newInstance(this);
 
         saveDefaultConfig();

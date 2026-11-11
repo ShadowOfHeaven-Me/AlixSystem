@@ -52,11 +52,6 @@ import static shadow.utils.main.AlixUtils.*;
 
 public final class AdminAlixCommands implements CommandExecutor {
 
-    //Matches AlixSystemCommand's own devMode flag on Velocity - "/as testdb" is a dev-only convenience
-    //(per ShadowOfHeaven directly: lets him create a throwaway test account without having to join
-    //in-game himself; the actual database connection is already verified elsewhere, in connect()) and was
-    //never meant to be reachable outside of that, unlike here where it was previously registered
-    //unconditionally.
     private static final boolean devMode = false;
 
     private final String passwordResetMessage = Messages.get("password-reset-forcefully");

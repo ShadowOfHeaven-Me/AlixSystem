@@ -109,6 +109,7 @@ public abstract class AlixFileManager {
 
     public static void readLines(InputStream is, Consumer<String> consumer, boolean acceptEmpty, String debugResourceName) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, CHARSET))) {
+
             //Files.readAllLines(
 
             String line;

@@ -39,6 +39,7 @@ public final class PacketSnapshot implements PacketOut {
     public final State state;
     //private final Map<Version, ByteBuf> cache = new ConcurrentHashMap<>();
     private final VersionMap<ByteBuf> encodings;
+    //EnumMap<Version, ByteBuf>
 
     //Runtime encoding:
     private final Map<ByteBuf, Version> encoded;

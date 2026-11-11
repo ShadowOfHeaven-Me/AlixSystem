@@ -12,9 +12,9 @@ public final class BukkitAlixLogger extends Logger {
     //private final String name = AlixLoggerProvider.LOGGER_NAME_FULL;
     private final String prefixText;
 
-    public BukkitAlixLogger() {
+    public BukkitAlixLogger(String prefixText) {
         super("Sex",null);
-        this.prefixText = ColorUtil.toString(NamedTextColor.RED) + "[AlixSystem] " + ColorUtil.toString(NamedTextColor.GRAY);
+        this.prefixText = prefixText;
     }
 
     @Override

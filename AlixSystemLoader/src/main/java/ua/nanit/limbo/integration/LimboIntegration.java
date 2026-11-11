@@ -59,6 +59,8 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         return (T) new ClientConnection(channel, server);
     }*/
 
+    public abstract int getPort();
+
     public abstract boolean isProxyProtocol();
 
     public abstract boolean isEpoll();
@@ -120,16 +122,6 @@ public abstract class LimboIntegration<T extends ClientConnection> {
             channel.close();
     }
 
-    //synSignature(channel) is only non-null when epoll mode fingerprinted this connection's SYN at
-    //accept-time with no PROXY protocol in front (TelemetryProfilerImpl.onConnection); every other case
-    //(disabled, TCP_SAVE_SYN failure, unidentified OS) falls back to the neutral weight of 1. Combines the
-    //MTU and OS suspicion scores rather than picking one, since they're derived from independent packet
-    //features and can legitimately disagree.
-    //
-    //Public (was private): its old sole caller, onProxyAddress(), only runs when a PROXY header IS present -
-    //the exact case where synSignature(channel) is always null - making it structurally unreachable with a
-    //real signature. AlixInterceptor/ServerChannelInitializer's channelRead() sites (reached when PROXY
-    //protocol is NOT in front) now call this too, instead of the unweighted 1-arg overload.
     public static int connectionWeight(Channel channel) {
         SynSignature sig = TelemetryProfiler.synSignature(channel);
         if (sig == null) return 1;
@@ -137,9 +129,7 @@ public abstract class LimboIntegration<T extends ClientConnection> {
         int mtuSuspicion = sig.mtuEnv != null ? sig.mtuEnv.getSuspicionScore() : 0;
         int osSuspicion = sig.os != null ? sig.os.getSuspicionScore() : 0;
 
-        //1.0-3.0 in the original double-weight framing, rounded to the nearest int since the buckets below
-        //this accumulate as whole connection counts - a single 0-suspicion connection still weighs exactly
-        //1, same as always, and both scores maxed out (200 combined) tops out at 3.
+
         return 1 + Math.round((mtuSuspicion + osSuspicion) / 100f);
     }
 
@@ -373,7 +363,6 @@ public abstract class LimboIntegration<T extends ClientConnection> {
 
     //Transfer
 
-    String getServerIP();
+    String getServerIP();*/
 
-    int getPort();*/
 }

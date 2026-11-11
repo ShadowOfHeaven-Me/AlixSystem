@@ -280,7 +280,7 @@ override-existing-commands: false
 #Defines (in seconds) in what period of time should the teleportation request automatically expire (set it to 0 or less if you want to disable it)
 tpa-auto-expire: 120
 #Prefix of the messages sent by this plugin
-prefix: "&c[System] > &7"
+prefix: "&c[AlixSystem] > &7"
 #Defines whether the prefix should be appended to messages sent by this plugin
 append-prefix: true
 #Defines (in milliseconds) the teleportation delay for user teleports (such as /tpa, /spawn etc.)

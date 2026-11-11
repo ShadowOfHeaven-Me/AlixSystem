@@ -8,7 +8,7 @@ import java.util.Arrays;
 public final class AlixFormatter {
 
     //public static final String pluginPrefix = translateColors(ConfigProvider.config.getString("prefix"));
-    private static final String messagePrefix;
+    public static final String messagePrefix;
     private static final boolean appendPrefix;
 
     static {
@@ -49,14 +49,11 @@ public final class AlixFormatter {
 
     @AlixIntrinsified(method = "String#replaceAll")
     public static String format(String s, Object... args) {
-        switch (args.length) {
-            case 0:
-                return s;//no formatting is needed, as there is none to format with
-            case 1:
-                return formatSingle(s, args[0].toString());//format one regex with one replacement
-            default:
-                return formatMultiple(s, args);//format multiple regexes with their according replacements
-        }
+        return switch (args.length) {
+            case 0 -> s;//no formatting is needed, as there is none to format with
+            case 1 -> formatSingle(s, args[0].toString());//format one regex with one replacement
+            default -> formatMultiple(s, args);//format multiple regexes with their according replacements
+        };
     }
 
     /**
@@ -208,134 +205,4 @@ public final class AlixFormatter {
 
     private AlixFormatter() {
     }
-
-/*    public static char[] translateColors(char[] c) {
-        for (int i = 0; i < c.length; i++)
-            if (c[i] == '&') c[i] = '§';
-        return c;
-    }*/
-
-/*    private static String formatMultiple(String s, Object[] args) {//For %s > 1
-        char[] a = s.toCharArray();
-        int l = a.length;
-        int lM1 = l - 1;
-        int argsLength = args.length;
-        int totalLength = l - argsLength * 2;
-        int replacementsIndex = 0;
-        String[] replacements = new String[argsLength];
-        for (byte i = 0; i < argsLength; i++) {
-            String t = args[i].toString();
-            replacements[i] = t;
-            totalLength += t.length();
-        }
-        StringBuilder sb = new StringBuilder(totalLength);
-        for (int i = 0; i < lM1; i++) {
-            char c = a[i];
-            if (c == '%' && a[i + 1] == 's') {
-                sb.append(replacements[replacementsIndex++]);
-                if (replacementsIndex == argsLength) {
-                    int ip2 = i + 2;
-                    if (ip2 == l) return sb.toString();
-                    return sb.append(Arrays.copyOfRange(a, ip2, l)).toString();
-                }
-            } else sb.append(c);
-        }
-        return sb.toString();
-    }*/
-
-/*    private static String formatComplex(String s, Object[] args) {
-        char[] a = s.toCharArray();
-        int l = a.length;
-        int lM1 = l - 1;
-        //char[] newString = new char[newLength];
-        StringBuilder sb = new StringBuilder(l + args.length);
-        for (int i = 0; i < lM1; i++) {
-            char c = a[i];
-            if (c == '%') {
-                switch (a[i + 1]) {
-                    case 'p':
-                        break;
-                    case 's':
-                        break;
-                    case 'r':
-                        break;
-                    case 'n':
-                        break;
-                }
-            }
-            sb.append(c);
-        }
-        return s;
-    }*/
-
-/*    public static String formatSingle(String s, String replacement) {//For %s = 1
-//Faster than String.format by about 40 000% (~16ms vs ~0.04ms)
-        char[] a = s.toCharArray();
-        int l = a.length;
-        int lM1 = l - 1;
-        //char[] newString = new char[newLength];
-        StringBuilder sb = new StringBuilder(lM1 - 1 + replacement.length());
-        for (int i = 0; i < lM1; i++) {
-            char c = a[i];
-            if (c == '%' && a[i + 1] == 's') {
-                int ip2 = i + 2;
-                if (ip2 == l) return sb.append(replacement).toString();
-                return sb.append(replacement).append(Arrays.copyOfRange(a, ip2, l)).toString();
-            }
-            sb.append(c);
-        }
-        return s;
-    }*/
-
-/*    public static String formatSingle(String s, String replacement) {//todo: Deprecated - For %s0 = 1
-        char[] a = s.toCharArray();
-        int l = a.length;
-        int lM2 = l - 2;
-        //char[] newString = new char[newLength];
-        StringBuilder sb = new StringBuilder(l - 3 + replacement.length());
-        for (int i = 0; i < lM2; i++) {
-            char c = a[i];
-            if (c == '%' && a[i + 1] == 's' && a[i + 2] == '0') {
-                int ip3 = i + 3;
-                if (ip3 >= l) return sb.append(replacement).toString();
-                return sb.append(replacement).append(Arrays.copyOfRange(a, ip3, l)).toString();
-            }
-            sb.append(c);
-        }
-        return s;
-    }*/
-
-    /*    public static String formatMultiple(String s, Object... args) {//todo: Deprecated - For %s<number> > 1
-        final int argsLength = args.length; //n << 2 is n * 4
-        StringBuilder sb = new StringBuilder(s.length() + (argsLength << 2)); //assume each arg is about 7 characters long (3 in %sn, 4 in argLength * 4)
-        char[] a = s.toCharArray();
-        int l = a.length;
-        int lM2 = l - 2;
-        for (int i = 0; i < l; i++) {
-            char c = a[i];
-            if (i >= lM2) {
-                sb.append(c);
-                continue;
-            }
-            if (c == '%' && a[i + 1] == 's') {
-                int index = a[i + 2] - 48;//48 is '0' in ascii
-                if (index < argsLength && index >= 0) {//the given index is valid
-                    sb.append(args[index].toString());
-                    i += 2;//skipping 's<number>' in the text
-                } else {
-                    sb.append(c);
-                    //continue, the index was invalid
-                }
-            } else sb.append(c);
-        }
-        return sb.toString();
-    }*/
-
-    /*    public static StringBuilder defaultBuilder(int capacity) {
-        return appendPrefix ? new StringBuilder(capacity + messagePrefix.length()).append(messagePrefix) : new StringBuilder();
-    }*/
-
-/*    public static UserDataFormatter formatPersistentData(PersistentUserData data) {
-        return new UserDataFormatter(data);
-    }*/
 }

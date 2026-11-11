@@ -13,6 +13,7 @@ public final class DefaultVersionMap<T> extends AbstractVersionMap<T> {
         data[i] = val;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     T getElement(Object[] data, int i) {
         return (T) data[i];

@@ -127,6 +127,11 @@ public final class VelocityLimboIntegration extends LimboIntegration<ClientConne
     }
 
     @Override
+    public int getPort() {
+        return VelocityAlixMain.instance.getServer().getConfiguration().getQueryPort();
+    }
+
+    @Override
     public boolean isProxyProtocol() {
         return ServerChannelInitializer.PROXY_PROTOCOL;
     }

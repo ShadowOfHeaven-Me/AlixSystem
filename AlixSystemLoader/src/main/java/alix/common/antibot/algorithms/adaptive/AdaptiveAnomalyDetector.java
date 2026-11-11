@@ -1,9 +1,7 @@
 package alix.common.antibot.algorithms.adaptive;
 
-import alix.common.antibot.firewall.AlgorithmId;
-import alix.common.antibot.firewall.FireWallManager;
 import alix.common.connection.filters.GeoIPTracker;
-import alix.common.connection.ratelimit.RateLimiter;
+import alix.common.logger.LoggerAdapter;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.other.throwable.AlixError;
 
@@ -14,7 +12,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.logging.Logger;
+
+import static alix.common.antibot.algorithms.adaptive.SourceMetrics.newPerIpMetrics;
+import static alix.common.antibot.algorithms.adaptive.SourceMetrics.newSubnetMetrics;
 
 public final class AdaptiveAnomalyDetector {
 
@@ -36,7 +36,7 @@ public final class AdaptiveAnomalyDetector {
 
     public static volatile State GLOBAL_STATE = State.NORMAL;
 
-    private static final Logger LOGGER = Logger.getLogger("Alix - AdaptiveAnomalyDetector");
+    private static final LoggerAdapter LOGGER = LoggerAdapter.from("§c[AlixAdaptiveAnomalyDetector] §7");
 
     public static void tick() {
         var old = GLOBAL_STATE;
@@ -76,17 +76,7 @@ public final class AdaptiveAnomalyDetector {
     //that harness can't call through this class directly, since referencing ANY member of
     //AdaptiveAnomalyDetector triggers its static initializer above, which schedules real background tasks
     //via AlixScheduler and needs a live Bukkit/Velocity platform on the classpath to do so.
-    private static SourceMetrics<InetAddress> newPerIpMetrics() {
-        return new SourceMetrics<>(0.1, 30, 1.5, 8, 15, 4_000,
-                2, 3, 8, 20,
-                new RateLimiter<>(3, 10));
-    }
 
-    private static <T> SourceMetrics<T> newSubnetMetrics() {
-        return new SourceMetrics<>(0.05, 60, 2.0, 10, 18, 15_000,
-                3, 7, 30, 200,
-                new RateLimiter<>(10, 10));
-    }
 
     private static <T> ConnectionVerdict handle(InetAddress addr, T subnetKey, State ipState, State subnetState, SourceMetrics<InetAddress> ipMetrics,
                                                 SourceMetrics<T> subnetMetrics) {
@@ -119,9 +109,7 @@ public final class AdaptiveAnomalyDetector {
         return onConnection(addr, 1);
     }
 
-    //weight lets a caller (LimboIntegration, via TelemetryProfiler.synSignature(channel)) make a single
-    //connection count as more than 1 toward the CUSUM buckets below when its SYN fingerprint looks
-    //suspicious. See SourceMetrics#recordConnectionEstablished(int).
+
     public static ConnectionVerdict onConnection(InetAddress addr, int weight) {
         connectionsEstablishedCounter.add(weight);
         var ipMetrics = PER_IP.computeIfAbsent(addr, a -> newPerIpMetrics());
@@ -147,8 +135,8 @@ public final class AdaptiveAnomalyDetector {
     }
 
     public static State sourceState(InetAddress addr) {
-        SourceMetrics ip = PER_IP.get(addr);
-        SourceMetrics sn = getSubnetFor(addr);
+        var ip = PER_IP.get(addr);
+        var sn = getSubnetFor(addr);
         State a = ip != null ? ip.state() : State.NORMAL;
         State b = sn != null ? sn.state() : State.NORMAL;
         return a.worst(b);
@@ -164,12 +152,12 @@ public final class AdaptiveAnomalyDetector {
         throw new AlixError("what " + addr);
     }
 
-    private static SourceMetrics computeSubnetForKey(Object key) {
+    private static <T> SourceMetrics<T> computeSubnetForKey(T key) {
         if (key instanceof Integer v4)
-            return IPV4_SUBNET.computeIfAbsent(v4, k -> newSubnetMetrics());
+            return (SourceMetrics<T>) IPV4_SUBNET.computeIfAbsent(v4, k -> newSubnetMetrics());
 
         if (key instanceof Long v6)
-            return IPV6_PREFIX.computeIfAbsent(v6, k -> newSubnetMetrics());
+            return (SourceMetrics<T>) IPV6_PREFIX.computeIfAbsent(v6, k -> newSubnetMetrics());
 
         throw new AlixError("what " + key);
     }

@@ -5,11 +5,13 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import io.netty.buffer.*;
 import io.netty.util.IllegalReferenceCountException;
+import io.netty.util.ReferenceCounted;
 
 import java.util.List;
 
 public final class BufUtils {
 
+    //todo: take AdaptiveByteBufAllocator into account instead of Pooled, when used
     public static final ByteBufAllocator POOLED = PooledByteBufAllocator.DEFAULT;
     public static final ByteBufAllocator UNPOOLED = UnpooledByteBufAllocator.DEFAULT; //new UnpooledByteBufAllocator(true, true);//remember to never explicitly enable 'no cleaner'
     private static final boolean PREFER_DIRECT = true;//AlixCommonHandler.preferDirectBufs();
@@ -55,14 +57,20 @@ public final class BufUtils {
         return createBuffer0(wrapper, unpooled ? unpooledBuffer() : pooledBuffer());
     }
 
-    public static void safeRelease(ByteBuf buf) {
+    public static void safeRelease(Object obj) {
+        if (!(obj instanceof ReferenceCounted rc)) return;
+
+        safeRelease(rc);
+    }
+
+    public static void safeRelease(ReferenceCounted rc) {
         int cnt;
-        if (buf == null || (cnt = buf.refCnt()) == 0)
+        if (rc == null || (cnt = rc.refCnt()) == 0)
             return;//lessen try-catch overhead by checking this first
 
         try {
             //uhhh not thread-safe
-            buf.release(cnt);
+            rc.release(cnt);
         } catch (IllegalReferenceCountException ignored) {
         }
     }
@@ -81,8 +89,8 @@ public final class BufUtils {
         int packetId = wrapper.getNativePacketId();
         if (packetId < 0)
             throw new AlixException("Failed to create packet " + wrapper.getClass().getSimpleName() + " in server version "
-                                    + PacketEvents.getAPI().getServerManager().getVersion() + "! Contact the developer and show him this error! " +
-                                    "Otherwise Alix will not work as intended!");
+                    + PacketEvents.getAPI().getServerManager().getVersion() + "! Contact the developer and show him this error! " +
+                    "Otherwise Alix will not work as intended!");
 
         /*wrapper.buffer = emptyByteBuf;
         wrapper.writeVarInt(packetId);
@@ -133,13 +141,14 @@ public final class BufUtils {
 
     public static boolean hasSequence(ByteBuf in, int idx, int b1, int b2, int b3) {
         return (in.getByte(idx) & 0xFF) == b1
-               && (in.getByte(idx + 1) & 0xFF) == b2
-               && (in.getByte(idx + 2) & 0xFF) == b3;
+                && (in.getByte(idx + 1) & 0xFF) == b2
+                && (in.getByte(idx + 2) & 0xFF) == b3;
     }
+
     public static boolean hasSequence(ByteBuf in, int idx, int b1, int b2, int b3, int b4) {
         return (in.getByte(idx) & 0xFF) == b1
-               && (in.getByte(idx + 1) & 0xFF) == b2
-               && (in.getByte(idx + 2) & 0xFF) == b3
+                && (in.getByte(idx + 1) & 0xFF) == b2
+                && (in.getByte(idx + 2) & 0xFF) == b3
                 && (in.getByte(idx + 3) & 0xFF) == b4;
     }
 }

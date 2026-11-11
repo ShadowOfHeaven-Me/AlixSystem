@@ -4,6 +4,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.utils.AlixCache;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.floodgate.GeyserUtil;
+import org.bukkit.Bukkit;
 import shadow.systems.dependencies.Dependencies;
 import shadow.systems.login.result.LoginVerdictManager;
 import shadow.systems.netty.AlixChannelHandler;
@@ -113,6 +114,11 @@ public final class BukkitLimboIntegration extends LimboIntegration<ClientConnect
     public boolean hasCompletedCaptcha(String name, Channel channel) {
         return Captcha.hasCompletedCaptcha(name, channel);// || ((InetSocketAddress) channel.remoteAddress()).getAddress().equals(this.completedCaptchaCache.getIfPresent(name));
     }*/
+
+    @Override
+    public int getPort() {
+        return Bukkit.getPort();
+    }
 
     @Override
     public boolean isProxyProtocol() {

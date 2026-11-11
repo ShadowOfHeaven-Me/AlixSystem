@@ -1,12 +1,17 @@
 package ua.nanit.limbo.connection.pipeline;
 
+import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.profiler.ConnectionStage;
 import alix.common.connection.profiler.LimboJoinProfiler;
+import alix.common.data.fingerprinting.FingerprintGateway;
+import alix.common.data.fingerprinting.FingerprintServer;
+import alix.common.utils.AlixCommonUtils;
 import alix.common.utils.config.ConfigProvider;
 import alix.common.utils.netty.BufUtils;
 import alix.common.utils.netty.safety.NettySafety;
 import alix.common.utils.other.throwable.AlixException;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.ByteToMessageDecoder.Cumulator;
@@ -14,6 +19,7 @@ import io.netty.handler.codec.haproxy.HAProxyCommand;
 import io.netty.handler.codec.haproxy.HAProxyMessage;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
+import lombok.Setter;
 import ua.nanit.limbo.NanoLimbo;
 import ua.nanit.limbo.connection.ClientConnection;
 import ua.nanit.limbo.connection.UnsafeCloseFuture;
@@ -22,6 +28,7 @@ import ua.nanit.limbo.protocol.packets.PacketUtils;
 import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.server.Log;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
@@ -33,6 +40,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
     //private static final Boolean PRESENT = Boolean.TRUE;
     //private boolean collectResend = true;
+    @Setter
     private CipherHandler cipher;
     //private final Map<ByteBuf, Integer> resendMap = new IdentityHashMap<>(2);
     //private final FixedSizeQueue<ByteBuf> collectedIdentity = new FixedSizeQueue<>(2);
@@ -68,7 +76,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         });*/
         var msg = this.haProxyMessage;
         if (msg != null)
-            ReferenceCountUtil.release(msg);
+            BufUtils.safeRelease(msg);
     }
 
     /*public void resendCollected(Channel channel) {
@@ -79,16 +87,12 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
      *//*this.forEachCollected(buf ->
                 channel.pipeline().fireChannelRead(buf.readerIndex(0)));*//*
         //readerIndex is already set by BufSet12
-        this.forEachCollected(buf -> this.connection.getChannel().pipeline().fireChannelRead(buf.readerIndex(0)));
+        this.forEachCollected(buf -> this.channel().pipeline().fireChannelRead(buf.readerIndex(0)));
     }
 
     private void forEachCollected(Consumer<ByteBuf> consumer) {
         this.resend.forEach(consumer);
     }*/
-
-    public void setCipher(CipherHandler cipher) {
-        this.cipher = cipher;
-    }
 
     private ByteBuf tryDecrypt(ByteBuf buf) throws Exception {
         return CipherHandler.decrypt(buf, this.cipher);
@@ -108,7 +112,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
     }
 
     private void cleanUp() {
-        /*if (!this.connection.getChannel().eventLoop().inEventLoop())
+        /*if (!this.channel().eventLoop().inEventLoop())
             throw new AlixError("AAAAAAA " + Thread.currentThread());*/
 
         ByteBuf cum = this.cumulation;
@@ -124,7 +128,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
     public volatile HAProxyMessage haProxyMessage;
 
     void handleProxyMessage(HAProxyMessage message) {
-        var channel = this.connection.getChannel();
+        var channel = this.channel();
         LimboJoinProfiler.update(channel, ConnectionStage.HA_PROXY_MESSAGE_RECEIVED);
 
         this.haProxyMessage = message;
@@ -191,6 +195,9 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
                 return;//Can become null inside super.channelRead(...)
         }
 
+        if (this.cumulation == null)//can become null at mc port fingerprinting buf resend
+            return;
+
         if (!this.cumulation.isReadable()) {
             if (this.cumulation.refCnt() != 0)//how tf does this happen
                 this.cumulation.release();
@@ -204,6 +211,10 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
     private static final boolean supportHttp = ConfigProvider.config.getBoolean("support-mc-port-http");
 
+    Channel channel() {
+        return this.connection.getChannel();
+    }
+
     //@Override
     private ByteBuf decode(ByteBuf in) {
         int packetStart = in.readerIndex();
@@ -214,23 +225,41 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
         //make sure not to firewall legacy ping, since still sent by modern clients in case of no-response after a 30-second timeout
         if (this.connection.getDecoderState() == State.HANDSHAKING && in.readableBytes() >= 3
-            && BufUtils.hasSequence(in, packetStart, 0xFE, 0x01, 0xFA)) {
+                && BufUtils.hasSequence(in, packetStart, 0xFE, 0x01, 0xFA)) {
             this.connection.close();
             return null;
         }
 
         //(NanoLimbo.INTEGRATION.isProxyProtocol() ||
         //cannot do this \/
-        /*&& NanoLimbo.INTEGRATION.isConnected(AlixCommonUtils.getAddress(this.connection.getChannel()))*/
-        if (supportHttp && this.connection.getDecoderState() == State.HANDSHAKING) {
+        /*&& NanoLimbo.INTEGRATION.isConnected(AlixCommonUtils.getAddress(this.channel()))*/
+        if ((supportHttp || FingerprintServer.mcPortFingerprinting) && this.connection.getDecoderState() == State.HANDSHAKING) {
             if (in.readableBytes() < 4)
                 return null;
 
-            if (BufUtils.hasSequence(in, packetStart, 'G', 'E', 'T')//this is actually sent by an mc client
-                || BufUtils.hasSequence(in, packetStart, 'H', 'E', 'A', 'D')) {
-                //Log.info("Passthrough of HTTP traffic");
-                this.connection.uninjectWithBuf(this.cumulation.readerIndex(0).copy());
+            boolean get = BufUtils.hasSequence(in, packetStart, 'G', 'E', 'T');//this is actually sent by an mc client
+
+            if (get || BufUtils.hasSequence(in, packetStart, 'H', 'E', 'A', 'D')) {
+                //Log.info("Passthrough of HTTP traffic " + FingerprintGateway.isFingerprintingAddress(AlixCommonUtils.getAddress(this.channel())));
+                InetAddress addr;
+                if (FingerprintServer.mcPortFingerprinting && GeoIPTracker.isMapped(addr = AlixCommonUtils.getAddress(this.channel())) /*&& FingerprintGateway.isFingerprintingAddress(addr)*/) {
+                    var cum = this.cumulation;
+                    this.cumulation = null;//nullify, act as if all was read
+
+                    FingerprintServer.init_http_client(this.channel());
+                    this.connection.resend(cum.readerIndex(0));
+                    //Log.error("KNOWN TRAFFIC PASSTHROUGH");
+                    return null;
+                }
+
+                if (supportHttp) {
+                    this.connection.uninjectWithBuf(this.cumulation.readerIndex(0).copy());
+                    return null;
+                }
+                this.connection.close();
+                //Log.warning("Unknown HTTP traffic from " + AlixCommonUtils.getAddress(this.channel()).getHostAddress() + ". If this is an attack, report this on the Alix discord server.");
                 return null;
+                //throw NettySafety.UNKNOWN_HTTP_CONNECTION;
             }
         }
 

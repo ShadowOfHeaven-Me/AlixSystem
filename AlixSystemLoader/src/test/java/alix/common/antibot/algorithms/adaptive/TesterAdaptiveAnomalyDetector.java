@@ -5,6 +5,9 @@ import alix.common.connection.ratelimit.RateLimiter;
 import java.net.InetAddress;
 import java.util.Random;
 
+import static alix.common.antibot.algorithms.adaptive.SourceMetrics.newPerIpMetrics;
+import static alix.common.antibot.algorithms.adaptive.SourceMetrics.newSubnetMetrics;
+
 //Standalone main()-driven driver (same convention as TesterBCrypt/TesterCompressor - a plain script run
 //manually, not JUnit) sanity-checking AdaptiveAnomalyDetector's tuning against synthetic traffic shapes,
 //including the fingerprint-suspicion connection weighting (see LimboIntegration#connectionWeight).
@@ -88,21 +91,5 @@ public final class TesterAdaptiveAnomalyDetector {
             }
         }
         System.out.println("  -> never reached ATTACK within 10 buckets");
-    }
-
-    //Copy of AdaptiveAnomalyDetector#newPerIpMetrics() - see this class's header comment for why it can't
-    //just call through to the real one.
-    private static SourceMetrics<InetAddress> newPerIpMetrics() {
-        return new SourceMetrics<>(0.1, 30, 1.5, 8, 15, 4_000,
-                2, 3, 8, 20,
-                new RateLimiter<>(3, 10));
-    }
-
-    //Copy of AdaptiveAnomalyDetector#newSubnetMetrics() - see this class's header comment for why it can't
-    //just call through to the real one.
-    private static <T> SourceMetrics<T> newSubnetMetrics() {
-        return new SourceMetrics<>(0.05, 60, 2.0, 10, 18, 15_000,
-                3, 7, 30, 200,
-                new RateLimiter<>(10, 10));
     }
 }

@@ -1,3 +1,4 @@
+/*
 package alix.common.logger.impl;
 
 import alix.common.logger.LoggerAdapter;
@@ -9,6 +10,11 @@ public final class Slf4jLoggerImpl implements LoggerAdapter {
 
     public Slf4jLoggerImpl(Logger logger) {
         this.logger = logger;
+    }
+
+    @Override
+    public void log(String log) {
+
     }
 
     @Override
@@ -30,4 +36,4 @@ public final class Slf4jLoggerImpl implements LoggerAdapter {
     public void debug(String debug) {
         this.logger.debug(debug);
     }
-}
+}*/

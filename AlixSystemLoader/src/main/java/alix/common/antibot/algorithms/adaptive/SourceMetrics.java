@@ -2,6 +2,7 @@ package alix.common.antibot.algorithms.adaptive;
 
 import alix.common.connection.ratelimit.RateLimiter;
 
+import java.net.InetAddress;
 import java.util.concurrent.atomic.LongAdder;
 
 final class SourceMetrics<K> {
@@ -32,6 +33,17 @@ final class SourceMetrics<K> {
         this.minBucketsToArm = minBucketsToArm;
         this.rateLimiter = rateLimiter;
     }
+    static SourceMetrics<InetAddress> newPerIpMetrics() {
+        return new SourceMetrics<>(0.1, 30, 1.5, 8, 15, 4_000,
+                2, 3, 8, 20,
+                new RateLimiter<>(3, 10));
+    }
+
+    static <T> SourceMetrics<T> newSubnetMetrics() {
+        return new SourceMetrics<>(0.05, 60, 2.0, 10, 18, 15_000,
+                3, 7, 30, 200,
+                new RateLimiter<>(10, 10));
+    }
 
     RateLimiter<K> getRateLimiter() {
         return rateLimiter;
@@ -41,10 +53,6 @@ final class SourceMetrics<K> {
         return recordConnectionEstablished(1);
     }
 
-    //weight lets a caller count one connection as more than one toward this bucket's CUSUM input, e.g. for a
-    //suspicious SYN fingerprint. A sustained burst of such connections trips ELEVATED/ATTACK faster than an
-    //equal-sized burst of ordinary ones, while a single suspicious connection barely moves the needle -
-    //isolated anomalous fingerprints are common, benign noise (VPNs, mobile carriers, corporate NAT).
     State recordConnectionEstablished(int weight) {
         connectionsBucketCount.add(weight);
         touch();
@@ -98,11 +106,7 @@ final class SourceMetrics<K> {
         return this.state;
     }
 
-    //test-only: TesterAdaptiveAnomalyDetector (src/test/java, same package) drives buckets synthetically,
-    //bypassing the bucketMillis wall-clock wait this class normally enforces, so a tuning simulation
-    //covering hours of real traffic runs instantly instead of actually sleeping through it. Reuses the
-    //exact same cold-start-heuristic/CUSUM logic real traffic goes through - never called from production
-    //code.
+    //test-only
     State forceBucketForTest(long connectionsCnt, long emptyCnt) {
         return processBucket(connectionsCnt, emptyCnt);
     }

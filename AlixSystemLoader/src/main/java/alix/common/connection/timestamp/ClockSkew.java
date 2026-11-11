@@ -13,10 +13,13 @@ public final class ClockSkew {
 
     public static final boolean ENABLED = true;
     static final LongObjectMap<ClockSkewEstimator> MAP = new LongObjectHashMap<>();
+    private static final long NO_KEY = 0;
 
     public static ClockSkewValue getClockSkew(Channel channel) {
-        var es = MAP.get(key(channel));
+        long key = key(channel);
+        if (key == NO_KEY) return null;
 
+        var es = MAP.get(key);
         if (es == null) return new ClockSkewValue(Double.NaN, ClockSkewConfidence.NONE);
 
         double est = es.estimateFrequencyHz();
@@ -27,7 +30,10 @@ public final class ClockSkew {
     }
 
     public static void on_disconnect(Channel channel) {
-        MAP.remove(key(channel));
+        long key = key(channel);
+        if (key == NO_KEY) return;
+
+        MAP.remove(key);
     }
 
     private static ClockSkewEstimator get(Channel channel) {
@@ -36,7 +42,7 @@ public final class ClockSkew {
 
     private static long key(Channel channel) {
         var ip = AlixCommonUtils.getSocketAddress(channel);
-        if (!(ip.getAddress() instanceof Inet4Address v4)) return 0;
+        if (ip == null || !(ip.getAddress() instanceof Inet4Address v4)) return NO_KEY;
 
         int addr = IPUtils.ipv4Value(v4);
         short port = (short) ip.getPort();
@@ -54,7 +60,10 @@ public final class ClockSkew {
 
     @SneakyThrows
     public static void on_timestamp(long nanos, int addr, short port, int tsval) {
-        var es = compute(key(addr, port));
+        var key = key(addr, port);
+        if (key == NO_KEY) return;
+
+        var es = compute(key);
         es.addSample(nanos, tsval);
 
         /*double est = es.estimateFrequencyHz();

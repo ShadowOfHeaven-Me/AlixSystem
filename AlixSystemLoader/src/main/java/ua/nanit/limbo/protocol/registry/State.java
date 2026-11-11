@@ -354,38 +354,6 @@ public enum State {
         private void registerRetrooper(Supplier<T> packet, PacketTypeCommon type) {
             this.register0(packet, ver -> type.getId(ver.getClientVersion()), type);
         }
-
-        /*private void register(Supplier<T> packet, Mapping... mappings) {
-            register0(packet, this.state);
-            for (Mapping mapping : mappings) {
-                for (Version ver : getRange(mapping)) {
-                    PacketRegistry reg = registry.computeIfAbsent(ver, PacketRegistry::new);
-                    reg.register(mapping.packetId, packet);
-                }
-            }
-        }*/
-
-        private Collection<Version> getRange(Mapping mapping) {
-            return getRange(mapping.from, mapping.to);
-        }
-
-        private Collection<Version> getRange(Version from, Version to) {
-            Version curr = to;
-
-            if (curr == from)
-                return Collections.singletonList(from);
-
-            List<Version> versions = new LinkedList<>();
-
-            while (curr != from) {
-                versions.add(curr);
-                curr = curr.getPrev();
-            }
-
-            versions.add(from);
-
-            return versions;
-        }
     }
 
     public static final class PacketRegistry {
@@ -418,30 +386,5 @@ public enum State {
             this.packetsById.put(packetId, new PacketFactory(supplier));
             this.packetIdByClass.put(supplier.get().getClass(), packetId);
         }
-    }
-
-    private static final class Mapping {
-
-        private final int packetId;
-        private final Version from;
-        private final Version to;
-
-        private Mapping(int packetId, Version from, Version to) {
-            this.from = from;
-            this.to = to;
-            this.packetId = packetId;
-        }
-    }
-
-    /**
-     * Map packet id to version range
-     *
-     * @param packetId Packet id
-     * @param from     Minimal version (include)
-     * @param to       Last version (include)
-     * @return Created mapping
-     */
-    private static Mapping map(int packetId, Version from, Version to) {
-        return new Mapping(packetId, from, to);
     }
 }

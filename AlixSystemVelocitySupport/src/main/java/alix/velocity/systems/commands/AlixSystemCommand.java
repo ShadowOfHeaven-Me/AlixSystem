@@ -438,7 +438,7 @@ public final class AlixSystemCommand {
                                         sendMessage(sender, Messages.get("as-user-syn-signature-error"));
                                 }
 
-                                if (ClockSkew.ENABLED) {
+                                if (ClockSkew.ENABLED && channel != null) {
                                     ClockSkewValue skew = ClockSkew.getClockSkew(channel);
                                     var confidence = skew.confidence();
                                     if (confidence.isAny()) {
@@ -491,7 +491,7 @@ public final class AlixSystemCommand {
                                         default:
                                             throw new RuntimeException("Invalid - " + data.getLoginParams().getAuthSettings());
                                     }
-                                    sendMessage(sender, Messages.get("as-user-`totp", authApp));
+                                    sendMessage(sender, Messages.get("as-user-totp", authApp));
                                     sendMessage(sender, Messages.get("as-user-totp-linked", stateOf(data.getLoginParams().hasProvenAuthAccess(), true)));
                                 }
                                 sendMessage(sender, "");

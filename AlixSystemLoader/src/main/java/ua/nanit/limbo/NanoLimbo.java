@@ -27,7 +27,7 @@ public final class NanoLimbo {
     @DebugOnly(false)
     public static final boolean broadcastInvalidPacketFireWallStackTraces = false;
     @DebugOnly(true)
-    public static final boolean suppressInvalidPackets = true;//of(true);
+    public static final boolean suppressInvalidPackets = false;//of(true);
     @DebugOnly(false)
     public static final boolean debugCipher = false;//of(false);
     @DebugOnly(false)

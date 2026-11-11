@@ -14,6 +14,11 @@ public final class JavaLoggerImpl implements LoggerAdapter {
     }
 
     @Override
+    public void log(String log) {
+        this.logger.log(Level.ALL, log);
+    }
+
+    @Override
     public void info(String info) {
         this.logger.info(info);
     }
