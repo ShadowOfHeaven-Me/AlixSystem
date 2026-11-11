@@ -40,6 +40,12 @@ public interface DatabaseUpdater {
 
     CompletableFuture<Void> loadAllTokens(Map<MapSecretKey, String> map);
 
+    //Backfills UserRecoveryCodesFileManager's local cache on startup, same role loadAllTokens() plays for
+    //UserTokensFileManager - without this, codes that only ever existed in an external database (set
+    //before the local-file fallback below was added) would be invisible once this server starts reading
+    //recovery codes from the local file first.
+    CompletableFuture<Void> loadAllRecoveryCodes(Map<MapSecretKey, String> map);
+
     void connect();
 
     void saveData(PersistentUserData data);

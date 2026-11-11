@@ -1,6 +1,7 @@
 package alix.common.data.file;
 
 import alix.common.AlixCommonMain;
+import alix.common.antibot.captcha.secrets.files.UserRecoveryCodesFileManager;
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.connection.filters.GeoIPTracker;
 import alix.common.connection.filters.PlayerNameIndex;
@@ -105,8 +106,9 @@ public final class UserFileManager {
             //database.removeUserToken() AND fastSave() below, silently undoing part of a GDPR erasure.
             try {
                 UserTokensFileManager.removeTokenLocally(data.identity());
+                UserRecoveryCodesFileManager.removeRecoveryCodesLocally(data.identity());
             } catch (Exception e) {
-                AlixCommonMain.logWarning("Failed to remove local 2FA token while removing '" + name + "': " + e);
+                AlixCommonMain.logWarning("Failed to remove local 2FA token/recovery codes while removing '" + name + "': " + e);
             }
             database.removeUserToken(data.identity());
             //Force an immediate local-file flush rather than leaving this to the periodic (up to 1-minute)

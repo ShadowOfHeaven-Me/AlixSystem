@@ -315,6 +315,9 @@ interface QueryConstants {
 
     String LOAD_ALL_TOKENS = "SELECT * FROM alix_user_tokens";
 
+    String LOAD_ALL_RECOVERY_CODES =
+            "SELECT uuid, recovery_codes FROM alix_user_tokens WHERE recovery_codes IS NOT NULL";
+
     //Adds the 'recovery_codes' column to a pre-existing alix_user_tokens table from before it was
     //introduced - CREATE TABLE IF NOT EXISTS above is a no-op against such a table, same reasoning as
     //ADD_FINGERPRINT_COLUMN_SQL. NULL (not empty string) means "no recovery codes generated yet", same

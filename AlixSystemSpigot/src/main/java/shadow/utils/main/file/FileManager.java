@@ -1,5 +1,6 @@
 package shadow.utils.main.file;
 
+import alix.common.antibot.captcha.secrets.files.UserRecoveryCodesFileManager;
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.data.file.AllowListFileManager;
@@ -54,6 +55,7 @@ public abstract class FileManager extends AlixFileManager {
         if (AlixUtils.antibotService) FireWallManager.fastSave();
         IpsCacheFileManager.save();
         UserTokensFileManager.save();
+        UserRecoveryCodesFileManager.save();
         WarpFileManager.save();
         SpawnFileManager.save();
         AllowListFileManager.save();
