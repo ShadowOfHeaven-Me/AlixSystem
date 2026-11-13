@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Dev-only tool (never shipped - lives in src/test/java), successor to the old per-platform
@@ -44,24 +43,21 @@ public final class MessagesSyncTool {
     public static void main(String[] args) throws IOException, InterruptedException {
         Path resourceRoot = findResourceRoot();
         Path reference = resourceRoot.resolve("messages.properties");
-        Path csFile = resourceRoot.resolve("langs/cs.properties");
+        var lang = "cs";
+        Path langFile = resourceRoot.resolve("langs/" + lang + ".properties");
 
         LinkedHashMap<String, String> referenceEntries = parse(reference);
-        LinkedHashMap<String, String> csEntries = parse(csFile);
+        LinkedHashMap<String, String> langEntries = parse(langFile);
         System.out.println("Reference (messages.properties): " + referenceEntries.size() + " keys");
 
-        List<String> missing = referenceEntries.keySet().stream()
-                .filter(k -> !csEntries.containsKey(k))
-                .collect(Collectors.toList());
-        List<String> stale = csEntries.keySet().stream()
-                .filter(k -> !referenceEntries.containsKey(k))
-                .collect(Collectors.toList());
+        var missing = referenceEntries.keySet().stream().filter(k -> !langEntries.containsKey(k)).toList();
+        var stale = langEntries.keySet().stream().filter(k -> !referenceEntries.containsKey(k)).toList();
 
         if (!stale.isEmpty())
-            System.out.println("cs.properties: " + stale.size() + " key(s) no longer in messages.properties (NOT removed automatically - confirm before deleting) - " + stale);
+            System.out.println(lang + ".properties: " + stale.size() + " key(s) no longer in messages.properties (NOT removed automatically - confirm before deleting) - " + stale);
 
         if (missing.isEmpty()) {
-            System.out.println("cs.properties: already in sync (" + csEntries.size() + " keys)");
+            System.out.println(lang + ".properties: already in sync (" + langEntries.size() + " keys)");
             return;
         }
 
@@ -72,29 +68,29 @@ public final class MessagesSyncTool {
         }
 
         HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-        StringBuilder append = new StringBuilder();
-        String existing = Files.exists(csFile) ? Files.readString(csFile, StandardCharsets.UTF_8) : "";
-        if (!existing.isEmpty() && !existing.endsWith("\n")) append.append('\n');
+        StringBuilder sb = new StringBuilder();
+        String existing = Files.exists(langFile) ? Files.readString(langFile, StandardCharsets.UTF_8) : "";
+        if (!existing.isEmpty() && !existing.endsWith("\n")) sb.append('\n');
 
         int translated = 0;
         for (String key : missing) {
             String english = referenceEntries.get(key);
             String draft;
             try {
-                draft = translate(client, apiKey, english);
+                draft = translate(client, apiKey, english, lang.toUpperCase());
             } catch (Exception e) {
                 System.out.println("  FAILED to translate '" + key + "': " + e.getMessage());
                 continue;
             }
-            append.append(TRANSLATE_MARKER).append(key).append('\n');
-            append.append(key).append("= ").append(draft).append('\n');
+            sb.append(TRANSLATE_MARKER).append(key).append('\n');
+            sb.append(key).append("= ").append(draft).append('\n');
             translated++;
         }
 
         if (translated > 0) {
-            Files.writeString(csFile, append.toString(), StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+            Files.writeString(langFile, sb.toString(), StandardCharsets.UTF_8, StandardOpenOption.APPEND);
         }
-        System.out.println("cs.properties: drafted " + translated + "/" + missing.size()
+        System.out.println(lang + ".properties: drafted " + translated + "/" + missing.size()
                 + " missing key(s) via DeepL, marked with '" + TRANSLATE_MARKER.trim() + "' - review before relying on them");
     }
 
@@ -102,11 +98,11 @@ public final class MessagesSyncTool {
     //alphanumeric-only tokens DeepL won't translate or reorder incorrectly, translates, then restores them
     //in the SAME order - correct even if DeepL moves a token to match Czech word order, since each token
     //round-trips to exactly the original text it stood in for.
-    private static String translate(HttpClient client, String apiKey, String english) throws IOException, InterruptedException {
+    private static String translate(HttpClient client, String apiKey, String english, String lang) throws IOException, InterruptedException {
         List<String> placeholders = new ArrayList<>();
         String protectedText = protect(english, placeholders);
 
-        String body = "{\"text\":[\"" + jsonEscape(protectedText) + "\"],\"source_lang\":\"EN\",\"target_lang\":\"CS\"}";
+        String body = "{\"text\":[\"" + jsonEscape(protectedText) + "\"],\"source_lang\":\"EN\",\"target_lang\":\""+ lang + "\"}";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(DEEPL_ENDPOINT))
                 .header("Authorization", "DeepL-Auth-Key " + apiKey)
