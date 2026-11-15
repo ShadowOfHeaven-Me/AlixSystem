@@ -8,6 +8,7 @@ import alix.common.data.security.email.EmailHandler;
 import alix.common.login.premium.PremiumUtils;
 import alix.common.messages.Messages;
 import alix.common.packets.message.MessageWrapper;
+import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.AlixCommonUtils;
 import alix.velocity.Main;
 import alix.velocity.server.impl.VelocityLimboIntegration;
@@ -31,6 +32,8 @@ import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
+
+import java.util.concurrent.TimeUnit;
 
 import static alix.velocity.utils.AlixUtils.sendMessage;
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
@@ -59,16 +62,26 @@ public final class CommandManager {
     //a real subject (see ConnectedPlayer/VelocityConsole) and see if ANY plugin's listener actually called
     //setProvider() on it - that's true for any permission plugin implementing Velocity's own permission SPI,
     //regardless of its name, and false only when nothing on the proxy ever overrides the default.
+    //
+    //Delayed a few seconds rather than fired right here: this runs from CommandManager.register(), itself
+    //called from Main#onEnable() - i.e. from OUR OWN ProxyInitializeEvent handler. A permission plugin
+    //typically registers its PermissionsSetupEvent listener from its OWN ProxyInitializeEvent handler too,
+    //and Velocity gives no ordering guarantee between two plugins' handlers for the same event (both
+    //default to PostOrder.NORMAL) - firing immediately could easily run before that plugin has subscribed
+    //yet, warning falsely even though it works fine for every real player connecting moments later. A short
+    //delay lets every plugin's own startup finish first.
     private static void warnIfNoPermissionPluginDetected(ProxyServer server) {
-        PermissionProvider defaultProvider = subject -> PermissionFunction.ALWAYS_UNDEFINED;
-        PermissionSubject dummySubject = node -> Tristate.UNDEFINED;
-        PermissionsSetupEvent event = new PermissionsSetupEvent(dummySubject, defaultProvider);
+        AlixScheduler.runLaterAsync(() -> {
+            PermissionProvider defaultProvider = subject -> PermissionFunction.ALWAYS_UNDEFINED;
+            PermissionSubject dummySubject = node -> Tristate.UNDEFINED;
+            PermissionsSetupEvent event = new PermissionsSetupEvent(dummySubject, defaultProvider);
 
-        server.getEventManager().fire(event).thenAccept(e -> {
-            if (e.getProvider() == defaultProvider) {
-                Main.logInfo("No permission plugins detected, you won't be able to use the admin alix commands in-game!");
-            }
-        });
+            server.getEventManager().fire(event).thenAccept(e -> {
+                if (e.getProvider() == defaultProvider) {
+                    Main.logInfo("No permission plugins detected, you won't be able to use the admin alix commands in-game!");
+                }
+            });
+        }, 5, TimeUnit.SECONDS);
     }
 
     private static void register_Help(ProxyServer server) {
