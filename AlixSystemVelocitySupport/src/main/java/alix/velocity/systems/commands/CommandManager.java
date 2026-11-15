@@ -52,7 +52,7 @@ public final class CommandManager {
         boolean permissionPluginPresent = server.getPluginManager().getPlugins().stream()
                 .anyMatch(p -> {
                     String id = p.getDescription().getId().toLowerCase();
-                    return id.contains("luckperms") || id.contains("permission");
+                    return id.contains("luckperms") || id.contains("permission") || id.contains("perms");
                 });
 
         if (!permissionPluginPresent) {
