@@ -23,6 +23,11 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.event.permission.PermissionsSetupEvent;
+import com.velocitypowered.api.permission.PermissionFunction;
+import com.velocitypowered.api.permission.PermissionProvider;
+import com.velocitypowered.api.permission.PermissionSubject;
+import com.velocitypowered.api.permission.Tristate;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import ua.nanit.limbo.connection.login.packets.SoundPackets;
@@ -48,16 +53,22 @@ public final class CommandManager {
         warnIfNoPermissionPluginDetected(server);
     }
 
+    //Used to be a plugin-id name match (e.g. "luckperms"/"permission") - missed any real permission plugin
+    //named something else (e.g. "EthoriaPerms"), warning falsely even though admin commands worked fine.
+    //Behavioral check instead: fire a throwaway PermissionsSetupEvent the same way Velocity itself does for
+    //a real subject (see ConnectedPlayer/VelocityConsole) and see if ANY plugin's listener actually called
+    //setProvider() on it - that's true for any permission plugin implementing Velocity's own permission SPI,
+    //regardless of its name, and false only when nothing on the proxy ever overrides the default.
     private static void warnIfNoPermissionPluginDetected(ProxyServer server) {
-        boolean permissionPluginPresent = server.getPluginManager().getPlugins().stream()
-                .anyMatch(p -> {
-                    String id = p.getDescription().getId().toLowerCase();
-                    return id.contains("luckperms") || id.contains("permission") || id.contains("perms");
-                });
+        PermissionProvider defaultProvider = subject -> PermissionFunction.ALWAYS_UNDEFINED;
+        PermissionSubject dummySubject = node -> Tristate.UNDEFINED;
+        PermissionsSetupEvent event = new PermissionsSetupEvent(dummySubject, defaultProvider);
 
-        if (!permissionPluginPresent) {
-            Main.logInfo("No permission plugins detected, you won't be able to use the admin alix commands in-game!");
-        }
+        server.getEventManager().fire(event).thenAccept(e -> {
+            if (e.getProvider() == defaultProvider) {
+                Main.logInfo("No permission plugins detected, you won't be able to use the admin alix commands in-game!");
+            }
+        });
     }
 
     private static void register_Help(ProxyServer server) {
