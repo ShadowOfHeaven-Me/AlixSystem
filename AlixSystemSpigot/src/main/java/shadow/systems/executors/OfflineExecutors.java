@@ -1,5 +1,6 @@
 package shadow.systems.executors;
 
+import alix.common.antibot.captcha.secrets.files.UserRecoveryCodesFileManager;
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.data.PersistentUserData;
@@ -243,6 +244,7 @@ public final class OfflineExecutors extends UniversalExecutors {
         FireWallManager.onAsyncSave();
         IpsCacheFileManager.save();
         UserTokensFileManager.save();
+        UserRecoveryCodesFileManager.save();
         AllowListFileManager.save();
     }
 

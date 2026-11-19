@@ -305,6 +305,25 @@ final class DatabaseUpdaterImpl implements DatabaseUpdater {
     }
 
     @Override
+    public CompletableFuture<Void> loadAllRecoveryCodes(Map<MapSecretKey, String> map) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+        this.query(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(LOAD_ALL_RECOVERY_CODES);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    var uuid = readUuid(rs, 1);
+                    var codes = rs.getString(2);
+                    map.put(MapSecretKey.uuidKey(uuid), codes);
+                }
+                future.complete(null);
+            }
+        });
+        return future;
+    }
+
+    @Override
     public void loadUser(String name, Consumer<PersistentUserData> consumer) {
         this.query(connection -> {
             try (PreparedStatement ps = connection.prepareStatement(SELECT_USER_SQL)) {

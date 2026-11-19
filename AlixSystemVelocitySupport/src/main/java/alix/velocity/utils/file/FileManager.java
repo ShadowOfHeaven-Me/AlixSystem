@@ -1,5 +1,6 @@
 package alix.velocity.utils.file;
 
+import alix.common.antibot.captcha.secrets.files.UserRecoveryCodesFileManager;
 import alix.common.antibot.captcha.secrets.files.UserTokensFileManager;
 import alix.common.antibot.firewall.FireWallManager;
 import alix.common.commands.file.CommandsFileManager;
@@ -21,6 +22,7 @@ public final class FileManager {
     public static void loadFiles() {
         UserFileManager.init();
         UserTokensFileManager.init();
+        UserRecoveryCodesFileManager.init();
         EmailConfig.init();
         ServerSettingsManager.init();
         //Was previously never explicitly init()'d on Velocity (unlike Spigot's FileManager, which already
@@ -41,6 +43,7 @@ public final class FileManager {
     private static void onAsyncSave() {
         UserFileManager.onAsyncSave();
         UserTokensFileManager.save();
+        UserRecoveryCodesFileManager.save();
         //Also previously missing entirely on Velocity (present on Spigot) - meant that "/as bl/bypasslimit"
         //and "/as bl-r/bypasslimit-remove" changes were never actually persisted to disk here or on shutdown,
         //only kept in memory until the next restart silently discarded them.
@@ -51,6 +54,7 @@ public final class FileManager {
     public static void saveFiles() {
         UserFileManager.fastSave();
         UserTokensFileManager.save();
+        UserRecoveryCodesFileManager.save();
         AllowListFileManager.save();
         if (antiBotService) FireWallManager.fastSave();
     }

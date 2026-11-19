@@ -26,6 +26,11 @@ final class NoOPDatabaseImpl implements DatabaseUpdater {
     }
 
     @Override
+    public CompletableFuture<Void> loadAllRecoveryCodes(Map<MapSecretKey, String> map) {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
     public void connect() {
 
     }

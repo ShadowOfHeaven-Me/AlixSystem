@@ -17,15 +17,15 @@ public interface AlixMain {
 
     LoaderBootstrap getBootstrap();
 
-    Params getEngineParams();
+    default Params getEngineParams() {
+        return AlixCommonMain.DefaultParamImpl.INSTANCE;
+    }
 
     interface Params {
 
         String messagesFileName();
 
-        default char messagesSeparator() {
-            return '=';
-        }
+        char messagesSeparator();
 
         /**
          * The messages file treated as the "reference" translation to validate {@link #messagesFileName()}
