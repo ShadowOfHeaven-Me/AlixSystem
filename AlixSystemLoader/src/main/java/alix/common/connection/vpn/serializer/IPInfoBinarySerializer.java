@@ -140,6 +140,7 @@ public final class IPInfoBinarySerializer {
             case "proxycheck.io (v3)" -> 3;
             case "kauri (funkemunky)" -> 4;
             case "ipapi.is" -> 5;
+            case "vpndetection.io" -> 6;
             default -> 0;
         };
     }
@@ -151,6 +152,7 @@ public final class IPInfoBinarySerializer {
             case 3 -> "proxycheck.io (v3)";
             case 4 -> "Kauri (Funkemunky)";
             case 5 -> "ipapi.is";
+            case 6 -> "vpndetection.io";
             default -> "Unknown";
         };
     }

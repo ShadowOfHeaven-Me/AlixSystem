@@ -29,7 +29,8 @@ public final class ProxyCheckManager {
         this.primaryProviders = LoopList.newConcurrent(
                 new IPAPIImpl(),//45 req/min
                 new IPApiIsImpl(),//1000/day
-                new ProxyCheckIOImpl()//100/day for unregistered, 1000/day with an api key
+                new ProxyCheckIOImpl(),//100/day for unregistered, 1000/day with an api key
+                new VPNDetectionImpl()//no key, no daily cap
         );
 
         this.fallbackProviders = LoopList.newConcurrent(
