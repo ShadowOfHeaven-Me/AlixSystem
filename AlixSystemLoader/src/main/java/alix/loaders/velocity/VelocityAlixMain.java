@@ -51,8 +51,8 @@ public final class VelocityAlixMain implements AlixLoggerProvider, AlixMain {
         instance = this;
         this.server = server;
         this.logger = logger;
-        this.loggerAdapter = new VelocityLoggerAdapter(AlixFormatter.messagePrefix); //LoggerAdapter.createAdapter(logger);
         this.dataDirectory = dataDirectory;
+        this.loggerAdapter = new VelocityLoggerAdapter(AlixFormatter.messagePrefix); //LoggerAdapter.createAdapter(logger);
         dataDirectory.toFile().mkdir();
 
         //new File(dataDirectory.toAbsolutePath().toString()).mkdir();

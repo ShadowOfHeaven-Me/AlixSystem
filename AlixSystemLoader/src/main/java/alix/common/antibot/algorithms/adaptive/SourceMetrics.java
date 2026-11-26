@@ -36,13 +36,13 @@ final class SourceMetrics<K> {
     static SourceMetrics<InetAddress> newPerIpMetrics() {
         return new SourceMetrics<>(0.1, 30, 1.5, 8, 15, 4_000,
                 2, 3, 8, 20,
-                new RateLimiter<>(3, 10));
+                new RateLimiter<>(3, 3));
     }
 
     static <T> SourceMetrics<T> newSubnetMetrics() {
         return new SourceMetrics<>(0.05, 60, 2.0, 10, 18, 15_000,
                 3, 7, 30, 200,
-                new RateLimiter<>(10, 10));
+                new RateLimiter<>(10, 3));
     }
 
     RateLimiter<K> getRateLimiter() {

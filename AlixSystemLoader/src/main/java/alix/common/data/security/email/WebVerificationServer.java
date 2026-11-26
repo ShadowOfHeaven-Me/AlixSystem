@@ -5,7 +5,7 @@ import alix.common.data.PersistentUserData;
 import alix.common.data.file.UserFileManager;
 import alix.common.utils.AlixCache;
 import alix.common.utils.netty.NettyServerTransport;
-import com.google.common.cache.Cache;
+import com.github.benmanes.caffeine.cache.Cache;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

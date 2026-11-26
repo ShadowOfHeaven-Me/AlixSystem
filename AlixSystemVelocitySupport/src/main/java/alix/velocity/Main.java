@@ -7,6 +7,7 @@ import alix.common.messages.Messages;
 import alix.common.scheduler.AlixScheduler;
 import alix.common.utils.floodgate.GeyserUtil;
 import alix.common.utils.formatter.AlixFormatter;
+import alix.common.utils.other.throwable.AlixError;
 import alix.loaders.classloader.LoaderBootstrap;
 import alix.loaders.velocity.VelocityAlixMain;
 import alix.velocity.server.AlixVelocityLimbo;
@@ -54,7 +55,7 @@ public final class Main implements LoaderBootstrap {
         //logInfo("floodgate present: " + this.util.isFloodgatePresent());
         //AlixServer.init();
         Messages.init();
-        var pluginContainer = server.getPluginManager().getPlugin("alixsystem").orElseThrow(() -> new RuntimeException("Co do kurwy chuja"));
+        var pluginContainer = server.getPluginManager().getPlugin("alixsystem").orElseThrow(() -> new AlixError("Co do kurwy chuja"));
 
         PacketEventsManager.init(pluginContainer, server, this.logger, this.dataDirectory);
         AlixVelocityLimbo.init();

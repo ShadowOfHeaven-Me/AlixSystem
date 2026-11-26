@@ -23,9 +23,11 @@ import ua.nanit.limbo.protocol.packets.status.PacketStatusRequest;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
+import ua.nanit.limbo.util.domain.DomainUtils;
 
 public final class PacketHandler {
 
+    private static final PacketSnapshot INVALID_HOST_DISCONNECT = PacketLoginDisconnect.snapshot("&cInvalid Host");
     private final LimboServer server;
 
     public PacketHandler(LimboServer server) {
@@ -43,6 +45,9 @@ public final class PacketHandler {
         this.server.getIntegration().onHandshake(conn, packet);
 
         LimboJoinProfiler.update(conn.getChannel(), ConnectionStage.HANDSHAKE);
+
+        if (packet.getExtractedHost().equals(DomainUtils.INVALID_HOST))
+            conn.sendPacketAndClose(INVALID_HOST_DISCONNECT);
         //conn.setJoinedInfo(packet.getHost(), packet.getPort());
 
         //Log.debug("Pinged from %s [%s]", conn.getAddress(), conn.getClientVersion().toString());

@@ -22,7 +22,7 @@ version = project.findProperty("alix-velocity-version")!!
 //lower 'velocity-toolchain-lang-version' below, since an older Velocity build needs an older JDK too). The
 //build NUMBER within whichever version this resolves to is always the newest one PaperMC has published,
 //so this never needs bumping just because PaperMC shipped another build of the same version.
-val velocityTargetVersion = project.findProperty("velocity-target-version") as? String ?: "4.2.1-SNAPSHOT"
+val velocityTargetVersion = project.findProperty("velocity-target-version") as? String ?: "4.3.2-SNAPSHOT"
 
 //There's no publicly consumable Maven artifact exposing Velocity's internals (only the much smaller,
 //public "velocity-api" is published that way, which doesn't have what this plugin needs to hook into
@@ -158,7 +158,7 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.48")
     annotationProcessor("org.projectlombok:lombok:1.18.48")
 
-    val srcDir = project.findProperty("velocity-sources-dir")
+    //val srcDir = project.findProperty("velocity-sources-dir")
     //compileOnly(files("$srcDir\\Geyser-Velocity.jar"))
     //compileOnly(files("$srcDir\\floodgate-velocity.jar"))
 

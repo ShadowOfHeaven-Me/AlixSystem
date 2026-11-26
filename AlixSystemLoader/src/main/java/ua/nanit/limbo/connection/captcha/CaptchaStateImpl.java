@@ -29,8 +29,8 @@ final class CaptchaStateImpl {
 
     private ScheduledFuture<?> disconnectTask;
     private long keepAliveSentTime;
-    private byte movementsReceived, keepAlivesReceived;
-    private boolean movementsSent;
+    private byte movementsReceivedCnt, keepAlivesReceived;
+    private boolean movementsReceived;
 
     //Location
     private double x, y, z;
@@ -167,13 +167,13 @@ final class CaptchaStateImpl {
 
         switch (tpConfirm.getTeleportId()) {
             case 1:
-                this.failIf(this.movementsReceived != 0 || this.tpConfirmsReceived != 1);
+                this.failIf(this.movementsReceivedCnt != 0 || this.tpConfirmsReceived != 1);
                 this.failIf(v26_3 && (int) this.y != TELEPORT_Y);
                 return;
             case 2:
                 //Log.error("movementsReceived=" + movementsReceived + " tpConfirmsReceived=" + this.tpConfirmsReceived);
                 int movementsExpected = v26_3 ? 0 : 1;
-                this.failIf(this.movementsReceived != movementsExpected || this.tpConfirmsReceived != 2);
+                this.failIf(this.movementsReceivedCnt != movementsExpected || this.tpConfirmsReceived != 2);
                 this.failIf(v26_3 && (int) this.y != TELEPORT_VALID_Y);
                 if (v26_3)
                     this.startFalling();
@@ -262,7 +262,7 @@ final class CaptchaStateImpl {
         //if (id != keepAlive.getId()) {//Below 1.12.2 are ints, above they never sent keep alives by themselves
         long id = keepAlive.getId();
         //Log.error("RECEIVED KEEP ALIVE ID: " + keepAlive.getId());
-        if (movementsSent) {
+        if (movementsReceived) {
             this.failIf(id != KeepAlives.PREVENT_TIMEOUT_ID);
             return;
         }
@@ -379,10 +379,10 @@ final class CaptchaStateImpl {
 
     private long lastKeepAliveSentTime;
     private double deltaY, lastDeltaY, expectedYCollision;
-    private boolean isFalling, isCheckingCollision, checkedCollision, isMovementDisabledAck;
+    private boolean isCheckingCollision, checkedCollision, isMovementDisabledAck;
 
     private void startFalling() {
-        this.isFalling = true;
+        this.isCheckingCollision = true;
     }
 
     void handle(WrapperPlayClientPlayerFlying flying) {
@@ -419,12 +419,12 @@ final class CaptchaStateImpl {
         //no longer sends movement at tp, instead includes pos at tp confirm
         boolean v26_3 = this.version().moreOrEqual(Version.V26_3);
 
-        this.movementsReceived++;
+        this.movementsReceivedCnt++;
         if (!NanoLimbo.allowFreeMovement) {
             //can't really go up (after the teleports)
-            this.failIf(this.deltaY > 0 && this.movementsReceived >= 3);
+            this.failIf(this.deltaY > 0 && this.movementsReceivedCnt >= 3);
             //we received 5 or more (this packet included) and the client still hasn't started falling. Hmmm
-            this.failIf(this.deltaY == 0 && this.movementsReceived >= 5);
+            this.failIf(this.deltaY == 0 && this.movementsReceivedCnt >= 5);
 
             //skip the two first teleport packet responses <26.3
             int fallingStartTick = v26_3 ? 0 : 2;
@@ -432,7 +432,7 @@ final class CaptchaStateImpl {
             if (
                 //humour the client, if it wants to delay sending the actual movement packets
                     this.deltaY < 0 /*&& this.movementsReceived >= startFallingTick*/
-                            && this.movementsReceived > fallingStartTick
+                            && this.movementsReceivedCnt > fallingStartTick
                             && !flying.isOnGround()) {
                 double predictedDeltaY = (this.lastDeltaY - 0.08) * 0.98;
                 double diff = this.deltaY - predictedDeltaY;
@@ -482,7 +482,7 @@ final class CaptchaStateImpl {
 
         if (NanoLimbo.logPos) Log.error("LOC: X: %s Y: %s Z: %s YAW: %s PITCH: %s", x, y, z, yaw, pitch);
 
-        if (this.movementsSent) {
+        if (this.movementsReceived) {
             long now = System.currentTimeMillis();
             long lastKeepAliveSent = now - lastKeepAliveSentTime;
 
@@ -493,7 +493,7 @@ final class CaptchaStateImpl {
             return;
         }
 
-        switch (this.movementsReceived) {
+        switch (this.movementsReceivedCnt) {
             case 1: {
                 this.failIf(!v26_3 && !flying.hasRotationChanged());
                 if (version().moreOrEqual(Version.V1_9)) {
@@ -515,11 +515,6 @@ final class CaptchaStateImpl {
                     this.failIf(this.keepAlivesReceived != 2);
                     this.failIf(!v26_3 && !flying.hasRotationChanged());
                 } else this.startFalling();
-                //this.duplexHandler.writePacket(PacketSnapshots.PACKET_PLAYER_POS_AND_LOOK_VALID);
-
-                //long d = System.currentTimeMillis() - sent;
-
-                //Log.error("RECEIVED MOVES IN: " + d + "ms");
                 this.cancelTask();
                 return;
             }
@@ -533,25 +528,9 @@ final class CaptchaStateImpl {
                 return;
             }
             case 10: {
-                this.movementsSent = true;
-                this.isFalling = false;
-                this.isCheckingCollision = true;
-
-                //double predictedDeltaY = (this.deltaY - 0.08) * 0.98;
-                //double predictedNextY = this.y + predictedDeltaY;
-
-
-                //this.duplexHandler.writeAndFlushPacket(PLAYER_ABILITIES_FLY);
-
-
-                //SpinningDonut.spinningDonut(this.connection);
-                //long d = System.currentTimeMillis() - sent;
-
-                ////Log.error("ALL 10 MOVES IN: " + d + "ms");
+                this.movementsReceived = true;
             }
         }
-        //this.duplexHandler.writeAndFlushPacket(new PacketPlayOutPing().setId(ThreadLocalRandom.current().nextInt()));
-        //this.duplexHandler.writeAndFlushPacket(new PacketPlayOutKeepAlive().setId(ThreadLocalRandom.current().nextInt()));
     }
 
     private static final long TIMEOUT_SEC = 10;
@@ -565,10 +544,6 @@ final class CaptchaStateImpl {
     }
 
     private void fail() {
-        //Log.error();
-        //Thread.currentThread().getStackTrace();
-        //Log.error("FAILED THE-");
-        //new Exception().printStackTrace();
         throw CaptchaFailedException.FAILED;
     }
 

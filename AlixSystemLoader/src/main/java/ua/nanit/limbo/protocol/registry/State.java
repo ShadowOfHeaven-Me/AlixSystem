@@ -250,15 +250,13 @@ public enum State {
     }
 
     public static State getHandshakeStateId(int stateId) {
-        switch (stateId) {
-            case 1://status
-                return State.STATUS;
-            case 2://login
-            case 3://transfer (same sequence as login)
-                return State.LOGIN;
-            default:
-                throw NettySafety.INVALID_INTENTION;
-        }
+        return switch (stateId) {
+            case 1 ->//status
+                    State.STATUS;//login
+            case 2, 3 ->//transfer (same sequence as login)
+                    State.LOGIN;
+            default -> throw NettySafety.INVALID_INTENTION;
+        };
     }
 
     /*public static State getById(int stateId) {

@@ -41,9 +41,11 @@ dependencies {
 
     implementation("org.apache.commons:commons-email:1.6.0")
     implementation("com.sun.mail:javax.mail:1.6.2")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.3.1")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("com.google.guava:guava:33.6.0-jre")
     //Newer Gradle no longer bundles this implicitly - without it, the test task can't even start the JUnit
     //Platform test executor ("Failed to load JUnit Platform... including the JUnit Platform launcher"),
     //regardless of whether there's anything to actually run (src/test/java here only holds standalone dev

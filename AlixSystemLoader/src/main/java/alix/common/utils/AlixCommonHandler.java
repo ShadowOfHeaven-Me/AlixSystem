@@ -69,11 +69,6 @@ public final class AlixCommonHandler {
             return;
         }
 
-        /*var sig = TelemetryProfiler.synSignature(channel);
-        if(sig != null) {
-
-        }*/
-
         if (data != null) {
             LimboJoinProfiler.update(channel, ConnectionStage.HAS_DATA_ALLOWED);
             consumer.accept(PreLoginVerdict.ALLOWED);
@@ -111,7 +106,7 @@ public final class AlixCommonHandler {
 
         LimboJoinProfiler.update(channel, ConnectionStage.TRACKER_PASSED);
 
-        if ((!isBedrock || isBedrock && antiVpnIncludeBedrock)) {// && !proxyProtocol) {
+        if (!isBedrock || antiVpnIncludeBedrock) {// && !proxyProtocol) {
             AntiVPN.disallowJoin(channel, address, nameRefactored, isProxy -> {
                 if (LimboJoinProfiler.PROFILE_JOINS)
                     LimboJoinProfiler.update(channel, ConnectionStage.VPN_EVALUATED, isProxy.toString());
@@ -165,37 +160,26 @@ public final class AlixCommonHandler {
     }
 
     public static AbstractBanList createBanListImpl(boolean ip) {
-        switch (ServerEnvironment.getEnvironment()) {
-            case SPIGOT:
-            case PAPER:
-                return BukkitBanList.get(ip);
-            default:
-                return null;
-        }
+        return switch (ServerEnvironment.getEnvironment()) {
+            case SPIGOT, PAPER -> BukkitBanList.get(ip);
+            default -> null;
+        };
     }
 
     public static ConfigProvider createConfigProviderImpl() {
-        switch (ServerEnvironment.getEnvironment()) {
-            case SPIGOT:
-            case PAPER:
-                return new BukkitConfigImpl();
-            case VELOCITY:
-                return new VelocityConfigImpl();
-            default:
-                throw new AssertionError();
-        }
+        return switch (ServerEnvironment.getEnvironment()) {
+            case SPIGOT, PAPER -> new BukkitConfigImpl();
+            case VELOCITY -> new VelocityConfigImpl();
+            default -> throw new AssertionError();
+        };
     }
 
-    public static AbstractServer createServerAccessorImpl() {
-        switch (ServerEnvironment.getEnvironment()) {
-            case SPIGOT:
-            case PAPER:
-                return new BukkitServer();
-            case VELOCITY:
-                return new VelocityServer();
-            default:
-                throw new AssertionError();
-        }
+    public static AbstractServer<?> createServerAccessorImpl() {
+        return switch (ServerEnvironment.getEnvironment()) {
+            case SPIGOT, PAPER -> new BukkitServer();
+            case VELOCITY -> new VelocityServer();
+            default -> throw new AssertionError();
+        };
     }
 
     /*public static LoaderBootstrap getBootstrap() {
@@ -211,27 +195,19 @@ public final class AlixCommonHandler {
     }*/
 
     public static AlixMain getMainClassInstance() {
-        switch (ServerEnvironment.getEnvironment()) {
-            case SPIGOT:
-            case PAPER:
-                return BukkitAlixMain.instance;
-            case VELOCITY:
-                return VelocityAlixMain.instance;
-            default:
-                throw new AssertionError();
-        }
+        return switch (ServerEnvironment.getEnvironment()) {
+            case SPIGOT, PAPER -> BukkitAlixMain.instance;
+            case VELOCITY -> VelocityAlixMain.instance;
+            default -> throw new AssertionError();
+        };
     }
 
     public static AlixLoggerProvider getLoggerProvider() {
-        switch (ServerEnvironment.getEnvironment()) {
-            case SPIGOT:
-            case PAPER:
-                return BukkitAlixMain.instance;
-            case VELOCITY:
-                return VelocityAlixMain.instance;
-            default:
-                throw new AssertionError();
-        }
+        return switch (ServerEnvironment.getEnvironment()) {
+            case SPIGOT, PAPER -> BukkitAlixMain.instance;
+            case VELOCITY -> VelocityAlixMain.instance;
+            default -> throw new AssertionError();
+        };
     }
 
     private AlixCommonHandler() {

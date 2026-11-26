@@ -85,15 +85,14 @@ public final class GeoIPTracker implements ConnectionFilter {
         //removed", calling unwhitelist() on Ataraxia for an IP it never whitelisted. computeIfPresent()'s
         //remapping function, unlike compute()'s, is only invoked when a mapping already existed, so the flag
         //it sets can only fire on a genuine last-account removal.
-        boolean[] wasLastAccount = {false};
         EXISTING_ACCOUNTS.computeIfPresent(ip, (k, v) -> {
             if (v == 1) {
-                wasLastAccount[0] = true;
+                if (AlixAtaraxia.isEnabled())
+                    AlixAtaraxia.unwhitelist(ip);
+
                 return null;
             }
             return v - 1;
         });
-        if (wasLastAccount[0] && AlixAtaraxia.isEnabled())
-            AlixAtaraxia.unwhitelist(ip);
     }
 }

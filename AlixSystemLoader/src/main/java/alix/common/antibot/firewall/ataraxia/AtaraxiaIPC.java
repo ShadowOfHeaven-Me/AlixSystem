@@ -68,7 +68,8 @@ final class AtaraxiaIPC {
             LOGGER.log(Level.WARNING, "Ataraxia integration cannot start: the IPC socket path (" + SOCKET_FILE
                     + ") is " + pathBytes + " bytes long, at or past the " + MAX_SOCKET_PATH_BYTES
                     + "-byte AF_UNIX limit. This path is fixed on Ataraxia's own side, so it cannot be worked "
-                    + "around here - move the server to a shorter install path if you need Ataraxia support.");
+                    + "around here - move the server to a shorter install path if you need Ataraxia support."
+                    + "If you cannot do that, seek support on either the Alix Discord or GitHub.");
             return;
         }
 

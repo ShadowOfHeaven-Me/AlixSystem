@@ -317,13 +317,11 @@ public final class PersistentUserData implements AlixUserData {
 
         UserFileManager.putData(this);
 
-        if (!this.ip.equals(UNKNOWN_IP)) {
+        if (!this.ip.equals(UNKNOWN_IP))
             GeoIPTracker.addExisting(this.ip, false);
-        }
 
-        if (this.premiumData.getStatus().isPremium()) {
+        if (this.premiumData.getStatus().isPremium())
             PremiumIdIndex.index(this.premiumData.premiumUUID());
-        }
     }
 
     public static PersistentUserData fromDatabase(

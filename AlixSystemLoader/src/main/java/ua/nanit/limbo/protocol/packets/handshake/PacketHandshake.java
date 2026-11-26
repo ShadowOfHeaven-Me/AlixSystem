@@ -11,7 +11,7 @@ import ua.nanit.limbo.protocol.registry.State;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.server.LimboServer;
 import ua.nanit.limbo.server.Log;
-import ua.nanit.limbo.util.DomainUtils;
+import ua.nanit.limbo.util.domain.DomainUtils;
 
 import static com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake.ConnectionIntention;
 
@@ -20,7 +20,7 @@ public final class PacketHandshake implements PacketIn, NoPacketCache {
     public static final AttributeKey<String> HANDSHAKE_HOST = AttributeKey.valueOf("alix-joined-with-ip");
 
     private Version version;
-    private String host;
+    private String host, extractedHost;
     private int port;
     private int intention;
 
@@ -54,6 +54,10 @@ public final class PacketHandshake implements PacketIn, NoPacketCache {
     private static final int cfgPort;
 
     public String getExtractedHost() {
+        return this.extractedHost;
+    }
+
+    private String getExtractedHost0() {
         if (!cfgHostName.isEmpty())
             return cfgHostName;
 
@@ -61,7 +65,7 @@ public final class PacketHandshake implements PacketIn, NoPacketCache {
     }
 
     public int getPort() {
-        return cfgPort >= 0 ? cfgPort : port;
+        return cfgPort >= 0 ? cfgPort : this.port;
     }
 
     public State getNextState() {
@@ -90,14 +94,16 @@ public final class PacketHandshake implements PacketIn, NoPacketCache {
         this.version = Version.of(msg.readVarInt());
         this.host = msg.readString();
 
-        if (this.host.equals("matscan"))
-            throw NettySafety.MAT_SCAN;
-
+        switch (this.host) {
+            case "matscan" -> throw NettySafety.MAT_SCAN;
+            //we cannot exactly do this for all invalid hosts, some are purposefully modified (for e.g. to include extra info at handshake)
+            case "aaa" -> throw NettySafety.INVALID_HOST;
+        }
+        this.extractedHost = this.getExtractedHost0();
         this.port = msg.readUnsignedShort();
-
         this.intention = msg.readVarInt();
         //validate intention
-        this.getNextState();
+        //this.getNextState(); handled in PacketHandler
     }
 
     @Override

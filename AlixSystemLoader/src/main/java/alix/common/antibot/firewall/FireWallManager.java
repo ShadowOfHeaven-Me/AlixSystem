@@ -89,8 +89,8 @@ public final class FireWallManager {
 
     private static boolean checkIfLogsExhausted() {
         long now = System.currentTimeMillis();
-        if (now - LAST_FIREWALL.get() > RECENT_FIREWALL_WINDOW && MESSAGES_LOCKED.get())
-            MESSAGES_LOCKED.set(false);
+        if (now - LAST_FIREWALL.get() > RECENT_FIREWALL_WINDOW)
+            MESSAGES_LOCKED.compareAndSet(true, false);
 
         LAST_FIREWALL.set(now);
 

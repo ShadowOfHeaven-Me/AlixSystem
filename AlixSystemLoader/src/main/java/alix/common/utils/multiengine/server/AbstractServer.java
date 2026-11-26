@@ -6,5 +6,5 @@ public interface AbstractServer<C> {
 
     void sendMessage(C receiver, String message);
 
-    AbstractServer INSTANCE = AlixCommonHandler.createServerAccessorImpl();
+    AbstractServer<?> INSTANCE = AlixCommonHandler.createServerAccessorImpl();
 }

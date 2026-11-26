@@ -9,8 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,31 +47,34 @@ public final class MessagesSyncTool {
         var lang = "cs";
         Path langFile = resourceRoot.resolve("langs/" + lang + ".properties");
 
-        LinkedHashMap<String, String> referenceEntries = parse(reference);
-        LinkedHashMap<String, String> langEntries = parse(langFile);
+        Map<String, String> referenceEntries = parse(reference);
+        Map<String, String> langEntries = parse(langFile);
         System.out.println("Reference (messages.properties): " + referenceEntries.size() + " keys");
 
         var missing = referenceEntries.keySet().stream().filter(k -> !langEntries.containsKey(k)).toList();
         var stale = langEntries.keySet().stream().filter(k -> !referenceEntries.containsKey(k)).toList();
 
-        if (!stale.isEmpty())
-            System.out.println(lang + ".properties: " + stale.size() + " key(s) no longer in messages.properties (NOT removed automatically - confirm before deleting) - " + stale);
+        int removed = 0;
+        if (!stale.isEmpty()) {
+            System.out.println(lang + ".properties: " + stale.size() + " key(s) no longer in messages.properties (removed automatically) - " + stale);
 
-        if (missing.isEmpty()) {
+            stale.forEach(langEntries::remove);
+            removed += stale.size();
+        }
+
+        if (missing.isEmpty() && stale.isEmpty()) {
             System.out.println(lang + ".properties: already in sync (" + langEntries.size() + " keys)");
             return;
         }
 
         String apiKey = System.getenv("DEEPL_API_KEY");
         if (apiKey == null || apiKey.isBlank()) {
-            System.out.println("cs.properties: " + missing.size() + " missing key(s), but DEEPL_API_KEY isn't set - nothing translated. Missing: " + missing);
+            System.out.println("DEEPL_API_KEY isn't set - nothing translated. Missing: " + missing);
             return;
         }
 
         HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         StringBuilder sb = new StringBuilder();
-        String existing = Files.exists(langFile) ? Files.readString(langFile, StandardCharsets.UTF_8) : "";
-        if (!existing.isEmpty() && !existing.endsWith("\n")) sb.append('\n');
 
         int translated = 0;
         for (String key : missing) {
@@ -82,16 +86,19 @@ public final class MessagesSyncTool {
                 System.out.println("  FAILED to translate '" + key + "': " + e.getMessage());
                 continue;
             }
-            sb.append(TRANSLATE_MARKER).append(key).append('\n');
-            sb.append(key).append("= ").append(draft).append('\n');
+            langEntries.put(key, draft);
             translated++;
         }
 
-        if (translated > 0) {
-            Files.writeString(langFile, sb.toString(), StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+        for (var e : langEntries.entrySet()) {
+            sb.append(e.getKey()).append("= ").append(e.getValue()).append('\n');
         }
-        System.out.println(lang + ".properties: drafted " + translated + "/" + missing.size()
-                + " missing key(s) via DeepL, marked with '" + TRANSLATE_MARKER.trim() + "' - review before relying on them");
+
+        int changes = translated + removed;
+        if (changes > 0) {
+            Files.writeString(langFile, sb.toString(), StandardCharsets.UTF_8, StandardOpenOption.WRITE);
+        }
+        System.out.println(lang + ".properties: drafted " + translated + "/" + missing.size() + " missing key(s) via DeepL");
     }
 
     //Swaps {0}/{1}/.../ Minecraft color+format codes (&c, &l, ...)/the "-nl" line-break marker for inert,
@@ -102,7 +109,7 @@ public final class MessagesSyncTool {
         List<String> placeholders = new ArrayList<>();
         String protectedText = protect(english, placeholders);
 
-        String body = "{\"text\":[\"" + jsonEscape(protectedText) + "\"],\"source_lang\":\"EN\",\"target_lang\":\""+ lang + "\"}";
+        String body = "{\"text\":[\"" + jsonEscape(protectedText) + "\"],\"source_lang\":\"EN\",\"target_lang\":\"" + lang + "\"}";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(DEEPL_ENDPOINT))
                 .header("Authorization", "DeepL-Auth-Key " + apiKey)
@@ -193,8 +200,8 @@ public final class MessagesSyncTool {
         return sb.toString();
     }
 
-    private static LinkedHashMap<String, String> parse(Path file) throws IOException {
-        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+    private static Map<String, String> parse(Path file) throws IOException {
+        Map<String, String> map = new TreeMap<>();//sort it automatically
         if (!Files.exists(file)) return map;
         for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             String trimmed = line.trim();

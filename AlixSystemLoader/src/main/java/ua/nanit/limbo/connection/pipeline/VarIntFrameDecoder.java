@@ -233,7 +233,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
         //(NanoLimbo.INTEGRATION.isProxyProtocol() ||
         //cannot do this \/
         /*&& NanoLimbo.INTEGRATION.isConnected(AlixCommonUtils.getAddress(this.channel()))*/
-        if ((supportHttp || FingerprintServer.mcPortFingerprinting) && this.connection.getDecoderState() == State.HANDSHAKING) {
+        if ((supportHttp /*|| FingerprintServer.mcPortFingerprinting*/) && this.connection.getDecoderState() == State.HANDSHAKING) {
             if (in.readableBytes() < 4)
                 return null;
 
@@ -241,8 +241,8 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
 
             if (get || BufUtils.hasSequence(in, packetStart, 'H', 'E', 'A', 'D')) {
                 //Log.info("Passthrough of HTTP traffic " + FingerprintGateway.isFingerprintingAddress(AlixCommonUtils.getAddress(this.channel())));
-                InetAddress addr;
-                if (FingerprintServer.mcPortFingerprinting && GeoIPTracker.isMapped(addr = AlixCommonUtils.getAddress(this.channel())) /*&& FingerprintGateway.isFingerprintingAddress(addr)*/) {
+                /*InetAddress addr;
+                if (FingerprintServer.mcPortFingerprinting && GeoIPTracker.isMapped(addr = AlixCommonUtils.getAddress(this.channel())) *//*&& FingerprintGateway.isFingerprintingAddress(addr)*//*) {
                     var cum = this.cumulation;
                     this.cumulation = null;//nullify, act as if all was read
 
@@ -250,7 +250,7 @@ public final class VarIntFrameDecoder extends ChannelInboundHandlerAdapter {
                     this.connection.resend(cum.readerIndex(0));
                     //Log.error("KNOWN TRAFFIC PASSTHROUGH");
                     return null;
-                }
+                }*/
 
                 if (supportHttp) {
                     this.connection.uninjectWithBuf(this.cumulation.readerIndex(0).copy());

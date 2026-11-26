@@ -46,6 +46,7 @@ import ua.nanit.limbo.protocol.packets.login.disconnect.PacketLoginDisconnect;
 import ua.nanit.limbo.protocol.packets.play.payload.PacketPlayOutPluginMessage;
 import ua.nanit.limbo.protocol.registry.Version;
 import ua.nanit.limbo.protocol.snapshot.PacketSnapshot;
+import ua.nanit.limbo.util.domain.DomainUtils;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
@@ -96,7 +97,7 @@ public final class PacketEventListener extends PacketListenerAbstract {
         if (event.getPacketType() == PacketType.Handshaking.Client.HANDSHAKE) {
             LimboJoinProfiler.update(channel, ConnectionStage.SERVER_HANDSHAKE);
             var handshake = new com.github.retrooper.packetevents.wrapper.handshaking.client.WrapperHandshakingClientHandshake(event);
-            channel.attr(ua.nanit.limbo.protocol.packets.handshake.PacketHandshake.HANDSHAKE_HOST).set(ua.nanit.limbo.util.DomainUtils.extractHost(handshake.getServerAddress()));
+            channel.attr(ua.nanit.limbo.protocol.packets.handshake.PacketHandshake.HANDSHAKE_HOST).set(DomainUtils.extractHost(handshake.getServerAddress()));
             return;
         }
 

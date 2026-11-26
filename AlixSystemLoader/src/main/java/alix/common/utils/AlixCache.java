@@ -1,13 +1,10 @@
 package alix.common.utils;
 
-import alix.common.utils.other.annotation.OptimizationCandidate;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 public final class AlixCache {
 
-    //with caffeine
-    @OptimizationCandidate
-    public static <K, V> CacheBuilder<K, V> newBuilder() {
-        return (CacheBuilder<K, V>) CacheBuilder.newBuilder();
+    public static <K, V> Caffeine<K, V> newBuilder() {
+        return (Caffeine<K, V>) Caffeine.newBuilder();
     }
 }

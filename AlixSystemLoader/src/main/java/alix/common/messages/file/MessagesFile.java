@@ -31,7 +31,7 @@ public final class MessagesFile extends AlixFileManager {
             if (value.length() >= 2 && value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"')
                 value = value.substring(1, value.length() - 1);
 
-            String message = AlixFormatter.translateColors(value); //outdated explanation - AlixFormatter instead of AlixUtils because of class initialization issues
+            String message = AlixFormatter.translateColors(value);
             map.put(a[0], message);
 
         } catch (Exception e) {

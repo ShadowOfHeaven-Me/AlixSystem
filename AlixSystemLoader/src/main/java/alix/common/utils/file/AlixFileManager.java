@@ -60,8 +60,6 @@ public abstract class AlixFileManager {
     }
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
-    //No longer 382;
-    //public static final int HIGHEST_CHAR = 1 << 16; //'\uffff';
 
     public enum FileType {
 
